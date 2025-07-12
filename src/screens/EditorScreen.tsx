@@ -21,6 +21,7 @@ import { Switch, Text, Button, IconButton } from 'react-native-paper';
 import SafeText from '../components/SafeText';
 import { RootStackParamList } from '../types';
 import { getNoteById, saveNote, updateNote } from '../storage/database';
+import { sendAppNotification } from '../utils/notifications';
 import { Note } from '../types';
 import Header from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -112,13 +113,21 @@ const EditorScreen: React.FC = () => {
         });
       } else {
         const now = new Date().toISOString();
-        await saveNote({
+        const id = await saveNote({
           title,
           content,
           isMarkdown,
           createdAt: now,
           updatedAt: now
         });
+        // Check if this is the first note
+        try {
+          const notesModule = await import('../storage/notes');
+          const notes = await notesModule.getNotes();
+          if (notes.length === 1) {
+            await sendAppNotification('First Note Created!', 'Congratulations on creating your first note in NoteSpark!');
+          }
+        } catch (e) {}
       }
       // Smooth navigation back
       InteractionManager.runAfterInteractions(() => {

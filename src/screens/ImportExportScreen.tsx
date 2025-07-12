@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Card, Text, ActivityIndicator } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { exportNotesAsJson, importNotesFromJson } from '../storage/database';
+import { sendAppNotification } from '../utils/notifications';
 import { importNotesFromFile } from '../storage/database';
 import Header from '../components/Header';
 import { useTheme } from '../theme/ThemeContext';
@@ -28,7 +29,7 @@ const ImportExportScreen: React.FC = () => {
         message: jsonData,
         title: 'NoteSpark Notes Backup',
       });
-      
+      await sendAppNotification('Notes Exported', 'Your notes have been exported successfully!');
       setIsExporting(false);
     } catch (error) {
       console.error('Failed to export notes:', error);
@@ -59,6 +60,7 @@ const ImportExportScreen: React.FC = () => {
               setImportData('');
               if (typeof result === 'number' && result > 0) {
                 console.log(`Imported ${result} notes.`);
+                await sendAppNotification('Notes Imported', `${result} notes imported successfully!`);
                 Alert.alert('Success', `${result} notes imported successfully`, [
                   { text: 'OK', onPress: () => navigation.goBack() },
                 ]);
@@ -90,6 +92,7 @@ const ImportExportScreen: React.FC = () => {
               setFileImporting(true);
               const count = await importNotesFromFile();
               setFileImporting(false);
+              await sendAppNotification('Notes Imported', `${count} notes imported successfully!`);
               Alert.alert('Success', `${count} notes imported successfully`, [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);

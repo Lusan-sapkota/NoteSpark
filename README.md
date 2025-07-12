@@ -52,6 +52,7 @@
 - �️ **Import/Export** — Backup and restore your notes easily.
 - 🧭 **Easy navigation** — Clean navigation and search for quick access to your ideas.
 - 📋 **Copy & share** — Copy note content or share with other apps easily.
+- 🔔 **Notification system** — Get reminders and notifications for your important notes.
 - 🛠️ **Open source** — GPLv3 licensed, contributions welcome!
 
 ---

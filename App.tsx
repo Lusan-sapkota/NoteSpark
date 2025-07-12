@@ -5,30 +5,48 @@ import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { initDatabase } from './src/storage/database';
+import { setupNotificationWorker } from './src/utils/notifications';
 import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import OnboardingScreen from './src/screens/OnboardingScreen';
+import { sendAppNotification } from './src/utils/notifications';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
   const [dbInitialized, setDbInitialized] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const setupDatabase = async () => {
+    const setupApp = async () => {
       try {
+        await setupNotificationWorker();
         await initDatabase();
         setDbInitialized(true);
+        const onboarded = await AsyncStorage.getItem('onboarded');
+        setShowOnboarding(onboarded !== 'true');
       } catch (error) {
         console.error('Failed to initialize database:', error);
       }
     };
-    setupDatabase();
+    setupApp();
   }, []);
 
-  if (!dbInitialized) {
+  const handleFinishOnboarding = async () => {
+    await AsyncStorage.setItem('onboarded', 'true');
+    await sendAppNotification('Welcome to NoteSpark!', 'You are ready to start taking notes.');
+    setShowOnboarding(false);
+  };
+
+  if (!dbInitialized || showOnboarding === null) {
     return (
       <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}> 
         <ActivityIndicator size="large" color={theme.colors.primary} />
       </View>
     );
+  }
+
+  if (showOnboarding) {
+    return <OnboardingScreen onFinish={handleFinishOnboarding} />;
   }
 
   return (

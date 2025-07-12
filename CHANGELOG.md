@@ -3,7 +3,9 @@
 All notable changes to NoteSpark will be documented in this file.
 
 ## [1.0.0] - 2025-07-13
+
 ### Added
+
 - Initial public release of NoteSpark!
 - Create, edit, and delete notes (Markdown & plain text)
 - Pin notes to always keep them at the top
@@ -15,6 +17,7 @@ All notable changes to NoteSpark will be documented in this file.
 - Beautiful UI with dark mode support
 - Fully offline, privacy-first (no accounts, no ads)
 - Copy/share notes with other apps
+- Notification system for reminders and important notes
 - Open source (GPLv3)
 - Blazing fast performance, even with hundreds of notes
 - Clean navigation and easy access to all features
