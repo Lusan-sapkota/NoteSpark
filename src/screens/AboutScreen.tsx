@@ -5,19 +5,35 @@ import {
   Linking,
   ScrollView,
   Image,
-  SafeAreaView,
 } from 'react-native';
-import { useTheme } from '../theme/ThemeContext';
+import * as Updates from 'expo-updates';
+import Constants from 'expo-constants';
+import { useNavigation } from '@react-navigation/native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Card, Text, Divider } from 'react-native-paper';
+import Header from '../components/Header';
+import { useTheme } from '../theme/ThemeContext';
 
 const GITHUB_URL = 'https://github.com/Lusan-sapkota/NoteSpark';
 const DEVELOPER_EMAIL = 'sapkotalusan@gmail.com';
 const WEBSITE = 'https://lusansapkota.com.np';
-const APP_VERSION = '1.0.0';
+const getAppVersion = () => {
+  // EAS Update manifest
+  if (Updates.manifest && (Updates.manifest as any).version) {
+    return (Updates.manifest as any).version;
+  }
+  // Fallback to expo config
+  if (Constants.expoConfig && Constants.expoConfig.version) {
+    return Constants.expoConfig.version;
+  }
+  return 'Unknown';
+};
 const LICENSE = 'GPLv3';
 
 const AboutScreen = () => {
+  const navigation = useNavigation();
   const { theme } = useTheme();
+  const appVersion = getAppVersion();
 
   const openLink = (url: string) => {
     Linking.openURL(url).catch((err) =>
@@ -26,7 +42,15 @@ const AboutScreen = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.colors.background }]}>
+    <View
+      style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
+    >
+      <Header
+        title="About NoteSpark"
+        showBackButton
+        onBackPress={() => navigation.goBack()}
+      />
+
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.iconContainer}>
           <Image
@@ -41,16 +65,14 @@ const AboutScreen = () => {
         </Text>
 
         <Text style={[styles.description, { color: theme.colors.onSurfaceVariant }]}>
-          NoteSpark is a modern offline-first note-taking app with support for Markdown, database
-          export/import, and full SQLite-based storage. Crafted for simplicity and power, it helps
-          you capture and manage thoughts without relying on cloud storage.
+          NoteSpark is a modern, offline-first note-taking app designed for speed and privacy. 
+          Enjoy Markdown support, seamless JSON export/import, and robust local storage powered by SQLite. 
+          Capture, organize, and manage your notes effortlessly—no cloud required.
         </Text>
 
         <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} mode="contained">
           <Card.Content style={styles.cardContent}>
-            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>
-              Developer
-            </Text>
+            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Developer</Text>
             <Text style={[styles.value, { color: theme.colors.onSurface }]}>Lusan Sapkota</Text>
 
             <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
@@ -76,7 +98,7 @@ const AboutScreen = () => {
             <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
 
             <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Version</Text>
-            <Text style={[styles.value, { color: theme.colors.onSurface }]}>{APP_VERSION}</Text>
+            <Text style={[styles.value, { color: theme.colors.onSurface }]}>{appVersion}</Text>
 
             <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
 
@@ -92,10 +114,20 @@ const AboutScreen = () => {
             >
               github.com/Lusan-sapkota/NoteSpark
             </Text>
+
+            <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
+
+            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Read Docs</Text>
+            <Text
+              style={[styles.link, { color: theme.colors.primary }]}
+              onPress={() => openLink(`${GITHUB_URL}/wiki`)}
+            >
+              github.com/Lusan-sapkota/NoteSpark/wiki
+            </Text>
           </Card.Content>
         </Card>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
@@ -104,12 +136,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 12,
     paddingBottom: 40,
   },
   iconContainer: {
     alignItems: 'center',
     marginBottom: 16,
+    marginTop: 8,
   },
   appIcon: {
     width: 96,

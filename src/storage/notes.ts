@@ -1,3 +1,7 @@
+// Delete all notes
+export const clearAllNotes = async (): Promise<void> => {
+  await db.runAsync('DELETE FROM notes');
+};
 import { db } from './database';
 import { Note } from '../types';
 
@@ -82,22 +86,32 @@ export const exportNotesAsJson = async (): Promise<string> => {
 
 // Import notes from JSON
 export const importNotesFromJson = async (jsonData: string): Promise<void> => {
-  const notes = JSON.parse(jsonData) as Note[];
+  const notes = JSON.parse(jsonData);
   if (!Array.isArray(notes)) {
     throw new Error('Invalid JSON format: expected an array of notes');
   }
   await db.runAsync('DELETE FROM notes');
+  let importedCount = 0;
   for (const note of notes) {
-    await db.runAsync(
-      `INSERT INTO notes (id, title, content, isMarkdown, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?)`,
-      [
-        note.id,
-        note.title,
-        note.content,
-        note.isMarkdown ? 1 : 0,
-        note.createdAt,
-        note.updatedAt
-      ]
-    );
+    if (
+      typeof note.title === 'string' &&
+      typeof note.content === 'string' &&
+      (typeof note.isMarkdown === 'boolean' || typeof note.isMarkdown === 'number')
+    ) {
+      await db.runAsync(
+        `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)`,
+        [
+          note.title,
+          note.content,
+          note.isMarkdown ? 1 : 0,
+          note.createdAt || new Date().toISOString(),
+          note.updatedAt || new Date().toISOString()
+        ]
+      );
+      importedCount++;
+    }
+  }
+  if (importedCount === 0) {
+    throw new Error('No valid notes found in import data.');
   }
 };

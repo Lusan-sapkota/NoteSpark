@@ -13,6 +13,8 @@ interface NoteItemProps {
   isSelected?: boolean;
   showActions?: boolean;
   compact?: boolean;
+  isPinned?: boolean;
+  onPinToggle?: (noteId: number) => void;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -25,7 +27,9 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   showPreview = true, 
   isSelected = false,
   showActions = true,
-  compact = false 
+  compact = false,
+  isPinned = false,
+  onPinToggle
 }) => {
   const { theme } = useTheme();
   const [pressAnim] = useState(new Animated.Value(1));
@@ -148,36 +152,47 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                   {note.title || 'Untitled Note'}
                 </Text>
                 <View style={styles.metaRow}>
-                  <Chip
+                    <Chip
                     mode="outlined"
                     style={[
                       styles.typeChip,
                       {
-                        backgroundColor: note.isMarkdown ? theme.colors.accent + '22' : theme.colors.secondary + '22',
-                        borderColor: note.isMarkdown ? theme.colors.accent : theme.colors.secondary,
-                        paddingHorizontal: 6,  // less horizontal padding
-                        paddingVertical: 0,    // reduce vertical padding
-                        minHeight: 20,         // smaller minHeight to shrink chip height
-                        alignSelf: 'flex-start', // prevent stretching if parent uses flex
+                      backgroundColor: note.isMarkdown ? theme.colors.accent + '22' : theme.colors.secondary + '22',
+                      borderColor: note.isMarkdown ? theme.colors.accent : theme.colors.secondary,
+                      paddingHorizontal: 6,
+                      paddingVertical: 0,
+                      minHeight: 20,
+                      alignSelf: 'flex-start',
                       },
                     ]}
                     textStyle={[
                       styles.chipText,
                       {
-                        color: note.isMarkdown ? theme.colors.accent : theme.colors.secondary,
-                        fontSize: compact ? 10 : 12, 
-                        lineHeight: compact ? 12 : 14,
-                        textAlign: 'center',
-                        includeFontPadding: false,  // critical for vertical alignment fix on Android
-                        textAlignVertical: 'center', // also helps vertical alignment
-                        marginBottom: compact ? 0 : 2, // adjust bottom margin for compact mode
-                        marginTop: compact ? 0 : 2, // adjust top margin for compact mode
+                      color: note.isMarkdown
+                        ? theme.dark
+                        ? theme.colors.accent
+                        : '#2B2B2B' // darker text for light mode
+                        : theme.dark
+                        ? theme.colors.secondary
+                        : '#2B2B2B',
+                      fontWeight: 'bold',
+                      fontSize: compact ? 10 : 12,
+                      lineHeight: compact ? 12 : 14,
+                      textAlign: 'center',
+                      includeFontPadding: false,
+                      textAlignVertical: 'center',
+                      marginBottom: compact ? 0 : 2,
+                      marginTop: compact ? 0 : 2,
+                      textShadowColor: theme.dark ? undefined : '#FFF',
+                      textShadowOffset: theme.dark ? undefined : { width: 0, height: 1 },
+                      textShadowRadius: theme.dark ? undefined : 1,
+                      letterSpacing: 0.3,
                       },
                     ]}
                     compact
-                  >
+                    >
                     {note.isMarkdown ? 'Markdown' : 'Text'}
-                  </Chip>
+                    </Chip>
 
                   <Text style={[styles.date, { color: theme.colors.text, fontWeight: '500', marginLeft: 8 }]}> 
                     Created: {createdDate}
@@ -227,12 +242,22 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                 ]}
               >
                 {/* Edited date on the left */}
-                <Text style={[styles.date, { color: theme.colors.text, fontWeight: '500' }]}>
+                <Text style={[styles.date, { color: theme.colors.text, fontWeight: '500' }]}> 
                   Edited: {editedDate && editedDate !== 'No date' ? editedDate : 'none'}
                 </Text>
 
                 {/* Action buttons on the right */}
-                <View style={[styles.actionButtons, { flexDirection: 'row', alignItems: 'center' }]}>
+                <View style={[styles.actionButtons, { flexDirection: 'row', alignItems: 'center' }]}> 
+                  {/* Pin/unpin button */}
+                  {onPinToggle && (
+                    <IconButton
+                      icon={isPinned ? 'pin' : 'pin-outline'}
+                      iconColor={isPinned ? theme.colors.primary : theme.colors.outline}
+                      size={20}
+                      onPress={() => onPinToggle(note.id)}
+                      style={styles.actionButton}
+                    />
+                  )}
                   {onEdit && (
                     <IconButton
                       icon="pencil-outline"

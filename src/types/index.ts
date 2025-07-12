@@ -9,7 +9,8 @@ export interface Note {
 
 export type RootStackParamList = {
   Home: undefined;
-  Editor: { noteId?: number };
+  Editor: { noteId?: string } | undefined;
+  NoteView: { noteId: string } | undefined;
   Settings: undefined;
   ImportExport: undefined;
   About: undefined;

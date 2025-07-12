@@ -5,6 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Card, Text, ActivityIndicator } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { exportNotesAsJson, importNotesFromJson } from '../storage/database';
+import { importNotesFromFile } from '../storage/database';
 import Header from '../components/Header';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -16,6 +17,7 @@ const ImportExportScreen: React.FC = () => {
   const [importData, setImportData] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
+  const [fileImporting, setFileImporting] = useState(false);
 
   const handleExport = async () => {
     try {
@@ -40,20 +42,65 @@ const ImportExportScreen: React.FC = () => {
       Alert.alert('Error', 'Please enter JSON data to import');
       return;
     }
+    Alert.alert(
+      'Import Notes',
+      'Importing will replace all existing notes. Are you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Import',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setIsImporting(true);
+              const notesModule = await import('../storage/notes');
+              const result = await notesModule.importNotesFromJson(importData);
+              setIsImporting(false);
+              setImportData('');
+              if (typeof result === 'number' && result > 0) {
+                console.log(`Imported ${result} notes.`);
+                Alert.alert('Success', `${result} notes imported successfully`, [
+                  { text: 'OK', onPress: () => navigation.goBack() },
+                ]);
+              } else {
+                Alert.alert('Warning', 'No valid notes found in import data.');
+              }
+            } catch (error) {
+              console.error('Failed to import notes:', error);
+              Alert.alert('Error', 'Failed to import notes. Please check your JSON data format.');
+              setIsImporting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
 
-    try {
-      setIsImporting(true);
-      await importNotesFromJson(importData);
-      setIsImporting(false);
-      setImportData('');
-      Alert.alert('Success', 'Notes imported successfully', [
-        { text: 'OK', onPress: () => navigation.goBack() },
-      ]);
-    } catch (error) {
-      console.error('Failed to import notes:', error);
-      Alert.alert('Error', 'Failed to import notes. Please check your JSON data format.');
-      setIsImporting(false);
-    }
+  const handleFileImport = async () => {
+    Alert.alert(
+      'Import Notes from File',
+      'Importing will replace all existing notes. Are you sure you want to continue?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Import',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              setFileImporting(true);
+              const count = await importNotesFromFile();
+              setFileImporting(false);
+              Alert.alert('Success', `${count} notes imported successfully`, [
+                { text: 'OK', onPress: () => navigation.goBack() },
+              ]);
+            } catch (error) {
+              setFileImporting(false);
+              Alert.alert('Error', 'Failed to import notes from file. Please check your JSON file.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -110,14 +157,26 @@ const ImportExportScreen: React.FC = () => {
               textAlignVertical="top"
             />
             <Button
+              mode="outlined"
+              onPress={handleFileImport}
+              loading={fileImporting}
+              disabled={fileImporting}
+              style={{ marginTop: 12, borderColor: theme.colors.primary }}
+              labelStyle={{ color: theme.colors.primary }}
+            >
+              Upload JSON File
+            </Button>
+            <Button
               mode="contained"
               onPress={handleImport}
               loading={isImporting}
               disabled={isImporting || !importData.trim()}
               style={{ backgroundColor: theme.colors.primary, marginTop: 16 }}
+              labelStyle={{ color: '#fff' }}
             >
               Import Notes
             </Button>
+
           </Card.Content>
         </Card>
 

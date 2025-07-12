@@ -27,6 +27,12 @@
     },
     "plugins": [
       "expo-sqlite"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c86c2cb6-77d2-46f6-bda0-2fde1df96924"
+      }
+    },
+    "owner": "lusansapkota"
   }
 }
