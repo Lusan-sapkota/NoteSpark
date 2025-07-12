@@ -9,6 +9,8 @@ export async function setupNotificationWorker() {
         shouldShowAlert: true,
         shouldPlaySound: false,
         shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
       }),
     });
   }
@@ -19,8 +21,7 @@ export async function sendAppNotification(title: string, body: string) {
     content: {
       title,
       body,
-      // Show app logo for Android notifications
-      icon: Platform.OS === 'android' ? require('../../assets/icon.png') : undefined,
+      // You can customize other supported properties here
     },
     trigger: null,
   });
