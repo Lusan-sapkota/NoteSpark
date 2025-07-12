@@ -46,7 +46,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleNotePress = (noteId: number) => {
-    navigation.navigate('Editor', { noteId });
+    navigation.navigate('NoteView', { noteId });
   };
 
   const handleDeleteNote = (noteId: number) => {
@@ -72,6 +72,21 @@ const HomeScreen: React.FC = () => {
     );
   };
 
+
+  const handleEditNote = (noteId: number) => {
+    Alert.alert(
+      'Edit Note',
+      'Do you want to edit this note?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Edit',
+          onPress: () => navigation.navigate('Editor', { noteId }),
+        },
+      ]
+    );
+  };
+
   const handleCreateNote = () => {
     navigation.navigate('Editor');
   };
@@ -81,15 +96,15 @@ const HomeScreen: React.FC = () => {
       <Header 
         title="NoteSpark"
         rightActions={
-          <View style={styles.headerActions}>
+            <View style={styles.headerActions}>
             <FAB
               icon="cog"
               size="small"
-              style={[styles.settingsFab, { backgroundColor: theme.colors.secondary }]}
-              color={theme.colors.text}
+              style={[styles.settingsFab, { backgroundColor: theme.colors.primary }]}
+              color="white"
               onPress={() => navigation.navigate('Settings')}
             />
-          </View>
+            </View>
         }
       />
       
@@ -101,6 +116,8 @@ const HomeScreen: React.FC = () => {
             note={item}
             onPress={handleNotePress}
             onDelete={handleDeleteNote}
+            onEdit={handleEditNote}
+            showPreview
           />
         )}
         contentContainerStyle={styles.listContent}

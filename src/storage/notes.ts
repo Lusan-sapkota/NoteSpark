@@ -12,18 +12,24 @@ export const getNotes = async (): Promise<Note[]> => {
 
 // Get a single note by ID
 export const getNoteById = async (id: number): Promise<Note | null> => {
-  const item = await db.getFirstAsync('SELECT * FROM notes WHERE id = ?', [id]);
-  if (item) {
-    return {
-      id: (item as any).id,
-      title: (item as any).title,
-      content: (item as any).content,
-      isMarkdown: Boolean((item as any).isMarkdown),
-      createdAt: (item as any).createdAt,
-      updatedAt: (item as any).updatedAt
-    };
-  } else {
-    return null;
+  try {
+    const items = await db.getAllAsync('SELECT * FROM notes WHERE id = ?', [id]);
+    if (items && items.length > 0) {
+      const item = items[0] as any;
+      return {
+        id: item.id,
+        title: item.title,
+        content: item.content,
+        isMarkdown: Boolean(item.isMarkdown),
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt
+      };
+    } else {
+      return null;
+    }
+  } catch (error) {
+    console.error('getNoteById error:', error);
+    throw error;
   }
 };
 

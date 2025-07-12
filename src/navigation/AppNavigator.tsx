@@ -39,6 +39,7 @@ const AppNavigator: React.FC = () => {
       >
         <Stack.Screen name="Home" component={HomeScreen} />
         <Stack.Screen name="Editor" component={EditorScreen} />
+        <Stack.Screen name="NoteView" component={require('../screens/NoteViewScreen').default} />
         <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="ImportExport" component={ImportExportScreen} />
         <Stack.Screen name="About" component={AboutScreen} />

@@ -1,6 +1,6 @@
-import React from 'react';
-import { StyleSheet, View } from 'react-native';
-import { Card, Text, IconButton } from 'react-native-paper';
+import React, { memo, useMemo, useCallback, useState } from 'react';
+import { StyleSheet, View, TouchableOpacity, Animated, Dimensions } from 'react-native';
+import { Card, Text, IconButton, Chip, Surface } from 'react-native-paper';
 import { Note } from '../types';
 import { useTheme } from '../theme/ThemeContext';
 
@@ -8,74 +8,381 @@ interface NoteItemProps {
   note: Note;
   onPress: (noteId: number) => void;
   onDelete: (noteId: number) => void;
+  onEdit?: (noteId: number) => void;
+  showPreview?: boolean;
+  isSelected?: boolean;
+  showActions?: boolean;
+  compact?: boolean;
 }
 
-const NoteItem: React.FC<NoteItemProps> = ({ note, onPress, onDelete }) => {
-  const { theme, isDarkMode } = useTheme();
-  
-  // Format date for display
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const { width: screenWidth } = Dimensions.get('window');
+
+const NoteItem: React.FC<NoteItemProps> = memo(({ 
+  note, 
+  onPress, 
+  onDelete, 
+  onEdit, 
+  showPreview = true, 
+  isSelected = false,
+  showActions = true,
+  compact = false 
+}) => {
+  const { theme } = useTheme();
+  const [pressAnim] = useState(new Animated.Value(1));
+  const [showFullContent, setShowFullContent] = useState(false);
+
+  // Full date/time formatting for created and edited dates
+  const formatFullDate = (dateStr?: string) => {
+    if (!dateStr) return 'No date';
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return 'No date';
+    return date.toLocaleString([], {
+      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
   };
 
+  const createdDate = useMemo(() => formatFullDate(note.createdAt), [note.createdAt]);
+  const editedDate = useMemo(() => formatFullDate(note.updatedAt), [note.updatedAt]);
+
+  // Content preview with smart truncation
+  const previewContent = useMemo(() => {
+    if (!showPreview) return note.content;
+    
+    const maxLength = compact ? 80 : 120;
+    if (note.content.length <= maxLength) return note.content;
+    
+    // Find the last complete word within the limit
+    const truncated = note.content.substring(0, maxLength);
+    const lastSpace = truncated.lastIndexOf(' ');
+    return lastSpace > maxLength * 0.8 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
+  }, [note.content, showPreview, compact]);
+
+  // Word count calculation
+  const wordCount = useMemo(() => {
+    return note.content.trim().split(/\s+/).filter(word => word.length > 0).length;
+  }, [note.content]);
+
+  // Animated press handlers
+  const handlePressIn = useCallback(() => {
+    Animated.spring(pressAnim, {
+      toValue: 0.98,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 50,
+    }).start();
+  }, [pressAnim]);
+
+  const handlePressOut = useCallback(() => {
+    Animated.spring(pressAnim, {
+      toValue: 1,
+      useNativeDriver: true,
+      tension: 300,
+      friction: 50,
+    }).start();
+  }, [pressAnim]);
+
+  const handlePress = useCallback(() => {
+    onPress(note.id);
+  }, [note.id, onPress]);
+
+  const handleEdit = useCallback(() => {
+    onEdit?.(note.id);
+  }, [note.id, onEdit]);
+
+  const handleDelete = useCallback(() => {
+    onDelete(note.id);
+  }, [note.id, onDelete]);
+
+  const toggleContent = useCallback(() => {
+    setShowFullContent(!showFullContent);
+  }, [showFullContent]);
+
+  const dynamicStyles = useMemo(() => ({
+    card: {
+      backgroundColor: isSelected ? theme.colors.primaryContainer : theme.colors.surface,
+      borderColor: isSelected ? theme.colors.primary : 'transparent',
+      borderWidth: isSelected ? 2 : 0,
+    },
+    title: {
+      color: theme.colors.onSurface,
+    },
+    previewText: {
+      color: theme.colors.onSurfaceVariant,
+    },
+  }), [theme, isSelected]);
+
   return (
-    <Card 
-      style={[styles.card, { backgroundColor: theme.colors.surface }]} 
-      onPress={() => onPress(note.id)}
+    <Animated.View 
+      style={[
+        { transform: [{ scale: pressAnim }] },
+        styles.container
+      ]}
     >
-      <Card.Content style={styles.content}>
-        <View style={styles.textContainer}>
-          <Text variant="titleMedium" style={{ color: theme.colors.primary }}>
-            {note.title}
-          </Text>
-          <Text variant="bodyMedium" numberOfLines={2} style={{ color: theme.colors.text }}>
-            {note.content}
-          </Text>
-          <View style={styles.footer}>
-            <Text variant="bodySmall" style={{ color: theme.colors.text }}>
-              {formatDate(note.updatedAt)}
-            </Text>
-            {note.isMarkdown && (
-              <Text variant="bodySmall" style={{ color: theme.colors.accent }}>
-                Markdown
-              </Text>
+      <TouchableOpacity 
+        activeOpacity={0.9}
+        onPress={handlePress}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={styles.touchable}
+      >
+        <Card 
+          style={[
+            styles.card, 
+            dynamicStyles.card,
+            compact && styles.compactCard
+          ]}
+          elevation={isSelected ? 4 : 2}
+        > 
+          <Card.Content style={[styles.content, compact && styles.compactContent]}>
+            {/* Header Section */}
+            <View style={styles.header}>
+              <View style={styles.titleContainer}>
+                <Text 
+                  style={[
+                    styles.title,
+                    { color: theme.colors.primary },
+                    compact && { fontSize: 16, marginBottom: 2 }
+                  ]}
+                  numberOfLines={compact ? 1 : 2}
+                >
+                  {note.title || 'Untitled Note'}
+                </Text>
+                <View style={styles.metaRow}>
+                  <Chip
+                    mode="outlined"
+                    style={[
+                      styles.typeChip,
+                      {
+                        backgroundColor: note.isMarkdown ? theme.colors.accent + '22' : theme.colors.secondary + '22',
+                        borderColor: note.isMarkdown ? theme.colors.accent : theme.colors.secondary,
+                        paddingHorizontal: 6,  // less horizontal padding
+                        paddingVertical: 0,    // reduce vertical padding
+                        minHeight: 20,         // smaller minHeight to shrink chip height
+                        alignSelf: 'flex-start', // prevent stretching if parent uses flex
+                      },
+                    ]}
+                    textStyle={[
+                      styles.chipText,
+                      {
+                        color: note.isMarkdown ? theme.colors.accent : theme.colors.secondary,
+                        fontSize: compact ? 10 : 12, 
+                        lineHeight: compact ? 12 : 14,
+                        textAlign: 'center',
+                        includeFontPadding: false,  // critical for vertical alignment fix on Android
+                        textAlignVertical: 'center', // also helps vertical alignment
+                        marginBottom: compact ? 0 : 2, // adjust bottom margin for compact mode
+                        marginTop: compact ? 0 : 2, // adjust top margin for compact mode
+                      },
+                    ]}
+                    compact
+                  >
+                    {note.isMarkdown ? 'Markdown' : 'Text'}
+                  </Chip>
+
+                  <Text style={[styles.date, { color: theme.colors.text, fontWeight: '500', marginLeft: 8 }]}> 
+                    Created: {createdDate}
+                  </Text>
+                </View>
+              </View>
+              <View style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
+            </View>
+
+            {/* Content Preview */}
+            {showPreview && (
+              <View
+                style={[
+                  styles.previewContainer,
+                  {
+                    backgroundColor: `${theme.colors.primary}33`, // 20% opacity
+                    padding: 14,
+                    borderRadius: 12,
+                    justifyContent: 'center',
+                    alignItems: 'center',
+                  },
+                ]}
+              >
+                <Text
+                  style={{
+                    color: theme.colors.primary,
+                    fontWeight: 'bold',
+                    fontSize: 18,
+                    textAlign: 'center',
+                  }}
+                >
+                  Tap to view content
+                </Text>
+              </View>
             )}
-          </View>
-        </View>
-        <IconButton
-          icon="delete"
-          iconColor={theme.colors.error}
-          size={20}
-          onPress={(e) => {
-            e.stopPropagation();
-            onDelete(note.id);
-          }}
-        />
-      </Card.Content>
-    </Card>
+
+            {/* Actions Footer */}
+            {showActions && (
+              <View
+                style={[
+                  styles.actions,
+                  {
+                    flexDirection: 'row',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                  },
+                ]}
+              >
+                {/* Edited date on the left */}
+                <Text style={[styles.date, { color: theme.colors.text, fontWeight: '500' }]}>
+                  Edited: {editedDate && editedDate !== 'No date' ? editedDate : 'none'}
+                </Text>
+
+                {/* Action buttons on the right */}
+                <View style={[styles.actionButtons, { flexDirection: 'row', alignItems: 'center' }]}>
+                  {onEdit && (
+                    <IconButton
+                      icon="pencil-outline"
+                      iconColor={theme.colors.primary}
+                      size={20}
+                      onPress={handleEdit}
+                      style={styles.actionButton}
+                    />
+                  )}
+                  <IconButton
+                    icon="delete-outline"
+                    iconColor={theme.colors.error}
+                    size={20}
+                    onPress={handleDelete}
+                    style={styles.actionButton}
+                  />
+                  <IconButton
+                    icon="eye-outline"
+                    iconColor={theme.colors.outline}
+                    size={18}
+                    onPress={handlePress}
+                    style={styles.actionButton}
+                  />
+                </View>
+              </View>
+            )}
+          </Card.Content>
+        </Card>
+      </TouchableOpacity>
+    </Animated.View>
   );
-};
+});
 
 const styles = StyleSheet.create({
+  container: {
+    marginHorizontal: 12,
+    marginVertical: 6,
+  },
+  touchable: {
+    borderRadius: 16,
+  },
   card: {
-    marginVertical: 4,
-    marginHorizontal: 8,
+    borderRadius: 16,
     elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  compactCard: {
+    marginVertical: 2,
   },
   content: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    padding: 16,
   },
-  textContainer: {
+  compactContent: {
+    padding: 12,
+  },
+  header: {
+    marginBottom: 12,
+  },
+  titleContainer: {
     flex: 1,
   },
-  footer: {
+  title: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    lineHeight: 26,
+    letterSpacing: 0.1,
+  },
+  metaRow: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  date: {
+    fontSize: 13,
+    opacity: 0.8,
+    fontWeight: '500',
+    marginRight: 8,
+  },
+  badges: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  typeChip: {
+    height: 24,
+  },
+  wordChip: {
+    height: 24,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.2,
+  },
+  previewContainer: {
+    marginBottom: 8,
+  },
+  markdownPreview: {
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+    maxHeight: 100,
+    overflow: 'hidden',
+  },
+  markdownContent: {
+    fontSize: 14,
+    lineHeight: 20,
+  },
+  previewText: {
+    fontSize: 15,
+    lineHeight: 22,
+    marginBottom: 4,
+  },
+  expandButton: {
+    alignSelf: 'flex-start',
+    paddingVertical: 4,
+  },
+  expandText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  actions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center',
     marginTop: 8,
+    paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0,0,0,0.05)',
+  },
+  actionButtons: {
+    flexDirection: 'row',
+    gap: -8,
+  },
+  actionButton: {
+    margin: 0,
+  },
+  divider: {
+    height: 2,
+    borderRadius: 2,
+    marginTop: 4,
+    marginBottom: 8,
+    opacity: 0.12,
   },
 });
 
-export default NoteItem; 
+NoteItem.displayName = 'NoteItem';
+
+export default NoteItem;
