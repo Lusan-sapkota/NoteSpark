@@ -42,7 +42,7 @@ const AboutScreen = () => {
   };
 
   return (
-    <View
+    <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
     >
       <Header
@@ -127,7 +127,7 @@ const AboutScreen = () => {
           </Card.Content>
         </Card>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

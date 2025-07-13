@@ -602,11 +602,11 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   cardContent: {
-    paddingVertical: 28,
-    paddingHorizontal: 24,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
   },
   headerSection: {
-    marginBottom: 24,
+    marginBottom: 12,
   },
   titleRow: {
     flexDirection: 'row',
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   divider: {
-    marginVertical: 24,
+    marginVertical: 12,
     height: 1,
   },
   contentSection: {
@@ -677,13 +677,14 @@ const styles = StyleSheet.create({
   },
   fabContainer: {
     position: 'absolute',
-    bottom: Platform.OS === 'android' ? 32 : 0,
     left: 0,
     right: 0,
+    bottom: 0,
     paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'android' ? 28 : 16,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    paddingTop: 10,
+    paddingBottom: 10,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: {
@@ -698,6 +699,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
+    paddingBottom: Platform.OS === 'android' ? 18 : 8, // extra space above gesture nav
   },
   editButton: {
     borderRadius: 16,

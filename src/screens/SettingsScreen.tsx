@@ -9,6 +9,7 @@ import { RootStackParamList } from '../types';
 import { clearAllNotes } from '../storage/notes';
 import Header from '../components/Header';
 import { useTheme } from '../theme/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 
@@ -71,7 +72,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
         title="Settings"
         showBackButton
@@ -188,7 +189,7 @@ const SettingsScreen: React.FC = () => {
           </List.Section>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 

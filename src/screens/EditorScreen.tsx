@@ -153,7 +153,7 @@ const EditorScreen: React.FC = () => {
   const [linkUrl, setLinkUrl] = useState('');
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1 }]} edges={['left', 'right', 'bottom']}> 
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1 }]} edges={['left', 'right', 'bottom']}>
       <Header
         title={isEditing ? 'Edit Note' : 'New Note'}
         showBackButton
@@ -196,7 +196,7 @@ const EditorScreen: React.FC = () => {
       >
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Removed Add Image/Add Link buttons from top, now only in footer */}
@@ -456,7 +456,7 @@ const EditorScreen: React.FC = () => {
             </View>
           )}
         </ScrollView>
-        <View style={[styles.buttonContainer, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }]}> 
+        <View style={[styles.buttonContainer, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12 }]}> 
           <Button
             mode="contained"
             onPress={handleSave}
@@ -608,7 +608,9 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   buttonContainer: {
-    padding: 16,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 0,
   },
   saveButton: {
     borderRadius: 4,

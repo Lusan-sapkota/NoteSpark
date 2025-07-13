@@ -6,7 +6,6 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, deleteNote } from '../storage/database';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Note } from '../types';
 import Header from '../components/Header';
 import NoteItem from '../components/NoteItem';
@@ -283,7 +282,7 @@ const HomeScreen: React.FC = () => {
 
       <FAB
         icon="plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 24 }]}
+        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: Platform.OS === 'android' ? 40 : 20 }]}
         color="white"
         onPress={handleCreateNote}
       />

@@ -9,6 +9,7 @@ import { sendAppNotification } from '../utils/notifications';
 import { importNotesFromFile } from '../storage/database';
 import Header from '../components/Header';
 import { useTheme } from '../theme/ThemeContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type ImportExportScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ImportExport'>;
 
@@ -29,7 +30,11 @@ const ImportExportScreen: React.FC = () => {
       Alert.alert('Export Successful', `Notes exported to Downloads as ${fileName}`);
     } catch (error) {
       console.error('Failed to export notes:', error);
-      Alert.alert('Error', error.message || 'Failed to export notes. Please ensure storage permission is granted.');
+      const errorMessage =
+        typeof error === 'object' && error !== null && 'message' in error
+          ? String((error as { message?: string }).message)
+          : 'Failed to export notes. Please ensure storage permission is granted.';
+      Alert.alert('Error', errorMessage);
     }
     setIsExporting(false);
   };
@@ -112,7 +117,7 @@ const ImportExportScreen: React.FC = () => {
   };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
         title="Import/Export"
         showBackButton
@@ -201,7 +206,7 @@ const ImportExportScreen: React.FC = () => {
           </Card.Content>
         </Card>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
