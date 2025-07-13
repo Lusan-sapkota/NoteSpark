@@ -100,7 +100,10 @@ const ImportExportScreen: React.FC = () => {
               ]);
             } catch (error) {
               setFileImporting(false);
-              Alert.alert('Error', error.message || 'Failed to import notes from file. Please check your JSON file and permissions.');
+              const errorMessage = typeof error === 'object' && error !== null && 'message' in error
+                ? String((error as { message?: string }).message)
+                : 'Failed to import notes from file. Please check your JSON file and permissions.';
+              Alert.alert('Error', errorMessage);
             }
           },
         },
@@ -132,6 +135,7 @@ const ImportExportScreen: React.FC = () => {
               loading={isExporting}
               disabled={isExporting}
               style={{ backgroundColor: theme.colors.primary }}
+              labelStyle={{ color: '#fff' }}
             >
               Export Notes
             </Button>
