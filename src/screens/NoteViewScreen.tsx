@@ -3,6 +3,7 @@ import { RefreshControl } from 'react-native';
 import { InteractionManager } from 'react-native';
 import { Clipboard } from 'react-native';
 import { View, StyleSheet, ScrollView, Alert, Platform, Image, Modal, TouchableOpacity, Dimensions } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Text, IconButton, Card, Divider, Chip } from 'react-native-paper';
@@ -112,7 +113,7 @@ const NoteViewScreen: React.FC = () => {
 
   if (!note) {
     return (
-      <View style={[styles.container, { backgroundColor: theme.colors.background }]}> 
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1 }]} edges={['left', 'right', 'bottom']}> 
         <Header title="View Note" showBackButton onBackPress={() => {
           InteractionManager.runAfterInteractions(() => {
             setTimeout(() => {
@@ -123,12 +124,12 @@ const NoteViewScreen: React.FC = () => {
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: theme.colors.text }]}>Loading...</Text>
         </View>
-      </View>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}> 
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1 }]} edges={['left', 'right', 'bottom']}> 
       <Header title="View Note" showBackButton onBackPress={() => {
         InteractionManager.runAfterInteractions(() => {
           setTimeout(() => {
@@ -136,11 +137,10 @@ const NoteViewScreen: React.FC = () => {
           }, 120);
         });
       }} />
-      
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={reloadNote} tintColor={theme.colors.primary} />
         }
@@ -562,8 +562,9 @@ const NoteViewScreen: React.FC = () => {
           </TouchableOpacity>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
+    
 };
 
 const styles = StyleSheet.create({

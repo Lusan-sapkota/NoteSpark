@@ -14,6 +14,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
 import React, { useState, useEffect } from 'react';
 import { InteractionManager } from 'react-native';
 import { StyleSheet, View, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, Modal, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -152,7 +153,7 @@ const EditorScreen: React.FC = () => {
   const [linkUrl, setLinkUrl] = useState('');
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}> 
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1 }]} edges={['left', 'right', 'bottom']}> 
       <Header
         title={isEditing ? 'Edit Note' : 'New Note'}
         showBackButton
@@ -195,7 +196,7 @@ const EditorScreen: React.FC = () => {
       >
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={{ flexGrow: 1 }}
+          contentContainerStyle={{ flexGrow: 1, paddingBottom: 100 }}
           keyboardShouldPersistTaps="handled"
         >
           {/* Removed Add Image/Add Link buttons from top, now only in footer */}
@@ -520,8 +521,9 @@ const EditorScreen: React.FC = () => {
           </View>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </SafeAreaView>
   );
+
 };
 
 const styles = StyleSheet.create({

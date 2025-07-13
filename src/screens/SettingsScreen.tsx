@@ -19,6 +19,7 @@ const SettingsScreen: React.FC = () => {
   const netInfo = useNetInfo();
   // Handler for checking and applying updates
   const handleCheckUpdate = async () => {
+    if (checkingUpdate) return; // Prevent double-tap
     if (!netInfo.isConnected) {
       Alert.alert(
         'No Internet Connection',
@@ -29,35 +30,43 @@ const SettingsScreen: React.FC = () => {
     setCheckingUpdate(true);
     try {
       const update = await Updates.checkForUpdateAsync();
-      setCheckingUpdate(false);
       if (update.isAvailable) {
         Alert.alert(
           'Update Available',
-          'A new version of NoteSpark is available. Would you like to update now?',
+          'A new version of NoteSpark is available. The app will update now.',
           [
-            { text: 'Later', style: 'cancel' },
-            { text: 'Update Now', style: 'default', onPress: async () => {
+            {
+              text: 'OK',
+              onPress: async () => {
                 try {
                   setCheckingUpdate(true);
                   await Updates.fetchUpdateAsync();
                   setCheckingUpdate(false);
-                  Alert.alert('Update Ready', 'The app will now reload to apply the update.', [
-                    { text: 'OK', onPress: () => Updates.reloadAsync() }
-                  ]);
+                  Updates.reloadAsync();
                 } catch (err) {
                   setCheckingUpdate(false);
-                  Alert.alert('Update Failed', 'Failed to download the update. Please try again later.');
+                  let message = 'Failed to download the update.';
+                  if (err instanceof Error) {
+                    message += `\nReason: ${err.message}`;
+                  }
+                  Alert.alert('Update Failed', message + '\nPlease check your internet connection and try again.');
                 }
               }
             }
-          ]
+          ],
+          { cancelable: false }
         );
       } else {
+        setCheckingUpdate(false);
         Alert.alert('Up to Date', 'You already have the latest version of NoteSpark.');
       }
     } catch (e) {
       setCheckingUpdate(false);
-      Alert.alert('Error', 'Could not check for updates.');
+      let message = 'Could not check for updates.';
+      if (e instanceof Error) {
+        message += `\nReason: ${e.message}`;
+      }
+      Alert.alert('Update Error', message + '\nPlease check your internet connection and try again.');
     }
   };
 

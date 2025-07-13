@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { StyleSheet, View, FlatList, Alert, TextInput } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { FAB, IconButton, Text } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -84,7 +85,7 @@ const HomeScreen: React.FC = () => {
   }, [notes, searchText, searchType, filterMarkdown, sortType, pinned]);
 
   const handleNotePress = (noteId: number) => {
-    navigation.navigate('NoteView', { noteId });
+    navigation.navigate('NoteView', { noteId: noteId.toString() });
   };
 
   const handleDeleteNote = (noteId: number) => {
@@ -118,7 +119,7 @@ const HomeScreen: React.FC = () => {
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Edit',
-          onPress: () => navigation.navigate('Editor', { noteId }),
+          onPress: () => navigation.navigate('Editor', { noteId: noteId.toString() }),
         },
       ]
     );
@@ -150,7 +151,7 @@ const HomeScreen: React.FC = () => {
 
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}> 
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1 }]} edges={['left', 'right', 'bottom']}> 
       <Header 
         title="NoteSpark"
         rightActions={
@@ -253,7 +254,7 @@ const HomeScreen: React.FC = () => {
 
       {/* Note list or empty state */}
       {filteredNotes.length === 0 ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40, paddingBottom: 100 }}>
           <IconButton icon="note-plus" size={64} iconColor={theme.colors.primary} />
           <Text style={{ color: theme.colors.text, fontSize: 20, fontWeight: 'bold', marginTop: 12 }}>Create your first note</Text>
           <Text style={{ color: theme.colors.text, fontSize: 15, marginTop: 6, marginBottom: 18, opacity: 0.7 }}>Start organizing your thoughts and ideas!</Text>
@@ -270,7 +271,7 @@ const HomeScreen: React.FC = () => {
           data={filteredNotes}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderNoteItem}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
           refreshing={refreshing}
           onRefresh={handleRefresh}
           initialNumToRender={10}
@@ -282,11 +283,11 @@ const HomeScreen: React.FC = () => {
 
       <FAB
         icon="plus"
-        style={[styles.fab, { backgroundColor: theme.colors.primary }]}
+        style={[styles.fab, { backgroundColor: theme.colors.primary, bottom: 24 }]}
         color="white"
         onPress={handleCreateNote}
       />
-    </View>
+    </SafeAreaView>
   );
 };
 

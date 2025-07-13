@@ -30,6 +30,7 @@ const Header: React.FC<HeaderProps> = ({
   return (
     <Appbar.Header
       style={{ backgroundColor: theme.colors.surface }}
+      statusBarHeight={0}
     >
       {showBackButton && (
         <Appbar.BackAction
