@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { StyleSheet, View, FlatList, Alert, TextInput } from 'react-native';
+import { StyleSheet, View, FlatList, Alert, TextInput, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { FAB, IconButton, Text } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
@@ -294,6 +294,7 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   headerActions: {
     flexDirection: 'row',
@@ -401,7 +402,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     margin: 16,
     right: 0,
-    bottom: 0,
+    bottom: Platform.OS === 'android' ? 32 : 16,
   },
 });
 

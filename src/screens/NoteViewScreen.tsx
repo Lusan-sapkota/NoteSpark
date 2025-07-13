@@ -2,8 +2,8 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { RefreshControl } from 'react-native';
 import { InteractionManager } from 'react-native';
 import { Clipboard } from 'react-native';
-import { View, StyleSheet, ScrollView, Alert, Platform, Image, Modal, TouchableOpacity, Dimensions } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { View, StyleSheet, ScrollView, Alert, Platform, Image, Modal, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Text, IconButton, Card, Divider, Chip } from 'react-native-paper';
@@ -25,6 +25,7 @@ const NoteViewScreen: React.FC = () => {
   const navigation = useNavigation<NoteViewScreenNavigationProp>();
   const route = useRoute<NoteViewScreenRouteProp>();
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
   const [note, setNote] = useState<Note | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
@@ -129,7 +130,7 @@ const NoteViewScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1 }]} edges={['left', 'right', 'bottom']}> 
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1, paddingBottom: insets.bottom }]} edges={['left', 'right', 'bottom']}> 
       <Header title="View Note" showBackButton onBackPress={() => {
         InteractionManager.runAfterInteractions(() => {
           setTimeout(() => {
@@ -467,7 +468,7 @@ const NoteViewScreen: React.FC = () => {
 
       {/* Floating Action Buttons */}
       <View style={[styles.fabContainer, { backgroundColor: theme.colors.surface }]}>
-        <View style={styles.fabRow}>
+        <View style={[styles.fabRow, { paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 32 : 0) }]}> 
           {/* Copy button (always shown) */}
           <IconButton
             icon="content-copy"
@@ -570,6 +571,7 @@ const NoteViewScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   // ...existing code...
   emptyLine: {
@@ -675,11 +677,11 @@ const styles = StyleSheet.create({
   },
   fabContainer: {
     position: 'absolute',
-    bottom: 0,
+    bottom: Platform.OS === 'android' ? 32 : 0,
     left: 0,
     right: 0,
     paddingHorizontal: 16,
-    paddingVertical: 16,
+    paddingVertical: Platform.OS === 'android' ? 28 : 16,
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     elevation: 8,

@@ -13,7 +13,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
 }
 import React, { useState, useEffect } from 'react';
 import { InteractionManager } from 'react-native';
-import { StyleSheet, View, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, Modal, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, Modal, TouchableOpacity, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -529,6 +529,7 @@ const EditorScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   timestampContainer: {
     marginHorizontal: 16,
