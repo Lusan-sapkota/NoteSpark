@@ -26,6 +26,7 @@ const slides = [
 ];
 
 const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
+  const [finished, setFinished] = useState(false);
   const { theme } = useTheme();
   const [step, setStep] = useState(0);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -78,10 +79,17 @@ const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
   }, [step, fadeAnim, scaleAnim, slideAnim, logoScaleAnim]);
 
   const handleNext = () => {
+    console.log('Onboarding: handleNext pressed, step:', step);
     if (step < slides.length - 1) {
       setStep(step + 1);
     } else {
-      onFinish();
+      if (!finished) {
+        setFinished(true);
+        console.log('Onboarding: calling onFinish from Get Started');
+        setTimeout(() => {
+          onFinish();
+        }, 150);
+      }
     }
   };
 
@@ -96,11 +104,11 @@ const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
-      <TouchableOpacity style={styles.skipBtn} onPress={onFinish}>
-        <Text style={[styles.skipText, { color: theme.colors.disabled }]}>Skip</Text>
+      <TouchableOpacity style={styles.skipBtn} onPress={() => { setTimeout(onFinish, 150); }}>
+        <Text style={[styles.skipText, { color: theme.colors.text }]}>Skip</Text>
       </TouchableOpacity>
       <Animated.View style={[animatedStyle, styles.centered]}>
-        <Animated.View style={[styles.logoContainer, { transform: [{ scale: logoScaleAnim }] }]}> 
+        <Animated.View style={[styles.logoContainer, { backgroundColor: theme.colors.surface, transform: [{ scale: logoScaleAnim }] }]}> 
           <Image source={LOGO} style={styles.logo} />
         </Animated.View>
         <Text style={[styles.title, { color: theme.colors.primary }]}>{slides[step].title}</Text>
@@ -111,10 +119,10 @@ const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
           {slides.map((_, i) => (
             <View
               key={i}
-              style={[styles.dot, { backgroundColor: i === step ? theme.colors.primary : theme.colors.disabled }]} />
+              style={[styles.dot, { backgroundColor: i === step ? theme.colors.primary : theme.colors.border }]} />
           ))}
         </View>
-        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={handleNext}>
+        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={handleNext} disabled={finished}>
           <Text style={[styles.buttonText, { color: theme.colors.background }]}> 
             {step === slides.length - 1 ? 'Get Started' : 'Next'}
           </Text>
@@ -141,7 +149,7 @@ const styles = StyleSheet.create({
     width: 130,
     height: 130,
     borderRadius: 65,
-    backgroundColor: '#fff',
+    // backgroundColor: '#fff', // now set dynamically
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,

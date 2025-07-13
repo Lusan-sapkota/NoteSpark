@@ -21,20 +21,17 @@ export const requestStoragePermission = async (): Promise<boolean> => {
 // Export notes to device storage as a JSON file
 export const exportNotesToFile = async (): Promise<string> => {
   try {
-    const hasPermission = await requestStoragePermission();
-    if (!hasPermission) throw new Error('Storage permission not granted');
     const json = await exportNotesAsJson();
     const fileName = `NoteSpark-Export-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
     const fileUri = FileSystem.cacheDirectory + fileName;
     await FileSystem.writeAsStringAsync(fileUri, json, { encoding: FileSystem.EncodingType.UTF8 });
-    // Save to device's Downloads/Documents via MediaLibrary
-    const asset = await MediaLibrary.createAssetAsync(fileUri);
-    const album = await MediaLibrary.getAlbumAsync('Download');
-    if (album) {
-      await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
-    } else {
-      await MediaLibrary.createAlbumAsync('Download', asset, false);
-    }
+    // Use Share dialog to let user save/send the file
+    const Share = require('react-native').Share;
+    await Share.share({
+      url: fileUri,
+      title: 'NoteSpark Notes Backup',
+      message: 'Your notes backup file. To save this file to Downloads or device storage, select a file manager or cloud storage app in the share list. If you do not see a file manager, please install one from the Play Store or App Store. If you have multiple file managers, try different ones. You can also save to Google Drive, Dropbox, or other cloud apps.'
+    });
     return fileName;
   } catch (error) {
     throw error;

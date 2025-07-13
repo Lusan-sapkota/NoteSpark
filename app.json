@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#ef5821"
     },
     "ios": {
       "supportsTablet": true
@@ -18,7 +18,7 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#ef5821"
       },
       "edgeToEdgeEnabled": true,
       "package": "com.lusansapkota.notespark"
@@ -34,6 +34,12 @@
         "projectId": "c86c2cb6-77d2-46f6-bda0-2fde1df96924"
       }
     },
-    "owner": "lusansapkota"
+    "owner": "lusansapkota",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/c86c2cb6-77d2-46f6-bda0-2fde1df96924"
+    }
   }
 }

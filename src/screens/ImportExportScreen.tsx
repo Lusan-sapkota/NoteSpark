@@ -20,22 +20,18 @@ const ImportExportScreen: React.FC = () => {
   const [isImporting, setIsImporting] = useState(false);
   const [fileImporting, setFileImporting] = useState(false);
 
+  const { exportNotesToFile } = require('../storage/database');
   const handleExport = async () => {
+    setIsExporting(true);
     try {
-      setIsExporting(true);
-      const jsonData = await exportNotesAsJson();
-      
-      await Share.share({
-        message: jsonData,
-        title: 'NoteSpark Notes Backup',
-      });
-      await sendAppNotification('Notes Exported', 'Your notes have been exported successfully!');
-      setIsExporting(false);
+      const fileName = await exportNotesToFile();
+      await sendAppNotification('Notes Exported', `Your notes have been exported to Downloads as ${fileName}`);
+      Alert.alert('Export Successful', `Notes exported to Downloads as ${fileName}`);
     } catch (error) {
       console.error('Failed to export notes:', error);
-      Alert.alert('Error', 'Failed to export notes');
-      setIsExporting(false);
+      Alert.alert('Error', error.message || 'Failed to export notes. Please ensure storage permission is granted.');
     }
+    setIsExporting(false);
   };
 
   const handleImport = async () => {
@@ -78,7 +74,13 @@ const ImportExportScreen: React.FC = () => {
     );
   };
 
+  const { requestStoragePermission } = require('../storage/database');
   const handleFileImport = async () => {
+    const hasPermission = await requestStoragePermission();
+    if (!hasPermission) {
+      Alert.alert('Permission Required', 'Storage permission is required to import notes from file.');
+      return;
+    }
     Alert.alert(
       'Import Notes from File',
       'Importing will replace all existing notes. Are you sure you want to continue?',
@@ -98,7 +100,7 @@ const ImportExportScreen: React.FC = () => {
               ]);
             } catch (error) {
               setFileImporting(false);
-              Alert.alert('Error', 'Failed to import notes from file. Please check your JSON file.');
+              Alert.alert('Error', error.message || 'Failed to import notes from file. Please check your JSON file and permissions.');
             }
           },
         },
@@ -122,7 +124,7 @@ const ImportExportScreen: React.FC = () => {
           />
           <Card.Content>
             <Text style={{ color: theme.colors.text, marginBottom: 16 }}>
-              Export all your notes as a JSON file that you can save as a backup or transfer to another device.
+              Export all your notes as a JSON file. The file will be saved to your device's Downloads folder. Storage permission is required.
             </Text>
             <Button
               mode="contained"

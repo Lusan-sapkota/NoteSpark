@@ -5,6 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, deleteNote } from '../storage/database';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Note } from '../types';
 import Header from '../components/Header';
 import NoteItem from '../components/NoteItem';
@@ -147,6 +148,7 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('Editor');
   };
 
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}> 
       <Header 
@@ -194,116 +196,89 @@ const HomeScreen: React.FC = () => {
             onPress={() => setShowFilters(prev => !prev)}
           />
         </View>
-        {/* Sorting row */}
-        <View style={styles.sortRow}>
-          <Text style={{ color: theme.colors.text, fontWeight: 'bold', marginRight: 8 }}>Sort by:</Text>
-          <FAB
-            label="Last Edited"
-            small
-            style={[
-              styles.sortFab,
-              sortType === 'edited' && { backgroundColor: theme.colors.primary }
-            ]}
-            color={sortType === 'edited' ? 'white' : theme.colors.text}
-            onPress={() => setSortType('edited')}
-          />
-          <FAB
-            label="Last Created"
-            small
-            style={[
-              styles.sortFab,
-              sortType === 'created' && { backgroundColor: theme.colors.primary }
-            ]}
-            color={sortType === 'created' ? 'white' : theme.colors.text}
-            onPress={() => setSortType('created')}
-          />
+        {/* Centered and dynamic sorting row */}
+        <View style={[styles.sortRow, { justifyContent: 'center', marginTop: 10 }]}> 
+          {['edited', 'created'].map(type => (
+            <FAB
+              key={type}
+              label={type === 'edited' ? 'Last Edited' : 'Last Created'}
+              small
+              style={[
+                styles.sortFab,
+                sortType === type && { backgroundColor: theme.colors.primary },
+                { marginHorizontal: 8 }
+              ]}
+              color={sortType === type ? 'white' : theme.colors.text}
+              onPress={() => setSortType(type as 'edited' | 'created')}
+            />
+          ))}
         </View>
         {showFilters && (
-          <View
-            style={styles.filterMenu}
-          >
+          <View style={styles.filterMenu}>
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>Search In</Text>
-              <FAB
-                label="All"
-                small
-                style={[
-                  styles.filterFab,
-                  searchType === 'all' && { backgroundColor: theme.colors.primary }
-                ]}
-                color={searchType === 'all' ? 'white' : theme.colors.text}
-                onPress={() => setSearchType('all')}
-              />
-              <FAB
-                label="Title"
-                small
-                style={[
-                  styles.filterFab,
-                  searchType === 'title' && { backgroundColor: theme.colors.primary }
-                ]}
-                color={searchType === 'title' ? 'white' : theme.colors.text}
-                onPress={() => setSearchType('title')}
-              />
-              <FAB
-                label="Content"
-                small
-                style={[
-                  styles.filterFab,
-                  searchType === 'content' && { backgroundColor: theme.colors.primary }
-                ]}
-                color={searchType === 'content' ? 'white' : theme.colors.text}
-                onPress={() => setSearchType('content')}
-              />
+              {['all', 'title', 'content'].map(type => (
+                <FAB
+                  key={type}
+                  label={type.charAt(0).toUpperCase() + type.slice(1)}
+                  small
+                  style={[
+                    styles.filterFab,
+                    searchType === type && { backgroundColor: theme.colors.primary }
+                  ]}
+                  color={searchType === type ? 'white' : theme.colors.text}
+                  onPress={() => setSearchType(type as 'all' | 'title' | 'content')}
+                />
+              ))}
             </View>
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>Type</Text>
-              <FAB
-                label="All Types"
-                small
-                style={[
-                  styles.filterFab,
-                  filterMarkdown === 'all' && { backgroundColor: theme.colors.secondary }
-                ]}
-                color={filterMarkdown === 'all' ? 'black' : theme.colors.text}
-                onPress={() => setFilterMarkdown('all')}
-              />
-              <FAB
-                label="Markdown"
-                small
-                style={[
-                  styles.filterFab,
-                  filterMarkdown === 'markdown' && { backgroundColor: theme.colors.secondary }
-                ]}
-                color={filterMarkdown === 'markdown' ? 'black' : theme.colors.text}
-                onPress={() => setFilterMarkdown('markdown')}
-              />
-              <FAB
-                label="Text"
-                small
-                style={[
-                  styles.filterFab,
-                  filterMarkdown === 'text' && { backgroundColor: theme.colors.secondary }
-                ]}
-                color={filterMarkdown === 'text' ? 'black' : theme.colors.text}
-                onPress={() => setFilterMarkdown('text')}
-              />
+              {['all', 'markdown', 'text'].map(type => (
+                <FAB
+                  key={type}
+                  label={type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
+                  small
+                  style={[
+                    styles.filterFab,
+                    filterMarkdown === type && { backgroundColor: theme.colors.secondary }
+                  ]}
+                  color={filterMarkdown === type ? 'black' : theme.colors.text}
+                  onPress={() => setFilterMarkdown(type as 'all' | 'markdown' | 'text')}
+                />
+              ))}
             </View>
           </View>
         )}
       </View>
 
-      <FlatList
-        data={filteredNotes}
-        keyExtractor={(item) => item.id.toString()}
-        renderItem={renderNoteItem}
-        contentContainerStyle={styles.listContent}
-        refreshing={refreshing}
-        onRefresh={handleRefresh}
-        initialNumToRender={10}
-        maxToRenderPerBatch={10}
-        windowSize={5}
-        removeClippedSubviews
-      />
+      {/* Note list or empty state */}
+      {filteredNotes.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40 }}>
+          <IconButton icon="note-plus" size={64} iconColor={theme.colors.primary} />
+          <Text style={{ color: theme.colors.text, fontSize: 20, fontWeight: 'bold', marginTop: 12 }}>Create your first note</Text>
+          <Text style={{ color: theme.colors.text, fontSize: 15, marginTop: 6, marginBottom: 18, opacity: 0.7 }}>Start organizing your thoughts and ideas!</Text>
+          <FAB
+            icon="plus"
+            label="Create Note"
+            style={{ backgroundColor: theme.colors.primary, marginTop: 8, paddingHorizontal: 24 }}
+            color="white"
+            onPress={handleCreateNote}
+          />
+        </View>
+      ) : (
+        <FlatList
+          data={filteredNotes}
+          keyExtractor={(item) => item.id.toString()}
+          renderItem={renderNoteItem}
+          contentContainerStyle={styles.listContent}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          initialNumToRender={10}
+          maxToRenderPerBatch={10}
+          windowSize={5}
+          removeClippedSubviews
+        />
+      )}
 
       <FAB
         icon="plus"

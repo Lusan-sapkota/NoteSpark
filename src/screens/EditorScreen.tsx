@@ -35,6 +35,7 @@ const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
   const route = useRoute<EditorScreenRouteProp>();
   const { theme } = useTheme();
+  const [saving, setSaving] = useState(false);
 
   // Safely extract noteId from params
   const { noteId } = route.params ?? {};
@@ -99,10 +100,12 @@ const EditorScreen: React.FC = () => {
   }, [noteId]);
 
   const handleSave = async () => {
+    if (saving) return;
     if (!title.trim()) {
       Alert.alert('Error', 'Title cannot be empty');
       return;
     }
+    setSaving(true);
     try {
       if (isEditing && noteId) {
         await updateNote({
@@ -132,10 +135,12 @@ const EditorScreen: React.FC = () => {
       // Smooth navigation back
       InteractionManager.runAfterInteractions(() => {
         setTimeout(() => {
+          setSaving(false);
           navigation.goBack();
         }, 120);
       });
     } catch (error) {
+      setSaving(false);
       console.error('Failed to save note:', error);
       Alert.alert('Error', 'Failed to save note');
     }
@@ -463,6 +468,8 @@ const EditorScreen: React.FC = () => {
               }
             ]}
             labelStyle={{ color: 'white', fontSize: 18 }}
+            loading={saving}
+            disabled={saving}
           >
             Save
           </Button>
