@@ -50,6 +50,7 @@
 - 🔒 **Fully offline** — All notes are stored locally. No internet required.
 - 🛡️ **Privacy-first** — No accounts, no tracking, no ads. Your notes never leave your device.
 - �️ **Import/Export** — Backup and restore your notes easily.
+- 🗂️ **Import/Export history** — View past import/export actions, download history as PDF, or clear records.
 - 🧭 **Easy navigation** — Clean navigation and search for quick access to your ideas.
 - 📋 **Copy & share** — Copy note content or share with other apps easily.
 - 🔔 **Notification system** — Get reminders and notifications for your important notes.

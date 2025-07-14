@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { StyleSheet, View, FlatList, Alert, TextInput, Platform, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { FAB, IconButton, Text } from 'react-native-paper';
+import { FAB, IconButton, Text, ActivityIndicator } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
@@ -17,6 +17,7 @@ const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { theme } = useTheme();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [searchType, setSearchType] = useState<'all' | 'title' | 'content'>('all');
@@ -28,10 +29,13 @@ const HomeScreen: React.FC = () => {
 
   const loadNotes = async () => {
     try {
+      setLoading(true);
       const fetchedNotes = await getNotes();
       setNotes(fetchedNotes);
       // Optionally, load pin state from storage here
+      setLoading(false);
     } catch (error) {
+      setLoading(false);
       console.error('Failed to load notes:', error);
       Alert.alert('Error', 'Failed to load notes');
     }
@@ -255,7 +259,11 @@ const HomeScreen: React.FC = () => {
       </View>
 
       {/* Note list or empty state */}
-      {filteredNotes.length === 0 ? (
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40, paddingBottom: 100 }}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : filteredNotes.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40, paddingBottom: 100 }}>
           <IconButton icon="note-plus" size={64} iconColor={theme.colors.primary} />
           <Text style={{ color: theme.colors.text, fontSize: 20, fontWeight: 'bold', marginTop: 12 }}>Create your first note</Text>

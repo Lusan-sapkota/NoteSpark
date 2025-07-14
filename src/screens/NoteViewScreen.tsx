@@ -143,7 +143,7 @@ const NoteViewScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={reloadNote} tintColor={theme.colors.primary} />
+          <RefreshControl refreshing={refreshing} onRefresh={reloadNote} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
         }
       >
         {/* Main Note Card */}
@@ -495,8 +495,10 @@ const NoteViewScreen: React.FC = () => {
             size={24}
             onPress={() => {
               Alert.alert(
-                showRaw ? 'Edit Plain Text' : 'Edit Markdown',
-                `Are you sure you want to edit this note in ${showRaw ? 'plain text' : 'markdown'} mode?`,
+                note.isMarkdown ? (showRaw ? 'Edit Plain Text' : 'Edit Markdown') : 'Edit Note',
+                note.isMarkdown
+                  ? `Are you sure you want to edit this note in ${showRaw ? 'plain text' : 'markdown'} mode?`
+                  : 'Are you sure you want to edit this note?',
                 [
                   { text: 'Cancel', style: 'cancel' },
                   { text: 'Edit', style: 'default', onPress: handleEdit }

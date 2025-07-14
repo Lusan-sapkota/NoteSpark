@@ -14,6 +14,7 @@ All notable changes to NoteSpark will be documented in this file.
 - Attach images to notes (file links)
 - Auto-detect and highlight links and media
 - Import/export notes for backup and restore
+- Introduced import/export history, allowing users to view past actions and download records as PDF or clear it
 - Beautiful UI with dark mode support
 - Fully offline, privacy-first (no accounts, no ads)
 - Copy/share notes with other apps
