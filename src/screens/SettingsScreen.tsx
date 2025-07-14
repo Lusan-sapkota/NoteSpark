@@ -194,6 +194,47 @@ const SettingsScreen: React.FC = () => {
               left={(props) => <List.Icon {...props} icon="information" color={theme.colors.primary} />}
               onPress={() => navigation.navigate('About')}
             />
+        {/* Future Improvements Section */}
+        <List.Subheader style={[styles.subheader, { color: theme.colors.primary, marginTop: 16 }]}>Future Improvements</List.Subheader>
+        <List.Item
+          title="What's Next?"
+          description="Vault encryption, secure sync, and no cloud web are coming."
+          titleStyle={{fontSize: 17 }}
+          descriptionStyle={{ color: theme.colors.text + 'AA', fontSize: 12 }}
+          left={(props) => (
+            <View style={{ justifyContent: 'center' }}>
+              <List.Icon {...props} icon="rocket-launch" color={theme.colors.primary} />
+            </View>
+          )}
+          right={(props) => (
+            <View style={{ justifyContent: 'center' }}>
+              <List.Icon {...props} icon="chevron-right" color={theme.colors.outline} />
+            </View>
+          )}
+          onPress={() => {
+            Alert.alert(
+              'Coming Soon!!!',
+              'Upcoming features include:\n\n- Vault encryption\n- Secure sync between device and web\n- A fully NOCLOUD-CAPABLE web interface\n\nThese additions are focused on improving security, portability, and accessibility.',
+              [
+                {
+                  text: 'OK',
+                  style: 'cancel',
+                },
+                {
+                  text: 'Learn More',
+                  style: 'default',
+                  onPress: () => {
+                    const url = 'https://notespark.lusansapkota.com.np';
+                    import('react-native').then(({ Linking }) => {
+                      Linking.openURL(url);
+                    });
+                  },
+                },
+              ]
+            );
+          }}
+        />
+
           </List.Section>
         </View>
       </ScrollView>

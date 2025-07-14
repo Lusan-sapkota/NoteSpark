@@ -67,7 +67,7 @@ const AboutScreen = () => {
         <Text style={[styles.description, { color: theme.colors.onSurfaceVariant }]}>
           NoteSpark is a modern, offline-first note-taking app designed for speed and privacy. 
           Enjoy Markdown support, seamless JSON export/import, and robust local storage powered by SQLite. 
-          Capture, organize, and manage your notes effortlessly—no cloud required.
+          Capture, organize, and manage your notes effortlessly, no cloud required.
         </Text>
 
         <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} mode="contained">
@@ -92,7 +92,7 @@ const AboutScreen = () => {
               style={[styles.link, { color: theme.colors.primary }]}
               onPress={() => openLink(WEBSITE)}
             >
-              lusansapkota.com.np
+              notespark.lusansapkota.com.np
             </Text>
 
             <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
