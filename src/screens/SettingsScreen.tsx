@@ -18,9 +18,26 @@ const SettingsScreen: React.FC = () => {
   const { theme, themeType, setThemeType } = useTheme();
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const netInfo = useNetInfo();
-  // Handler for checking and applying updates
+
+  const applyUpdate = async () => {
+    try {
+      setCheckingUpdate(true);
+      await Updates.fetchUpdateAsync();
+      setCheckingUpdate(false);
+      await Updates.reloadAsync();
+    } catch (err) {
+      setCheckingUpdate(false);
+      let message = 'Failed to download the update.';
+      if (err instanceof Error) {
+        message += `\nReason: ${err.message}`;
+      }
+      Alert.alert('Update Failed', message + '\nPlease check your internet connection and try again.');
+    }
+  };
+
   const handleCheckUpdate = async () => {
-    if (checkingUpdate) return; // Prevent double-tap
+    if (checkingUpdate) return;
+
     if (!netInfo.isConnected) {
       Alert.alert(
         'No Internet Connection',
@@ -28,33 +45,17 @@ const SettingsScreen: React.FC = () => {
       );
       return;
     }
+
     setCheckingUpdate(true);
+
     try {
       const update = await Updates.checkForUpdateAsync();
       if (update.isAvailable) {
+        setCheckingUpdate(false);
         Alert.alert(
           'Update Available',
           'A new version of NoteSpark is available. The app will update now.',
-          [
-            {
-              text: 'OK',
-              onPress: async () => {
-                try {
-                  setCheckingUpdate(true);
-                  await Updates.fetchUpdateAsync();
-                  setCheckingUpdate(false);
-                  Updates.reloadAsync();
-                } catch (err) {
-                  setCheckingUpdate(false);
-                  let message = 'Failed to download the update.';
-                  if (err instanceof Error) {
-                    message += `\nReason: ${err.message}`;
-                  }
-                  Alert.alert('Update Failed', message + '\nPlease check your internet connection and try again.');
-                }
-              }
-            }
-          ],
+          [{ text: 'OK', onPress: applyUpdate }],
           { cancelable: false }
         );
       } else {
@@ -71,6 +72,7 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <Header
@@ -84,18 +86,24 @@ const SettingsScreen: React.FC = () => {
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.contentWrapper}>
-          <List.Section>
-            <List.Subheader style={[styles.subheader, { color: theme.colors.primary }]}>App Updates</List.Subheader>
-            <List.Item
-              title="Check for Updates"
-              description="Get the latest features and fixes"
-              titleStyle={{ color: theme.colors.primary }}
-              descriptionStyle={{ color: theme.colors.text + 'AA' }}
-              left={(props) => <List.Icon {...props} icon="update" color={theme.colors.primary} />}
-              onPress={handleCheckUpdate}
-              right={() => checkingUpdate ? <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 16 }} /> : null}
-            />
-          </List.Section>
+          <List.Subheader style={[styles.subheader, { color: theme.colors.primary }]}>App Updates</List.Subheader>
+          <List.Item
+            title="Check for Updates"
+            description="Get the latest features and fixes"
+            titleStyle={{ color: theme.colors.primary }}
+            descriptionStyle={{ color: theme.colors.text + 'AA' }}
+            left={(props) => <List.Icon {...props} icon="update" color={theme.colors.primary} />}
+            onPress={checkingUpdate ? undefined : handleCheckUpdate}
+            disabled={checkingUpdate}
+            right={() =>
+              checkingUpdate ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 16 }} />
+              ) : (
+                <List.Icon icon="chevron-right" color={theme.colors.outline} />
+              )
+            }
+          />
+          <Divider style={styles.divider} />
           <List.Section>
             <List.Subheader style={[styles.subheader, { color: theme.colors.primary }]}>Appearance</List.Subheader>
             <RadioButton.Group

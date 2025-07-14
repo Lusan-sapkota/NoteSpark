@@ -204,9 +204,9 @@ const HomeScreen: React.FC = () => {
               label={type === 'edited' ? 'Last Edited' : 'Last Created'}
               small
               style={[
-                styles.sortFab,
-                sortType === type && { backgroundColor: theme.colors.primary },
-                { marginHorizontal: 8 }
+          styles.sortFab,
+          sortType === type && { backgroundColor: theme.colors.primary },
+          { marginHorizontal: 8 }
               ]}
               color={sortType === type ? 'white' : theme.colors.text}
               onPress={() => setSortType(type as 'edited' | 'created')}
@@ -214,37 +214,40 @@ const HomeScreen: React.FC = () => {
           ))}
         </View>
         {showFilters && (
-          <View style={styles.filterMenu}>
+          <View style={[
+            styles.filterMenu,
+            { backgroundColor: theme.colors.surface }
+          ]}>
             <View style={styles.filterGroup}>
-              <Text style={styles.filterLabel}>Search In</Text>
+              <Text style={[styles.filterLabel, { color: theme.colors.outline } ]}>Search In</Text>
               {['all', 'title', 'content'].map(type => (
-                <FAB
-                  key={type}
-                  label={type.charAt(0).toUpperCase() + type.slice(1)}
-                  small
-                  style={[
-                    styles.filterFab,
-                    searchType === type && { backgroundColor: theme.colors.primary }
-                  ]}
-                  color={searchType === type ? 'white' : theme.colors.text}
-                  onPress={() => setSearchType(type as 'all' | 'title' | 'content')}
-                />
+          <FAB
+            key={type}
+            label={type.charAt(0).toUpperCase() + type.slice(1)}
+            small
+            style={[
+              styles.filterFab,
+              searchType === type && { backgroundColor: theme.colors.primary }
+            ]}
+            color={searchType === type ? 'white' : theme.colors.text}
+            onPress={() => setSearchType(type as 'all' | 'title' | 'content')}
+          />
               ))}
             </View>
             <View style={styles.filterGroup}>
-              <Text style={styles.filterLabel}>Type</Text>
+              <Text style={[styles.filterLabel, { color: theme.colors.outline } ]}>Type</Text>
               {['all', 'markdown', 'text'].map(type => (
-                <FAB
-                  key={type}
-                  label={type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
-                  small
-                  style={[
-                    styles.filterFab,
-                    filterMarkdown === type && { backgroundColor: theme.colors.secondary }
-                  ]}
-                  color={filterMarkdown === type ? 'black' : theme.colors.text}
-                  onPress={() => setFilterMarkdown(type as 'all' | 'markdown' | 'text')}
-                />
+          <FAB
+            key={type}
+            label={type === 'all' ? 'All Types' : type.charAt(0).toUpperCase() + type.slice(1)}
+            small
+            style={[
+              styles.filterFab,
+              filterMarkdown === type && { backgroundColor: theme.colors.secondary }
+            ]}
+            color={filterMarkdown === type ? 'black' : theme.colors.text}
+            onPress={() => setFilterMarkdown(type as 'all' | 'markdown' | 'text')}
+          />
               ))}
             </View>
           </View>

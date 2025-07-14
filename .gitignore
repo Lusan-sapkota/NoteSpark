@@ -9,6 +9,9 @@ dist/
 web-build/
 expo-env.d.ts
 
+# MODES
+.github/chatmodes/BEASTMODE.chatmode.md
+
 # Native
 .kotlin/
 *.orig.*
@@ -35,4 +38,5 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
 

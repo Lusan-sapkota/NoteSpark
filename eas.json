@@ -1,14 +1,11 @@
 {
   "build": {
-    "development": {
-      "developmentClient": true,
-      "distribution": "internal"
-    },
     "preview": {
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "channel": "preview"
     },
     "production": {
       "android": {
@@ -16,7 +13,8 @@
       },
       "ios": {
         "simulator": false
-      }
+      },
+      "channel": "production"
     }
   },
   "cli": {
