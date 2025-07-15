@@ -23,26 +23,25 @@
 
 ## 📦 Download
 
-<p align="center">
-  <a href="https://sourceforge.net/projects/notespark/files/latest/download">
-    <img src="https://img.shields.io/sourceforge/dt/notespark?label=Download%20from%20SourceForge&style=for-the-badge" alt="Download from SourceForge">
-  </a>
-  <a href="https://github.com/Lusan-sapkota/NoteSpark/releases">
-    <img src="https://img.shields.io/github/v/release/Lusan-sapkota/NoteSpark?style=for-the-badge" alt="GitHub Release">
-  </a>
-</p>
+You can download NoteSpark from:
+
+- [SourceForge (latest version)](https://sourceforge.net/projects/notespark/files/latest/download)
+- [GitHub Releases (ZIP file)](https://github.com/Lusan-sapkota/NoteSpark/releases)
+
+> **Landing page:** [notespark.lusansapkota.com.np](https://notespark.lusansapkota.com.np) will be live soon!  
+> Once live, it will offer a high-speed download option for NoteSpark.
 
 ---
 
 ## ✨ Features
 
 - ✍️ **Create, edit, and delete notes** — Simple, fast, and intuitive note management.
-- � **Pin notes** — Pin your most important notes to always keep them at the top.
+- � **Markdown-ready** — Write notes in Markdown with live preview and formatting.
 - ↕️ **Sort & filter** — Sort by last edited or created, and filter by type or content instantly.
 - 🔍 **Advanced search** — Instantly find notes by title, content, or type with blazing speed.
+- � **Pin notes** — Pin your most important notes to always keep them at the top.
 - 🖼️ **Image support** — Attach images to your notes (stored as file links).
 - 🔗 **Link & media detection** — Auto-detects and highlights links, supports clickable URLs and media.
-- � **Markdown-ready** — Write notes in Markdown with live preview and formatting.
 - 📝 **Rich text & plain text** — Switch between Markdown and plain text modes anytime.
 - 🕒 **Timestamps** — See when notes were created and last edited.
 - 🌙 **Beautiful UI & Dark Mode** — Minimal, modern design with full dark mode support.
@@ -53,7 +52,7 @@
 - 🗂️ **Import/Export history** — View past import/export actions, download history as PDF, or clear records.
 - 🧭 **Easy navigation** — Clean navigation and search for quick access to your ideas.
 - 📋 **Copy & share** — Copy note content or share with other apps easily.
-- 🔔 **Notification system** — Get reminders and notifications for your important notes.
+- 🔔 **Notification system** — Get notifications from the app.
 - 🛠️ **Open source** — GPLv3 licensed, contributions welcome!
 
 ---
@@ -68,12 +67,21 @@
 
 ---
 
-## 📸 Screenshots
+## 📸 Demo
 
 <div align="center">
-  <img src="https://user-images.githubusercontent.com/your-github-username/notespark-screenshot1.png" width="250" alt="NoteSpark Home" />
-  <img src="https://user-images.githubusercontent.com/your-github-username/notespark-screenshot2.png" width="250" alt="NoteSpark Editor" />
-  <img src="https://user-images.githubusercontent.com/your-github-username/notespark-screenshot3.png" width="250" alt="NoteSpark Dark Mode" />
+  <table>
+    <tr>
+      <td><img src="./demo/images/dark.png" width="180" alt="Demo 1" /></td>
+      <td><img src="./demo/images/light.png" width="180" alt="Demo 2" /></td>
+      <td><img src="./demo/images/view.png" width="180" alt="Demo 3" /></td>
+    </tr>
+    <tr>
+      <td><img src="./demo/images/add.png" width="180" alt="Demo 4" /></td>
+      <td><img src="./demo/images/settings.png" width="180" alt="Demo 5" /></td>
+      <td><img src="./demo/images/import-export.png" width="180" alt="Demo 6" /></td>
+    </tr>
+  </table>
 </div>
 
 ---
@@ -87,6 +95,15 @@ Pull requests, bug reports, and feature suggestions are welcome! Please open an 
 ## 📄 License
 
 This project is licensed under the GPLv3 License. See [LICENSE](./LICENSE) for details.
+
+## ☄️ Future imporvements
+
+- PERSONAL VAULT
+- NO-CLOUD SYNC
+- WEB INTRACTION
+- TWO WAY SYNC
+
+> Ensuring your data always stays in your devices
 
 ## 🧑‍💻 Developer
 
