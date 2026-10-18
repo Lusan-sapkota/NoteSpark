@@ -23,9 +23,7 @@ const ImportExportScreen: React.FC = () => {
   const [fileImporting, setFileImporting] = useState(false);
   const [history, setHistory] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
-  // PDF export loading state
   const [pdfExporting, setPdfExporting] = useState(false);
-  // PDF export function
   const handleExportHistoryPDF = async () => {
     Alert.alert(
       'Export History as PDF',
@@ -41,18 +39,15 @@ const ImportExportScreen: React.FC = () => {
           onPress: async () => {
             setPdfExporting(true);
             try {
-              // Prepare HTML for PDF
               let html = `<html><head><style>body{font-family:sans-serif;}h2{color:#1976d2;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:left;}th{background:#f5f5f5;}tr:nth-child(even){background:#fafafa;}</style></head><body>`;
               html += `<h2>NoteSpark Import/Export History</h2><table><tr><th>Date</th><th>Type</th><th>Count</th><th>Note</th></tr>`;
               history.forEach(h => {
                 html += `<tr><td>${new Date(h.date).toLocaleString()}</td><td>${h.type}</td><td>${typeof h.count === 'number' ? h.count : 0}</td><td>${h.error && h.error.trim() ? h.error : 'No error'}</td></tr>`;
               });
               html += `</table></body></html>`;
-              // Generate PDF
               const Print = require('expo-print');
               const Sharing = require('expo-sharing');
               const { uri } = await Print.printToFileAsync({ html });
-              // Share PDF
               await Sharing.shareAsync(uri);
             } catch (err) {
               Alert.alert('PDF Export Error', 'Failed to generate or share PDF.');
@@ -64,7 +59,6 @@ const ImportExportScreen: React.FC = () => {
     );
   };
 
-  // Load history on mount and refresh
   const loadHistory = async () => {
     try {
       const raw = await AsyncStorage.getItem('notesHistory');
@@ -98,7 +92,6 @@ const ImportExportScreen: React.FC = () => {
     }
   };
 
-  // Clear history for debugging
   const clearHistory = async () => {
     Alert.alert(
       'Clear History',
@@ -130,7 +123,6 @@ const ImportExportScreen: React.FC = () => {
     setIsExporting(true);
     let notesArr: any[] = [];
     try {
-      // Get notes as JSON, ensure all fields are correct
       let notesJson = await exportNotesAsJson();
       if (typeof notesJson === 'string') {
         try {
@@ -141,18 +133,15 @@ const ImportExportScreen: React.FC = () => {
       } else if (Array.isArray(notesJson)) {
         notesArr = notesJson;
       }
-      // Fix isMarkdown to boolean
       notesArr = notesArr.map((note: any) => ({
         ...note,
         isMarkdown: typeof note.isMarkdown === 'boolean' ? note.isMarkdown : !!note.isMarkdown,
       }));
       const jsonString = JSON.stringify(notesArr, null, 2);
 
-      // Prepare file for sharing
       const fileName = `notespark-export-${Date.now()}.json`;
       const fileUri = `${Platform.OS === 'android' ? '/storage/emulated/0/Download/' : ''}${fileName}`;
 
-      // Save file to device (use expo-file-system or RNFS if available)
       let fileSaved = false;
       try {
         const FileSystem = require('expo-file-system');
@@ -162,7 +151,6 @@ const ImportExportScreen: React.FC = () => {
         fileSaved = false;
       }
 
-      // Custom alert for user choice
       Alert.alert(
         'Export Notes',
         'You will be shown the share sheet. Choose "Continue" to proceed or "Cancel" to abort export.',
@@ -230,7 +218,6 @@ const ImportExportScreen: React.FC = () => {
           }
         ]
       );
-      // Do not setIsExporting(false) here, handled in both branches above
     } catch (error) {
       console.error('Failed to export notes:', error);
       const errorMessage =
@@ -282,7 +269,6 @@ const ImportExportScreen: React.FC = () => {
                 await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'Invalid JSON format.' });
                 return;
               }
-              // Validate and fix notes
               const validNotes = parsed.map((note: any) => {
                 let valid = true;
                 if (typeof note.isMarkdown !== 'boolean') {
@@ -303,7 +289,6 @@ const ImportExportScreen: React.FC = () => {
                 await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'No valid notes found.' });
                 return;
               }
-              // Import valid notes
               const notesModule = await import('../storage/notes');
               await notesModule.importNotesFromJson(JSON.stringify(validNotes));
               const result = validNotes.length;
@@ -393,7 +378,6 @@ const ImportExportScreen: React.FC = () => {
     );
   };
 
-  // Ensure export button resets on unmount/refresh
   React.useEffect(() => {
     return () => {
       setIsExporting(false);

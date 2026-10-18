@@ -194,7 +194,6 @@ const SettingsScreen: React.FC = () => {
               left={(props) => <List.Icon {...props} icon="information" color={theme.colors.primary} />}
               onPress={() => navigation.navigate('About')}
             />
-        {/* Future Improvements Section */}
         <List.Subheader style={[styles.subheader, { color: theme.colors.primary, marginTop: 16 }]}>Future Improvements</List.Subheader>
         <List.Item
           title="What's Next?"

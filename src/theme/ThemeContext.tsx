@@ -24,7 +24,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [themeType, setThemeType] = useState<ThemeType>('system');
   const [theme, setTheme] = useState(colorScheme === 'dark' ? darkTheme : lightTheme);
   
-  // Load saved theme preference
   useEffect(() => {
     const loadThemePreference = async () => {
       try {
@@ -40,7 +39,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     loadThemePreference();
   }, []);
   
-  // Update theme when themeType changes
   useEffect(() => {
     const saveThemePreference = async () => {
       try {

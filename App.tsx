@@ -33,7 +33,6 @@ const AppContent = () => {
     setupApp();
   }, []);
 
-  // Remove forceUpdate, not needed
   const handleFinishOnboarding = async () => {
     if (!showOnboarding) return;
     try {
@@ -44,7 +43,6 @@ const AppContent = () => {
         console.error('Notification error:', notifErr);
       }
       setShowOnboarding(false);
-      // Navigation reset to Home after onboarding
       if (navigationRef.current) {
         navigationRef.current.reset({
           index: 0,
@@ -55,7 +53,6 @@ const AppContent = () => {
       console.error('Onboarding finish error:', err);
       setShowOnboarding(false);
     }
-  // ...existing code...
   };
 
   if (!dbInitialized || showOnboarding === null) {

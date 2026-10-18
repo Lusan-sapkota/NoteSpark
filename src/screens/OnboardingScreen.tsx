@@ -35,7 +35,6 @@ const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
   const logoScaleAnim = useRef(new Animated.Value(1)).current;
 
   React.useEffect(() => {
-    // Reset animations
     fadeAnim.setValue(0);
     scaleAnim.setValue(0.8);
     slideAnim.setValue(width);
@@ -61,7 +60,6 @@ const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
         easing: Easing.out(Easing.exp),
       }).start();
     }
-    // Logo pulse animation
     Animated.loop(
       Animated.sequence([
         Animated.timing(logoScaleAnim, {
@@ -149,7 +147,6 @@ const styles = StyleSheet.create({
     width: 130,
     height: 130,
     borderRadius: 65,
-    // backgroundColor: '#fff', // now set dynamically
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 24,

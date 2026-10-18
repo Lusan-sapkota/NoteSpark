@@ -1,5 +1,4 @@
 import * as DocumentPicker from 'expo-document-picker';
-// Import notes from a JSON file picked by the user
 export const importNotesFromFile = async (): Promise<number> => {
   try {
     const result = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
@@ -12,20 +11,17 @@ export const importNotesFromFile = async (): Promise<number> => {
 };
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
-// Request storage permission (Android/iOS)
 export const requestStoragePermission = async (): Promise<boolean> => {
   const { status } = await MediaLibrary.requestPermissionsAsync();
   return status === 'granted';
 };
 
-// Export notes to device storage as a JSON file
 export const exportNotesToFile = async (): Promise<string> => {
   try {
     const json = await exportNotesAsJson();
     const fileName = `NoteSpark-Export-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
     const fileUri = FileSystem.cacheDirectory + fileName;
     await FileSystem.writeAsStringAsync(fileUri, json, { encoding: FileSystem.EncodingType.UTF8 });
-    // Use Share dialog to let user save/send the file
     const Share = require('react-native').Share;
     await Share.share({
       url: fileUri,
@@ -37,7 +33,6 @@ export const exportNotesToFile = async (): Promise<string> => {
     throw error;
   }
 };
-// Import notes from a JSON string
 export const importNotesFromJson = async (json: string): Promise<number> => {
   try {
     const notes = JSON.parse(json);
@@ -64,7 +59,6 @@ export const importNotesFromJson = async (json: string): Promise<number> => {
     throw error;
   }
 };
-// Export all notes as JSON
 export const exportNotesAsJson = async (): Promise<string> => {
   try {
     const notes = await getNotes();
@@ -73,7 +67,6 @@ export const exportNotesAsJson = async (): Promise<string> => {
     throw error;
   }
 };
-// Update a note in the database
 export const updateNote = async (note: {
   id: number;
   title: string;
@@ -95,7 +88,6 @@ export const updateNote = async (note: {
     throw error;
   }
 };
-// Delete a note by ID
 export const deleteNote = async (id: number): Promise<void> => {
   try {
     await db.runAsync('DELETE FROM notes WHERE id = ?', [id]);
@@ -105,12 +97,9 @@ export const deleteNote = async (id: number): Promise<void> => {
 };
 import * as SQLite from 'expo-sqlite';
 
-// Use async openDatabase for environments without SharedArrayBuffer
 export const db = SQLite.openDatabaseSync('notespark.db');
 
-// Initialize the database
 export const initDatabase = (): Promise<void> => {
-  // Step 1: Create table if not exists
   return db.execAsync(
     `CREATE TABLE IF NOT EXISTS notes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -121,12 +110,10 @@ export const initDatabase = (): Promise<void> => {
       updatedAt TEXT NOT NULL
     )`
   )
-    // Step 2: Add columns if missing (migration)
     .then(() => Promise.all([
       db.execAsync('ALTER TABLE notes ADD COLUMN createdAt TEXT').catch(() => {}),
       db.execAsync('ALTER TABLE notes ADD COLUMN updatedAt TEXT').catch(() => {}),
     ]))
-    // Step 3: Backfill missing dates
     .then(() => {
       const now = new Date().toISOString();
       return Promise.all([
@@ -141,18 +128,15 @@ export const initDatabase = (): Promise<void> => {
 function resolve(): void {}
 function reject(error: any): void { throw error; }
 
-// Fetch all notes from the database
 export const getNotes = async (): Promise<any[]> => {
   try {
     const notes = await db.getAllAsync('SELECT * FROM notes');
-    // notes is the array of notes
     return notes || [];
   } catch (error) {
     throw error;
   }
 };
 
-// Save a note to the database
 export const saveNote = async (note: {
   title: string;
   content: string;
@@ -170,7 +154,6 @@ export const saveNote = async (note: {
   }
 };
 
-// Fetch a single note by ID
 export const getNoteById = async (id: number): Promise<any | null> => {
   try {
     const result = await db.getAllAsync('SELECT * FROM notes WHERE id = ?', [id]);

@@ -35,7 +35,6 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   const [pressAnim] = useState(new Animated.Value(1));
   const [showFullContent, setShowFullContent] = useState(false);
 
-  // Full date/time formatting for created and edited dates
   const formatFullDate = (dateStr?: string) => {
     if (!dateStr) return 'No date';
     const date = new Date(dateStr);
@@ -48,25 +47,21 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   const createdDate = useMemo(() => formatFullDate(note.createdAt), [note.createdAt]);
   const editedDate = useMemo(() => formatFullDate(note.updatedAt), [note.updatedAt]);
 
-  // Content preview with smart truncation
   const previewContent = useMemo(() => {
     if (!showPreview) return note.content;
     
     const maxLength = compact ? 80 : 120;
     if (note.content.length <= maxLength) return note.content;
     
-    // Find the last complete word within the limit
     const truncated = note.content.substring(0, maxLength);
     const lastSpace = truncated.lastIndexOf(' ');
     return lastSpace > maxLength * 0.8 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
   }, [note.content, showPreview, compact]);
 
-  // Word count calculation
   const wordCount = useMemo(() => {
     return note.content.trim().split(/\s+/).filter(word => word.length > 0).length;
   }, [note.content]);
 
-  // Animated press handlers
   const handlePressIn = useCallback(() => {
     Animated.spring(pressAnim, {
       toValue: 0.98,
@@ -138,7 +133,6 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
           elevation={isSelected ? 4 : 2}
         > 
           <Card.Content style={[styles.content, compact && styles.compactContent]}>
-            {/* Header Section */}
             <View style={styles.header}>
               <View style={styles.titleContainer}>
                 <Text 
@@ -171,7 +165,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                       color: note.isMarkdown
                         ? theme.dark
                         ? theme.colors.accent
-                        : '#2B2B2B' // darker text for light mode
+                        : '#2B2B2B'
                         : theme.dark
                         ? theme.colors.secondary
                         : '#2B2B2B',
@@ -202,7 +196,6 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
               <View style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
             </View>
 
-            {/* Content Preview */}
             {showPreview && (
               <View
                 style={[
@@ -229,7 +222,6 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
               </View>
             )}
 
-            {/* Actions Footer */}
             {showActions && (
               <View
                 style={[
@@ -241,14 +233,11 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                   },
                 ]}
               >
-                {/* Edited date on the left */}
                 <Text style={[styles.date, { color: theme.colors.text, fontWeight: '500' }]}> 
                   Edited: {editedDate && editedDate !== 'No date' ? editedDate : 'none'}
                 </Text>
 
-                {/* Action buttons on the right */}
                 <View style={[styles.actionButtons, { flexDirection: 'row', alignItems: 'center' }]}> 
-                  {/* Pin/unpin button */}
                   {onPinToggle && (
                     <IconButton
                       icon={isPinned ? 'pin' : 'pin-outline'}

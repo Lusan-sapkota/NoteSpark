@@ -32,7 +32,6 @@ const HomeScreen: React.FC = () => {
       setLoading(true);
       const fetchedNotes = await getNotes();
       setNotes(fetchedNotes);
-      // Optionally, load pin state from storage here
       setLoading(false);
     } catch (error) {
       setLoading(false);
@@ -55,7 +54,6 @@ const HomeScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  // Advanced search, sorting, and pin logic
   const filteredNotes = useMemo(() => {
     let filtered = notes;
     if (filterMarkdown !== 'all') {
@@ -69,11 +67,9 @@ const HomeScreen: React.FC = () => {
         } else if (searchType === 'content') {
           return n.content.toLowerCase().includes(text);
         }
-        // 'all'
         return (n.title?.toLowerCase().includes(text) || n.content.toLowerCase().includes(text));
       });
     }
-    // Sort by pin, then by sortType
     filtered = [...filtered].sort((a, b) => {
       const aPinned = pinned[a.id] ? 1 : 0;
       const bPinned = pinned[b.id] ? 1 : 0;
@@ -170,7 +166,6 @@ const HomeScreen: React.FC = () => {
         }
       />
 
-      {/* Advanced Search Bar */}
       <View style={styles.searchBarContainer}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <TextInput
@@ -200,7 +195,6 @@ const HomeScreen: React.FC = () => {
             onPress={() => setShowFilters(prev => !prev)}
           />
         </View>
-        {/* Centered and dynamic sorting row */}
         <View style={[styles.sortRow, { justifyContent: 'center', marginTop: 10 }]}> 
           {['edited', 'created'].map(type => (
             <FAB
@@ -258,7 +252,6 @@ const HomeScreen: React.FC = () => {
         )}
       </View>
 
-      {/* Note list or empty state */}
       {loading ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40, paddingBottom: 100 }}>
           <ActivityIndicator size="large" color={theme.colors.primary} />

@@ -1,7 +1,6 @@
 import { MD3DarkTheme, MD3LightTheme, adaptNavigationTheme } from 'react-native-paper';
 import { DarkTheme as NavigationDarkTheme, DefaultTheme as NavigationDefaultTheme } from '@react-navigation/native';
 
-// Define our color palette
 const colors = {
   primary: '#E4572E',
   accent: '#F8A21A',
@@ -21,13 +20,11 @@ const colors = {
   error: '#B00020',
 };
 
-// Adapt navigation themes
 const { LightTheme, DarkTheme } = adaptNavigationTheme({
   reactNavigationLight: NavigationDefaultTheme,
   reactNavigationDark: NavigationDarkTheme,
 });
 
-// Create our light theme
 const lightTheme = {
   ...MD3LightTheme,
   ...LightTheme,
@@ -45,7 +42,6 @@ const lightTheme = {
   fonts: MD3LightTheme.fonts,
 };
 
-// Create our dark theme
 const darkTheme = {
   ...MD3DarkTheme,
   ...DarkTheme,

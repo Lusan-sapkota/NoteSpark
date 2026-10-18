@@ -18,11 +18,9 @@ const GITHUB_URL = 'https://github.com/Lusan-sapkota/NoteSpark';
 const DEVELOPER_EMAIL = 'sapkotalusan@gmail.com';
 const WEBSITE = 'https://lusansapkota.com.np';
 const getAppVersion = () => {
-  // EAS Update manifest
   if (Updates.manifest && (Updates.manifest as any).version) {
     return (Updates.manifest as any).version;
   }
-  // Fallback to expo config
   if (Constants.expoConfig && Constants.expoConfig.version) {
     return Constants.expoConfig.version;
   }

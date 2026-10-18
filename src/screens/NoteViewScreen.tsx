@@ -14,10 +14,8 @@ import Header from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import { useTheme } from '../theme/ThemeContext';
 
-// Types
 
 
-// Fallback to any if types are not available
 type NoteViewScreenNavigationProp = NativeStackNavigationProp<any>;
 type NoteViewScreenRouteProp = RouteProp<any>;
 
@@ -30,9 +28,7 @@ const NoteViewScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
   const [copyMsg, setCopyMsg] = useState('');
-  // Image zoom modal state
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
-  // Helper to strip markdown syntax for copy (convert images and links to URLs only)
   const getPlainText = (markdown: string) =>
     markdown
       .replace(/!\[[^\]]*\]\(([^)]+)\)/g, '$1') // images to URL
@@ -54,7 +50,6 @@ const NoteViewScreen: React.FC = () => {
     }
   };
 
-  // Load note on mount and when screen is focused (after edit)
   const reloadNote = async () => {
     setRefreshing(true);
     if ((route.params as any)?.noteId) {
@@ -146,10 +141,8 @@ const NoteViewScreen: React.FC = () => {
           <RefreshControl refreshing={refreshing} onRefresh={reloadNote} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
         }
       >
-        {/* Main Note Card */}
         <Card style={[styles.noteCard, { backgroundColor: theme.colors.surface }]} elevation={3}>
           <Card.Content style={styles.cardContent}>
-            {/* Header Section with Type Badge */}
             <View style={styles.headerSection}>
               <View style={styles.titleRow}>
                 <View style={styles.titleContent}>
@@ -180,7 +173,6 @@ const NoteViewScreen: React.FC = () => {
                 </View>
               </View>
               
-              {/* Date Information */}
               <View style={styles.dateContainer}>
                 <View style={styles.dateRow}>
                   <Text style={[styles.dateLabel, { color: theme.colors.onSurfaceVariant }]}>
@@ -203,7 +195,6 @@ const NoteViewScreen: React.FC = () => {
 
             <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
 
-            {/* Content Section */}
             <View style={styles.contentSection}>
               <Text style={[styles.contentLabel, { color: theme.colors.onSurfaceVariant }]}>
                 Content
@@ -226,7 +217,6 @@ const NoteViewScreen: React.FC = () => {
                       >
                         {getPlainText(note.content)}
                       </Text>
-                      {/* Render images below plain text if any image links exist */}
                       {(() => {
                         const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
                         const matches = Array.from(note.content.matchAll(imageRegex));
@@ -270,7 +260,6 @@ const NoteViewScreen: React.FC = () => {
                     </>
                   ) : (
                     <>
-                      {/* Render markdown (excluding images) and images below */}
                       <View style={{ flexDirection: 'column', alignItems: 'flex-start', flexWrap: 'nowrap' }}>
                         <View style={{ width: '100%' }}>
                           <MarkdownRenderer
@@ -278,7 +267,6 @@ const NoteViewScreen: React.FC = () => {
                           />
                         </View>
                       </View>
-                      {/* Render images below markdown if any image links exist */}
                       {(() => {
                         const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
                         const matches = Array.from(note.content.matchAll(imageRegex));
@@ -400,17 +388,13 @@ const NoteViewScreen: React.FC = () => {
                         });
                       })()}
                     </View>
-                    {/* Render images below plain text if any image links exist */}
                     {(() => {
-                      // Support both markdown images and [Image: ...] style
                       const contentStr = Array.isArray(note.content)
                         ? note.content.join('\n')
                         : typeof note.content === 'string'
                           ? note.content
                           : String(note.content);
-                      // Markdown image: ![alt](url)
                       const mdImageRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
-                      // Plain text: [Image: url]
                       const plainImageRegex = /\[Image: ([^\]]+)\]/g;
                       const mdMatches = Array.from(contentStr.matchAll(mdImageRegex));
                       const plainMatches = Array.from(contentStr.matchAll(plainImageRegex));
@@ -433,7 +417,7 @@ const NoteViewScreen: React.FC = () => {
                                 justifyContent: 'center',
                                 alignItems: 'center',
                                 borderWidth: 3,
-                                borderColor: theme.dark ? '#444' : '#f5f5f5', // Follows mode
+                                borderColor: theme.dark ? '#444' : '#f5f5f5',
                               }}
                             >
                               {img && img.trim() ? (
@@ -466,10 +450,8 @@ const NoteViewScreen: React.FC = () => {
         </Card>
       </ScrollView>
 
-      {/* Floating Action Buttons */}
       <View style={[styles.fabContainer, { backgroundColor: theme.colors.surface }]}>
         <View style={[styles.fabRow, { paddingBottom: Math.max(insets.bottom, Platform.OS === 'android' ? 32 : 0) }]}> 
-          {/* Copy button (always shown) */}
           <IconButton
             icon="content-copy"
             iconColor={theme.colors.primary}
@@ -477,7 +459,6 @@ const NoteViewScreen: React.FC = () => {
             onPress={handleCopyAll}
             style={{ backgroundColor: theme.colors.surfaceVariant, borderRadius: 16, marginRight: 2 }}
           />
-          {/* Show Plain Text/Markdown toggle (only for markdown notes) */}
           {note.isMarkdown && (
             <IconButton
               icon={showRaw ? 'language-markdown' : 'file-document-outline'}
@@ -488,7 +469,6 @@ const NoteViewScreen: React.FC = () => {
               accessibilityLabel={showRaw ? 'Show Markdown' : 'Show Plain Text'}
             />
           )}
-          {/* Edit button */}
           <IconButton
             icon="pencil"
             iconColor="#fff"
@@ -507,7 +487,6 @@ const NoteViewScreen: React.FC = () => {
             }}
             style={[styles.editButton, { backgroundColor: theme.colors.primary }]}
           />
-          {/* Delete button */}
           <IconButton
             icon="delete"
             iconColor="#fff"
@@ -515,13 +494,11 @@ const NoteViewScreen: React.FC = () => {
             onPress={handleDelete}
             style={[styles.deleteButton, { backgroundColor: theme.colors.error }]}
           />
-          {/* Copy feedback */}
           {!!copyMsg && (
             <Text style={{ marginLeft: 4, color: theme.colors.primary, fontWeight: 'bold', alignSelf: 'center' }}>{copyMsg}</Text>
           )}
         </View>
       </View>
-      {/* Image Zoom Modal */}
       <Modal
         visible={!!zoomedImage}
         transparent
@@ -575,7 +552,6 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
-  // ...existing code...
   emptyLine: {
     height: 1,
     fontSize: 0.1,

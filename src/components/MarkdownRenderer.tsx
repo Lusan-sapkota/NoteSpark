@@ -13,7 +13,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   // Replace <br> tags with newlines so markdown treats them as line breaks
   const processedContent = content.replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n');
 
-  // Define markdown styles based on the current theme
   const markdownStyles = {
     body: {
       color: theme.colors.text,
@@ -26,13 +25,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     heading1: {
       color: theme.colors.primary,
       fontSize: 20,
-      lineHeight: 28, // Increased for better vertical alignment
+      lineHeight: 28,
       marginTop: 8,
       marginBottom: 4,
       fontWeight: '700' as const,
       includeFontPadding: false,
       textAlignVertical: 'center',
-      // Removed marginVertical for heading1
     },
     heading2: {
       color: theme.colors.primary,
@@ -180,10 +178,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     },
   };
 
-  // Custom renderer for images
   const trimImagePath = (path: string) => {
     if (!path) return '';
-    // If file path is long, trim and show friendly label
     if (path.startsWith('file:///')) {
       const parts = path.split('/');
       const fileName = parts[parts.length - 1];
@@ -212,22 +208,18 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     );
   };
 
-  // Custom renderer for links
   const renderLink = (props: any) => {
     const { children, href } = props;
     let url = href;
     let openUrl = url;
-    // Add protocol if missing for www.* or domain.tld
     if (!/^https?:\/\//.test(url)) {
       openUrl = `https://${url}`;
     }
-    // Only allow string or valid React elements as children
     let renderChildren;
     if (Array.isArray(children)) {
       renderChildren = children.filter(child => child !== null && child !== undefined).map((child, idx) => {
         const uniqueKey = `link-child-${idx}-${typeof child === 'string' ? child.slice(0, 16) : ''}`;
         if (typeof child === 'string' || typeof child === 'number') {
-          // For strings/numbers, wrap in Fragment with key
           return <React.Fragment key={uniqueKey}>{child}</React.Fragment>;
         } else if (React.isValidElement(child)) {
           return React.cloneElement(child, { key: uniqueKey });
@@ -276,7 +268,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   };
 
   return (
-    <ScrollView style={[styles.container, { padding: 0 }]}> {/* Remove extra padding for tighter look */}
+    <ScrollView style={[styles.container, { padding: 0 }]}>
       <Markdown
         style={markdownStyles}
         rules={{

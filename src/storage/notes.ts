@@ -1,11 +1,9 @@
-// Delete all notes
 export const clearAllNotes = async (): Promise<void> => {
   await db.runAsync('DELETE FROM notes');
 };
 import { db } from './database';
 import { Note } from '../types';
 
-// Get all notes
 export const getNotes = async (): Promise<Note[]> => {
   const rows = await db.getAllAsync('SELECT * FROM notes ORDER BY updatedAt DESC');
   return rows.map((item: any) => ({
@@ -14,7 +12,6 @@ export const getNotes = async (): Promise<Note[]> => {
   }));
 };
 
-// Get a single note by ID
 export const getNoteById = async (id: number): Promise<Note | null> => {
   try {
     const items = await db.getAllAsync('SELECT * FROM notes WHERE id = ?', [id]);
@@ -37,7 +34,6 @@ export const getNoteById = async (id: number): Promise<Note | null> => {
   }
 };
 
-// Save a new note
 export const saveNote = async (note: Omit<Note, 'id'>): Promise<number> => {
   const now = new Date().toISOString();
   const result: any = await db.runAsync(
@@ -51,7 +47,6 @@ export const saveNote = async (note: Omit<Note, 'id'>): Promise<number> => {
   }
 };
 
-// Update an existing note
 export const updateNote = async (note: Note): Promise<void> => {
   const now = new Date().toISOString();
   const result: any = await db.runAsync(
@@ -65,7 +60,6 @@ export const updateNote = async (note: Note): Promise<void> => {
   }
 };
 
-// Delete a note
 export const deleteNote = async (id: number): Promise<void> => {
   const result: any = await db.runAsync(
     'DELETE FROM notes WHERE id = ?',
@@ -78,13 +72,11 @@ export const deleteNote = async (id: number): Promise<void> => {
   }
 };
 
-// Export all notes as JSON
 export const exportNotesAsJson = async (): Promise<string> => {
   const notes = await getNotes();
   return JSON.stringify(notes, null, 2);
 };
 
-// Import notes from JSON
 export const importNotesFromJson = async (jsonData: string): Promise<void> => {
   const notes = JSON.parse(jsonData);
   if (!Array.isArray(notes)) {

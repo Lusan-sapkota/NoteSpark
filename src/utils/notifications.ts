@@ -31,7 +31,6 @@ export async function sendAppNotification(title: string, body: string) {
       content: {
         title,
         body,
-        // You can customize other supported properties here
       },
       trigger: null,
     });

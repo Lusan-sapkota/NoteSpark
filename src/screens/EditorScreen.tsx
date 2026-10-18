@@ -1,12 +1,8 @@
-// Utility to convert markdown images to their image URLs for plain text mode
 function convertImagesToLinks(text: string, isMarkdown: boolean): string {
   if (isMarkdown) {
-    // Show original markdown for images and links
     return text;
   } else {
-    // Replace markdown image with its URL only
     let result = text.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '$1');
-    // Replace markdown links with their URLs only
     result = result.replace(/\[[^\]]*\]\(([^)]+)\)/g, '$1');
     return result;
   }
@@ -38,7 +34,6 @@ const EditorScreen: React.FC = () => {
   const { theme } = useTheme();
   const [saving, setSaving] = useState(false);
 
-  // Safely extract noteId from params
   const { noteId } = route.params ?? {};
 
   const [title, setTitle] = useState<string>('');
@@ -49,10 +44,8 @@ const EditorScreen: React.FC = () => {
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
-  // Image zoom modal state
   const [zoomedImage, setZoomedImage] = useState<string | null>(null);
 
-  // Add image to note content as markdown or plain text
   const handleAddImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
@@ -69,7 +62,6 @@ const EditorScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    // Support both edit and create modes
     if (!noteId) {
       setIsEditing(false);
       setTitle('');
@@ -124,7 +116,6 @@ const EditorScreen: React.FC = () => {
           createdAt: now,
           updatedAt: now
         });
-        // Check if this is the first note
         try {
           const notesModule = await import('../storage/notes');
           const notes = await notesModule.getNotes();
@@ -133,7 +124,6 @@ const EditorScreen: React.FC = () => {
           }
         } catch (e) {}
       }
-      // Smooth navigation back
       InteractionManager.runAfterInteractions(() => {
         setTimeout(() => {
           setSaving(false);
@@ -147,7 +137,6 @@ const EditorScreen: React.FC = () => {
     }
   };
 
-  // Dialog state for link insertion
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -199,12 +188,6 @@ const EditorScreen: React.FC = () => {
           contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
           keyboardShouldPersistTaps="handled"
         >
-          {/* Removed Add Image/Add Link buttons from top, now only in footer */}
-  // Dialog state for link insertion
-  const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const [linkText, setLinkText] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
-      {/* Link Insert Dialog */}
       {showLinkDialog && (
         <Modal
           visible={showLinkDialog}
@@ -246,7 +229,6 @@ const EditorScreen: React.FC = () => {
                   if (!linkUrl.trim()) return;
                   const text = linkText.trim() || linkUrl.trim();
                   const url = linkUrl.trim();
-                  // Insert at cursor
                   const before = content.slice(0, selection.start);
                   const after = content.slice(selection.end);
                   setContent(before + `[${text}](${url})` + after);
@@ -297,7 +279,6 @@ const EditorScreen: React.FC = () => {
 
           {isMarkdown && isPreview ? (
             <View style={[styles.previewContainer, { borderColor: theme.colors.outline || theme.colors.primary + '30' }]}> 
-              {/* Only <br> tags are rendered as line breaks in markdown preview. All other markdown formatting is preserved. */}
               <MarkdownRenderer 
                 content={
                   content
@@ -305,7 +286,6 @@ const EditorScreen: React.FC = () => {
                     .replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n') // Replace <br> tags with newlines
                 }
               />
-              {/* Images below with modal support */}
           {(() => {
             const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
             const matches = Array.from(content.matchAll(imageRegex));
@@ -358,7 +338,6 @@ const EditorScreen: React.FC = () => {
             }
             return null;
           })()}
-              {/* Image Zoom Modal */}
               <Modal
                 visible={!!zoomedImage}
                 transparent
@@ -492,7 +471,6 @@ const EditorScreen: React.FC = () => {
                 });
                 if (!result.canceled && result.assets?.[0]?.uri) {
                   const uri = result.assets[0].uri;
-                  // Insert at cursor
                   const before = content.slice(0, selection.start);
                   const after = content.slice(selection.end);
                   if (isMarkdown) {
