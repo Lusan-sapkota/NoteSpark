@@ -1,9 +1,10 @@
 import React from 'react';
-import { View, Image, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { useAlert } from './DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
+import NoteImages from './NoteImages';
 
 interface MarkdownRendererProps {
   content: string;
@@ -120,36 +121,6 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     },
   };
 
-  const trimImagePath = (path: string) => {
-    if (!path) return '';
-    if (path.startsWith('file:///')) {
-      const parts = path.split('/');
-      const fileName = parts[parts.length - 1];
-      return `Image on this device (${fileName})`;
-    }
-    if (path.length > 32) {
-      return path.slice(0, 12) + '...' + path.slice(-12);
-    }
-    return path;
-  };
-
-  const renderImage = (props: any) => {
-    const { src, alt } = props;
-    if (!src) return null;
-    return (
-      <>
-        <Image
-          source={{ uri: src }}
-          style={{ width: '100%', height: 200, resizeMode: 'contain', marginTop: 8, borderRadius: shape.small, backgroundColor: theme.colors.surfaceContainer }}
-          accessibilityLabel={alt || 'image'}
-        />
-        <Text key={`image-label-${src}`} style={{ ...theme.fonts.bodySmall, color: theme.colors.onSurfaceVariant, marginTop: 4, marginBottom: 12 }}>
-          {trimImagePath(src)}
-        </Text>
-      </>
-    );
-  };
-
   const renderLink = (props: any) => {
     const { children, href } = props;
     let url = href;
@@ -206,7 +177,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
       <Markdown
         style={markdownStyles}
         rules={{
-          image: (node, children, parent, styles) => renderImage(node.attributes),
+          // Same cached, retryable image view the screens use.
+          image: (node) => <NoteImages key={node.key} uris={node.attributes.src ? [node.attributes.src] : []} />,
           link: (node, children, parent, styles) => renderLink({ ...node.attributes, children }),
         }}
       >
