@@ -51,6 +51,10 @@
             "enableShrinkResourcesInReleaseBuilds": true
           }
         }
+      ],
+      [
+        "./plugins/withAppCategory",
+        "productivity"
       ]
     ],
     "extra": {
