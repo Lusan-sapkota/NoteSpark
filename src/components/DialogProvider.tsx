@@ -37,27 +37,26 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     <DialogContext.Provider value={alert}>
       {children}
       <Portal>
+        {/* Title, content and actions stay direct children: Dialog passes a style prop to each, which a Fragment can't take. */}
         <Dialog visible={!!current} dismissable={dismissable} onDismiss={() => close(cancelButton)}>
+          {current && <Dialog.Title>{current.title}</Dialog.Title>}
+          {!!current?.message && (
+            <Dialog.Content>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>{current.message}</Text>
+            </Dialog.Content>
+          )}
           {current && (
-            <>
-              <Dialog.Title>{current.title}</Dialog.Title>
-              {!!current.message && (
-                <Dialog.Content>
-                  <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>{current.message}</Text>
-                </Dialog.Content>
-              )}
-              <Dialog.Actions>
-                {current.buttons.map(b => (
-                  <Button
-                    key={b.text}
-                    textColor={b.style === 'destructive' ? theme.colors.error : undefined}
-                    onPress={() => close(b)}
-                  >
-                    {b.text}
-                  </Button>
-                ))}
-              </Dialog.Actions>
-            </>
+            <Dialog.Actions>
+              {current.buttons.map(b => (
+                <Button
+                  key={b.text}
+                  textColor={b.style === 'destructive' ? theme.colors.error : undefined}
+                  onPress={() => close(b)}
+                >
+                  {b.text}
+                </Button>
+              ))}
+            </Dialog.Actions>
           )}
         </Dialog>
       </Portal>

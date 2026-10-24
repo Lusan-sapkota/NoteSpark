@@ -100,7 +100,7 @@ const SettingsScreen: React.FC = () => {
           />
           <GroupedRow
             title="Privacy policy"
-            description="What NoteSpark stores and what leaves your phone"
+            description="Your notes never leave your phone"
             icon="shield-lock-outline"
             right={chevron}
             onPress={() => navigation.navigate('Privacy')}
