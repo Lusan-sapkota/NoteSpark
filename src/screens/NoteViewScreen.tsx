@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { RefreshControl } from 'react-native';
-import { InteractionManager } from 'react-native';
 import { Clipboard } from 'react-native';
 import { View, StyleSheet, ScrollView, Alert, Platform, Image, Modal, TouchableOpacity, Dimensions, StatusBar } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -78,11 +77,9 @@ const NoteViewScreen: React.FC = () => {
         onPress: async () => {
           try {
             await deleteNote(note!.id);
-            InteractionManager.runAfterInteractions(() => {
-              setTimeout(() => {
-                navigation.goBack();
-              }, 120);
-            });
+            setTimeout(() => {
+              navigation.goBack();
+            }, 120);
           } catch (error) {
             Alert.alert('Error', 'Failed to delete note');
           }
@@ -111,11 +108,9 @@ const NoteViewScreen: React.FC = () => {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1 }]} edges={['left', 'right', 'bottom']}> 
         <Header title="View Note" showBackButton onBackPress={() => {
-          InteractionManager.runAfterInteractions(() => {
-            setTimeout(() => {
-              navigation.goBack();
-            }, 120);
-          });
+          setTimeout(() => {
+            navigation.goBack();
+          }, 120);
         }} />
         <View style={styles.loadingContainer}>
           <Text style={[styles.loadingText, { color: theme.colors.text }]}>Loading...</Text>
@@ -127,11 +122,9 @@ const NoteViewScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1, paddingBottom: insets.bottom }]} edges={['left', 'right', 'bottom']}> 
       <Header title="View Note" showBackButton onBackPress={() => {
-        InteractionManager.runAfterInteractions(() => {
-          setTimeout(() => {
-            navigation.goBack();
-          }, 120);
-        });
+        setTimeout(() => {
+          navigation.goBack();
+        }, 120);
       }} />
       <ScrollView
         style={styles.scrollView}

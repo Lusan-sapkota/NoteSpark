@@ -9,7 +9,7 @@ export const importNotesFromFile = async (): Promise<number> => {
     throw error;
   }
 };
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 export const requestStoragePermission = async (): Promise<boolean> => {
   const { status } = await MediaLibrary.requestPermissionsAsync();
