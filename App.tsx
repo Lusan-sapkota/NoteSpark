@@ -14,6 +14,7 @@ import { sendAppNotification } from './src/utils/notifications';
 import { useFonts } from 'expo-font';
 import { fontFiles } from './src/theme/theme';
 import { DialogProvider } from './src/components/DialogProvider';
+import { pruneImageCache } from './src/utils/imageCache';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
@@ -27,6 +28,7 @@ const AppContent = () => {
       try {
         await setupNotificationWorker();
         await initDatabase();
+        pruneImageCache();
         setDbInitialized(true);
         const onboarded = await AsyncStorage.getItem('onboarded');
         setShowOnboarding(onboarded !== 'true');
