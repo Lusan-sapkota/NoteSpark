@@ -6,8 +6,7 @@ import {
   ScrollView,
   Image,
 } from 'react-native';
-import * as Updates from 'expo-updates';
-import Constants from 'expo-constants';
+import * as Application from 'expo-application';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { List, Text } from 'react-native-paper';
@@ -17,16 +16,14 @@ import { useTheme } from '../theme/ThemeContext';
 import { readingWidth, space } from '../theme/theme';
 
 const GITHUB_URL = 'https://github.com/Lusan-sapkota/NoteSpark';
-const DEVELOPER_EMAIL = 'sapkotalusan@gmail.com';
+const DEVELOPER_EMAIL = 'contact@lusansapkota.com.np';
 const WEBSITE = 'https://lusansapkota.com.np';
+// Read from the installed app, so it always matches the build (e.g. "1.2.0 (14)").
 const getAppVersion = () => {
-  if (Updates.manifest && (Updates.manifest as any).version) {
-    return (Updates.manifest as any).version;
-  }
-  if (Constants.expoConfig && Constants.expoConfig.version) {
-    return Constants.expoConfig.version;
-  }
-  return 'Unknown';
+  const version = Application.nativeApplicationVersion;
+  const build = Application.nativeBuildVersion;
+  if (!version) return 'Unknown';
+  return build ? `${version} (${build})` : version;
 };
 const LICENSE = 'GPLv3';
 
@@ -99,15 +96,6 @@ const AboutScreen = () => {
             icon="github"
             right={external}
             onPress={() => openLink(GITHUB_URL)}
-            isFirst={false}
-            isLast={false}
-          />
-          <GroupedRow
-            title="Documentation"
-            description="github.com/Lusan-sapkota/NoteSpark/wiki"
-            icon="book-open-outline"
-            right={external}
-            onPress={() => openLink(`${GITHUB_URL}/wiki`)}
             isFirst={false}
             isLast={false}
           />

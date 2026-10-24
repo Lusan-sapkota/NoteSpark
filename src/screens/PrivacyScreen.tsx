@@ -7,7 +7,7 @@ import Header, { useHeaderElevation } from '../components/Header';
 import { useTheme } from '../theme/ThemeContext';
 import { readingWidth, space } from '../theme/theme';
 
-const CONTACT_EMAIL = 'sapkotalusan@gmail.com';
+const CONTACT_EMAIL = 'contact@lusansapkota.com.np';
 const EFFECTIVE_DATE = 'October 24, 2026';
 
 // Keep this in step with what the app actually does; update EFFECTIVE_DATE on every change.
