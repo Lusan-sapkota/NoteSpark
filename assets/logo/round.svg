@@ -1,0 +1,6 @@
+<!-- Round icon for the README: the adaptive icon under a circle mask. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="18 18 72 72">
+  <circle cx="54" cy="54" r="36" fill="#d7eb9b"/>
+  <path fill="none" stroke="#3d4c0d" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" d="M40.5 74 V56 C40.5 48.5 45 44 49 44 C53 44 57.5 48.5 57.5 56 V74"/>
+  <path fill="#3d4c0d" d="M68 27 C68.44 31.67 70.33 33.56 75 34 C70.33 34.44 68.44 36.33 68 41 C67.56 36.33 65.67 34.44 61 34 C65.67 33.56 67.56 31.67 68 27Z"/>
+</svg>

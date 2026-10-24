@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./assets/icon.png" alt="NoteSpark Logo" width="120" height="120" />
+  <img src="./assets/logo/round.svg" alt="NoteSpark logo" width="120" height="120" />
 </div>
 
 # NoteSpark
