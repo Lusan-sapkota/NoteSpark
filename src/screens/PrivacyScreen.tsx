@@ -25,7 +25,7 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
     heading: 'Nothing leaves your device',
     intro: "NoteSpark makes no network requests of its own: no sync, no analytics, no crash reporting and no update checks. App updates come only through the store you installed it from.",
     bullets: [
-      "If you add an image from a web address to a note, it's downloaded from that website the first time you view the note, then kept on your phone so it shows offline. Images you haven't viewed for 30 days are removed.",
+      "If you add an image from a web address to a note, it's downloaded from that website the first time you view the note, then kept on your phone so it shows offline, even if the website removes it. A saved copy is deleted once no note uses it and it hasn't been viewed for 30 days.",
       'When you export or share notes, the file goes only where you choose in the share sheet.',
     ],
   },
