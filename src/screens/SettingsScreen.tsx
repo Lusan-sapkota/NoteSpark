@@ -1,17 +1,21 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ScrollView, Alert, Linking } from 'react-native';
 import * as Updates from 'expo-updates';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { List, Divider, RadioButton, Text } from 'react-native-paper';
+import { ActivityIndicator, List, SegmentedButtons, Text } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { clearAllNotes } from '../storage/notes';
 import Header from '../components/Header';
+import GroupedRow from '../components/GroupedRow';
 import { useTheme } from '../theme/ThemeContext';
+import { readingWidth, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
+
+const errorReason = (e: unknown) => (e instanceof Error ? `${e.message}. ` : '');
 
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
@@ -27,11 +31,7 @@ const SettingsScreen: React.FC = () => {
       await Updates.reloadAsync();
     } catch (err) {
       setCheckingUpdate(false);
-      let message = 'Failed to download the update.';
-      if (err instanceof Error) {
-        message += `\nReason: ${err.message}`;
-      }
-      Alert.alert('Update Failed', message + '\nPlease check your internet connection and try again.');
+      Alert.alert("Couldn't download the update", `${errorReason(err)}Check your internet connection and try again.`);
     }
   };
 
@@ -39,10 +39,7 @@ const SettingsScreen: React.FC = () => {
     if (checkingUpdate) return;
 
     if (!netInfo.isConnected) {
-      Alert.alert(
-        'No Internet Connection',
-        'Looks like you are not connected. App is offline; update needs to be online. Please connect and try again.'
-      );
+      Alert.alert("You're offline", 'Connect to the internet to check for updates. Your notes work offline as usual.');
       return;
     }
 
@@ -50,28 +47,60 @@ const SettingsScreen: React.FC = () => {
 
     try {
       const update = await Updates.checkForUpdateAsync();
+      setCheckingUpdate(false);
       if (update.isAvailable) {
-        setCheckingUpdate(false);
         Alert.alert(
-          'Update Available',
-          'A new version of NoteSpark is available. The app will update now.',
-          [{ text: 'OK', onPress: applyUpdate }],
+          'Update available',
+          'A new version of NoteSpark is ready. The app will restart to install it.',
+          [{ text: 'Update now', onPress: applyUpdate }],
           { cancelable: false }
         );
       } else {
-        setCheckingUpdate(false);
-        Alert.alert('Up to Date', 'You already have the latest version of NoteSpark.');
+        Alert.alert("You're up to date", 'You have the latest version of NoteSpark.');
       }
     } catch (e) {
       setCheckingUpdate(false);
-      let message = 'Could not check for updates.';
-      if (e instanceof Error) {
-        message += `\nReason: ${e.message}`;
-      }
-      Alert.alert('Update Error', message + '\nPlease check your internet connection and try again.');
+      Alert.alert("Couldn't check for updates", `${errorReason(e)}Check your internet connection and try again.`);
     }
   };
 
+  const handleDeleteAll = () => {
+    Alert.alert(
+      'Delete all notes?',
+      "Every note on this device will be deleted. This can't be undone. Export your notes first if you want a backup.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete all notes',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await clearAllNotes();
+              Alert.alert('All notes deleted');
+            } catch (error) {
+              Alert.alert("Couldn't delete your notes", 'Try again. If it keeps failing, restart the app.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleWhatsNext = () => {
+    Alert.alert(
+      "What's next",
+      'Planned for NoteSpark:\n\n- Vault encryption\n- Secure sync between your phone and the web\n- A web app that works without the cloud',
+      [
+        { text: 'OK', style: 'cancel' },
+        { text: 'Learn more', onPress: () => Linking.openURL('https://notespark.lusansapkota.com.np') },
+      ]
+    );
+  };
+
+  const chevron = <List.Icon icon="chevron-right" color={theme.colors.onSurfaceVariant} />;
+  const sectionTitle = (title: string) => (
+    <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>{title}</Text>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
@@ -81,160 +110,68 @@ const SettingsScreen: React.FC = () => {
         onBackPress={() => navigation.goBack()}
       />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.contentWrapper}>
-          <List.Subheader style={[styles.subheader, { color: theme.colors.primary }]}>App Updates</List.Subheader>
-          <List.Item
-            title="Check for Updates"
-            description="Get the latest features and fixes"
-            titleStyle={{ color: theme.colors.primary }}
-            descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
-            left={(props) => <List.Icon {...props} icon="update" color={theme.colors.primary} />}
-            onPress={checkingUpdate ? undefined : handleCheckUpdate}
-            disabled={checkingUpdate}
-            right={() =>
-              checkingUpdate ? (
-                <ActivityIndicator size="small" color={theme.colors.primary} style={{ marginRight: 16 }} />
-              ) : (
-                <List.Icon icon="chevron-right" color={theme.colors.outline} />
-              )
-            }
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <View style={styles.column}>
+          {sectionTitle('Appearance')}
+          <SegmentedButtons
+            value={themeType}
+            onValueChange={value => setThemeType(value as 'light' | 'dark' | 'system')}
+            buttons={[
+              { value: 'light', label: 'Light', icon: 'white-balance-sunny' },
+              { value: 'dark', label: 'Dark', icon: 'weather-night' },
+              { value: 'system', label: 'System', icon: 'theme-light-dark' },
+            ]}
           />
-          <Divider style={styles.divider} />
-          <List.Section>
-            <List.Subheader style={[styles.subheader, { color: theme.colors.primary }]}>Appearance</List.Subheader>
-            <RadioButton.Group
-              onValueChange={(value) => setThemeType(value as 'light' | 'dark' | 'system')}
-              value={themeType}
-            >
-              <RadioButton.Item
-                label="Light Theme"
-                value="light"
-                color={theme.colors.primary}
-                labelStyle={{ color: theme.colors.onSurface }}
-                style={styles.radioItem}
-              />
-              <RadioButton.Item
-                label="Dark Theme"
-                value="dark"
-                color={theme.colors.primary}
-                labelStyle={{ color: theme.colors.onSurface }}
-                style={styles.radioItem}
-              />
-              <RadioButton.Item
-                label="System Default"
-                value="system"
-                color={theme.colors.primary}
-                labelStyle={{ color: theme.colors.onSurface }}
-                style={styles.radioItem}
-              />
-            </RadioButton.Group>
-          </List.Section>
 
-          <Divider style={styles.divider} />
+          {sectionTitle('Your notes')}
+          <GroupedRow
+            title="Import and export"
+            description="Back up your notes or restore a backup"
+            icon="swap-vertical"
+            right={chevron}
+            onPress={() => navigation.navigate('ImportExport')}
+            isFirst
+            isLast={false}
+          />
+          <GroupedRow
+            title="Delete all notes"
+            description="Removes every note from this device"
+            icon="delete-outline"
+            danger
+            onPress={handleDeleteAll}
+            isFirst={false}
+            isLast
+          />
 
-          <List.Section>
-            <List.Subheader style={[styles.subheader, { color: theme.colors.primary }]}>
-              Data Management
-            </List.Subheader>
-
-            <List.Item
-              title="Import/Export Notes"
-              description="Backup or restore your notes"
-              titleStyle={{ color: theme.colors.onSurface }}
-              descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
-              left={(props) => <List.Icon {...props} icon="database-import-outline" color={theme.colors.primary} />}
-              onPress={() => navigation.navigate('ImportExport')}
-            />
-
-            <List.Item
-              title="Clear All Notes"
-              description="Delete all notes (cannot be undone)"
-              titleStyle={{ color: theme.colors.error }}
-              descriptionStyle={{ color: theme.colors.error + 'AA' }}
-              left={(props) => <List.Icon {...props} icon="delete-forever" color={theme.colors.error} />}
-              onPress={() => {
-                Alert.alert(
-                  'Clear All Notes',
-                  'Are you sure you want to delete all notes? This action cannot be undone.',
-                  [
-                    { text: 'Cancel', style: 'cancel' },
-                    {
-                      text: 'Delete All',
-                      style: 'destructive',
-                      onPress: async () => {
-                        try {
-                          await clearAllNotes();
-                          Alert.alert('Success', 'All notes have been deleted.');
-                        } catch (error) {
-                          Alert.alert('Error', 'Failed to delete all notes.');
-                        }
-                      },
-                    },
-                  ]
-                );
-              }}
-            />
-          </List.Section>
-
-          <Divider style={styles.divider} />
-
-          <List.Section>
-            <List.Subheader style={[styles.subheader, { color: theme.colors.primary }]}>
-              About
-            </List.Subheader>
-            <List.Item
-              title="About NoteSpark"
-              description="Developer, License, Version, GitHub"
-              titleStyle={{ color: theme.colors.onSurface }}
-              descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
-              left={(props) => <List.Icon {...props} icon="information" color={theme.colors.primary} />}
-              onPress={() => navigation.navigate('About')}
-            />
-        <List.Subheader style={[styles.subheader, { color: theme.colors.primary, marginTop: 16 }]}>Future Improvements</List.Subheader>
-        <List.Item
-          title="What's Next?"
-          description="Vault encryption, secure sync, and no cloud web are coming."
-          titleStyle={{fontSize: 17 }}
-          descriptionStyle={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}
-          left={(props) => (
-            <View style={{ justifyContent: 'center' }}>
-              <List.Icon {...props} icon="rocket-launch" color={theme.colors.primary} />
-            </View>
-          )}
-          right={(props) => (
-            <View style={{ justifyContent: 'center' }}>
-              <List.Icon {...props} icon="chevron-right" color={theme.colors.outline} />
-            </View>
-          )}
-          onPress={() => {
-            Alert.alert(
-              'Coming Soon!!!',
-              'Upcoming features include:\n\n- Vault encryption\n- Secure sync between device and web\n- A fully NOCLOUD-CAPABLE web interface\n\nThese additions are focused on improving security, portability, and accessibility.',
-              [
-                {
-                  text: 'OK',
-                  style: 'cancel',
-                },
-                {
-                  text: 'Learn More',
-                  style: 'default',
-                  onPress: () => {
-                    const url = 'https://notespark.lusansapkota.com.np';
-                    import('react-native').then(({ Linking }) => {
-                      Linking.openURL(url);
-                    });
-                  },
-                },
-              ]
-            );
-          }}
-        />
-
-          </List.Section>
+          {sectionTitle('App')}
+          <GroupedRow
+            title="Check for updates"
+            description="Get the latest fixes and features"
+            icon="update"
+            right={checkingUpdate ? <ActivityIndicator style={styles.spinner} /> : undefined}
+            onPress={handleCheckUpdate}
+            disabled={checkingUpdate}
+            isFirst
+            isLast={false}
+          />
+          <GroupedRow
+            title="About NoteSpark"
+            description="Version, license and source code"
+            icon="information-outline"
+            right={chevron}
+            onPress={() => navigation.navigate('About')}
+            isFirst={false}
+            isLast={false}
+          />
+          <GroupedRow
+            title="What's next"
+            description="Vault encryption, sync and a web app"
+            icon="lightbulb-outline"
+            right={chevron}
+            onPress={handleWhatsNext}
+            isFirst={false}
+            isLast
+          />
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -246,24 +183,21 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: 32,
+    paddingHorizontal: space.lg,
+    paddingBottom: space.xxl,
   },
-  contentWrapper: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
+  column: {
+    width: '100%',
+    maxWidth: readingWidth,
+    alignSelf: 'center',
   },
-  radioItem: {
-    marginVertical: -2,
+  sectionTitle: {
+    marginTop: space.xl,
+    marginBottom: space.sm,
+    marginLeft: space.xs,
   },
-  divider: {
-    marginVertical: 12,
-    height: 1,
-  },
-  subheader: {
-    fontWeight: '700',
-    fontSize: 16,
-    paddingLeft: 0,
-    marginBottom: 4,
+  spinner: {
+    marginRight: space.sm,
   },
 });
 
