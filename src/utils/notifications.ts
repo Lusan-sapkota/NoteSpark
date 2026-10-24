@@ -12,7 +12,6 @@ export async function setupNotificationWorker() {
       }
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
-          shouldShowAlert: true,
           shouldPlaySound: false,
           shouldSetBadge: false,
           shouldShowBanner: true,

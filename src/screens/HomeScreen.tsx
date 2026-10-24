@@ -22,15 +22,9 @@ const typeFilters = [
   { value: 'text', label: 'Plain text' },
 ] as const;
 
-const themeOptions = [
-  { value: 'light', label: 'Light theme', icon: 'white-balance-sunny' },
-  { value: 'dark', label: 'Dark theme', icon: 'weather-night' },
-  { value: 'system', label: 'System theme', icon: 'theme-light-dark' },
-] as const;
-
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
-  const { theme, themeType, setThemeType, isDarkMode } = useTheme();
+  const { theme, isDarkMode } = useTheme();
   const { elevated, onScroll: onHeaderScroll } = useHeaderElevation();
   const alert = useAlert();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -41,7 +35,6 @@ const HomeScreen: React.FC = () => {
   const [filterMarkdown, setFilterMarkdown] = useState<'all' | 'markdown' | 'text'>('all');
   const [sortType, setSortType] = useState<'edited' | 'created'>('edited');
   const [optionsVisible, setOptionsVisible] = useState(false);
-  const [themeMenuVisible, setThemeMenuVisible] = useState(false);
   const [fabExtended, setFabExtended] = useState(true);
   const [snackbar, setSnackbar] = useState('');
   const lastOffset = useRef(0);
@@ -213,26 +206,7 @@ const HomeScreen: React.FC = () => {
       <Header elevated={elevated}
         title="NoteSpark"
         rightActions={
-          <>
-            <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
-            <Menu
-              visible={themeMenuVisible}
-              onDismiss={() => setThemeMenuVisible(false)}
-              anchor={
-                <Appbar.Action icon="dots-vertical" accessibilityLabel="More options" onPress={() => setThemeMenuVisible(true)} />
-              }
-            >
-              {themeOptions.map(option => (
-                <Menu.Item
-                  key={option.value}
-                  leadingIcon={option.icon}
-                  trailingIcon={themeType === option.value ? 'check' : undefined}
-                  title={option.label}
-                  onPress={() => { setThemeType(option.value); setThemeMenuVisible(false); }}
-                />
-              ))}
-            </Menu>
-          </>
+          <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
         }
       />
 
