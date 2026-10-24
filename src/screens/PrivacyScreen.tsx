@@ -22,12 +22,8 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
     outro: 'None of this is sent to the developer or anyone else.',
   },
   {
-    heading: 'What leaves your device',
-    bullets: [
-      "App updates: when you open NoteSpark, it checks Expo's update service (expo.dev) for a newer version and downloads it if there is one. The request includes technical details such as the app version, your device platform and an anonymous identifier for this installation. It never includes your notes. Expo's privacy policy is at expo.dev/privacy.",
-      "Exports: when you export your notes, the file goes only where you choose in the share sheet, such as a file manager, a cloud drive or another app. That service's privacy policy then applies.",
-      'Links: links you open from a note or from this app open in your browser.',
-    ],
+    heading: 'App updates',
+    intro: 'To deliver bug fixes, NoteSpark checks for an update when it opens. The check sends only technical details, such as the app version, and never your notes.',
   },
   {
     heading: 'Permissions',
