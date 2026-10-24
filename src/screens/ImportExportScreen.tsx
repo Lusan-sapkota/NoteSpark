@@ -3,16 +3,16 @@ import { StyleSheet, View, ScrollView, Share, Platform, RefreshControl } from 'r
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Icon, Text, TextInput } from 'react-native-paper';
+import { Button, Icon, IconButton, Menu, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
-import { exportNotesAsJson, importNotesFromJson } from '../storage/database';
+import { exportNotesAsJson, getNotes } from '../storage/database';
 import { sendAppNotification } from '../utils/notifications';
 import { importNotesFromFile } from '../storage/database';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { lightTheme, readingWidth, shape, space } from '../theme/theme';
+import { groupCorners, lightTheme, readingWidth, shape, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type ImportExportScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ImportExport'>;
@@ -29,6 +29,9 @@ const ImportExportScreen: React.FC = () => {
   const [history, setHistory] = useState<any[]>([]);
   const [refreshing, setRefreshing] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
+  const [noteCount, setNoteCount] = useState<number | null>(null);
+  const [pasteOpen, setPasteOpen] = useState(false);
+  const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
   const handleExportHistoryPDF = async () => {
     alert(
       'Export history as PDF?',
@@ -67,6 +70,7 @@ const ImportExportScreen: React.FC = () => {
   };
 
   const loadHistory = async () => {
+    getNotes().then(notes => setNoteCount(notes.length)).catch(() => {});
     try {
       const raw = await AsyncStorage.getItem('notesHistory');
       console.log('Loaded notesHistory:', raw);
@@ -301,6 +305,7 @@ const ImportExportScreen: React.FC = () => {
               const result = validNotes.length;
               setIsImporting(false);
               setImportData('');
+              setPasteOpen(false);
               let msg = `${result} notes imported.`;
               if (errorCount > 0) msg += ` ${errorCount} notes were skipped because they were incomplete.`;
               await sendAppNotification('Notes imported', msg);
@@ -384,9 +389,16 @@ const ImportExportScreen: React.FC = () => {
     const count = typeof h.count === 'number' ? h.count : 0;
     return count > 0 ? `${kind}ed ${count} notes` : `${kind} didn't finish`;
   };
+  const formatDate = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  const lastBackup = history.find(h => h.type === 'export' && typeof h.count === 'number' && h.count > 0);
 
   const sectionTitle = (title: string) => (
-    <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>{title}</Text>
+    <Text variant="titleSmall" accessibilityRole="header" style={[styles.sectionTitle, { color: theme.colors.primary }]}>{title}</Text>
+  );
+  const panelIcon = (icon: string, background: string, color: string) => (
+    <View style={[styles.panelIcon, { backgroundColor: background }]}>
+      <Icon source={icon} size={22} color={color} />
+    </View>
   );
 
   return (
@@ -411,81 +423,128 @@ const ImportExportScreen: React.FC = () => {
         }
       >
         <View style={styles.column}>
-          {sectionTitle('Export')}
-          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-            Save all your notes as a JSON file you can keep, share or import later.
-          </Text>
-          <Button
-            mode="contained"
-            icon="export-variant"
-            onPress={handleExport}
-            loading={isExporting}
-            disabled={isExporting}
-            style={styles.action}
-          >
-            Export notes
-          </Button>
-
-          {sectionTitle('Import')}
-          <View style={[styles.banner, { backgroundColor: theme.colors.errorContainer }]}>
-            <Icon source="alert-outline" size={20} color={theme.colors.onErrorContainer} />
-            <Text variant="bodyMedium" style={[styles.bannerText, { color: theme.colors.onErrorContainer }]}>
-              Importing replaces all notes on this device. Export first if you want to keep them.
+          <View style={styles.summary}>
+            <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
+              {noteCount === null ? ' ' : noteCount === 1 ? '1 note on this device' : `${noteCount} notes on this device`}
+            </Text>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+              {lastBackup ? `Last backup ${formatDate(lastBackup.date)}` : 'No backup yet. Export your notes to keep a copy off this phone.'}
             </Text>
           </View>
-          <Button
-            mode="contained-tonal"
-            icon="file-upload-outline"
-            onPress={handleFileImport}
-            loading={fileImporting}
-            disabled={fileImporting}
-            style={styles.action}
-          >
-            Choose JSON file
-          </Button>
-          <TextInput
-            mode="outlined"
-            label="Or paste JSON"
-            value={importData}
-            onChangeText={setImportData}
-            multiline
-            numberOfLines={6}
-            style={styles.pasteInput}
-          />
-          <Button
-            mode="outlined"
-            onPress={handleImport}
-            loading={isImporting}
-            disabled={isImporting || !importData.trim()}
-            style={styles.action}
-          >
-            Import notes
-          </Button>
 
-          <View style={styles.historyHeader}>
-            <Text variant="titleSmall" style={[styles.historyTitle, { color: theme.colors.primary }]}>History</Text>
+          {sectionTitle('Back up')}
+          <View style={[styles.panel, { backgroundColor: theme.colors.surfaceContainerLow }]}>
+            <View style={styles.panelHeader}>
+              {panelIcon('export-variant', theme.colors.primaryContainer, theme.colors.onPrimaryContainer)}
+              <View style={styles.panelText}>
+                <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>Export all notes</Text>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                  Saves every note as one JSON file. Keep it in your files or a cloud drive.
+                </Text>
+              </View>
+            </View>
             <Button
-              mode="text"
-              icon="file-pdf-box"
-              onPress={handleExportHistoryPDF}
-              loading={pdfExporting}
-              disabled={pdfExporting || history.length === 0}
-              compact
+              mode="contained"
+              icon="export-variant"
+              onPress={handleExport}
+              loading={isExporting}
+              disabled={isExporting}
+              style={styles.panelAction}
             >
-              Save as PDF
-            </Button>
-            <Button
-              mode="text"
-              onPress={clearHistory}
-              disabled={history.length === 0}
-              textColor={theme.colors.error}
-              compact
-            >
-              Clear history
+              Export notes
             </Button>
           </View>
+
+          {sectionTitle('Restore')}
+          <View style={[styles.panel, { backgroundColor: theme.colors.surfaceContainerLow }]}>
+            <View style={styles.panelHeader}>
+              {panelIcon('file-restore-outline', theme.colors.secondaryContainer, theme.colors.onSecondaryContainer)}
+              <View style={styles.panelText}>
+                <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>Import a backup</Text>
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                  Bring back notes from a NoteSpark export file.
+                </Text>
+              </View>
+            </View>
+            <View style={[styles.banner, { backgroundColor: theme.colors.errorContainer }]}>
+              <Icon source="alert-outline" size={20} color={theme.colors.onErrorContainer} />
+              <Text variant="bodyMedium" style={[styles.panelText, { color: theme.colors.onErrorContainer }]}>
+                Importing replaces all notes on this device. Export first if you want to keep them.
+              </Text>
+            </View>
+            <Button
+              mode="contained-tonal"
+              icon="file-upload-outline"
+              onPress={handleFileImport}
+              loading={fileImporting}
+              disabled={fileImporting}
+              style={styles.panelAction}
+            >
+              Choose backup file
+            </Button>
+            {pasteOpen ? (
+              <>
+                <TextInput
+                  mode="outlined"
+                  label="Paste JSON"
+                  value={importData}
+                  onChangeText={setImportData}
+                  multiline
+                  numberOfLines={6}
+                  style={styles.pasteInput}
+                />
+                <View style={styles.pasteActions}>
+                  <Button mode="text" onPress={() => { setPasteOpen(false); setImportData(''); }}>Cancel</Button>
+                  <Button
+                    mode="outlined"
+                    onPress={handleImport}
+                    loading={isImporting}
+                    disabled={isImporting || !importData.trim()}
+                  >
+                    Import pasted JSON
+                  </Button>
+                </View>
+              </>
+            ) : (
+              <Button mode="text" icon="content-paste" onPress={() => setPasteOpen(true)} style={styles.pasteToggle}>
+                Paste JSON instead
+              </Button>
+            )}
+          </View>
+
+          <View style={styles.historyHeader}>
+            <Text variant="titleSmall" accessibilityRole="header" style={[styles.historyTitle, { color: theme.colors.primary }]}>History</Text>
+            <Menu
+              visible={historyMenuVisible}
+              onDismiss={() => setHistoryMenuVisible(false)}
+              anchor={
+                <IconButton
+                  icon="dots-vertical"
+                  onPress={() => setHistoryMenuVisible(true)}
+                  disabled={history.length === 0 || pdfExporting}
+                  accessibilityLabel="History options"
+                />
+              }
+            >
+              <Menu.Item
+                leadingIcon="file-pdf-box"
+                title="Save as PDF"
+                onPress={() => { setHistoryMenuVisible(false); handleExportHistoryPDF(); }}
+              />
+              <Menu.Item
+                leadingIcon="delete-outline"
+                title="Clear history"
+                titleStyle={{ color: theme.colors.error }}
+                onPress={() => { setHistoryMenuVisible(false); clearHistory(); }}
+              />
+            </Menu>
+          </View>
           {history.length === 0 ? (
-            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>No imports or exports yet.</Text>
+            <View style={[styles.emptyHistory, groupCorners(true, true), { backgroundColor: theme.colors.surfaceContainerLow }]}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                Your imports and exports will appear here.
+              </Text>
+            </View>
           ) : (
             history.map((h, idx) => {
               const failed = !(typeof h.count === 'number' && h.count > 0);
@@ -493,7 +552,7 @@ const ImportExportScreen: React.FC = () => {
                 <GroupedRow
                   key={idx}
                   title={historyTitle(h)}
-                  description={`${new Date(h.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}${h.error && h.error.trim() ? `\n${h.error}` : ''}`}
+                  description={`${formatDate(h.date)}${h.error && h.error.trim() ? `\n${h.error}` : ''}`}
                   icon={failed ? 'alert-circle-outline' : h.type === 'import' ? 'download-outline' : 'upload-outline'}
                   danger={failed}
                   isFirst={idx === 0}
@@ -521,13 +580,37 @@ const styles = StyleSheet.create({
     maxWidth: readingWidth,
     alignSelf: 'center',
   },
+  summary: {
+    gap: space.xs,
+    paddingTop: space.sm,
+  },
   sectionTitle: {
     marginTop: space.xl,
     marginBottom: space.sm,
+    marginLeft: space.xs,
   },
-  action: {
+  panel: {
+    borderRadius: shape.group,
+    padding: space.lg,
+    gap: space.md,
+  },
+  panelHeader: {
+    flexDirection: 'row',
+    gap: space.md,
+  },
+  panelIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  panelText: {
+    flex: 1,
+    gap: 2,
+  },
+  panelAction: {
     alignSelf: 'flex-start',
-    marginTop: space.md,
   },
   banner: {
     flexDirection: 'row',
@@ -535,22 +618,30 @@ const styles = StyleSheet.create({
     padding: space.md,
     borderRadius: shape.small,
   },
-  bannerText: {
-    flex: 1,
+  pasteToggle: {
+    alignSelf: 'flex-start',
+    marginLeft: -space.md,
   },
   pasteInput: {
-    marginTop: space.md,
     minHeight: 120,
+  },
+  pasteActions: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    flexWrap: 'wrap',
+    gap: space.sm,
   },
   historyHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
     marginTop: space.xl,
-    marginBottom: space.sm,
+    marginLeft: space.xs,
   },
   historyTitle: {
     flex: 1,
+  },
+  emptyHistory: {
+    padding: space.lg,
   },
 });
 
