@@ -108,7 +108,7 @@ const EditorScreen: React.FC = () => {
           const notesModule = await import('../storage/notes');
           const notes = await notesModule.getNotes();
           if (notes.length === 1) {
-            await sendAppNotification('First Note Created!', 'Congratulations on creating your first note in NoteSpark!');
+            await sendAppNotification('First note saved', 'Your note is saved on this device.');
           }
         } catch (e) {}
       }

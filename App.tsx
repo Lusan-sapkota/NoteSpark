@@ -41,7 +41,7 @@ const AppContent = () => {
     try {
       await AsyncStorage.setItem('onboarded', 'true');
       try {
-        await sendAppNotification('Welcome to NoteSpark!', 'You are ready to start taking notes.');
+        await sendAppNotification('Welcome to NoteSpark', 'Tap New note to write your first note.');
       } catch (notifErr) {
         console.error('Notification error:', notifErr);
       }

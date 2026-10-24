@@ -181,7 +181,7 @@ const ImportExportScreen: React.FC = () => {
                   title: 'Exported Notes',
                   message: 'Exported notes from NoteSpark',
                 });
-                await sendAppNotification('Notes Exported', `Exported ${notesArr.length} notes.`);
+                await sendAppNotification('Notes exported', `${notesArr.length} notes exported.`);
                 await addHistory({
                   type: 'export',
                   date: new Date().toISOString(),
@@ -205,7 +205,7 @@ const ImportExportScreen: React.FC = () => {
                     title: 'Exported Notes',
                     message: jsonString,
                   });
-                  await sendAppNotification('Notes Exported', `Exported ${notesArr.length} notes.`);
+                  await sendAppNotification('Notes exported', `${notesArr.length} notes exported.`);
                   await addHistory({
                     type: 'export',
                     date: new Date().toISOString(),
@@ -300,7 +300,7 @@ const ImportExportScreen: React.FC = () => {
               setImportData('');
               let msg = `${result} notes imported.`;
               if (errorCount > 0) msg += ` ${errorCount} notes were skipped because they were incomplete.`;
-              await sendAppNotification('Notes Imported', msg);
+              await sendAppNotification('Notes imported', msg);
               await addHistory({ type: 'import', date: new Date().toISOString(), count: result, error: errorCount > 0 ? `${errorCount} notes skipped.` : '' });
               await loadHistory();
               Alert.alert('Notes imported', msg, [
@@ -341,7 +341,7 @@ const ImportExportScreen: React.FC = () => {
               setFileImporting(true);
               const count = await importNotesFromFile();
               setFileImporting(false);
-              await sendAppNotification('Notes Imported', `${count} notes imported successfully!`);
+              await sendAppNotification('Notes imported', `${count} notes imported.`);
               await addHistory({
                 type: 'import',
                 date: new Date().toISOString(),
