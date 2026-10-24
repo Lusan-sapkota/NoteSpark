@@ -6,7 +6,7 @@ import { ActivityIndicator, AnimatedFAB, Appbar, Button, Chip, Menu, Searchbar, 
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import { getNotes, deleteNote } from '../storage/database';
+import { getNotes, deleteNote } from '../storage/notes';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';

@@ -15,7 +15,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, IconButton, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
-import { getNoteById, saveNote, updateNote } from '../storage/database';
+import { getNoteById, getNotes, saveNote, updateNote } from '../storage/notes';
 import { sendAppNotification } from '../utils/notifications';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -108,8 +108,7 @@ const EditorScreen: React.FC = () => {
           updatedAt: now
         });
         try {
-          const notesModule = await import('../storage/notes');
-          const notes = await notesModule.getNotes();
+          const notes = await getNotes();
           if (notes.length === 1) {
             await sendAppNotification('First note saved', 'Your note is saved on this device.');
           }

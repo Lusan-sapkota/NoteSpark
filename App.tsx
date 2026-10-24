@@ -6,7 +6,8 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-re
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { getNotes, initDatabase } from './src/storage/database';
+import { initDatabase } from './src/storage/database';
+import { getNotes } from './src/storage/notes';
 import { setupNotificationWorker } from './src/utils/notifications';
 import { ActivityIndicator, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';

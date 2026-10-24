@@ -1,6 +1,4 @@
-export const clearAllNotes = async (): Promise<void> => {
-  await db.runAsync('DELETE FROM notes');
-};
+// All note reads and writes. database.ts only opens the database and runs migrations.
 import { db } from './database';
 import { Note } from '../types';
 
@@ -47,7 +45,7 @@ export const saveNote = async (note: Omit<Note, 'id'>): Promise<number> => {
   }
 };
 
-export const updateNote = async (note: Note): Promise<void> => {
+export const updateNote = async (note: Pick<Note, 'id' | 'title' | 'content' | 'isMarkdown'>): Promise<void> => {
   const now = new Date().toISOString();
   const result: any = await db.runAsync(
     `UPDATE notes SET title = ?, content = ?, isMarkdown = ?, updatedAt = ? WHERE id = ?`,
@@ -70,6 +68,10 @@ export const deleteNote = async (id: number): Promise<void> => {
   } else {
     throw new Error('Note not found');
   }
+};
+
+export const clearAllNotes = async (): Promise<void> => {
+  await db.runAsync('DELETE FROM notes');
 };
 
 export const exportNotesAsJson = async (): Promise<string> => {
