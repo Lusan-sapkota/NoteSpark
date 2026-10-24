@@ -8,24 +8,26 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
   }
 }
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, ScrollView, Alert, KeyboardAvoidingView, Platform, Dimensions, Image, Modal, TouchableOpacity, StatusBar } from 'react-native';
+import { StyleSheet, View, TextInput, ScrollView, Alert, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Switch, Text, Button, IconButton } from 'react-native-paper';
-import SafeText from '../components/SafeText';
+import { Button, Dialog, IconButton, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { getNoteById, saveNote, updateNote } from '../storage/database';
 import { sendAppNotification } from '../utils/notifications';
-import { Note } from '../types';
 import Header from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useTheme } from '../theme/ThemeContext';
+import { readingWidth, space } from '../theme/theme';
 
 type EditorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Editor'>;
 type EditorScreenRouteProp = RouteProp<RootStackParamList, 'Editor'>;
 
+const formatDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
 const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
@@ -43,22 +45,9 @@ const EditorScreen: React.FC = () => {
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
-  const [zoomedImage, setZoomedImage] = useState<string | null>(null);
-
-  const handleAddImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-    });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      const uri = result.assets[0].uri;
-      if (isMarkdown) {
-        setContent(content + `\n\n![Image](${uri})\n`);
-      } else {
-        setContent(content + `\n[Image: ${uri}]\n`);
-      }
-    }
-  };
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [linkText, setLinkText] = useState('');
+  const [linkUrl, setLinkUrl] = useState('');
 
   useEffect(() => {
     if (!noteId) {
@@ -76,16 +65,16 @@ const EditorScreen: React.FC = () => {
         if (note) {
           setTitle(typeof note.title === 'string' ? note.title : String(note.title));
           setContent(Array.isArray(note.content) ? note.content.join('\n') : typeof note.content === 'string' ? note.content : String(note.content));
-          setIsMarkdown(note.isMarkdown);
+          setIsMarkdown(!!note.isMarkdown);
           setIsEditing(true);
           setCreatedAt(note.createdAt);
           setUpdatedAt(note.updatedAt);
         } else {
-          Alert.alert('Error', 'Note not found');
+          Alert.alert('Note not found', 'It may have been deleted.');
         }
       } catch (error) {
         console.error('Failed to load note:', error);
-        Alert.alert('Error', 'Failed to load note');
+        Alert.alert("Couldn't open the note", 'Go back and try again.');
       }
     };
     loadNote();
@@ -94,7 +83,7 @@ const EditorScreen: React.FC = () => {
   const handleSave = async () => {
     if (saving) return;
     if (!title.trim()) {
-      Alert.alert('Error', 'Title cannot be empty');
+      Alert.alert('Add a title', 'Notes need a title before you can save them.');
       return;
     }
     setSaving(true);
@@ -108,7 +97,7 @@ const EditorScreen: React.FC = () => {
         });
       } else {
         const now = new Date().toISOString();
-        const id = await saveNote({
+        await saveNote({
           title,
           content,
           isMarkdown,
@@ -130,464 +119,233 @@ const EditorScreen: React.FC = () => {
     } catch (error) {
       setSaving(false);
       console.error('Failed to save note:', error);
-      Alert.alert('Error', 'Failed to save note');
+      Alert.alert("Couldn't save the note", 'Your text is still here. Try saving again.');
     }
   };
 
-  const [showLinkDialog, setShowLinkDialog] = useState(false);
-  const [linkText, setLinkText] = useState('');
-  const [linkUrl, setLinkUrl] = useState('');
+  // Replace the selection with `text`, then select [selStart, selEnd] within the inserted text.
+  const insert = (text: string, selStart = text.length, selEnd = selStart) => {
+    const before = content.slice(0, selection.start);
+    const after = content.slice(selection.end);
+    setContent(before + text + after);
+    setSelection({ start: before.length + selStart, end: before.length + selEnd });
+  };
+
+  const wrapSelection = (marker: string) => {
+    const selected = content.slice(selection.start, selection.end);
+    insert(`${marker}${selected}${marker}`, marker.length, marker.length + selected.length);
+  };
+
+  const prefixLines = (prefix: string) => {
+    const lineStart = content.lastIndexOf('\n', selection.start - 1) + 1;
+    const block = content.slice(lineStart, selection.end);
+    const prefixed = block.split('\n').map(line => prefix + line).join('\n');
+    setContent(content.slice(0, lineStart) + prefixed + content.slice(selection.end));
+    const end = lineStart + prefixed.length;
+    setSelection({ start: end, end });
+  };
+
+  const handleAddImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+    });
+    if (!result.canceled && result.assets?.[0]?.uri) {
+      const uri = result.assets[0].uri;
+      insert(isMarkdown ? `![Image](${uri})` : `[Image: ${uri}]`);
+    }
+  };
+
+  const handleInsertLink = () => {
+    if (!linkUrl.trim()) return;
+    const url = linkUrl.trim();
+    insert(`[${linkText.trim() || url}](${url})`);
+    setShowLinkDialog(false);
+    setLinkText('');
+    setLinkUrl('');
+  };
+
+  const hasSelection = selection.start !== selection.end;
+  const showPreview = isMarkdown && isPreview;
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background, flex: 1 }]} edges={['left', 'right', 'bottom']}>
-      <Header
-        title={isEditing ? 'Edit Note' : 'New Note'}
-        showBackButton
-        onBackPress={() => navigation.goBack()}
-      />
+    <KeyboardAvoidingView style={styles.flex} behavior="padding">
+      <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
+        <Header
+          title={isEditing ? 'Edit note' : 'New note'}
+          showBackButton
+          onBackPress={() => navigation.goBack()}
+          rightActions={
+            <Button mode="contained" onPress={handleSave} loading={saving} disabled={saving} style={styles.save}>
+              Save
+            </Button>
+          }
+        />
 
-      {isEditing && (
-        <View style={[styles.timestampContainer, { 
-          backgroundColor: theme.colors.surface || theme.colors.background,
-          borderBottomColor: theme.colors.outline || theme.colors.primary + '20'
-        }]}>
-          <View style={styles.timestampRow}>
-            <View style={styles.timestampItem}>
-              <Text style={[styles.timestampLabel, { color: theme.colors.primary }]}>
-                Created
-              </Text>
-              <Text style={[styles.timestampValue, { color: theme.colors.onSurface }]}>
-                {createdAt ? new Date(createdAt).toLocaleString() : 'Unknown'}
-              </Text>
-            </View>
-            
-            <View style={[styles.timestampDivider, { backgroundColor: theme.colors.outline || theme.colors.primary + '30' }]} />
-            
-            <View style={styles.timestampItem}>
-              <Text style={[styles.timestampLabel, { color: theme.colors.primary }]}>
-                Last Edited
-              </Text>
-              <Text style={[styles.timestampValue, { color: theme.colors.onSurface }]}>
-                {updatedAt ? new Date(updatedAt).toLocaleString() : 'Unknown'}
-              </Text>
-            </View>
-          </View>
-        </View>
-      )}
-
-      <KeyboardAvoidingView
-        style={styles.keyboardAvoidingView}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 88 : 0}
-      >
         <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={{ flexGrow: 1, paddingBottom: 24 }}
+          style={styles.flex}
+          contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
         >
-      {showLinkDialog && (
-        <Modal
-          visible={showLinkDialog}
-          transparent
-          animationType="fade"
-          onRequestClose={() => setShowLinkDialog(false)}
-        >
-          <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.4)', justifyContent: 'center', alignItems: 'center' }}>
-            <View style={{ backgroundColor: theme.colors.surface, borderRadius: 16, padding: 24, width: 320 }}>
-              <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: theme.colors.primary }}>Insert Link</Text>
-              <TextInput
-                style={{ borderBottomWidth: 1, borderColor: theme.colors.outline, marginBottom: 16, color: theme.colors.onSurface, fontSize: 16 }}
-                placeholder="Link Text"
-                value={linkText}
-                onChangeText={setLinkText}
-                placeholderTextColor={theme.colors.onSurfaceVariant}
+          <View style={styles.column}>
+            <View style={styles.modeRow}>
+              <SegmentedButtons
+                value={isMarkdown ? 'markdown' : 'text'}
+                onValueChange={value => setIsMarkdown(value === 'markdown')}
+                buttons={[
+                  { value: 'text', label: 'Plain text' },
+                  { value: 'markdown', label: 'Markdown' },
+                ]}
+                style={styles.flex}
               />
+              {isMarkdown && (
+                <IconButton
+                  icon={isPreview ? 'eye-off-outline' : 'eye-outline'}
+                  selected={isPreview}
+                  mode={isPreview ? 'contained-tonal' : undefined}
+                  onPress={() => setIsPreview(v => !v)}
+                  accessibilityLabel={isPreview ? 'Hide preview' : 'Show preview'}
+                />
+              )}
+            </View>
+
+            <TextInput
+              style={[styles.titleInput, theme.fonts.noteTitle, { color: theme.colors.onSurface }]}
+              placeholder="Title"
+              placeholderTextColor={theme.colors.onSurfaceVariant}
+              value={typeof title === 'string' ? title : String(title)}
+              onChangeText={setTitle}
+              selectionColor={theme.colors.primary}
+              accessibilityLabel="Note title"
+            />
+
+            {isEditing && (
+              <Text variant="bodySmall" style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}>
+                Created {formatDate(createdAt)}, edited {formatDate(updatedAt)}
+              </Text>
+            )}
+
+            {showPreview ? (
+              <View style={styles.body}>
+                <MarkdownRenderer content={content.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '')} />
+                <NoteImages uris={extractImageUris(content)} />
+              </View>
+            ) : (
               <TextInput
-                style={{ borderBottomWidth: 1, borderColor: theme.colors.outline, marginBottom: 16, color: theme.colors.onSurface, fontSize: 16 }}
-                placeholder="Link URL (https://...)"
+                style={[styles.body, styles.contentInput, theme.fonts.noteBody, { color: theme.colors.onSurface }]}
+                value={convertImagesToLinks(content, isMarkdown)}
+                onChangeText={setContent}
+                multiline
+                textAlignVertical="top"
+                selectionColor={theme.colors.primary}
+                placeholder={isMarkdown ? 'Start writing. Markdown works here.' : 'Start writing'}
+                placeholderTextColor={theme.colors.onSurfaceVariant}
+                autoCorrect
+                autoCapitalize="sentences"
+                selection={selection}
+                onSelectionChange={e => setSelection(e.nativeEvent.selection)}
+                accessibilityLabel="Note text"
+              />
+            )}
+          </View>
+        </ScrollView>
+
+        {!showPreview && (
+          <View style={[styles.toolbar, { backgroundColor: theme.colors.surfaceContainer }]}>
+            <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.toolbarContent}>
+              {isMarkdown && (
+                <>
+                  <IconButton icon="format-bold" onPress={() => wrapSelection('**')} accessibilityLabel="Bold" />
+                  <IconButton icon="format-italic" onPress={() => wrapSelection('_')} accessibilityLabel="Italic" />
+                  <IconButton icon="format-header-pound" onPress={() => prefixLines('## ')} accessibilityLabel="Heading" />
+                  <IconButton icon="format-list-bulleted" onPress={() => prefixLines('- ')} accessibilityLabel="Bulleted list" />
+                  <IconButton icon="link-variant" onPress={() => setShowLinkDialog(true)} accessibilityLabel="Add link" />
+                </>
+              )}
+              <IconButton icon="image-outline" onPress={handleAddImage} accessibilityLabel="Add image" />
+              <IconButton
+                icon="selection-remove"
+                disabled={!hasSelection}
+                onPress={() => insert('')}
+                accessibilityLabel="Delete selected text"
+              />
+            </ScrollView>
+          </View>
+        )}
+
+        <Portal>
+          <Dialog visible={showLinkDialog} onDismiss={() => setShowLinkDialog(false)}>
+            <Dialog.Title>Add link</Dialog.Title>
+            <Dialog.Content style={styles.dialogContent}>
+              <PaperTextInput mode="outlined" label="Link text" value={linkText} onChangeText={setLinkText} />
+              <PaperTextInput
+                mode="outlined"
+                label="URL"
+                placeholder="https://"
                 value={linkUrl}
                 onChangeText={setLinkUrl}
-                placeholderTextColor={theme.colors.onSurfaceVariant}
                 autoCapitalize="none"
                 autoCorrect={false}
+                keyboardType="url"
               />
-                <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 12 }}>
-                <Button 
-                  mode="text" 
-                  onPress={() => setShowLinkDialog(false)} 
-                  style={{ marginRight: 8, backgroundColor: theme.colors.primary }} 
-                  labelStyle={{ color: '#fff' }}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  mode="contained"
-                  onPress={() => {
-                  if (!linkUrl.trim()) return;
-                  const text = linkText.trim() || linkUrl.trim();
-                  const url = linkUrl.trim();
-                  const before = content.slice(0, selection.start);
-                  const after = content.slice(selection.end);
-                  setContent(before + `[${text}](${url})` + after);
-                  const newPos = before.length + `[${text}](${url})`.length;
-                  setSelection({ start: newPos, end: newPos });
-                  setShowLinkDialog(false);
-                  setLinkText('');
-                  setLinkUrl('');
-                  }}
-                  style={{ backgroundColor: theme.colors.primary }}
-                  labelStyle={{ color: '#fff' }}
-                >
-                  Insert
-                </Button>
-                </View>
-            </View>
-          </View>
-        </Modal>
-      )}
-          <TextInput
-            style={[styles.titleInput, { color: theme.colors.onSurface, borderBottomColor: theme.colors.outline || theme.colors.primary + '30' }]}
-            placeholder="Title"
-            placeholderTextColor={theme.colors.onSurfaceVariant} // 50% opacity
-            value={typeof title === 'string' ? title : String(title)}
-            onChangeText={setTitle}
-          />
-
-          <View style={styles.optionsRow}>
-            <View style={styles.optionItem}>
-              <Text style={{ color: theme.colors.onSurface }}>Markdown</Text>
-              <Switch
-                value={isMarkdown}
-                onValueChange={setIsMarkdown}
-                color={theme.colors.primary}
-              />
-            </View>
-            {isMarkdown && (
-              <View style={styles.optionItem}>
-                <Text style={{ color: theme.colors.onSurface }}>Preview</Text>
-                <Switch
-                  value={isPreview}
-                  onValueChange={setIsPreview}
-                  color={theme.colors.primary}
-                />
-              </View>
-            )}
-          </View>
-
-          {isMarkdown && isPreview ? (
-            <View style={[styles.previewContainer, { borderColor: theme.colors.outline || theme.colors.primary + '30' }]}> 
-              <MarkdownRenderer 
-                content={
-                  content
-                    .replace(/!\[[^\]]*\]\(([^)]+)\)/g, '') // Remove images
-                    .replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n') // Replace <br> tags with newlines
-                }
-              />
-          {(() => {
-            const imageRegex = /!\[[^\]]*\]\(([^)]+)\)/g;
-            const matches = Array.from(content.matchAll(imageRegex));
-            const trimImagePath = (path: string) => {
-              if (!path) return '';
-              if (path.startsWith('file:///')) {
-                const parts = path.split('/');
-                const fileName = parts[parts.length - 1];
-                return `Local Image (${fileName})`;
-              }
-              if (path.length > 32) {
-                return path.slice(0, 12) + '...' + path.slice(-12);
-              }
-              return path;
-            };
-            if (matches.length > 0) {
-              return matches.map((m, idx) => (
-                <View key={idx} style={{ marginTop: 12, alignItems: 'center' }}>
-                  <Text style={{ color: theme.colors.onSurfaceVariant, marginBottom: 4 }}>Image:</Text>
-                  <View
-                    style={{
-                      borderRadius: 16,
-                      overflow: 'hidden',
-                      backgroundColor: theme.dark ? '#222' : '#eee',
-                      marginBottom: 12,
-                      width: 340,
-                      height: 340,
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      borderWidth: 3,
-                      borderColor: theme.dark ? '#444' : '#f5f5f5',
-                    }}
-                  >
-                    {m[1] && m[1].trim() ? (
-                      <TouchableOpacity onPress={() => setZoomedImage(m[1].trim())} activeOpacity={0.85}>
-                        <Image
-                          source={{ uri: m[1].trim() }}
-                          style={{ width: 300, height: 300, resizeMode: 'contain', backgroundColor: theme.dark ? '#333' : '#ccc' }}
-                          defaultSource={Platform.OS === 'android' ? require('../../assets/icon.png') : undefined}
-                          onError={() => {}}
-                        />
-                      </TouchableOpacity>
-                    ) : (
-                      <Text style={{ color: theme.colors.error }}>Invalid image URL</Text>
-                    )}
-                  </View>
-                  <Text style={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}>{trimImagePath(m[1])}</Text>
-                </View>
-              ));
-            }
-            return null;
-          })()}
-              <Modal
-                visible={!!zoomedImage}
-                transparent
-                animationType="fade"
-                onRequestClose={() => setZoomedImage(null)}
-              >
-                <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.95)', justifyContent: 'center', alignItems: 'center' }}>
-                  <TouchableOpacity
-                    style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
-                    activeOpacity={1}
-                    onPress={() => setZoomedImage(null)}
-                  />
-                  <ScrollView
-                    style={{ flex: 1, width: '100%' }}
-                    contentContainerStyle={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}
-                    maximumZoomScale={4}
-                    minimumZoomScale={1}
-                    centerContent
-                    showsHorizontalScrollIndicator={false}
-                    showsVerticalScrollIndicator={false}
-                  >
-                    {zoomedImage && (
-                      <Image
-                        source={{ uri: zoomedImage }}
-                        style={{
-                          width: Dimensions.get('window').width - 32,
-                          height: Dimensions.get('window').height - 120,
-                          resizeMode: 'contain',
-                          borderRadius: 16,
-                          backgroundColor: '#222',
-                        }}
-                      />
-                    )}
-                  </ScrollView>
-                  <TouchableOpacity
-                    onPress={() => setZoomedImage(null)}
-                    style={{ position: 'absolute', top: 36, right: 24, zIndex: 10, backgroundColor: 'rgba(0,0,0,0.7)', borderRadius: 20, padding: 4 }}
-                    accessibilityLabel="Close image preview"
-                  >
-                    <Text style={{ color: '#fff', fontSize: 22, fontWeight: 'bold' }}>✕</Text>
-                  </TouchableOpacity>
-                </View>
-              </Modal>
-            </View>
-          ) : (
-            <View style={[styles.previewContainer, { borderColor: theme.colors.outline || theme.colors.primary + '30' }]}> 
-              <View style={{ flex: 1 }}>
-                <TextInput
-                  style={[styles.contentInput, { color: theme.colors.onSurface }]}
-                  value={convertImagesToLinks(content, isMarkdown)}
-                  onChangeText={setContent}
-                  multiline
-                  textAlignVertical="top"
-                  selectionColor={theme.colors.primary}
-                  placeholder={isMarkdown ? 'Enter markdown content...' : 'Enter note content...'}
-                  placeholderTextColor={theme.colors.onSurfaceVariant}
-                  autoCorrect
-                  autoCapitalize="sentences"
-                  selection={selection}
-                  onSelectionChange={e => setSelection(e.nativeEvent.selection)}
-                />
-                {selection.start !== selection.end && (
-                  <View
-                    pointerEvents="box-none"
-                    style={{
-                      position: 'absolute',
-                      zIndex: 20,
-                      right: 12,
-                      top: 90 + Math.floor(selection.start / 40) * 24, // further offset for below selection bar
-                      backgroundColor: theme.colors.surface,
-                      borderRadius: 16,
-                      elevation: 6,
-                      shadowColor: '#000',
-                      shadowOpacity: 0.15,
-                      shadowRadius: 6,
-                      padding: 2,
-                    }}
-                  >
-                    <IconButton
-                      icon="close"
-                      size={20}
-                      style={{ backgroundColor: theme.colors.error, margin: 0 }}
-                      iconColor="#fff"
-                      onPress={() => {
-                        setContent(
-                          content.slice(0, selection.start) + content.slice(selection.end)
-                        );
-                        setSelection({ start: selection.start, end: selection.start });
-                      }}
-                      accessibilityLabel="Delete selected text"
-                    />
-                  </View>
-                )}
-              </View>
-            </View>
-          )}
-        </ScrollView>
-        <View style={[styles.buttonContainer, { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingBottom: 12 }]}> 
-          <Button
-            mode="contained"
-            onPress={handleSave}
-            style={[
-              styles.saveButton,
-              { 
-                backgroundColor: theme.colors.primary, 
-                flex: isMarkdown ? 6 : 7, // Reduce flex if two icon buttons
-                marginRight: 0 
-              }
-            ]}
-            labelStyle={{ color: 'white', fontSize: 18 }}
-            loading={saving}
-            disabled={saving}
-          >
-            Save
-          </Button>
-          <View 
-            style={{ 
-              flexDirection: 'row', 
-              flex: isMarkdown ? 3 : 2, // Increase flex if two icon buttons
-              justifyContent: 'flex-end', 
-              alignItems: 'center' 
-            }}
-          >
-            <IconButton
-              icon="image"
-              size={28}
-              onPress={async () => {
-                let result = await ImagePicker.launchImageLibraryAsync({
-                  mediaTypes: ['images'],
-                  quality: 0.7,
-                });
-                if (!result.canceled && result.assets?.[0]?.uri) {
-                  const uri = result.assets[0].uri;
-                  const before = content.slice(0, selection.start);
-                  const after = content.slice(selection.end);
-                  if (isMarkdown) {
-                    setContent(before + `![Image](${uri})` + after);
-                    const newPos = before.length + `![Image](${uri})`.length;
-                    setSelection({ start: newPos, end: newPos });
-                  } else {
-                    setContent(before + `[Image: ${uri}]` + after);
-                    const newPos = before.length + `[Image: ${uri}]`.length;
-                    setSelection({ start: newPos, end: newPos });
-                  }
-                }
-              }}
-              style={{ backgroundColor: theme.colors.surfaceVariant, marginRight: isMarkdown ? 8 : 0 }}
-              accessibilityLabel="Add Image"
-            />
-            {isMarkdown && (
-              <IconButton
-                icon="link"
-                size={28}
-                onPress={() => setShowLinkDialog(true)}
-                style={{ backgroundColor: theme.colors.surfaceVariant, marginLeft: 0 }}
-                accessibilityLabel="Add Link"
-              />
-            )}
-          </View>
-        </View>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setShowLinkDialog(false)}>Cancel</Button>
+              <Button onPress={handleInsertLink} disabled={!linkUrl.trim()}>Add link</Button>
+            </Dialog.Actions>
+          </Dialog>
+        </Portal>
+      </SafeAreaView>
+    </KeyboardAvoidingView>
   );
 
 };
 
 const styles = StyleSheet.create({
-  container: {
+  flex: {
     flex: 1,
   },
-  timestampContainer: {
-    marginHorizontal: 16,
-    marginTop: 8,
-    marginBottom: 8,
-    borderRadius: 8,
-    borderBottomWidth: 1,
-    elevation: 1, // Android shadow
-    shadowColor: '#000', // iOS shadow
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
+  save: {
+    marginRight: space.sm,
   },
-  timestampRow: {
+  scrollContent: {
+    flexGrow: 1,
+    padding: space.lg,
+  },
+  column: {
+    flexGrow: 1,
+    width: '100%',
+    maxWidth: readingWidth,
+    alignSelf: 'center',
+  },
+  modeRow: {
     flexDirection: 'row',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  timestampItem: {
-    flex: 1,
     alignItems: 'center',
-  },
-  timestampDivider: {
-    width: 1,
-    marginHorizontal: 16,
-    opacity: 0.3,
-  },
-  timestampLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  timestampValue: {
-    fontSize: 13,
-    textAlign: 'center',
-    opacity: 0.8,
-    lineHeight: 18,
-  },
-  keyboardAvoidingView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-    padding: 16,
+    gap: space.sm,
   },
   titleInput: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 16,
-    padding: 8,
-    borderBottomWidth: 1,
+    marginTop: space.xl,
+    padding: 0,
   },
-  optionsRow: {
-    flexDirection: 'row',
-    marginBottom: 16,
+  meta: {
+    marginTop: space.xs,
   },
-  optionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginRight: 24,
+  body: {
+    flexGrow: 1,
+    marginTop: space.lg,
   },
   contentInput: {
-    flex: 1,
-    fontSize: 16,
-    lineHeight: 24,
     minHeight: 300,
-    textAlignVertical: 'top',
+    padding: 0,
   },
-  previewContainer: {
-    flex: 1,
-    minHeight: 300,
-    borderWidth: 1,
-    borderRadius: 4,
-    padding: 8,
+  toolbar: {
+    paddingHorizontal: space.xs,
   },
-  buttonContainer: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 0,
+  toolbarContent: {
+    alignItems: 'center',
   },
-  saveButton: {
-    borderRadius: 4,
+  dialogContent: {
+    gap: space.md,
   },
 });
 

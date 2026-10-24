@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyleSheet, ScrollView, Image, Alert, Linking, TouchableOpacity, Text } from 'react-native';
+import { View, Image, Alert, Text } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
@@ -200,7 +200,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   };
 
   return (
-    <ScrollView style={[styles.container, { padding: 0 }]}>
+    <View>
       <Markdown
         style={markdownStyles}
         rules={{
@@ -210,15 +210,8 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
       >
         {processedContent}
       </Markdown>
-    </ScrollView>
+    </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-});
 
 export default MarkdownRenderer; 
