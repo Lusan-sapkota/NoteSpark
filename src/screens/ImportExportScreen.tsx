@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Alert, Share, Platform, RefreshControl } from 'react-native';
+import { StyleSheet, View, ScrollView, Share, Platform, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,6 +10,7 @@ import { sendAppNotification } from '../utils/notifications';
 import { importNotesFromFile } from '../storage/database';
 import Header from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
+import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { lightTheme, readingWidth, shape, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -19,6 +20,7 @@ type ImportExportScreenNavigationProp = NativeStackNavigationProp<RootStackParam
 const ImportExportScreen: React.FC = () => {
   const navigation = useNavigation<ImportExportScreenNavigationProp>();
   const { theme } = useTheme();
+  const alert = useAlert();
   const [importData, setImportData] = useState('');
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -27,7 +29,7 @@ const ImportExportScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [pdfExporting, setPdfExporting] = useState(false);
   const handleExportHistoryPDF = async () => {
-    Alert.alert(
+    alert(
       'Export history as PDF?',
       'Creates a PDF of your import and export history that you can save or share.',
       [
@@ -54,7 +56,7 @@ const ImportExportScreen: React.FC = () => {
               const { uri } = await Print.printToFileAsync({ html });
               await Sharing.shareAsync(uri);
             } catch (err) {
-              Alert.alert("Couldn't create the PDF", 'Try again.');
+              alert("Couldn't create the PDF", 'Try again.');
             }
             setPdfExporting(false);
           },
@@ -97,7 +99,7 @@ const ImportExportScreen: React.FC = () => {
   };
 
   const clearHistory = async () => {
-    Alert.alert(
+    alert(
       'Clear history?',
       'Your import and export history will be cleared. Your notes stay as they are.',
       [
@@ -155,7 +157,7 @@ const ImportExportScreen: React.FC = () => {
         fileSaved = false;
       }
 
-      Alert.alert(
+      alert(
         'Export notes?',
         'Next, choose where to save or share the file.',
         [
@@ -188,12 +190,12 @@ const ImportExportScreen: React.FC = () => {
                   count: notesArr.length,
                   error: '',
                 });
-                Alert.alert('Notes exported', `${notesArr.length} notes exported.`, [
+                alert('Notes exported', `${notesArr.length} notes exported.`, [
                   { text: 'OK' }
                 ]);
               } else {
                 if (jsonString.length > 50000) {
-                  Alert.alert('Export is too large to share as text', 'Save the export with a file manager app instead.');
+                  alert('Export is too large to share as text', 'Save the export with a file manager app instead.');
                   await addHistory({
                     type: 'export',
                     date: new Date().toISOString(),
@@ -212,7 +214,7 @@ const ImportExportScreen: React.FC = () => {
                     count: notesArr.length,
                     error: '',
                   });
-                  Alert.alert('Notes exported', `${notesArr.length} notes exported.`, [
+                  alert('Notes exported', `${notesArr.length} notes exported.`, [
                     { text: 'OK' }
                   ]);
                 }
@@ -228,7 +230,7 @@ const ImportExportScreen: React.FC = () => {
         typeof error === 'object' && error !== null && 'message' in error
           ? String((error as { message?: string }).message)
           : 'Failed to export notes. Please try again.';
-      Alert.alert("Couldn't export notes", errorMessage);
+      alert("Couldn't export notes", errorMessage);
       await addHistory({
         type: 'export',
         date: new Date().toISOString(),
@@ -241,11 +243,11 @@ const ImportExportScreen: React.FC = () => {
 
   const handleImport = async () => {
     if (!importData.trim()) {
-      Alert.alert('Paste your backup first', 'Paste the JSON from a NoteSpark export, or choose a file instead.');
+      alert('Paste your backup first', 'Paste the JSON from a NoteSpark export, or choose a file instead.');
       await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'No data entered.' });
       return;
     }
-    Alert.alert(
+    alert(
       'Replace all notes?',
       'Importing replaces every note on this device with the notes in the backup. Export your current notes first if you want to keep them.',
       [
@@ -268,7 +270,7 @@ const ImportExportScreen: React.FC = () => {
                 parsed = JSON.parse(importData);
                 if (!Array.isArray(parsed)) throw new Error('Not an array');
               } catch (e) {
-                Alert.alert("That isn't valid JSON", 'Check that you pasted the whole export file.');
+                alert("That isn't valid JSON", 'Check that you pasted the whole export file.');
                 setIsImporting(false);
                 await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'Invalid JSON format.' });
                 return;
@@ -288,7 +290,7 @@ const ImportExportScreen: React.FC = () => {
                 return valid ? note : null;
               }).filter(Boolean);
               if (validNotes.length === 0) {
-                Alert.alert('No notes found', "The backup doesn't contain any notes NoteSpark can read.");
+                alert('No notes found', "The backup doesn't contain any notes NoteSpark can read.");
                 setIsImporting(false);
                 await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'No valid notes found.' });
                 return;
@@ -303,14 +305,14 @@ const ImportExportScreen: React.FC = () => {
               await sendAppNotification('Notes imported', msg);
               await addHistory({ type: 'import', date: new Date().toISOString(), count: result, error: errorCount > 0 ? `${errorCount} notes skipped.` : '' });
               await loadHistory();
-              Alert.alert('Notes imported', msg, [
+              alert('Notes imported', msg, [
                 { text: 'OK', onPress: async () => {
                   await loadHistory();
                 } },
               ]);
             } catch (error) {
               console.error('Failed to import notes:', error);
-              Alert.alert("Couldn't import notes", 'Check that the data is a NoteSpark export.');
+              alert("Couldn't import notes", 'Check that the data is a NoteSpark export.');
               setIsImporting(false);
               await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'Import failed.' });
             }
@@ -321,7 +323,7 @@ const ImportExportScreen: React.FC = () => {
   };
 
   const handleFileImport = async () => {
-    Alert.alert(
+    alert(
       'Replace all notes?',
       'Importing replaces every note on this device with the notes in the backup. Export your current notes first if you want to keep them.',
       [
@@ -348,7 +350,7 @@ const ImportExportScreen: React.FC = () => {
                 count: typeof count === 'number' && !isNaN(count) ? count : 0,
                 error: typeof count === 'number' && count > 0 ? '' : 'No notes imported from file.'
               });
-              Alert.alert('Notes imported', `${count} notes imported.`, [
+              alert('Notes imported', `${count} notes imported.`, [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
             } catch (error) {
@@ -356,7 +358,7 @@ const ImportExportScreen: React.FC = () => {
               const errorMessage = typeof error === 'object' && error !== null && 'message' in error
                 ? String((error as { message?: string }).message)
                 : 'Failed to import notes from file. Please check your JSON file and permissions.';
-              Alert.alert("Couldn't import notes", errorMessage);
+              alert("Couldn't import notes", errorMessage);
               await addHistory({
                 type: 'import',
                 date: new Date().toISOString(),

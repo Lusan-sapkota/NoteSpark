@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { StyleSheet, View, Alert, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { ActivityIndicator, AnimatedFAB, Appbar, Button, Chip, Menu, Searchbar, Snackbar, Text } from 'react-native-paper';
@@ -10,6 +10,7 @@ import { getNotes, deleteNote } from '../storage/database';
 import { Note } from '../types';
 import Header from '../components/Header';
 import NoteItem from '../components/NoteItem';
+import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { space } from '../theme/theme';
 
@@ -30,6 +31,7 @@ const themeOptions = [
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { theme, themeType, setThemeType, isDarkMode } = useTheme();
+  const alert = useAlert();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -54,7 +56,7 @@ const HomeScreen: React.FC = () => {
     } catch (error) {
       setLoading(false);
       console.error('Failed to load notes:', error);
-      Alert.alert("Couldn't load notes", 'Pull down on the list to try again.');
+      alert("Couldn't load notes", 'Pull down on the list to try again.');
     }
   };
 
@@ -107,7 +109,7 @@ const HomeScreen: React.FC = () => {
 
   const handleDeleteNote = useCallback((noteId: number) => {
     const title = notes.find(n => n.id === noteId)?.title || 'This note';
-    Alert.alert(
+    alert(
       'Delete note?',
       `"${title}" will be deleted from this device. This can't be undone.`,
       [
@@ -122,13 +124,13 @@ const HomeScreen: React.FC = () => {
               setSnackbar('Note deleted');
             } catch (error) {
               console.error('Failed to delete note:', error);
-              Alert.alert("Couldn't delete the note", 'Try again. If it keeps failing, restart the app.');
+              alert("Couldn't delete the note", 'Try again. If it keeps failing, restart the app.');
             }
           },
         },
       ]
     );
-  }, [notes]);
+  }, [notes, alert]);
 
   const handleEditNote = useCallback((noteId: number) => {
     navigation.navigate('Editor', { noteId: noteId.toString() });

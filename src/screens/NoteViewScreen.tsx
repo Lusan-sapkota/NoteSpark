@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Alert, Linking } from 'react-native';
+import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -9,6 +9,7 @@ import { Note } from '../types';
 import Header from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
+import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { NoteText, readingWidth, shape, space } from '../theme/theme';
 
@@ -36,18 +37,19 @@ const formatDate = (dateString: string) => {
 
 const linkRegex = /(https?:\/\/[^\s)]+|www\.[^\s)]+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}\b)/g;
 
-const confirmOpenLink = (url: string) => {
-  const openUrl = /^https?:\/\//.test(url) ? url : `https://${url}`;
-  Alert.alert('Open link?', `This opens ${url} in your browser.`, [
-    { text: 'Cancel', style: 'cancel' },
-    { text: 'Open link', onPress: () => Linking.openURL(openUrl).catch(() => {}) },
-  ]);
-};
-
 const NoteViewScreen: React.FC = () => {
   const navigation = useNavigation<NoteViewScreenNavigationProp>();
   const route = useRoute<NoteViewScreenRouteProp>();
   const { theme } = useTheme();
+  const alert = useAlert();
+
+  const confirmOpenLink = (url: string) => {
+    const openUrl = /^https?:\/\//.test(url) ? url : `https://${url}`;
+    alert('Open link?', `This opens ${url} in your browser.`, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Open link', onPress: () => Linking.openURL(openUrl).catch(() => {}) },
+    ]);
+  };
   const insets = useSafeAreaInsets();
   const [note, setNote] = useState<Note | null>(null);
   const [refreshing, setRefreshing] = useState(false);
@@ -69,7 +71,7 @@ const NoteViewScreen: React.FC = () => {
         const fetchedNote = await getNoteById((route.params as any).noteId);
         setNote(fetchedNote);
       } catch (error) {
-        Alert.alert("Couldn't load the note", 'Pull down to try again.');
+        alert("Couldn't load the note", 'Pull down to try again.');
       }
     }
     setRefreshing(false);
@@ -82,7 +84,7 @@ const NoteViewScreen: React.FC = () => {
   );
 
   const handleDelete = () => {
-    Alert.alert('Delete note?', `"${note!.title}" will be deleted from this device. This can't be undone.`, [
+    alert('Delete note?', `"${note!.title}" will be deleted from this device. This can't be undone.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
@@ -94,7 +96,7 @@ const NoteViewScreen: React.FC = () => {
               navigation.goBack();
             }, 120);
           } catch (error) {
-            Alert.alert("Couldn't delete the note", 'Try again. If it keeps failing, restart the app.');
+            alert("Couldn't delete the note", 'Try again. If it keeps failing, restart the app.');
           }
         },
       },

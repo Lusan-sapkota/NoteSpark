@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Image, Alert, Text } from 'react-native';
+import { View, Image, Text } from 'react-native';
 import Markdown from 'react-native-markdown-display';
+import { useAlert } from './DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
 
@@ -10,6 +11,7 @@ interface MarkdownRendererProps {
 
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   const { theme } = useTheme();
+  const alert = useAlert();
 
   // Replace <br> tags with newlines so markdown treats them as line breaks
   const processedContent = content.replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n');
@@ -180,7 +182,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
       <Text
         style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
         onPress={() => {
-          Alert.alert(
+          alert(
             'Open link?',
             `This opens ${url} in your browser.`,
             [

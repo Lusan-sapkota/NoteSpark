@@ -8,7 +8,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
   }
 }
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, ScrollView, Alert, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, TextInput, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -20,6 +20,7 @@ import { sendAppNotification } from '../utils/notifications';
 import Header from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
+import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { readingWidth, space } from '../theme/theme';
 
@@ -33,6 +34,7 @@ const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
   const route = useRoute<EditorScreenRouteProp>();
   const { theme } = useTheme();
+  const alert = useAlert();
   const [saving, setSaving] = useState(false);
 
   const { noteId } = route.params ?? {};
@@ -70,11 +72,11 @@ const EditorScreen: React.FC = () => {
           setCreatedAt(note.createdAt);
           setUpdatedAt(note.updatedAt);
         } else {
-          Alert.alert('Note not found', 'It may have been deleted.');
+          alert('Note not found', 'It may have been deleted.');
         }
       } catch (error) {
         console.error('Failed to load note:', error);
-        Alert.alert("Couldn't open the note", 'Go back and try again.');
+        alert("Couldn't open the note", 'Go back and try again.');
       }
     };
     loadNote();
@@ -83,7 +85,7 @@ const EditorScreen: React.FC = () => {
   const handleSave = async () => {
     if (saving) return;
     if (!title.trim()) {
-      Alert.alert('Add a title', 'Notes need a title before you can save them.');
+      alert('Add a title', 'Notes need a title before you can save them.');
       return;
     }
     setSaving(true);
@@ -119,7 +121,7 @@ const EditorScreen: React.FC = () => {
     } catch (error) {
       setSaving(false);
       console.error('Failed to save note:', error);
-      Alert.alert("Couldn't save the note", 'Your text is still here. Try saving again.');
+      alert("Couldn't save the note", 'Your text is still here. Try saving again.');
     }
   };
 

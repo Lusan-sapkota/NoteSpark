@@ -13,6 +13,7 @@ import OnboardingScreen from './src/screens/OnboardingScreen';
 import { sendAppNotification } from './src/utils/notifications';
 import { useFonts } from 'expo-font';
 import { fontFiles } from './src/theme/theme';
+import { DialogProvider } from './src/components/DialogProvider';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
@@ -64,15 +65,17 @@ const AppContent = () => {
   return (
     <PaperProvider theme={theme}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-      {!ready ? (
-        <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-          <ActivityIndicator size="large" color={theme.colors.primary} />
-        </View>
-      ) : showOnboarding ? (
-        <OnboardingScreen onFinish={handleFinishOnboarding} />
-      ) : (
-        <AppNavigator />
-      )}
+      <DialogProvider>
+        {!ready ? (
+          <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+            <ActivityIndicator size="large" color={theme.colors.primary} />
+          </View>
+        ) : showOnboarding ? (
+          <OnboardingScreen onFinish={handleFinishOnboarding} />
+        ) : (
+          <AppNavigator />
+        )}
+      </DialogProvider>
     </PaperProvider>
   );
 };

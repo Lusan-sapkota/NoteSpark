@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Alert, Linking } from 'react-native';
+import { StyleSheet, View, ScrollView, Linking } from 'react-native';
 import * as Updates from 'expo-updates';
 import { useNetInfo } from '@react-native-community/netinfo';
 import { useNavigation } from '@react-navigation/native';
@@ -9,6 +9,7 @@ import { RootStackParamList } from '../types';
 import { clearAllNotes } from '../storage/notes';
 import Header from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
+import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { readingWidth, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ const errorReason = (e: unknown) => (e instanceof Error ? `${e.message}. ` : '')
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const { theme, themeType, setThemeType } = useTheme();
+  const alert = useAlert();
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const netInfo = useNetInfo();
 
@@ -31,7 +33,7 @@ const SettingsScreen: React.FC = () => {
       await Updates.reloadAsync();
     } catch (err) {
       setCheckingUpdate(false);
-      Alert.alert("Couldn't download the update", `${errorReason(err)}Check your internet connection and try again.`);
+      alert("Couldn't download the update", `${errorReason(err)}Check your internet connection and try again.`);
     }
   };
 
@@ -39,7 +41,7 @@ const SettingsScreen: React.FC = () => {
     if (checkingUpdate) return;
 
     if (!netInfo.isConnected) {
-      Alert.alert("You're offline", 'Connect to the internet to check for updates. Your notes work offline as usual.');
+      alert("You're offline", 'Connect to the internet to check for updates. Your notes work offline as usual.');
       return;
     }
 
@@ -49,23 +51,23 @@ const SettingsScreen: React.FC = () => {
       const update = await Updates.checkForUpdateAsync();
       setCheckingUpdate(false);
       if (update.isAvailable) {
-        Alert.alert(
+        alert(
           'Update available',
           'A new version of NoteSpark is ready. The app will restart to install it.',
           [{ text: 'Update now', onPress: applyUpdate }],
           { cancelable: false }
         );
       } else {
-        Alert.alert("You're up to date", 'You have the latest version of NoteSpark.');
+        alert("You're up to date", 'You have the latest version of NoteSpark.');
       }
     } catch (e) {
       setCheckingUpdate(false);
-      Alert.alert("Couldn't check for updates", `${errorReason(e)}Check your internet connection and try again.`);
+      alert("Couldn't check for updates", `${errorReason(e)}Check your internet connection and try again.`);
     }
   };
 
   const handleDeleteAll = () => {
-    Alert.alert(
+    alert(
       'Delete all notes?',
       "Every note on this device will be deleted. This can't be undone. Export your notes first if you want a backup.",
       [
@@ -76,9 +78,9 @@ const SettingsScreen: React.FC = () => {
           onPress: async () => {
             try {
               await clearAllNotes();
-              Alert.alert('All notes deleted');
+              alert('All notes deleted');
             } catch (error) {
-              Alert.alert("Couldn't delete your notes", 'Try again. If it keeps failing, restart the app.');
+              alert("Couldn't delete your notes", 'Try again. If it keeps failing, restart the app.');
             }
           },
         },
@@ -87,7 +89,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleWhatsNext = () => {
-    Alert.alert(
+    alert(
       "What's next",
       'Planned for NoteSpark:\n\n- Vault encryption\n- Secure sync between your phone and the web\n- A web app that works without the cloud',
       [
