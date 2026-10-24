@@ -2,7 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
+import Animated, { useAnimatedStyle } from 'react-native-reanimated';
+import { KeyboardProvider, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -21,12 +22,13 @@ import { pruneImageCache } from './src/utils/imageCache';
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
   // Android is always edge-to-edge (SDK 58), so the window no longer shrinks for the keyboard.
-  // Pad the whole app, portals and dialogs included, by the keyboard height instead. Screens already
-  // pad the bottom inset, so that part is subtracted.
-  const keyboard = useAnimatedKeyboard();
+  // Pad the whole app, portals and dialogs included, by the keyboard height instead (from
+  // react-native-keyboard-controller; its height runs 0 to -keyboardHeight). Screens already pad the
+  // bottom inset, so that part is subtracted.
+  const keyboard = useReanimatedKeyboardAnimation();
   const insets = useSafeAreaInsets();
   const keyboardPadding = useAnimatedStyle(() => ({
-    paddingBottom: Math.max(0, keyboard.height.value - insets.bottom),
+    paddingBottom: Math.max(0, -keyboard.height.value - insets.bottom),
   }));
   const navigationRef = React.useRef<any>(null);
   const [dbInitialized, setDbInitialized] = useState(false);
@@ -97,9 +99,11 @@ const AppContent = () => {
 export default function App() {
   return (
     <SafeAreaProvider>
-      <ThemeProvider>
-        <AppContent />
-      </ThemeProvider>
+      <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
+        <ThemeProvider>
+          <AppContent />
+        </ThemeProvider>
+      </KeyboardProvider>
     </SafeAreaProvider>
   );
 }

@@ -7,7 +7,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
     return result;
   }
 }
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -47,7 +47,11 @@ const EditorScreen: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  // The cursor is read from the body field, not controlled: a controlled selection on Android fights the
+  // field while it gains focus and the keyboard closes again. Toolbar inserts place it once via the ref.
   const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
+  const [pendingSelection, setPendingSelection] = useState<{ start: number; end: number } | null>(null);
+  const bodyRef = useRef<React.ComponentRef<typeof TextInput>>(null);
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -125,12 +129,20 @@ const EditorScreen: React.FC = () => {
     }
   };
 
+  // After an insert re-renders the text, move the cursor to where the insert said.
+  useEffect(() => {
+    if (!pendingSelection) return;
+    bodyRef.current?.setSelection(pendingSelection.start, pendingSelection.end);
+    setSelection(pendingSelection);
+    setPendingSelection(null);
+  }, [content, pendingSelection]);
+
   // Replace the selection with `text`, then select [selStart, selEnd] within the inserted text.
   const insert = (text: string, selStart = text.length, selEnd = selStart) => {
     const before = content.slice(0, selection.start);
     const after = content.slice(selection.end);
     setContent(before + text + after);
-    setSelection({ start: before.length + selStart, end: before.length + selEnd });
+    setPendingSelection({ start: before.length + selStart, end: before.length + selEnd });
   };
 
   const wrapSelection = (marker: string) => {
@@ -144,7 +156,7 @@ const EditorScreen: React.FC = () => {
     const prefixed = block.split('\n').map(line => prefix + line).join('\n');
     setContent(content.slice(0, lineStart) + prefixed + content.slice(selection.end));
     const end = lineStart + prefixed.length;
-    setSelection({ start: end, end });
+    setPendingSelection({ start: end, end });
   };
 
   const handleAddImage = async () => {
@@ -236,7 +248,8 @@ const EditorScreen: React.FC = () => {
               </View>
             ) : (
               <TextInput
-                style={[styles.body, styles.contentInput, theme.fonts.noteBody, { color: theme.colors.onSurface }]}
+                ref={bodyRef}
+                style={[styles.contentInput, theme.fonts.noteBody, { color: theme.colors.onSurface }]}
                 value={convertImagesToLinks(content, isMarkdown)}
                 onChangeText={setContent}
                 multiline
@@ -246,8 +259,8 @@ const EditorScreen: React.FC = () => {
                 placeholderTextColor={theme.colors.onSurfaceVariant}
                 autoCorrect
                 autoCapitalize="sentences"
-                selection={selection}
                 onSelectionChange={e => setSelection(e.nativeEvent.selection)}
+                scrollEnabled={false}
                 accessibilityLabel="Note text"
               />
             )}
@@ -338,8 +351,10 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     marginTop: space.lg,
   },
+  // Grows with the text and lets the screen scroll; nothing resizes it while it gains focus.
   contentInput: {
     minHeight: 300,
+    marginTop: space.lg,
     padding: 0,
   },
   toolbar: {
