@@ -9,6 +9,7 @@ import EditorScreen from '../screens/EditorScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import ImportExportScreen from '../screens/ImportExportScreen';
 import AboutScreen from '../screens/AboutScreen';
+import PrivacyScreen from '../screens/PrivacyScreen';
 import { useTheme } from '../theme/ThemeContext';
 import { navDarkTheme, navLightTheme } from '../theme/theme';
 
@@ -61,6 +62,13 @@ const AppNavigator: React.FC = () => {
         <Stack.Screen
           name="About"
           component={AboutScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Privacy"
+          component={PrivacyScreen}
           options={{
             headerShown: false,
           }}
