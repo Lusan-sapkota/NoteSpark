@@ -42,6 +42,7 @@ const AboutScreen = () => {
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
+      edges={['left', 'right', 'bottom']}
     >
       <Header
         title="About NoteSpark"

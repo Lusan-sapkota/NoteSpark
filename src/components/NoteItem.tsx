@@ -1,393 +1,196 @@
-import React, { memo, useMemo, useCallback, useState } from 'react';
-import { StyleSheet, View, TouchableOpacity, Animated, Dimensions } from 'react-native';
-import { Card, Text, IconButton, Chip, Surface } from 'react-native-paper';
+import React, { memo, useMemo, useState } from 'react';
+import { StyleSheet, View } from 'react-native';
+import { Icon, IconButton, Menu, Text, TouchableRipple } from 'react-native-paper';
 import { Note } from '../types';
 import { useTheme } from '../theme/ThemeContext';
+import { groupCorners, shape, space } from '../theme/theme';
 
 interface NoteItemProps {
   note: Note;
   onPress: (noteId: number) => void;
   onDelete: (noteId: number) => void;
-  onEdit?: (noteId: number) => void;
-  showPreview?: boolean;
-  isSelected?: boolean;
-  showActions?: boolean;
-  compact?: boolean;
-  isPinned?: boolean;
-  onPinToggle?: (noteId: number) => void;
+  onEdit: (noteId: number) => void;
+  isPinned: boolean;
+  onPinToggle: (noteId: number) => void;
+  isFirst: boolean;
+  isLast: boolean;
+  showCreated?: boolean;
 }
 
-const { width: screenWidth } = Dimensions.get('window');
+// Plain-text preview: drop images, keep link text, strip Markdown markers.
+const toPreview = (content: string) =>
+  content
+    .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
+    .replace(/\[Image: [^\]]+\]/g, '')
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/^\s*(#{1,6}|[-*+]|\d+\.|>)\s+/gm, '')
+    .replace(/[*_~`]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
 
-const NoteItem: React.FC<NoteItemProps> = memo(({ 
-  note, 
-  onPress, 
-  onDelete, 
-  onEdit, 
-  showPreview = true, 
-  isSelected = false,
-  showActions = true,
-  compact = false,
-  isPinned = false,
-  onPinToggle
+const relativeDate = (dateStr: string) => {
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  const minutes = Math.round((Date.now() - date.getTime()) / 60000);
+  if (minutes < 1) return 'just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const today = new Date();
+  if (date.toDateString() === today.toDateString()) {
+    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  }
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) return 'yesterday';
+  return date.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    ...(date.getFullYear() !== today.getFullYear() && { year: 'numeric' }),
+  });
+};
+
+const NoteItem: React.FC<NoteItemProps> = memo(({
+  note,
+  onPress,
+  onDelete,
+  onEdit,
+  isPinned,
+  onPinToggle,
+  isFirst,
+  isLast,
+  showCreated = false,
 }) => {
   const { theme } = useTheme();
-  const [pressAnim] = useState(new Animated.Value(1));
-  const [showFullContent, setShowFullContent] = useState(false);
-
-  const formatFullDate = (dateStr?: string) => {
-    if (!dateStr) return 'No date';
-    const date = new Date(dateStr);
-    if (isNaN(date.getTime())) return 'No date';
-    return date.toLocaleString([], {
-      year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-    });
-  };
-
-  const createdDate = useMemo(() => formatFullDate(note.createdAt), [note.createdAt]);
-  const editedDate = useMemo(() => formatFullDate(note.updatedAt), [note.updatedAt]);
-
-  const previewContent = useMemo(() => {
-    if (!showPreview) return note.content;
-    
-    const maxLength = compact ? 80 : 120;
-    if (note.content.length <= maxLength) return note.content;
-    
-    const truncated = note.content.substring(0, maxLength);
-    const lastSpace = truncated.lastIndexOf(' ');
-    return lastSpace > maxLength * 0.8 ? truncated.substring(0, lastSpace) + '...' : truncated + '...';
-  }, [note.content, showPreview, compact]);
-
-  const wordCount = useMemo(() => {
-    return note.content.trim().split(/\s+/).filter(word => word.length > 0).length;
-  }, [note.content]);
-
-  const handlePressIn = useCallback(() => {
-    Animated.spring(pressAnim, {
-      toValue: 0.98,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 50,
-    }).start();
-  }, [pressAnim]);
-
-  const handlePressOut = useCallback(() => {
-    Animated.spring(pressAnim, {
-      toValue: 1,
-      useNativeDriver: true,
-      tension: 300,
-      friction: 50,
-    }).start();
-  }, [pressAnim]);
-
-  const handlePress = useCallback(() => {
-    onPress(note.id);
-  }, [note.id, onPress]);
-
-  const handleEdit = useCallback(() => {
-    onEdit?.(note.id);
-  }, [note.id, onEdit]);
-
-  const handleDelete = useCallback(() => {
-    onDelete(note.id);
-  }, [note.id, onDelete]);
-
-  const toggleContent = useCallback(() => {
-    setShowFullContent(!showFullContent);
-  }, [showFullContent]);
-
-  const dynamicStyles = useMemo(() => ({
-    card: {
-      backgroundColor: isSelected ? theme.colors.primaryContainer : theme.colors.surface,
-      borderColor: isSelected ? theme.colors.primary : 'transparent',
-      borderWidth: isSelected ? 2 : 0,
-    },
-    title: {
-      color: theme.colors.onSurface,
-    },
-    previewText: {
-      color: theme.colors.onSurfaceVariant,
-    },
-  }), [theme, isSelected]);
+  const [menuVisible, setMenuVisible] = useState(false);
+  const preview = useMemo(() => toPreview(note.content), [note.content]);
+  const title = note.title || 'Untitled note';
+  const date = relativeDate(showCreated ? note.createdAt : note.updatedAt);
+  const onColor = isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
+  const onColorVariant = isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant;
 
   return (
-    <Animated.View 
+    <View
       style={[
-        { transform: [{ scale: pressAnim }] },
-        styles.container
+        styles.container,
+        groupCorners(isFirst, isLast),
+        { backgroundColor: isPinned ? theme.colors.primaryContainer : theme.colors.surfaceContainerLow },
+        isLast ? styles.groupGap : styles.gap,
       ]}
     >
-      <TouchableOpacity 
-        activeOpacity={0.9}
-        onPress={handlePress}
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        style={styles.touchable}
+      <TouchableRipple
+        onPress={() => onPress(note.id)}
+        accessibilityRole="button"
+        accessibilityLabel={isPinned ? `${title}, pinned` : title}
+        style={styles.row}
       >
-        <Card 
-          style={[
-            styles.card, 
-            dynamicStyles.card,
-            compact && styles.compactCard
-          ]}
-          elevation={isSelected ? 4 : 2}
-        > 
-          <Card.Content style={[styles.content, compact && styles.compactContent]}>
-            <View style={styles.header}>
-              <View style={styles.titleContainer}>
-                <Text 
-                  style={[
-                    styles.title,
-                    { color: theme.colors.primary },
-                    compact && { fontSize: 16, marginBottom: 2 }
-                  ]}
-                  numberOfLines={compact ? 1 : 2}
-                >
-                  {note.title || 'Untitled Note'}
-                </Text>
-                <View style={styles.metaRow}>
-                    <Chip
-                    mode="outlined"
-                    style={[
-                      styles.typeChip,
-                      {
-                      backgroundColor: note.isMarkdown ? theme.colors.tertiaryContainer : theme.colors.secondaryContainer,
-                      borderColor: note.isMarkdown ? theme.colors.tertiary : theme.colors.secondary,
-                      paddingHorizontal: 6,
-                      paddingVertical: 0,
-                      minHeight: 20,
-                      alignSelf: 'flex-start',
-                      },
-                    ]}
-                    textStyle={[
-                      styles.chipText,
-                      {
-                      color: note.isMarkdown ? theme.colors.onTertiaryContainer : theme.colors.onSecondaryContainer,
-                      fontWeight: 'bold',
-                      fontSize: compact ? 10 : 12,
-                      lineHeight: compact ? 12 : 14,
-                      textAlign: 'center',
-                      includeFontPadding: false,
-                      textAlignVertical: 'center',
-                      marginBottom: compact ? 0 : 2,
-                      marginTop: compact ? 0 : 2,
-                      textShadowColor: theme.dark ? undefined : '#FFF',
-                      textShadowOffset: theme.dark ? undefined : { width: 0, height: 1 },
-                      textShadowRadius: theme.dark ? undefined : 1,
-                      letterSpacing: 0.3,
-                      },
-                    ]}
-                    compact
-                    >
-                    {note.isMarkdown ? 'Markdown' : 'Text'}
-                    </Chip>
-
-                  <Text style={[styles.date, { color: theme.colors.onSurface, fontWeight: '500', marginLeft: 8 }]}> 
-                    Created: {createdDate}
-                  </Text>
-                </View>
-              </View>
-              <View style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
+        <View>
+          {isPinned && isFirst && (
+            <View style={styles.pinnedLabel}>
+              <Icon source="pin" size={14} color={onColorVariant} />
+              <Text variant="labelMedium" style={{ color: onColorVariant }}>Pinned</Text>
             </View>
-
-            {showPreview && (
-              <View
-                style={[
-                  styles.previewContainer,
-                  {
-                    backgroundColor: `${theme.colors.primary}33`, // 20% opacity
-                    padding: 14,
-                    borderRadius: 12,
-                    justifyContent: 'center',
-                    alignItems: 'center',
-                  },
-                ]}
-              >
-                <Text
-                  style={{
-                    color: theme.colors.primary,
-                    fontWeight: 'bold',
-                    fontSize: 18,
-                    textAlign: 'center',
-                  }}
-                >
-                  Tap to view content
+          )}
+          <Text variant="titleMedium" numberOfLines={2} style={{ color: onColor }}>{title}</Text>
+          {!!preview && (
+            <Text variant="bodyMedium" numberOfLines={2} style={[styles.preview, { color: onColorVariant }]}>
+              {preview}
+            </Text>
+          )}
+          <View style={styles.meta}>
+            {note.isMarkdown && (
+              <View style={[styles.label, { backgroundColor: theme.colors.tertiaryContainer }]}>
+                <Text variant="labelSmall" maxFontSizeMultiplier={1.5} style={{ color: theme.colors.onTertiaryContainer }}>
+                  Markdown
                 </Text>
               </View>
             )}
-
-            {showActions && (
-              <View
-                style={[
-                  styles.actions,
-                  {
-                    flexDirection: 'row',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                  },
-                ]}
-              >
-                <Text style={[styles.date, { color: theme.colors.onSurface, fontWeight: '500' }]}> 
-                  Edited: {editedDate && editedDate !== 'No date' ? editedDate : 'none'}
-                </Text>
-
-                <View style={[styles.actionButtons, { flexDirection: 'row', alignItems: 'center' }]}> 
-                  {onPinToggle && (
-                    <IconButton
-                      icon={isPinned ? 'pin' : 'pin-outline'}
-                      iconColor={isPinned ? theme.colors.primary : theme.colors.outline}
-                      size={20}
-                      onPress={() => onPinToggle(note.id)}
-                      style={styles.actionButton}
-                    />
-                  )}
-                  {onEdit && (
-                    <IconButton
-                      icon="pencil-outline"
-                      iconColor={theme.colors.primary}
-                      size={20}
-                      onPress={handleEdit}
-                      style={styles.actionButton}
-                    />
-                  )}
-                  <IconButton
-                    icon="delete-outline"
-                    iconColor={theme.colors.error}
-                    size={20}
-                    onPress={handleDelete}
-                    style={styles.actionButton}
-                  />
-                  <IconButton
-                    icon="eye-outline"
-                    iconColor={theme.colors.outline}
-                    size={18}
-                    onPress={handlePress}
-                    style={styles.actionButton}
-                  />
-                </View>
-              </View>
-            )}
-          </Card.Content>
-        </Card>
-      </TouchableOpacity>
-    </Animated.View>
+            <Text variant="bodySmall" style={[styles.date, { color: onColorVariant }]}>
+              {showCreated ? 'Created' : 'Edited'} {date}
+            </Text>
+            <IconButton
+              icon={isPinned ? 'pin' : 'pin-outline'}
+              iconColor={onColorVariant}
+              size={20}
+              onPress={() => onPinToggle(note.id)}
+              accessibilityLabel={isPinned ? `Unpin ${title}` : `Pin ${title}`}
+              style={styles.action}
+            />
+            <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={
+                <IconButton
+                  icon="dots-vertical"
+                  iconColor={onColorVariant}
+                  size={20}
+                  onPress={() => setMenuVisible(true)}
+                  accessibilityLabel={`More options for ${title}`}
+                  style={styles.action}
+                />
+              }
+            >
+              <Menu.Item
+                leadingIcon="pencil-outline"
+                title="Edit note"
+                onPress={() => { setMenuVisible(false); onEdit(note.id); }}
+              />
+              <Menu.Item
+                leadingIcon="delete-outline"
+                title="Delete note"
+                titleStyle={{ color: theme.colors.error }}
+                onPress={() => { setMenuVisible(false); onDelete(note.id); }}
+              />
+            </Menu>
+          </View>
+        </View>
+      </TouchableRipple>
+    </View>
   );
 });
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 12,
-    marginVertical: 6,
-  },
-  touchable: {
-    borderRadius: 16,
-  },
-  card: {
-    borderRadius: 16,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-  },
-  compactCard: {
-    marginVertical: 2,
-  },
-  content: {
-    padding: 16,
-  },
-  compactContent: {
-    padding: 12,
-  },
-  header: {
-    marginBottom: 12,
-  },
-  titleContainer: {
-    flex: 1,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    lineHeight: 26,
-    letterSpacing: 0.1,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
-  },
-  date: {
-    fontSize: 13,
-    opacity: 0.8,
-    fontWeight: '500',
-    marginRight: 8,
-  },
-  badges: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  typeChip: {
-    height: 24,
-  },
-  wordChip: {
-    height: 24,
-  },
-  chipText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 0.2,
-  },
-  previewContainer: {
-    marginBottom: 8,
-  },
-  markdownPreview: {
-    borderRadius: 8,
-    padding: 12,
-    marginBottom: 8,
-    maxHeight: 100,
+    marginHorizontal: space.lg,
     overflow: 'hidden',
   },
-  markdownContent: {
-    fontSize: 14,
-    lineHeight: 20,
+  gap: {
+    marginBottom: 2,
   },
-  previewText: {
-    fontSize: 15,
-    lineHeight: 22,
-    marginBottom: 4,
+  groupGap: {
+    marginBottom: space.lg,
   },
-  expandButton: {
-    alignSelf: 'flex-start',
-    paddingVertical: 4,
+  row: {
+    paddingTop: space.md,
+    paddingLeft: space.lg,
+    paddingRight: space.xs,
   },
-  expandText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  actions: {
+  pinnedLabel: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
     alignItems: 'center',
-    marginTop: 8,
-    paddingTop: 8,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.05)',
+    gap: space.xs,
+    marginBottom: space.xs,
   },
-  actionButtons: {
+  preview: {
+    marginTop: 2,
+    paddingRight: space.md,
+  },
+  meta: {
     flexDirection: 'row',
-    gap: -8,
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
-  actionButton: {
+  label: {
+    borderRadius: shape.small,
+    paddingHorizontal: space.sm,
+    paddingVertical: 2,
+    marginRight: space.sm,
+  },
+  date: {
+    flex: 1,
+  },
+  action: {
     margin: 0,
-  },
-  divider: {
-    height: 2,
-    borderRadius: 2,
-    marginTop: 4,
-    marginBottom: 8,
-    opacity: 0.12,
+    width: 48,
+    height: 48,
   },
 });
 

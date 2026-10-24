@@ -122,6 +122,8 @@ const type = (fontFamily: string, fontSize: number, lineHeight: number) => ({
   letterSpacing: 0,
 });
 
+export type NoteVariant = 'noteTitle' | 'noteH1' | 'noteH2' | 'noteH3' | 'noteBody' | 'noteCode';
+
 // Type scale (size/line height in dp). UI is Figtree on Paper's MD3 variants;
 // note content is Literata on custom variants. See CLAUDE.md "Type scale".
 const scale = configureFonts({
@@ -150,9 +152,12 @@ const scale = configureFonts({
   },
 });
 // Paper components without a variant read fonts.default.
-const fonts = { ...scale, default: { ...scale.default, fontFamily: 'Figtree-Regular', fontWeight: '400' as const } };
+// configureFonts doesn't type custom variants, so they're added to the type here.
+const fonts = {
+  ...(scale as typeof scale & Record<NoteVariant, ReturnType<typeof type>>),
+  default: { ...scale.default, fontFamily: 'Figtree-Regular', fontWeight: '400' as const },
+};
 
-export type NoteVariant = 'noteTitle' | 'noteH1' | 'noteH2' | 'noteH3' | 'noteBody' | 'noteCode';
 export const NoteText = customText<NoteVariant>();
 
 // Corner radii by hierarchy (M3 shape roles). See docs/prompts/material-redesign.md Phase 0.
@@ -165,6 +170,14 @@ export const shape = {
   extraLarge: 28, // dialogs, sheets
   full: 999, // search bar, buttons
 };
+
+// Segmented list: large outer corners on the group, small inner corners between rows.
+export const groupCorners = (isFirst: boolean, isLast: boolean) => ({
+  borderTopLeftRadius: isFirst ? shape.group : shape.segment,
+  borderTopRightRadius: isFirst ? shape.group : shape.segment,
+  borderBottomLeftRadius: isLast ? shape.group : shape.segment,
+  borderBottomRightRadius: isLast ? shape.group : shape.segment,
+});
 
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 };
 

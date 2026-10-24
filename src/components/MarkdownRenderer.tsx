@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, ScrollView, Image, Alert, Linking, TouchableOpacity, Text } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import { useTheme } from '../theme/ThemeContext';
+import { shape } from '../theme/theme';
 
 interface MarkdownRendererProps {
   content: string;
@@ -13,167 +14,106 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   // Replace <br> tags with newlines so markdown treats them as line breaks
   const processedContent = content.replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n');
 
+  const f = theme.fonts;
+  const heading = (font: typeof f.noteH1) => ({
+    ...font,
+    color: theme.colors.onSurface,
+    marginTop: 16,
+    marginBottom: 8,
+  });
+  const codeBox = {
+    ...f.noteCode,
+    color: theme.colors.onSurface,
+    backgroundColor: theme.colors.surfaceContainerHigh,
+    borderWidth: 0,
+    borderRadius: shape.small,
+    padding: 12,
+    marginVertical: 8,
+  };
+
   const markdownStyles = {
     body: {
+      ...f.noteBody,
       color: theme.colors.onSurface,
-      fontSize: 16,
-      lineHeight: 18,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      marginVertical: -2,
     },
-    heading1: {
-      color: theme.colors.primary,
-      fontSize: 20,
-      lineHeight: 28,
-      marginTop: 8,
-      marginBottom: 4,
-      fontWeight: '700' as const,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
+    paragraph: {
+      marginTop: 0,
+      marginBottom: 12,
     },
-    heading2: {
-      color: theme.colors.primary,
-      fontSize: 18,
-      lineHeight: 18,
-      marginTop: 8,
-      marginBottom: 4,
-      fontWeight: '700' as const,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      marginVertical: -2,
-    },
-    heading3: {
-      color: theme.colors.primary,
-      fontSize: 17,
-      lineHeight: 18,
-      marginTop: 8,
-      marginBottom: 4,
-      fontWeight: '700' as const,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      marginVertical: -2,
-    },
-    heading4: {
-      color: theme.colors.primary,
-      fontSize: 16,
-      lineHeight: 18,
-      marginTop: 8,
-      marginBottom: 4,
-      fontWeight: '700' as const,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      marginVertical: -2,
-    },
-    heading5: {
-      color: theme.colors.primary,
-      fontSize: 16,
-      lineHeight: 18,
-      marginTop: 6,
-      marginBottom: 2,
-      fontWeight: '700' as const,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      marginVertical: -2,
-    },
-    heading6: {
-      color: theme.colors.primary,
-      fontSize: 15,
-      lineHeight: 18,
-      marginTop: 6,
-      marginBottom: 2,
-      fontWeight: '700' as const,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      marginVertical: -2,
-    },
+    heading1: heading(f.noteH1),
+    heading2: heading(f.noteH2),
+    heading3: heading(f.noteH3),
+    heading4: heading({ ...f.noteBody, fontFamily: f.noteH3.fontFamily }),
+    heading5: heading({ ...f.noteBody, fontFamily: f.noteH3.fontFamily }),
+    heading6: heading({ ...f.noteBody, fontFamily: f.noteH3.fontFamily }),
     hr: {
       backgroundColor: theme.colors.outlineVariant,
       height: 1,
-      marginTop: 8,
-      marginBottom: 8,
+      marginVertical: 16,
     },
+    // Separate font files per style; fontWeight/fontStyle stay normal to avoid synthetic bold.
     strong: {
-      fontWeight: '700' as const,
+      fontFamily: f.noteH1.fontFamily,
+      fontWeight: '400' as const,
     },
     em: {
-      fontStyle: 'italic' as const,
+      fontFamily: 'Literata-Italic',
+      fontStyle: 'normal' as const,
     },
     blockquote: {
-      backgroundColor: theme.colors.background,
+      backgroundColor: 'transparent',
       borderLeftColor: theme.colors.tertiary,
       borderLeftWidth: 4,
       paddingLeft: 16,
-      paddingRight: 16,
-      paddingTop: 8,
-      paddingBottom: 8,
-      marginTop: 8,
-      marginBottom: 8,
+      paddingVertical: 4,
+      marginVertical: 8,
+      marginLeft: 0,
     },
     bullet_list: {
-      marginTop: 4,
-      marginBottom: 4,
+      marginBottom: 12,
     },
     ordered_list: {
-      marginTop: 4,
-      marginBottom: 4,
+      marginBottom: 12,
     },
-    list_item: {
-      flexDirection: 'row' as const,
-      marginBottom: 2,
+    bullet_list_icon: {
+      color: theme.colors.onSurfaceVariant,
+    },
+    ordered_list_icon: {
+      color: theme.colors.onSurfaceVariant,
     },
     code_inline: {
-      backgroundColor: theme.colors.background,
+      ...f.noteCode,
+      lineHeight: undefined,
       color: theme.colors.onSurface,
-      fontFamily: 'monospace',
-      padding: 4,
-      borderRadius: 4,
-      fontSize: 15,
-      lineHeight: 18,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      marginVertical: -2,
+      backgroundColor: theme.colors.surfaceContainerHigh,
+      borderWidth: 0,
+      borderRadius: shape.extraSmall,
+      paddingHorizontal: 4,
     },
-    code_block: {
-      backgroundColor: theme.colors.background,
-      color: theme.colors.onSurface,
-      fontFamily: 'monospace',
-      padding: 8,
-      borderRadius: 4,
-      marginTop: 8,
-      marginBottom: 8,
-      fontSize: 15,
-      lineHeight: 18,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      marginVertical: -2,
-    },
+    code_block: codeBox,
+    fence: codeBox,
     link: {
       color: theme.colors.primary,
       textDecorationLine: 'underline' as const,
-      fontSize: 16,
-      lineHeight: 18,
-      includeFontPadding: false,
-      textAlignVertical: 'center',
-      marginVertical: -2,
     },
     table: {
       borderWidth: 1,
       borderColor: theme.colors.outlineVariant,
-      marginTop: 4,
-      marginBottom: 4,
+      borderRadius: shape.small,
+      marginVertical: 8,
     },
     thead: {
-      backgroundColor: theme.colors.background,
+      backgroundColor: theme.colors.surfaceContainer,
     },
     th: {
       padding: 8,
-      borderWidth: 1,
+      borderColor: theme.colors.outlineVariant,
+    },
+    tr: {
       borderColor: theme.colors.outlineVariant,
     },
     td: {
       padding: 8,
-      borderWidth: 1,
       borderColor: theme.colors.outlineVariant,
     },
   };
@@ -183,7 +123,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     if (path.startsWith('file:///')) {
       const parts = path.split('/');
       const fileName = parts[parts.length - 1];
-      return `Local Image (${fileName})`;
+      return `Image on this device (${fileName})`;
     }
     if (path.length > 32) {
       return path.slice(0, 12) + '...' + path.slice(-12);
@@ -198,10 +138,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
       <>
         <Image
           source={{ uri: src }}
-          style={{ width: '100%', height: 200, resizeMode: 'contain', marginVertical: 8, borderRadius: 8, backgroundColor: theme.colors.surface }}
+          style={{ width: '100%', height: 200, resizeMode: 'contain', marginTop: 8, borderRadius: shape.small, backgroundColor: theme.colors.surfaceContainer }}
           accessibilityLabel={alt || 'image'}
         />
-        <Text key={`image-label-${src}`} style={{ color: theme.colors.onSurfaceVariant, fontSize: 12, marginTop: 2, marginBottom: 8, textAlign: 'center' }}>
+        <Text key={`image-label-${src}`} style={{ ...theme.fonts.bodySmall, color: theme.colors.onSurfaceVariant, marginTop: 4, marginBottom: 12 }}>
           {trimImagePath(src)}
         </Text>
       </>
@@ -238,22 +178,14 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     }
     return (
       <Text
-        style={{
-          color: theme.colors.primary,
-          textDecorationLine: 'underline',
-          fontSize: 16,
-          lineHeight: 18,
-          includeFontPadding: false,
-          textAlignVertical: 'center',
-          marginVertical: -2,
-        }}
+        style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
         onPress={() => {
           Alert.alert(
-            'Open Link',
-            `Are you sure you want to open this link in your browser?\n${url}`,
+            'Open link?',
+            `This opens ${url} in your browser.`,
             [
               { text: 'Cancel', style: 'cancel' },
-              { text: 'Open', style: 'default', onPress: () => {
+              { text: 'Open link', style: 'default', onPress: () => {
                 try {
                   require('react-native').Linking.openURL(openUrl);
                 } catch {}

@@ -130,18 +130,25 @@ const HomeScreen: React.FC = () => {
   }, []);
 
   const renderNoteItem = useCallback(
-    ({ item }: { item: Note }) => (
-      <NoteItem
-        note={item}
-        onPress={handleNotePress}
-        onDelete={handleDeleteNote}
-        onEdit={handleEditNote}
-        showPreview
-        isPinned={!!pinned[item.id]}
-        onPinToggle={handlePinToggle}
-      />
-    ),
-    [handleNotePress, handleDeleteNote, handleEditNote, pinned, handlePinToggle]
+    ({ item, index }: { item: Note; index: number }) => {
+      const isPinned = !!pinned[item.id];
+      const prev = filteredNotes[index - 1];
+      const next = filteredNotes[index + 1];
+      return (
+        <NoteItem
+          note={item}
+          onPress={handleNotePress}
+          onDelete={handleDeleteNote}
+          onEdit={handleEditNote}
+          isPinned={isPinned}
+          onPinToggle={handlePinToggle}
+          isFirst={!prev || !!pinned[prev.id] !== isPinned}
+          isLast={!next || !!pinned[next.id] !== isPinned}
+          showCreated={sortType === 'created'}
+        />
+      );
+    },
+    [handleNotePress, handleDeleteNote, handleEditNote, pinned, handlePinToggle, filteredNotes, sortType]
   );
 
   const handleCreateNote = () => {
@@ -297,7 +304,6 @@ const HomeScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingTop: Platform.OS === 'android' ? StatusBar.currentHeight : 0,
   },
   headerActions: {
     flexDirection: 'row',
