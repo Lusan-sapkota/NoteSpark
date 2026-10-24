@@ -1,14 +1,3 @@
-import * as DocumentPicker from 'expo-document-picker';
-export const importNotesFromFile = async (): Promise<number> => {
-  try {
-    const result = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
-    if (!result.assets || result.assets.length === 0 || !result.assets[0].uri) throw new Error('No file selected');
-    const json = await FileSystem.readAsStringAsync(result.assets[0].uri, { encoding: FileSystem.EncodingType.UTF8 });
-    return await importNotesFromJson(json);
-  } catch (error) {
-    throw error;
-  }
-};
 import * as FileSystem from 'expo-file-system/legacy';
 
 export const exportNotesToFile = async (): Promise<string> => {
@@ -24,35 +13,6 @@ export const exportNotesToFile = async (): Promise<string> => {
       message: 'Your notes backup file. To save this file to Downloads or device storage, select a file manager or cloud storage app in the share list. If you do not see a file manager, please install one from the Play Store or App Store. If you have multiple file managers, try different ones. You can also save to Google Drive, Dropbox, or other cloud apps.'
     });
     return fileName;
-  } catch (error) {
-    throw error;
-  }
-};
-export const importNotesFromJson = async (json: string): Promise<number> => {
-  try {
-    const notes = JSON.parse(json);
-    if (!Array.isArray(notes)) throw new Error('Invalid notes format');
-    let importedCount = 0;
-    // All or nothing: a failure part-way rolls back the notes already added.
-    await db.withTransactionAsync(async () => {
-      for (const note of notes) {
-        if (
-          typeof note.title === 'string' &&
-          typeof note.content === 'string' &&
-          typeof note.isMarkdown === 'boolean'
-        ) {
-          await saveNote({
-            title: note.title,
-            content: note.content,
-            isMarkdown: note.isMarkdown,
-            createdAt: note.createdAt || new Date().toISOString(),
-            updatedAt: note.updatedAt || new Date().toISOString(),
-          });
-          importedCount++;
-        }
-      }
-    });
-    return importedCount;
   } catch (error) {
     throw error;
   }

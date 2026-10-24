@@ -3,11 +3,13 @@ import { StyleSheet, View, ScrollView, Share, Platform, RefreshControl } from 'r
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Icon, IconButton, Menu, Text, TextInput } from 'react-native-paper';
+import { Button, Icon, IconButton, Menu, RadioButton, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { exportNotesAsJson, getNotes } from '../storage/database';
 import { sendAppNotification } from '../utils/notifications';
-import { importNotesFromFile } from '../storage/database';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+import { importNotes, ImportMode } from '../storage/notes';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useAlert } from '../components/DialogProvider';
@@ -31,6 +33,7 @@ const ImportExportScreen: React.FC = () => {
   const [pdfExporting, setPdfExporting] = useState(false);
   const [noteCount, setNoteCount] = useState<number | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
   const handleExportHistoryPDF = async () => {
     alert(
@@ -246,136 +249,103 @@ const ImportExportScreen: React.FC = () => {
     }
   };
 
-  const handleImport = async () => {
-    if (!importData.trim()) {
-      alert('Paste your backup first', 'Paste the JSON from a NoteSpark export, or choose a file instead.');
-      await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'No data entered.' });
+  const logImport = (count: number, error: string) =>
+    addHistory({ type: 'import', date: new Date().toISOString(), count, error });
+
+  // Writes the notes with the chosen mode and reports the result. Returns the success message.
+  const runImport = async (notes: any[], incomplete: number) => {
+    const { imported, skipped } = await importNotes(notes, importMode);
+    let msg = imported === 1 ? '1 note imported.' : `${imported} notes imported.`;
+    if (skipped > 0) msg += ` ${skipped} already on this device, so skipped.`;
+    if (incomplete > 0) msg += ` ${incomplete} incomplete notes skipped.`;
+    await sendAppNotification('Notes imported', msg);
+    const notesLine = [skipped > 0 && `${skipped} duplicates skipped.`, incomplete > 0 && `${incomplete} incomplete notes skipped.`].filter(Boolean).join(' ');
+    await logImport(imported, imported === 0 ? 'All notes were already on this device.' : notesLine);
+    await loadHistory();
+    return msg;
+  };
+
+  // Only replacing deletes anything, so only replacing asks first.
+  const confirmIfReplacing = (action: () => void) => {
+    if (importMode !== 'replace') {
+      action();
       return;
     }
     alert(
       'Replace all notes?',
-      'Importing replaces every note on this device with the notes in the backup. Export your current notes first if you want to keep them.',
+      'Every note on this device will be deleted and replaced with the notes in the backup. Export your current notes first if you want to keep them.',
       [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-          onPress: async () => {
-            await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'User cancelled import.' });
-          }
-        },
-        {
-          text: 'Replace notes',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setIsImporting(true);
-              let parsed: any = [];
-              let errorCount = 0;
-              try {
-                parsed = JSON.parse(importData);
-                if (!Array.isArray(parsed)) throw new Error('Not an array');
-              } catch (e) {
-                alert("That isn't valid JSON", 'Check that you pasted the whole export file.');
-                setIsImporting(false);
-                await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'Invalid JSON format.' });
-                return;
-              }
-              const validNotes = parsed.map((note: any) => {
-                let valid = true;
-                if (typeof note.isMarkdown !== 'boolean') {
-                  note.isMarkdown = !!note.isMarkdown;
-                }
-                if (!note.title || !note.content || !note.createdAt || !note.updatedAt) {
-                  valid = false;
-                }
-                if (isNaN(Date.parse(note.createdAt)) || isNaN(Date.parse(note.updatedAt))) {
-                  valid = false;
-                }
-                if (!valid) errorCount++;
-                return valid ? note : null;
-              }).filter(Boolean);
-              if (validNotes.length === 0) {
-                alert('No notes found', "The backup doesn't contain any notes NoteSpark can read.");
-                setIsImporting(false);
-                await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'No valid notes found.' });
-                return;
-              }
-              const notesModule = await import('../storage/notes');
-              await notesModule.importNotesFromJson(JSON.stringify(validNotes));
-              const result = validNotes.length;
-              setIsImporting(false);
-              setImportData('');
-              setPasteOpen(false);
-              let msg = `${result} notes imported.`;
-              if (errorCount > 0) msg += ` ${errorCount} notes were skipped because they were incomplete.`;
-              await sendAppNotification('Notes imported', msg);
-              await addHistory({ type: 'import', date: new Date().toISOString(), count: result, error: errorCount > 0 ? `${errorCount} notes skipped.` : '' });
-              await loadHistory();
-              alert('Notes imported', msg, [
-                { text: 'OK', onPress: async () => {
-                  await loadHistory();
-                } },
-              ]);
-            } catch (error) {
-              console.error('Failed to import notes:', error);
-              alert("Couldn't import notes", 'Check that the data is a NoteSpark export.');
-              setIsImporting(false);
-              await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'Import failed.' });
-            }
-          },
-        },
+        { text: 'Cancel', style: 'cancel', onPress: () => { logImport(0, 'Import cancelled.'); } },
+        { text: 'Replace notes', style: 'destructive', onPress: action },
       ]
     );
   };
 
-  const handleFileImport = async () => {
-    alert(
-      'Replace all notes?',
-      'Importing replaces every note on this device with the notes in the backup. Export your current notes first if you want to keep them.',
-      [
-        { text: 'Cancel', style: 'cancel', onPress: async () => {
-          await addHistory({
-            type: 'import',
-            date: new Date().toISOString(),
-            count: 0,
-            error: 'User cancelled file import.'
-          });
-        } },
-        {
-          text: 'Replace notes',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              setFileImporting(true);
-              const count = await importNotesFromFile();
-              setFileImporting(false);
-              await sendAppNotification('Notes imported', `${count} notes imported.`);
-              await addHistory({
-                type: 'import',
-                date: new Date().toISOString(),
-                count: typeof count === 'number' && !isNaN(count) ? count : 0,
-                error: typeof count === 'number' && count > 0 ? '' : 'No notes imported from file.'
-              });
-              alert('Notes imported', `${count} notes imported.`, [
-                { text: 'OK', onPress: () => navigation.goBack() },
-              ]);
-            } catch (error) {
-              setFileImporting(false);
-              const errorMessage = typeof error === 'object' && error !== null && 'message' in error
-                ? String((error as { message?: string }).message)
-                : 'Failed to import notes from file. Please check your JSON file and permissions.';
-              alert("Couldn't import notes", errorMessage);
-              await addHistory({
-                type: 'import',
-                date: new Date().toISOString(),
-                count: 0,
-                error: errorMessage
-              });
-            }
-          },
-        },
-      ]
-    );
+  const handleImport = () => {
+    if (!importData.trim()) {
+      alert('Paste your backup first', 'Paste the JSON from a NoteSpark export, or choose a file instead.');
+      return;
+    }
+    confirmIfReplacing(async () => {
+      try {
+        setIsImporting(true);
+        let parsed: any;
+        try {
+          parsed = JSON.parse(importData);
+          if (!Array.isArray(parsed)) throw new Error('Not an array');
+        } catch (e) {
+          alert("That isn't valid JSON", 'Check that you pasted the whole export file.');
+          await logImport(0, 'Invalid JSON format.');
+          return;
+        }
+        const validNotes = parsed.filter((note: any) =>
+          note && note.title && note.content && !isNaN(Date.parse(note.createdAt)) && !isNaN(Date.parse(note.updatedAt))
+        ).map((note: any) => ({ ...note, isMarkdown: !!note.isMarkdown }));
+        if (validNotes.length === 0) {
+          alert('No notes found', "The backup doesn't contain any notes NoteSpark can read.");
+          await logImport(0, 'No valid notes found.');
+          return;
+        }
+        const msg = await runImport(validNotes, parsed.length - validNotes.length);
+        setImportData('');
+        setPasteOpen(false);
+        alert('Notes imported', msg);
+      } catch (error) {
+        console.error('Failed to import notes:', error);
+        alert("Couldn't import notes", 'Your existing notes are unchanged. Check that the data is a NoteSpark export.');
+        await logImport(0, 'Import failed.');
+      } finally {
+        setIsImporting(false);
+      }
+    });
+  };
+
+  const handleFileImport = () => {
+    confirmIfReplacing(async () => {
+      try {
+        setFileImporting(true);
+        const result = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
+        const uri = result.assets?.[0]?.uri;
+        if (result.canceled || !uri) return;
+        let parsed: any;
+        try {
+          parsed = JSON.parse(await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.UTF8 }));
+          if (!Array.isArray(parsed)) throw new Error('Not an array');
+        } catch (e) {
+          alert("That file isn't a NoteSpark backup", 'Choose a .json file exported from NoteSpark.');
+          await logImport(0, 'File was not a valid backup.');
+          return;
+        }
+        const msg = await runImport(parsed, 0);
+        alert('Notes imported', msg, [{ text: 'OK', onPress: () => navigation.goBack() }]);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Import failed.';
+        alert("Couldn't import notes", `Your existing notes are unchanged. ${errorMessage}`);
+        await logImport(0, errorMessage);
+      } finally {
+        setFileImporting(false);
+      }
+    });
   };
 
   React.useEffect(() => {
@@ -462,16 +432,23 @@ const ImportExportScreen: React.FC = () => {
               <View style={styles.panelText}>
                 <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>Import a backup</Text>
                 <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                  Bring back notes from a NoteSpark export file.
+                  Bring notes in from a NoteSpark export file. Choose how:
                 </Text>
               </View>
             </View>
-            <View style={[styles.banner, { backgroundColor: theme.colors.errorContainer }]}>
-              <Icon source="alert-outline" size={20} color={theme.colors.onErrorContainer} />
-              <Text variant="bodyMedium" style={[styles.panelText, { color: theme.colors.onErrorContainer }]}>
-                Importing replaces all notes on this device. Export first if you want to keep them.
-              </Text>
-            </View>
+            <RadioButton.Group value={importMode} onValueChange={value => setImportMode(value as ImportMode)}>
+              <RadioButton.Item label="Add new notes, skip duplicates" value="merge" mode="android" style={styles.radio} labelVariant="bodyLarge" />
+              <RadioButton.Item label="Add all notes" value="append" mode="android" style={styles.radio} labelVariant="bodyLarge" />
+              <RadioButton.Item label="Replace all notes" value="replace" mode="android" style={styles.radio} labelVariant="bodyLarge" />
+            </RadioButton.Group>
+            {importMode === 'replace' && (
+              <View style={[styles.banner, { backgroundColor: theme.colors.errorContainer }]}>
+                <Icon source="alert-outline" size={20} color={theme.colors.onErrorContainer} />
+                <Text variant="bodyMedium" style={[styles.panelText, { color: theme.colors.onErrorContainer }]}>
+                  Replacing deletes every note on this device first. Export first if you want to keep them.
+                </Text>
+              </View>
+            )}
             <Button
               mode="contained-tonal"
               icon="file-upload-outline"
@@ -617,6 +594,10 @@ const styles = StyleSheet.create({
     gap: space.md,
     padding: space.md,
     borderRadius: shape.small,
+  },
+  radio: {
+    paddingHorizontal: 0,
+    paddingVertical: 0,
   },
   pasteToggle: {
     alignSelf: 'flex-start',

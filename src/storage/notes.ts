@@ -77,24 +77,39 @@ export const exportNotesAsJson = async (): Promise<string> => {
   return JSON.stringify(notes, null, 2);
 };
 
-export const importNotesFromJson = async (jsonData: string): Promise<void> => {
-  const notes = JSON.parse(jsonData);
-  if (!Array.isArray(notes)) {
-    throw new Error('Invalid JSON format: expected an array of notes');
-  }
-  // Validate before touching the database, so a bad backup never deletes anything.
-  const valid = notes.filter(note =>
-    typeof note.title === 'string' &&
-    typeof note.content === 'string' &&
-    (typeof note.isMarkdown === 'boolean' || typeof note.isMarkdown === 'number')
-  );
+export type ImportMode = 'merge' | 'append' | 'replace';
+
+const isImportable = (note: any) =>
+  typeof note?.title === 'string' &&
+  typeof note?.content === 'string' &&
+  (typeof note?.isMarkdown === 'boolean' || typeof note?.isMarkdown === 'number');
+
+// A duplicate is a note with the same title and text.
+const noteKey = (note: { title: string; content: string }) => `${note.title}\u0000${note.content}`;
+
+// merge: add notes that aren't already here; append: add everything; replace: delete all, then add.
+// Validates first, then writes in one transaction, so a failure part-way leaves the existing notes untouched.
+export const importNotes = async (notes: any[], mode: ImportMode): Promise<{ imported: number; skipped: number }> => {
+  const valid = notes.filter(isImportable);
   if (valid.length === 0) {
     throw new Error('No valid notes found in import data.');
   }
-  // One transaction: if any insert fails, the delete rolls back and the existing notes stay.
+  let imported = 0;
   await db.withExclusiveTransactionAsync(async txn => {
-    await txn.runAsync('DELETE FROM notes');
+    if (mode === 'replace') {
+      await txn.runAsync('DELETE FROM notes');
+    }
+    const seen = new Set<string>();
+    if (mode === 'merge') {
+      const existing = await txn.getAllAsync<{ title: string; content: string }>('SELECT title, content FROM notes');
+      existing.forEach(note => seen.add(noteKey(note)));
+    }
     for (const note of valid) {
+      if (mode === 'merge') {
+        const key = noteKey(note);
+        if (seen.has(key)) continue;
+        seen.add(key);
+      }
       await txn.runAsync(
         `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)`,
         [
@@ -105,6 +120,8 @@ export const importNotesFromJson = async (jsonData: string): Promise<void> => {
           note.updatedAt || new Date().toISOString()
         ]
       );
+      imported++;
     }
   });
+  return { imported, skipped: valid.length - imported };
 };
