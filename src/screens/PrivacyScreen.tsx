@@ -22,8 +22,12 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
     outro: 'None of this is sent to the developer or anyone else.',
   },
   {
-    heading: 'App updates',
-    intro: 'To deliver bug fixes, NoteSpark checks for an update when it opens. The check sends only technical details, such as the app version, and never your notes.',
+    heading: 'Nothing leaves your device',
+    intro: "NoteSpark makes no network requests of its own: no sync, no analytics, no crash reporting and no update checks. App updates come only through the store you installed it from.",
+    bullets: [
+      "If you add an image from a web address to a note, it's loaded from that website when you view the note, the same as in a browser.",
+      'When you export or share notes, the file goes only where you choose in the share sheet.',
+    ],
   },
   {
     heading: 'Permissions',
@@ -31,7 +35,7 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
       "Notifications: to tell you things like an export finishing. These notifications are created on your device; NoteSpark doesn't use push notifications.",
       'Photos: only the images you pick when adding an image to a note.',
       'Files: only the backup file you pick when importing notes.',
-      'Internet: only for app updates and the links you open.',
+      'Internet: only to show images from web addresses that you add to notes.',
     ],
   },
   {
@@ -65,7 +69,7 @@ const PrivacyScreen: React.FC = () => {
         <View style={styles.column}>
           <Text variant="bodySmall" style={body}>Effective {EFFECTIVE_DATE}</Text>
           <Text variant="bodyLarge" style={[styles.lead, { color: theme.colors.onSurface }]}>
-            NoteSpark is a notes app that works offline. It has no account, no ads and no analytics. This policy explains what the app stores, where it's kept, and what leaves your device.
+            NoteSpark is an offline notes app. It has no account, no ads, no analytics and no tracking. Everything you write stays on your phone. This policy explains what the app stores and where.
           </Text>
 
           {sections.map(section => (
