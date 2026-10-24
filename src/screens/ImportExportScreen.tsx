@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
-import { StyleSheet, View, ScrollView, Alert, Share, TextInput, Platform, RefreshControl } from 'react-native';
+import { StyleSheet, View, ScrollView, Alert, Share, Platform, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Card, Text, ActivityIndicator } from 'react-native-paper';
+import { Button, Icon, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { exportNotesAsJson, importNotesFromJson } from '../storage/database';
 import { sendAppNotification } from '../utils/notifications';
 import { importNotesFromFile } from '../storage/database';
 import Header from '../components/Header';
+import GroupedRow from '../components/GroupedRow';
 import { useTheme } from '../theme/ThemeContext';
+import { lightTheme, readingWidth, shape, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type ImportExportScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ImportExport'>;
@@ -26,21 +28,23 @@ const ImportExportScreen: React.FC = () => {
   const [pdfExporting, setPdfExporting] = useState(false);
   const handleExportHistoryPDF = async () => {
     Alert.alert(
-      'Export History as PDF',
-      'Do you want to export your Import/Export history as a PDF?',
+      'Export history as PDF?',
+      'Creates a PDF of your import and export history that you can save or share.',
       [
         {
-          text: 'No',
+          text: 'Cancel',
           style: 'cancel',
           onPress: () => {},
         },
         {
-          text: 'Yes',
+          text: 'Export PDF',
           onPress: async () => {
             setPdfExporting(true);
             try {
-              let html = `<html><head><style>body{font-family:sans-serif;}h2{color:#1976d2;}table{width:100%;border-collapse:collapse;}th,td{border:1px solid #ccc;padding:8px;text-align:left;}th{background:#f5f5f5;}tr:nth-child(even){background:#fafafa;}</style></head><body>`;
-              html += `<h2>NoteSpark Import/Export History</h2><table><tr><th>Date</th><th>Type</th><th>Count</th><th>Note</th></tr>`;
+              // Printed on white, so the PDF uses the light scheme.
+              const c = lightTheme.colors;
+              let html = `<html><head><style>body{font-family:sans-serif;color:${c.onSurface};}h2{color:${c.primary};}table{width:100%;border-collapse:collapse;}th,td{border:1px solid ${c.outlineVariant};padding:8px;text-align:left;}th{background:${c.surfaceContainer};}tr:nth-child(even){background:${c.surfaceContainerLow};}</style></head><body>`;
+              html += `<h2>NoteSpark import and export history</h2><table><tr><th>Date</th><th>Type</th><th>Count</th><th>Note</th></tr>`;
               history.forEach(h => {
                 html += `<tr><td>${new Date(h.date).toLocaleString()}</td><td>${h.type}</td><td>${typeof h.count === 'number' ? h.count : 0}</td><td>${h.error && h.error.trim() ? h.error : 'No error'}</td></tr>`;
               });
@@ -50,7 +54,7 @@ const ImportExportScreen: React.FC = () => {
               const { uri } = await Print.printToFileAsync({ html });
               await Sharing.shareAsync(uri);
             } catch (err) {
-              Alert.alert('PDF Export Error', 'Failed to generate or share PDF.');
+              Alert.alert("Couldn't create the PDF", 'Try again.');
             }
             setPdfExporting(false);
           },
@@ -94,16 +98,16 @@ const ImportExportScreen: React.FC = () => {
 
   const clearHistory = async () => {
     Alert.alert(
-      'Clear History',
-      'Are you sure you want to clear your Import/Export history? This action cannot be undone.',
+      'Clear history?',
+      'Your import and export history will be cleared. Your notes stay as they are.',
       [
         {
-          text: 'No',
+          text: 'Cancel',
           style: 'cancel',
           onPress: () => {},
         },
         {
-          text: 'Yes',
+          text: 'Clear history',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -152,8 +156,8 @@ const ImportExportScreen: React.FC = () => {
       }
 
       Alert.alert(
-        'Export Notes',
-        'You will be shown the share sheet. Choose "Continue" to proceed or "Cancel" to abort export.',
+        'Export notes?',
+        'Next, choose where to save or share the file.',
         [
           {
             text: 'Cancel',
@@ -184,12 +188,12 @@ const ImportExportScreen: React.FC = () => {
                   count: notesArr.length,
                   error: '',
                 });
-                Alert.alert('Export Complete', `Exported ${notesArr.length} notes.`, [
+                Alert.alert('Notes exported', `${notesArr.length} notes exported.`, [
                   { text: 'OK' }
                 ]);
               } else {
                 if (jsonString.length > 50000) {
-                  Alert.alert('Export Too Large', 'Your notes are too large to share as text. Please use a file app to save the export.');
+                  Alert.alert('Export is too large to share as text', 'Save the export with a file manager app instead.');
                   await addHistory({
                     type: 'export',
                     date: new Date().toISOString(),
@@ -208,7 +212,7 @@ const ImportExportScreen: React.FC = () => {
                     count: notesArr.length,
                     error: '',
                   });
-                  Alert.alert('Export Complete', `Exported ${notesArr.length} notes.`, [
+                  Alert.alert('Notes exported', `${notesArr.length} notes exported.`, [
                     { text: 'OK' }
                   ]);
                 }
@@ -224,7 +228,7 @@ const ImportExportScreen: React.FC = () => {
         typeof error === 'object' && error !== null && 'message' in error
           ? String((error as { message?: string }).message)
           : 'Failed to export notes. Please try again.';
-      Alert.alert('Error', errorMessage);
+      Alert.alert("Couldn't export notes", errorMessage);
       await addHistory({
         type: 'export',
         date: new Date().toISOString(),
@@ -237,13 +241,13 @@ const ImportExportScreen: React.FC = () => {
 
   const handleImport = async () => {
     if (!importData.trim()) {
-      Alert.alert('Error', 'Please enter JSON data to import');
+      Alert.alert('Paste your backup first', 'Paste the JSON from a NoteSpark export, or choose a file instead.');
       await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'No data entered.' });
       return;
     }
     Alert.alert(
-      'Import Notes',
-      'Importing will replace all existing notes. Are you sure you want to continue?',
+      'Replace all notes?',
+      'Importing replaces every note on this device with the notes in the backup. Export your current notes first if you want to keep them.',
       [
         {
           text: 'Cancel',
@@ -253,7 +257,7 @@ const ImportExportScreen: React.FC = () => {
           }
         },
         {
-          text: 'Import',
+          text: 'Replace notes',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -264,7 +268,7 @@ const ImportExportScreen: React.FC = () => {
                 parsed = JSON.parse(importData);
                 if (!Array.isArray(parsed)) throw new Error('Not an array');
               } catch (e) {
-                Alert.alert('Error', 'Invalid JSON format. Please check your data.');
+                Alert.alert("That isn't valid JSON", 'Check that you pasted the whole export file.');
                 setIsImporting(false);
                 await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'Invalid JSON format.' });
                 return;
@@ -284,7 +288,7 @@ const ImportExportScreen: React.FC = () => {
                 return valid ? note : null;
               }).filter(Boolean);
               if (validNotes.length === 0) {
-                Alert.alert('Warning', 'No valid notes found in import data.');
+                Alert.alert('No notes found', "The backup doesn't contain any notes NoteSpark can read.");
                 setIsImporting(false);
                 await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'No valid notes found.' });
                 return;
@@ -294,19 +298,19 @@ const ImportExportScreen: React.FC = () => {
               const result = validNotes.length;
               setIsImporting(false);
               setImportData('');
-              let msg = `Imported ${result} notes successfully.`;
-              if (errorCount > 0) msg += ` ${errorCount} notes were skipped due to errors.`;
+              let msg = `${result} notes imported.`;
+              if (errorCount > 0) msg += ` ${errorCount} notes were skipped because they were incomplete.`;
               await sendAppNotification('Notes Imported', msg);
               await addHistory({ type: 'import', date: new Date().toISOString(), count: result, error: errorCount > 0 ? `${errorCount} notes skipped.` : '' });
               await loadHistory();
-              Alert.alert('Import Complete', msg, [
+              Alert.alert('Notes imported', msg, [
                 { text: 'OK', onPress: async () => {
                   await loadHistory();
                 } },
               ]);
             } catch (error) {
               console.error('Failed to import notes:', error);
-              Alert.alert('Error', 'Failed to import notes. Please check your JSON data format.');
+              Alert.alert("Couldn't import notes", 'Check that the data is a NoteSpark export.');
               setIsImporting(false);
               await addHistory({ type: 'import', date: new Date().toISOString(), count: 0, error: 'Import failed.' });
             }
@@ -318,8 +322,8 @@ const ImportExportScreen: React.FC = () => {
 
   const handleFileImport = async () => {
     Alert.alert(
-      'Import Notes from File',
-      'Importing will replace all existing notes. Are you sure you want to continue?',
+      'Replace all notes?',
+      'Importing replaces every note on this device with the notes in the backup. Export your current notes first if you want to keep them.',
       [
         { text: 'Cancel', style: 'cancel', onPress: async () => {
           await addHistory({
@@ -330,7 +334,7 @@ const ImportExportScreen: React.FC = () => {
           });
         } },
         {
-          text: 'Import',
+          text: 'Replace notes',
           style: 'destructive',
           onPress: async () => {
             try {
@@ -344,7 +348,7 @@ const ImportExportScreen: React.FC = () => {
                 count: typeof count === 'number' && !isNaN(count) ? count : 0,
                 error: typeof count === 'number' && count > 0 ? '' : 'No notes imported from file.'
               });
-              Alert.alert('Success', `${count} notes imported successfully`, [
+              Alert.alert('Notes imported', `${count} notes imported.`, [
                 { text: 'OK', onPress: () => navigation.goBack() },
               ]);
             } catch (error) {
@@ -352,7 +356,7 @@ const ImportExportScreen: React.FC = () => {
               const errorMessage = typeof error === 'object' && error !== null && 'message' in error
                 ? String((error as { message?: string }).message)
                 : 'Failed to import notes from file. Please check your JSON file and permissions.';
-              Alert.alert('Error', errorMessage);
+              Alert.alert("Couldn't import notes", errorMessage);
               await addHistory({
                 type: 'import',
                 date: new Date().toISOString(),
@@ -372,16 +376,27 @@ const ImportExportScreen: React.FC = () => {
     };
   }, []);
 
+  const historyTitle = (h: any) => {
+    const kind = h.type === 'import' ? 'Import' : 'Export';
+    const count = typeof h.count === 'number' ? h.count : 0;
+    return count > 0 ? `${kind}ed ${count} notes` : `${kind} didn't finish`;
+  };
+
+  const sectionTitle = (title: string) => (
+    <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>{title}</Text>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header
-        title="Import/Export"
+        title="Import and export"
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView
-        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -390,138 +405,99 @@ const ImportExportScreen: React.FC = () => {
           />
         }
       >
-        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <Card.Title 
-            title="Export Notes" 
-            titleStyle={{ color: theme.colors.primary }}
-          />
-          <Card.Content>
-            <Text style={{ color: theme.colors.onSurface, marginBottom: 16 }}>
-              Export all your notes as a JSON file. You can save, share, or back up your notes to your device or cloud using the share sheet.
-            </Text>
-            <Button
-              mode="contained"
-              onPress={handleExport}
-              loading={isExporting}
-              disabled={isExporting}
-              style={{ backgroundColor: theme.colors.primary }}
-              labelStyle={{ color: '#fff' }}
-            >
-              Export Notes
-            </Button>
-          </Card.Content>
-        </Card>
-
-        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <Card.Title 
-            title="Import Notes" 
-            titleStyle={{ color: theme.colors.primary }}
-          />
-          <Card.Content>
-            <Text style={{ color: theme.colors.onSurface, marginBottom: 16 }}>
-              Import notes from a JSON backup. This will replace all existing notes.
-            </Text>
-            <TextInput
-              style={[styles.importInput, { 
-                color: theme.colors.onSurface,
-                backgroundColor: theme.colors.background,
-                borderColor: theme.colors.outlineVariant, // 25% opacity
-              }]}
-              placeholder="Paste JSON data here"
-              placeholderTextColor={theme.colors.onSurfaceVariant} // 50% opacity
-              value={importData}
-              onChangeText={setImportData}
-              multiline
-              numberOfLines={8}
-              textAlignVertical="top"
-            />
-            <Button
-              mode="outlined"
-              onPress={handleFileImport}
-              loading={fileImporting}
-              disabled={fileImporting}
-              style={{ marginTop: 12, borderColor: theme.colors.primary }}
-              labelStyle={{ color: theme.colors.primary }}
-            >
-              Upload JSON File
-            </Button>
-            <Button
-              mode="contained"
-              onPress={handleImport}
-              loading={isImporting}
-              disabled={isImporting || !importData.trim()}
-              style={{ backgroundColor: theme.colors.primary, marginTop: 16 }}
-              labelStyle={{ color: '#fff' }}
-            >
-              Import Notes
-            </Button>
-
-          </Card.Content>
-        </Card>
-
-        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}>
-          <Card.Title 
-            title="Warning" 
-            titleStyle={{ color: theme.colors.error }}
-          />
-          <Card.Content>
-            <Text style={{ color: theme.colors.onSurface }}>
-              Importing notes will replace all existing notes in the app. Make sure to export your current notes first if you want to keep them.
-            </Text>
-          </Card.Content>
-        </Card>
-
-        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]}> 
-          <Card.Title 
-            title="Import/Export History" 
-            titleStyle={{ color: theme.colors.primary, fontSize: 15, fontWeight: 'bold' }}
-            right={() => (
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={styles.column}>
+          {sectionTitle('Export')}
+          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+            Save all your notes as a JSON file you can keep, share or import later.
+          </Text>
           <Button
-            mode="text"
-            onPress={handleExportHistoryPDF}
-            compact
-            loading={pdfExporting}
-            disabled={pdfExporting}
-            labelStyle={{ color: theme.colors.primary, fontWeight: 'bold', fontSize: 13 }}
-            style={{ marginRight: 0 }}
-            icon="file-download"
+            mode="contained"
+            icon="export-variant"
+            onPress={handleExport}
+            loading={isExporting}
+            disabled={isExporting}
+            style={styles.action}
           >
-            PDF
+            Export notes
           </Button>
-          <Text style={{ color: theme.colors.onSurface, opacity: 0.5, fontSize: 16, marginHorizontal: 4 }}>|</Text>
-          <Button
-            mode="text"
-            onPress={clearHistory}
-            compact
-            labelStyle={{ color: theme.colors.error, fontWeight: 'bold', fontSize: 13 }}
-            style={{ marginRight: 4 }}
-          >
-            CLEAR
-          </Button>
-              </View>
-            )}
-          />
-          <Card.Content>
-            {history.length === 0 ? (
-              <Text style={{ color: theme.colors.onSurface, opacity: 0.7, fontSize: 13 }}>No history yet.</Text>
-            ) : (
-              history.map((h, idx) => (
-          <View key={idx} style={{ marginBottom: 10 }}>
-            <Text style={{ color: theme.colors.onSurface, fontWeight: 'bold', fontSize: 13 }}>
-              {h.type === 'import' ? 'Import' : 'Export'} - {new Date(h.date).toLocaleString()}
-            </Text>
-            <Text style={{ color: theme.colors.onSurface, fontSize: 13 }}>
-              Count: {typeof h.count === 'number' ? h.count : 0}
-            </Text>
-            <Text style={{ color: h.error ? theme.colors.error : theme.colors.onSurface, fontSize: 11 }}>
-              Note: {h.error && h.error.trim() ? h.error : 'No error'}
+
+          {sectionTitle('Import')}
+          <View style={[styles.banner, { backgroundColor: theme.colors.errorContainer }]}>
+            <Icon source="alert-outline" size={20} color={theme.colors.onErrorContainer} />
+            <Text variant="bodyMedium" style={[styles.bannerText, { color: theme.colors.onErrorContainer }]}>
+              Importing replaces all notes on this device. Export first if you want to keep them.
             </Text>
           </View>
-              ))
-            )}
-          </Card.Content>
-        </Card>
+          <Button
+            mode="contained-tonal"
+            icon="file-upload-outline"
+            onPress={handleFileImport}
+            loading={fileImporting}
+            disabled={fileImporting}
+            style={styles.action}
+          >
+            Choose JSON file
+          </Button>
+          <TextInput
+            mode="outlined"
+            label="Or paste JSON"
+            value={importData}
+            onChangeText={setImportData}
+            multiline
+            numberOfLines={6}
+            style={styles.pasteInput}
+          />
+          <Button
+            mode="outlined"
+            onPress={handleImport}
+            loading={isImporting}
+            disabled={isImporting || !importData.trim()}
+            style={styles.action}
+          >
+            Import notes
+          </Button>
+
+          <View style={styles.historyHeader}>
+            <Text variant="titleSmall" style={[styles.historyTitle, { color: theme.colors.primary }]}>History</Text>
+            <Button
+              mode="text"
+              icon="file-pdf-box"
+              onPress={handleExportHistoryPDF}
+              loading={pdfExporting}
+              disabled={pdfExporting || history.length === 0}
+              compact
+            >
+              Save as PDF
+            </Button>
+            <Button
+              mode="text"
+              onPress={clearHistory}
+              disabled={history.length === 0}
+              textColor={theme.colors.error}
+              compact
+            >
+              Clear history
+            </Button>
+          </View>
+          {history.length === 0 ? (
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>No imports or exports yet.</Text>
+          ) : (
+            history.map((h, idx) => {
+              const failed = !(typeof h.count === 'number' && h.count > 0);
+              return (
+                <GroupedRow
+                  key={idx}
+                  title={historyTitle(h)}
+                  description={`${new Date(h.date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}${h.error && h.error.trim() ? `\n${h.error}` : ''}`}
+                  icon={failed ? 'alert-circle-outline' : h.type === 'import' ? 'download-outline' : 'upload-outline'}
+                  danger={failed}
+                  isFirst={idx === 0}
+                  isLast={idx === history.length - 1}
+                />
+              );
+            })
+          )}
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -531,19 +507,45 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  scrollView: {
+  scrollContent: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.xxl,
+  },
+  column: {
+    width: '100%',
+    maxWidth: readingWidth,
+    alignSelf: 'center',
+  },
+  sectionTitle: {
+    marginTop: space.xl,
+    marginBottom: space.sm,
+  },
+  action: {
+    alignSelf: 'flex-start',
+    marginTop: space.md,
+  },
+  banner: {
+    flexDirection: 'row',
+    gap: space.md,
+    padding: space.md,
+    borderRadius: shape.small,
+  },
+  bannerText: {
     flex: 1,
-    padding: 16,
   },
-  card: {
-    marginBottom: 16,
-    elevation: 2,
-  },
-  importInput: {
-    borderWidth: 1,
-    borderRadius: 4,
-    padding: 8,
+  pasteInput: {
+    marginTop: space.md,
     minHeight: 120,
+  },
+  historyHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    marginTop: space.xl,
+    marginBottom: space.sm,
+  },
+  historyTitle: {
+    flex: 1,
   },
 });
 
