@@ -91,7 +91,7 @@ const SettingsScreen: React.FC = () => {
             title="Check for Updates"
             description="Get the latest features and fixes"
             titleStyle={{ color: theme.colors.primary }}
-            descriptionStyle={{ color: theme.colors.text + 'AA' }}
+            descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
             left={(props) => <List.Icon {...props} icon="update" color={theme.colors.primary} />}
             onPress={checkingUpdate ? undefined : handleCheckUpdate}
             disabled={checkingUpdate}
@@ -114,21 +114,21 @@ const SettingsScreen: React.FC = () => {
                 label="Light Theme"
                 value="light"
                 color={theme.colors.primary}
-                labelStyle={{ color: theme.colors.text }}
+                labelStyle={{ color: theme.colors.onSurface }}
                 style={styles.radioItem}
               />
               <RadioButton.Item
                 label="Dark Theme"
                 value="dark"
                 color={theme.colors.primary}
-                labelStyle={{ color: theme.colors.text }}
+                labelStyle={{ color: theme.colors.onSurface }}
                 style={styles.radioItem}
               />
               <RadioButton.Item
                 label="System Default"
                 value="system"
                 color={theme.colors.primary}
-                labelStyle={{ color: theme.colors.text }}
+                labelStyle={{ color: theme.colors.onSurface }}
                 style={styles.radioItem}
               />
             </RadioButton.Group>
@@ -144,8 +144,8 @@ const SettingsScreen: React.FC = () => {
             <List.Item
               title="Import/Export Notes"
               description="Backup or restore your notes"
-              titleStyle={{ color: theme.colors.text }}
-              descriptionStyle={{ color: theme.colors.text + 'AA' }}
+              titleStyle={{ color: theme.colors.onSurface }}
+              descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
               left={(props) => <List.Icon {...props} icon="database-import-outline" color={theme.colors.primary} />}
               onPress={() => navigation.navigate('ImportExport')}
             />
@@ -189,8 +189,8 @@ const SettingsScreen: React.FC = () => {
             <List.Item
               title="About NoteSpark"
               description="Developer, License, Version, GitHub"
-              titleStyle={{ color: theme.colors.text }}
-              descriptionStyle={{ color: theme.colors.text + 'AA' }}
+              titleStyle={{ color: theme.colors.onSurface }}
+              descriptionStyle={{ color: theme.colors.onSurfaceVariant }}
               left={(props) => <List.Icon {...props} icon="information" color={theme.colors.primary} />}
               onPress={() => navigation.navigate('About')}
             />
@@ -199,7 +199,7 @@ const SettingsScreen: React.FC = () => {
           title="What's Next?"
           description="Vault encryption, secure sync, and no cloud web are coming."
           titleStyle={{fontSize: 17 }}
-          descriptionStyle={{ color: theme.colors.text + 'AA', fontSize: 12 }}
+          descriptionStyle={{ color: theme.colors.onSurfaceVariant, fontSize: 12 }}
           left={(props) => (
             <View style={{ justifyContent: 'center' }}>
               <List.Icon {...props} icon="rocket-launch" color={theme.colors.primary} />

@@ -151,8 +151,8 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                     style={[
                       styles.typeChip,
                       {
-                      backgroundColor: note.isMarkdown ? theme.colors.accent + '22' : theme.colors.secondary + '22',
-                      borderColor: note.isMarkdown ? theme.colors.accent : theme.colors.secondary,
+                      backgroundColor: note.isMarkdown ? theme.colors.tertiaryContainer : theme.colors.secondaryContainer,
+                      borderColor: note.isMarkdown ? theme.colors.tertiary : theme.colors.secondary,
                       paddingHorizontal: 6,
                       paddingVertical: 0,
                       minHeight: 20,
@@ -162,13 +162,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                     textStyle={[
                       styles.chipText,
                       {
-                      color: note.isMarkdown
-                        ? theme.dark
-                        ? theme.colors.accent
-                        : '#2B2B2B'
-                        : theme.dark
-                        ? theme.colors.secondary
-                        : '#2B2B2B',
+                      color: note.isMarkdown ? theme.colors.onTertiaryContainer : theme.colors.onSecondaryContainer,
                       fontWeight: 'bold',
                       fontSize: compact ? 10 : 12,
                       lineHeight: compact ? 12 : 14,
@@ -188,7 +182,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                     {note.isMarkdown ? 'Markdown' : 'Text'}
                     </Chip>
 
-                  <Text style={[styles.date, { color: theme.colors.text, fontWeight: '500', marginLeft: 8 }]}> 
+                  <Text style={[styles.date, { color: theme.colors.onSurface, fontWeight: '500', marginLeft: 8 }]}> 
                     Created: {createdDate}
                   </Text>
                 </View>
@@ -233,7 +227,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                   },
                 ]}
               >
-                <Text style={[styles.date, { color: theme.colors.text, fontWeight: '500' }]}> 
+                <Text style={[styles.date, { color: theme.colors.onSurface, fontWeight: '500' }]}> 
                   Edited: {editedDate && editedDate !== 'No date' ? editedDate : 'none'}
                 </Text>
 

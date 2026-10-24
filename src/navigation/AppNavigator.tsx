@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
@@ -10,28 +10,15 @@ import SettingsScreen from '../screens/SettingsScreen';
 import ImportExportScreen from '../screens/ImportExportScreen';
 import AboutScreen from '../screens/AboutScreen';
 import { useTheme } from '../theme/ThemeContext';
+import { navDarkTheme, navLightTheme } from '../theme/theme';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
 const AppNavigator: React.FC = () => {
-  const { theme } = useTheme();
-  
-  const navigationTheme = {
-    ...DefaultTheme,
-    dark: theme.dark,
-    colors: {
-      ...DefaultTheme.colors,
-      primary: theme.colors.primary,
-      background: theme.colors.background,
-      card: theme.colors.surface,
-      text: theme.colors.text,
-      border: theme.colors.text + '20', // 12.5% opacity
-      notification: theme.colors.accent,
-    },
-  };
+  const { theme, isDarkMode } = useTheme();
 
   return (
-    <NavigationContainer theme={navigationTheme}>
+    <NavigationContainer theme={isDarkMode ? navDarkTheme : navLightTheme}>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{

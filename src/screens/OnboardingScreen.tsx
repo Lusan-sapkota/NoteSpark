@@ -103,21 +103,21 @@ const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
       <TouchableOpacity style={styles.skipBtn} onPress={() => { setTimeout(onFinish, 150); }}>
-        <Text style={[styles.skipText, { color: theme.colors.text }]}>Skip</Text>
+        <Text style={[styles.skipText, { color: theme.colors.onSurface }]}>Skip</Text>
       </TouchableOpacity>
       <Animated.View style={[animatedStyle, styles.centered]}>
         <Animated.View style={[styles.logoContainer, { backgroundColor: theme.colors.surface, transform: [{ scale: logoScaleAnim }] }]}> 
           <Image source={LOGO} style={styles.logo} />
         </Animated.View>
         <Text style={[styles.title, { color: theme.colors.primary }]}>{slides[step].title}</Text>
-        <Text style={[styles.subtitle, { color: theme.colors.text }]}>{slides[step].subtitle}</Text>
+        <Text style={[styles.subtitle, { color: theme.colors.onSurface }]}>{slides[step].subtitle}</Text>
       </Animated.View>
       <View style={styles.footer}>
         <View style={styles.dotsContainer}>
           {slides.map((_, i) => (
             <View
               key={i}
-              style={[styles.dot, { backgroundColor: i === step ? theme.colors.primary : theme.colors.border }]} />
+              style={[styles.dot, { backgroundColor: i === step ? theme.colors.primary : theme.colors.outlineVariant }]} />
           ))}
         </View>
         <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={handleNext} disabled={finished}>

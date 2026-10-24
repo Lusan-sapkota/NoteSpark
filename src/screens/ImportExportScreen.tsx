@@ -396,7 +396,7 @@ const ImportExportScreen: React.FC = () => {
             titleStyle={{ color: theme.colors.primary }}
           />
           <Card.Content>
-            <Text style={{ color: theme.colors.text, marginBottom: 16 }}>
+            <Text style={{ color: theme.colors.onSurface, marginBottom: 16 }}>
               Export all your notes as a JSON file. You can save, share, or back up your notes to your device or cloud using the share sheet.
             </Text>
             <Button
@@ -418,17 +418,17 @@ const ImportExportScreen: React.FC = () => {
             titleStyle={{ color: theme.colors.primary }}
           />
           <Card.Content>
-            <Text style={{ color: theme.colors.text, marginBottom: 16 }}>
+            <Text style={{ color: theme.colors.onSurface, marginBottom: 16 }}>
               Import notes from a JSON backup. This will replace all existing notes.
             </Text>
             <TextInput
               style={[styles.importInput, { 
-                color: theme.colors.text,
+                color: theme.colors.onSurface,
                 backgroundColor: theme.colors.background,
-                borderColor: theme.colors.text + '40', // 25% opacity
+                borderColor: theme.colors.outlineVariant, // 25% opacity
               }]}
               placeholder="Paste JSON data here"
-              placeholderTextColor={theme.colors.text + '80'} // 50% opacity
+              placeholderTextColor={theme.colors.onSurfaceVariant} // 50% opacity
               value={importData}
               onChangeText={setImportData}
               multiline
@@ -465,7 +465,7 @@ const ImportExportScreen: React.FC = () => {
             titleStyle={{ color: theme.colors.error }}
           />
           <Card.Content>
-            <Text style={{ color: theme.colors.text }}>
+            <Text style={{ color: theme.colors.onSurface }}>
               Importing notes will replace all existing notes in the app. Make sure to export your current notes first if you want to keep them.
             </Text>
           </Card.Content>
@@ -489,7 +489,7 @@ const ImportExportScreen: React.FC = () => {
           >
             PDF
           </Button>
-          <Text style={{ color: theme.colors.text, opacity: 0.5, fontSize: 16, marginHorizontal: 4 }}>|</Text>
+          <Text style={{ color: theme.colors.onSurface, opacity: 0.5, fontSize: 16, marginHorizontal: 4 }}>|</Text>
           <Button
             mode="text"
             onPress={clearHistory}
@@ -504,17 +504,17 @@ const ImportExportScreen: React.FC = () => {
           />
           <Card.Content>
             {history.length === 0 ? (
-              <Text style={{ color: theme.colors.text, opacity: 0.7, fontSize: 13 }}>No history yet.</Text>
+              <Text style={{ color: theme.colors.onSurface, opacity: 0.7, fontSize: 13 }}>No history yet.</Text>
             ) : (
               history.map((h, idx) => (
           <View key={idx} style={{ marginBottom: 10 }}>
-            <Text style={{ color: theme.colors.text, fontWeight: 'bold', fontSize: 13 }}>
+            <Text style={{ color: theme.colors.onSurface, fontWeight: 'bold', fontSize: 13 }}>
               {h.type === 'import' ? 'Import' : 'Export'} - {new Date(h.date).toLocaleString()}
             </Text>
-            <Text style={{ color: theme.colors.text, fontSize: 13 }}>
+            <Text style={{ color: theme.colors.onSurface, fontSize: 13 }}>
               Count: {typeof h.count === 'number' ? h.count : 0}
             </Text>
-            <Text style={{ color: h.error ? theme.colors.error : theme.colors.text, fontSize: 11 }}>
+            <Text style={{ color: h.error ? theme.colors.error : theme.colors.onSurface, fontSize: 11 }}>
               Note: {h.error && h.error.trim() ? h.error : 'No error'}
             </Text>
           </View>

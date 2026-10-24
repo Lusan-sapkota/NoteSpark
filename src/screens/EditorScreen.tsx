@@ -156,7 +156,7 @@ const EditorScreen: React.FC = () => {
               <Text style={[styles.timestampLabel, { color: theme.colors.primary }]}>
                 Created
               </Text>
-              <Text style={[styles.timestampValue, { color: theme.colors.text }]}>
+              <Text style={[styles.timestampValue, { color: theme.colors.onSurface }]}>
                 {createdAt ? new Date(createdAt).toLocaleString() : 'Unknown'}
               </Text>
             </View>
@@ -167,7 +167,7 @@ const EditorScreen: React.FC = () => {
               <Text style={[styles.timestampLabel, { color: theme.colors.primary }]}>
                 Last Edited
               </Text>
-              <Text style={[styles.timestampValue, { color: theme.colors.text }]}>
+              <Text style={[styles.timestampValue, { color: theme.colors.onSurface }]}>
                 {updatedAt ? new Date(updatedAt).toLocaleString() : 'Unknown'}
               </Text>
             </View>
@@ -196,18 +196,18 @@ const EditorScreen: React.FC = () => {
             <View style={{ backgroundColor: theme.colors.surface, borderRadius: 16, padding: 24, width: 320 }}>
               <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 12, color: theme.colors.primary }}>Insert Link</Text>
               <TextInput
-                style={{ borderBottomWidth: 1, borderColor: theme.colors.outline, marginBottom: 16, color: theme.colors.text, fontSize: 16 }}
+                style={{ borderBottomWidth: 1, borderColor: theme.colors.outline, marginBottom: 16, color: theme.colors.onSurface, fontSize: 16 }}
                 placeholder="Link Text"
                 value={linkText}
                 onChangeText={setLinkText}
-                placeholderTextColor={theme.colors.text + '80'}
+                placeholderTextColor={theme.colors.onSurfaceVariant}
               />
               <TextInput
-                style={{ borderBottomWidth: 1, borderColor: theme.colors.outline, marginBottom: 16, color: theme.colors.text, fontSize: 16 }}
+                style={{ borderBottomWidth: 1, borderColor: theme.colors.outline, marginBottom: 16, color: theme.colors.onSurface, fontSize: 16 }}
                 placeholder="Link URL (https://...)"
                 value={linkUrl}
                 onChangeText={setLinkUrl}
-                placeholderTextColor={theme.colors.text + '80'}
+                placeholderTextColor={theme.colors.onSurfaceVariant}
                 autoCapitalize="none"
                 autoCorrect={false}
               />
@@ -246,16 +246,16 @@ const EditorScreen: React.FC = () => {
         </Modal>
       )}
           <TextInput
-            style={[styles.titleInput, { color: theme.colors.text, borderBottomColor: theme.colors.outline || theme.colors.primary + '30' }]}
+            style={[styles.titleInput, { color: theme.colors.onSurface, borderBottomColor: theme.colors.outline || theme.colors.primary + '30' }]}
             placeholder="Title"
-            placeholderTextColor={theme.colors.text + '80'} // 50% opacity
+            placeholderTextColor={theme.colors.onSurfaceVariant} // 50% opacity
             value={typeof title === 'string' ? title : String(title)}
             onChangeText={setTitle}
           />
 
           <View style={styles.optionsRow}>
             <View style={styles.optionItem}>
-              <Text style={{ color: theme.colors.text }}>Markdown</Text>
+              <Text style={{ color: theme.colors.onSurface }}>Markdown</Text>
               <Switch
                 value={isMarkdown}
                 onValueChange={setIsMarkdown}
@@ -264,7 +264,7 @@ const EditorScreen: React.FC = () => {
             </View>
             {isMarkdown && (
               <View style={styles.optionItem}>
-                <Text style={{ color: theme.colors.text }}>Preview</Text>
+                <Text style={{ color: theme.colors.onSurface }}>Preview</Text>
                 <Switch
                   value={isPreview}
                   onValueChange={setIsPreview}
@@ -383,14 +383,14 @@ const EditorScreen: React.FC = () => {
             <View style={[styles.previewContainer, { borderColor: theme.colors.outline || theme.colors.primary + '30' }]}> 
               <View style={{ flex: 1 }}>
                 <TextInput
-                  style={[styles.contentInput, { color: theme.colors.text }]}
+                  style={[styles.contentInput, { color: theme.colors.onSurface }]}
                   value={convertImagesToLinks(content, isMarkdown)}
                   onChangeText={setContent}
                   multiline
                   textAlignVertical="top"
                   selectionColor={theme.colors.primary}
                   placeholder={isMarkdown ? 'Enter markdown content...' : 'Enter note content...'}
-                  placeholderTextColor={theme.colors.text + '80'}
+                  placeholderTextColor={theme.colors.onSurfaceVariant}
                   autoCorrect
                   autoCapitalize="sentences"
                   selection={selection}

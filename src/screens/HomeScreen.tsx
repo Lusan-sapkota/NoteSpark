@@ -171,7 +171,7 @@ const HomeScreen: React.FC = () => {
           <TextInput
             style={[
               styles.searchInput,
-              { backgroundColor: theme.colors.surface, color: theme.colors.text, flex: 1 }
+              { backgroundColor: theme.colors.surface, color: theme.colors.onSurface, flex: 1 }
             ]}
             placeholder="Search notes..."
             placeholderTextColor={theme.colors.outline}
@@ -206,7 +206,7 @@ const HomeScreen: React.FC = () => {
           sortType === type && { backgroundColor: theme.colors.primary },
           { marginHorizontal: 8 }
               ]}
-              color={sortType === type ? 'white' : theme.colors.text}
+              color={sortType === type ? 'white' : theme.colors.onSurface}
               onPress={() => setSortType(type as 'edited' | 'created')}
             />
           ))}
@@ -227,7 +227,7 @@ const HomeScreen: React.FC = () => {
               styles.filterFab,
               searchType === type && { backgroundColor: theme.colors.primary }
             ]}
-            color={searchType === type ? 'white' : theme.colors.text}
+            color={searchType === type ? 'white' : theme.colors.onSurface}
             onPress={() => setSearchType(type as 'all' | 'title' | 'content')}
           />
               ))}
@@ -243,7 +243,7 @@ const HomeScreen: React.FC = () => {
               styles.filterFab,
               filterMarkdown === type && { backgroundColor: theme.colors.secondary }
             ]}
-            color={filterMarkdown === type ? 'black' : theme.colors.text}
+            color={filterMarkdown === type ? 'black' : theme.colors.onSurface}
             onPress={() => setFilterMarkdown(type as 'all' | 'markdown' | 'text')}
           />
               ))}
@@ -259,8 +259,8 @@ const HomeScreen: React.FC = () => {
       ) : filteredNotes.length === 0 ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 40, paddingBottom: 100 }}>
           <IconButton icon="note-plus" size={64} iconColor={theme.colors.primary} />
-          <Text style={{ color: theme.colors.text, fontSize: 20, fontWeight: 'bold', marginTop: 12 }}>Create your first note</Text>
-          <Text style={{ color: theme.colors.text, fontSize: 15, marginTop: 6, marginBottom: 18, opacity: 0.7 }}>Start organizing your thoughts and ideas!</Text>
+          <Text style={{ color: theme.colors.onSurface, fontSize: 20, fontWeight: 'bold', marginTop: 12 }}>Create your first note</Text>
+          <Text style={{ color: theme.colors.onSurface, fontSize: 15, marginTop: 6, marginBottom: 18, opacity: 0.7 }}>Start organizing your thoughts and ideas!</Text>
           <FAB
             icon="plus"
             label="Create Note"

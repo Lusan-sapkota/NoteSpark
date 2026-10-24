@@ -11,12 +11,15 @@ import { ActivityIndicator, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import { sendAppNotification } from './src/utils/notifications';
+import { useFonts } from 'expo-font';
+import { fontFiles } from './src/theme/theme';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
   const navigationRef = React.useRef<any>(null);
   const [dbInitialized, setDbInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [fontsLoaded, fontError] = useFonts(fontFiles);
 
   useEffect(() => {
     const setupApp = async () => {
@@ -55,27 +58,21 @@ const AppContent = () => {
     }
   };
 
-  if (!dbInitialized || showOnboarding === null) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-        <ActivityIndicator size="large" color={theme.colors.primary} />
-      </View>
-    );
-  }
-
-  if (showOnboarding) {
-    return (
-      <>
-        <OnboardingScreen onFinish={handleFinishOnboarding} />
-      </>
-    );
-  }
-
+  // Font load failure falls back to the system font instead of blocking the app.
+  const ready = dbInitialized && showOnboarding !== null && (fontsLoaded || !!fontError);
 
   return (
     <PaperProvider theme={theme}>
       <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-      <AppNavigator />
+      {!ready ? (
+        <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+          <ActivityIndicator size="large" color={theme.colors.primary} />
+        </View>
+      ) : showOnboarding ? (
+        <OnboardingScreen onFinish={handleFinishOnboarding} />
+      ) : (
+        <AppNavigator />
+      )}
     </PaperProvider>
   );
 };

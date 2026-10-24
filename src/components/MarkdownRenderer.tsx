@@ -15,7 +15,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
 
   const markdownStyles = {
     body: {
-      color: theme.colors.text,
+      color: theme.colors.onSurface,
       fontSize: 16,
       lineHeight: 18,
       includeFontPadding: false,
@@ -88,7 +88,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
       marginVertical: -2,
     },
     hr: {
-      backgroundColor: theme.colors.text,
+      backgroundColor: theme.colors.outlineVariant,
       height: 1,
       marginTop: 8,
       marginBottom: 8,
@@ -101,7 +101,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     },
     blockquote: {
       backgroundColor: theme.colors.background,
-      borderLeftColor: theme.colors.accent,
+      borderLeftColor: theme.colors.tertiary,
       borderLeftWidth: 4,
       paddingLeft: 16,
       paddingRight: 16,
@@ -124,7 +124,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     },
     code_inline: {
       backgroundColor: theme.colors.background,
-      color: theme.colors.accent,
+      color: theme.colors.onSurface,
       fontFamily: 'monospace',
       padding: 4,
       borderRadius: 4,
@@ -136,7 +136,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     },
     code_block: {
       backgroundColor: theme.colors.background,
-      color: theme.colors.accent,
+      color: theme.colors.onSurface,
       fontFamily: 'monospace',
       padding: 8,
       borderRadius: 4,
@@ -159,7 +159,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     },
     table: {
       borderWidth: 1,
-      borderColor: theme.colors.text,
+      borderColor: theme.colors.outlineVariant,
       marginTop: 4,
       marginBottom: 4,
     },
@@ -169,12 +169,12 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
     th: {
       padding: 8,
       borderWidth: 1,
-      borderColor: theme.colors.text,
+      borderColor: theme.colors.outlineVariant,
     },
     td: {
       padding: 8,
       borderWidth: 1,
-      borderColor: theme.colors.text,
+      borderColor: theme.colors.outlineVariant,
     },
   };
 

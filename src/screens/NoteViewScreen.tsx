@@ -113,7 +113,7 @@ const NoteViewScreen: React.FC = () => {
           }, 120);
         }} />
         <View style={styles.loadingContainer}>
-          <Text style={[styles.loadingText, { color: theme.colors.text }]}>Loading...</Text>
+          <Text style={[styles.loadingText, { color: theme.colors.onSurface }]}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
