@@ -223,7 +223,7 @@ const ImportExportScreen: React.FC = () => {
       const errorMessage =
         typeof error === 'object' && error !== null && 'message' in error
           ? String((error as { message?: string }).message)
-          : 'Failed to export notes. Please ensure storage permission is granted.';
+          : 'Failed to export notes. Please try again.';
       Alert.alert('Error', errorMessage);
       await addHistory({
         type: 'export',
