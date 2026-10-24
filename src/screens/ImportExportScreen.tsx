@@ -316,19 +316,7 @@ const ImportExportScreen: React.FC = () => {
     );
   };
 
-  const { requestStoragePermission } = require('../storage/database');
   const handleFileImport = async () => {
-    const hasPermission = await requestStoragePermission();
-    if (!hasPermission) {
-      Alert.alert('Permission Required', 'Storage permission is required to import notes from file.');
-      await addHistory({
-        type: 'import',
-        date: new Date().toISOString(),
-        count: 0,
-        error: 'User denied storage permission for file import.'
-      });
-      return;
-    }
     Alert.alert(
       'Import Notes from File',
       'Importing will replace all existing notes. Are you sure you want to continue?',
