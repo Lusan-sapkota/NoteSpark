@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-reanimated';
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -18,6 +19,14 @@ import { pruneImageCache } from './src/utils/imageCache';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
+  // Android is always edge-to-edge (SDK 58), so the window no longer shrinks for the keyboard.
+  // Pad the whole app, portals and dialogs included, by the keyboard height instead. Screens already
+  // pad the bottom inset, so that part is subtracted.
+  const keyboard = useAnimatedKeyboard();
+  const insets = useSafeAreaInsets();
+  const keyboardPadding = useAnimatedStyle(() => ({
+    paddingBottom: Math.max(0, keyboard.height.value - insets.bottom),
+  }));
   const navigationRef = React.useRef<any>(null);
   const [dbInitialized, setDbInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
@@ -65,20 +74,22 @@ const AppContent = () => {
   const ready = dbInitialized && showOnboarding !== null && (fontsLoaded || !!fontError);
 
   return (
-    <PaperProvider theme={theme}>
-      <StatusBar style={isDarkMode ? 'light' : 'dark'} />
-      <DialogProvider>
-        {!ready ? (
-          <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
-            <ActivityIndicator size="large" color={theme.colors.primary} />
-          </View>
-        ) : showOnboarding ? (
-          <OnboardingScreen onFinish={handleFinishOnboarding} />
-        ) : (
-          <AppNavigator />
-        )}
-      </DialogProvider>
-    </PaperProvider>
+    <Animated.View style={[styles.root, { backgroundColor: theme.colors.background }, keyboardPadding]}>
+      <PaperProvider theme={theme}>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+        <DialogProvider>
+          {!ready ? (
+            <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+            </View>
+          ) : showOnboarding ? (
+            <OnboardingScreen onFinish={handleFinishOnboarding} />
+          ) : (
+            <AppNavigator />
+          )}
+        </DialogProvider>
+      </PaperProvider>
+    </Animated.View>
   );
 };
 
@@ -93,6 +104,9 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',

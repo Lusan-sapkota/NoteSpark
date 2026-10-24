@@ -8,7 +8,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
   }
 }
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, ScrollView, KeyboardAvoidingView } from 'react-native';
+import { StyleSheet, View, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
@@ -172,7 +172,7 @@ const EditorScreen: React.FC = () => {
   const showPreview = isMarkdown && isPreview;
 
   return (
-    <KeyboardAvoidingView style={styles.flex} behavior="padding">
+    <View style={styles.flex}>
       <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
         <Header elevated={elevated}
           title={isEditing ? 'Edit note' : 'New note'}
@@ -301,7 +301,7 @@ const EditorScreen: React.FC = () => {
           </Dialog>
         </Portal>
       </SafeAreaView>
-    </KeyboardAvoidingView>
+    </View>
   );
 
 };
