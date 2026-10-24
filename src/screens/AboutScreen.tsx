@@ -10,9 +10,11 @@ import * as Updates from 'expo-updates';
 import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Card, Text, Divider } from 'react-native-paper';
+import { List, Text } from 'react-native-paper';
 import Header from '../components/Header';
+import GroupedRow from '../components/GroupedRow';
 import { useTheme } from '../theme/ThemeContext';
+import { readingWidth, space } from '../theme/theme';
 
 const GITHUB_URL = 'https://github.com/Lusan-sapkota/NoteSpark';
 const DEVELOPER_EMAIL = 'sapkotalusan@gmail.com';
@@ -39,92 +41,77 @@ const AboutScreen = () => {
     );
   };
 
+  const external = <List.Icon icon="open-in-new" color={theme.colors.onSurfaceVariant} />;
+
   return (
     <SafeAreaView
       style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
       edges={['left', 'right', 'bottom']}
     >
       <Header
-        title="About NoteSpark"
+        title="About"
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.iconContainer}>
-          <Image
-            source={require('../../assets/icon.png')}
-            style={styles.appIcon}
-            resizeMode="contain"
+        <View style={styles.column}>
+          <View style={styles.identity}>
+            <Image
+              source={require('../../assets/icon.png')}
+              style={styles.appIcon}
+              accessibilityIgnoresInvertColors
+              accessibilityLabel="NoteSpark logo"
+            />
+            <View style={styles.identityText}>
+              <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>NoteSpark</Text>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Version {appVersion}</Text>
+            </View>
+          </View>
+
+          <Text variant="bodyLarge" style={[styles.description, { color: theme.colors.onSurfaceVariant }]}>
+            A private notes app that works offline. No account, no cloud, no ads. Write in plain text or Markdown, and back up your notes as a JSON file whenever you like.
+          </Text>
+
+          <GroupedRow title="Developer" description="Lusan Sapkota" icon="account-outline" isFirst isLast={false} />
+          <GroupedRow
+            title="Email"
+            description={DEVELOPER_EMAIL}
+            icon="email-outline"
+            right={external}
+            onPress={() => openLink(`mailto:${DEVELOPER_EMAIL}`)}
+            isFirst={false}
+            isLast={false}
           />
+          <GroupedRow
+            title="Website"
+            description="notespark.lusansapkota.com.np"
+            icon="web"
+            right={external}
+            onPress={() => openLink(WEBSITE)}
+            isFirst={false}
+            isLast={false}
+          />
+          <GroupedRow
+            title="Source code on GitHub"
+            description="github.com/Lusan-sapkota/NoteSpark"
+            icon="github"
+            right={external}
+            onPress={() => openLink(GITHUB_URL)}
+            isFirst={false}
+            isLast={false}
+          />
+          <GroupedRow
+            title="Documentation"
+            description="github.com/Lusan-sapkota/NoteSpark/wiki"
+            icon="book-open-outline"
+            right={external}
+            onPress={() => openLink(`${GITHUB_URL}/wiki`)}
+            isFirst={false}
+            isLast={false}
+          />
+          <GroupedRow title="License" description={LICENSE} icon="scale-balance" isFirst={false} isLast />
         </View>
-
-        <Text style={[styles.header, { color: theme.colors.primary }]}>
-          About NoteSpark
-        </Text>
-
-        <Text style={[styles.description, { color: theme.colors.onSurfaceVariant }]}>
-          NoteSpark is a modern, offline-first note-taking app designed for speed and privacy. 
-          Enjoy Markdown support, seamless JSON export/import, and robust local storage powered by SQLite. 
-          Capture, organize, and manage your notes effortlessly, no cloud required.
-        </Text>
-
-        <Card style={[styles.card, { backgroundColor: theme.colors.surface }]} mode="contained">
-          <Card.Content style={styles.cardContent}>
-            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Developer</Text>
-            <Text style={[styles.value, { color: theme.colors.onSurface }]}>Lusan Sapkota</Text>
-
-            <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
-
-            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Contact</Text>
-            <Text
-              style={[styles.link, { color: theme.colors.primary }]}
-              onPress={() => openLink(`mailto:${DEVELOPER_EMAIL}`)}
-            >
-              {DEVELOPER_EMAIL}
-            </Text>
-
-            <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
-
-            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Website</Text>
-            <Text
-              style={[styles.link, { color: theme.colors.primary }]}
-              onPress={() => openLink(WEBSITE)}
-            >
-              notespark.lusansapkota.com.np
-            </Text>
-
-            <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
-
-            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Version</Text>
-            <Text style={[styles.value, { color: theme.colors.onSurface }]}>{appVersion}</Text>
-
-            <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
-
-            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>License</Text>
-            <Text style={[styles.value, { color: theme.colors.onSurface }]}>{LICENSE}</Text>
-
-            <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
-
-            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>GitHub</Text>
-            <Text
-              style={[styles.link, { color: theme.colors.primary }]}
-              onPress={() => openLink(GITHUB_URL)}
-            >
-              github.com/Lusan-sapkota/NoteSpark
-            </Text>
-
-            <Divider style={[styles.divider, { backgroundColor: theme.colors.outline }]} />
-
-            <Text style={[styles.label, { color: theme.colors.onSurfaceVariant }]}>Read Docs</Text>
-            <Text
-              style={[styles.link, { color: theme.colors.primary }]}
-              onPress={() => openLink(`${GITHUB_URL}/wiki`)}
-            >
-              github.com/Lusan-sapkota/NoteSpark/wiki
-            </Text>
-          </Card.Content>
-        </Card>
       </ScrollView>
     </SafeAreaView>
   );
@@ -135,61 +122,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 40,
+    paddingHorizontal: space.lg,
+    paddingTop: space.sm,
+    paddingBottom: space.xxl,
   },
-  iconContainer: {
+  column: {
+    width: '100%',
+    maxWidth: readingWidth,
+    alignSelf: 'center',
+  },
+  identity: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
-    marginTop: 8,
+    gap: space.lg,
   },
+  // Round, matching the README logo and circle launcher masks.
   appIcon: {
-    width: 96,
-    height: 96,
-    borderRadius: 20,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
   },
-  header: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
-    letterSpacing: 0.5,
+  identityText: {
+    flex: 1,
   },
   description: {
-    fontSize: 16,
-    lineHeight: 24,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  card: {
-    borderRadius: 16,
-    elevation: 4,
-  },
-  cardContent: {
-    paddingVertical: 8,
-    gap: 12,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    textTransform: 'uppercase',
-    letterSpacing: 1,
-    opacity: 0.8,
-  },
-  value: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 6,
-  },
-  link: {
-    fontSize: 16,
-    fontWeight: '500',
-    textDecorationLine: 'underline',
-  },
-  divider: {
-    marginVertical: 8,
-    height: 1,
+    marginTop: space.lg,
+    marginBottom: space.xl,
   },
 });
 
