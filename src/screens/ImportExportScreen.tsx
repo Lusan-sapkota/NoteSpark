@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, Share, Platform, RefreshControl } from 'react-native';
+import { StyleSheet, View, ScrollView, Share, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -10,6 +10,7 @@ import { exportNotesAsJson, getNotes } from '../storage/database';
 import { sendAppNotification } from '../utils/notifications';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 import { importNotes, ImportMode } from '../storage/notes';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
@@ -108,7 +109,6 @@ const ImportExportScreen: React.FC = () => {
               });
               html += `</table></body></html>`;
               const Print = require('expo-print');
-              const Sharing = require('expo-sharing');
               const { uri } = await Print.printToFileAsync({ html });
               await Sharing.shareAsync(uri);
             } catch (err) {
@@ -181,7 +181,6 @@ const ImportExportScreen: React.FC = () => {
       ]
     );
   };
-  const { exportNotesToFile } = require('../storage/database');
   const handleExport = async () => {
     setIsExporting(true);
     let notesArr: any[] = [];
@@ -203,13 +202,13 @@ const ImportExportScreen: React.FC = () => {
       const jsonString = JSON.stringify(notesArr, null, 2);
 
       const fileName = `notespark-export-${Date.now()}.json`;
-      const fileUri = `${Platform.OS === 'android' ? '/storage/emulated/0/Download/' : ''}${fileName}`;
+      // App cache needs no storage permission; the share sheet then saves it wherever the person picks.
+      const fileUri = `${FileSystem.cacheDirectory}${fileName}`;
 
       let fileSaved = false;
       try {
-        const FileSystem = require('expo-file-system');
         await FileSystem.writeAsStringAsync(fileUri, jsonString, { encoding: FileSystem.EncodingType.UTF8 });
-        fileSaved = true;
+        fileSaved = await Sharing.isAvailableAsync();
       } catch (e) {
         fileSaved = false;
       }
@@ -235,10 +234,11 @@ const ImportExportScreen: React.FC = () => {
             text: 'Continue',
             onPress: async () => {
               if (fileSaved) {
-                await Share.share({
-                  url: fileUri,
-                  title: 'Exported Notes',
-                  message: 'Exported notes from NoteSpark',
+                // expo-sharing sends the actual file; React Native's Share only sends text on Android.
+                await Sharing.shareAsync(fileUri, {
+                  mimeType: 'application/json',
+                  UTI: 'public.json',
+                  dialogTitle: 'Save or share your notes',
                 });
                 await sendAppNotification('Notes exported', `${notesArr.length} notes exported.`);
                 await addHistory({

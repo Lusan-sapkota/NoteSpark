@@ -1,22 +1,4 @@
-import * as FileSystem from 'expo-file-system/legacy';
 
-export const exportNotesToFile = async (): Promise<string> => {
-  try {
-    const json = await exportNotesAsJson();
-    const fileName = `NoteSpark-Export-${new Date().toISOString().replace(/[:.]/g, '-')}.json`;
-    const fileUri = FileSystem.cacheDirectory + fileName;
-    await FileSystem.writeAsStringAsync(fileUri, json, { encoding: FileSystem.EncodingType.UTF8 });
-    const Share = require('react-native').Share;
-    await Share.share({
-      url: fileUri,
-      title: 'NoteSpark Notes Backup',
-      message: 'Your notes backup file. To save this file to Downloads or device storage, select a file manager or cloud storage app in the share list. If you do not see a file manager, please install one from the Play Store or App Store. If you have multiple file managers, try different ones. You can also save to Google Drive, Dropbox, or other cloud apps.'
-    });
-    return fileName;
-  } catch (error) {
-    throw error;
-  }
-};
 export const exportNotesAsJson = async (): Promise<string> => {
   try {
     const notes = await getNotes();
