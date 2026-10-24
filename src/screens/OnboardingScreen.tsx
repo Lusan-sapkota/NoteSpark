@@ -1,27 +1,25 @@
-import React, { useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Easing, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState } from 'react';
+import { View, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInRight } from 'react-native-reanimated';
+import { Button, Text } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
-import { Image } from 'react-native';
+import { readingWidth, space } from '../theme/theme';
 
 const LOGO = require('../../assets/icon.png');
-const { width } = Dimensions.get('window');
 
 const slides = [
   {
-    title: 'Welcome to NoteSpark!',
-    subtitle: 'Your notes, beautifully organized.',
-    animation: 'fade',
+    title: 'Notes that stay on your phone',
+    body: 'No account, no cloud, no ads. Everything you write is saved on this device.',
   },
   {
-    title: 'Quick Note Creation',
-    subtitle: 'Capture ideas instantly with a single tap.',
-    animation: 'scale',
+    title: 'Write it down fast',
+    body: 'Tap New note on the home screen and start typing. Pin the notes you need most.',
   },
   {
-    title: 'Markdown Support',
-    subtitle: 'Write notes with rich formatting.',
-    animation: 'slide',
+    title: 'Plain text or Markdown',
+    body: 'Switch any note to Markdown for headings, lists and links. Back up everything as a JSON file.',
   },
 ];
 
@@ -29,102 +27,54 @@ const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
   const [finished, setFinished] = useState(false);
   const { theme } = useTheme();
   const [step, setStep] = useState(0);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const slideAnim = useRef(new Animated.Value(width)).current;
-  const logoScaleAnim = useRef(new Animated.Value(1)).current;
+  const isLast = step === slides.length - 1;
 
-  React.useEffect(() => {
-    fadeAnim.setValue(0);
-    scaleAnim.setValue(0.8);
-    slideAnim.setValue(width);
-    logoScaleAnim.setValue(1);
-    if (slides[step].animation === 'fade') {
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.exp),
-      }).start();
-    } else if (slides[step].animation === 'scale') {
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 3,
-        useNativeDriver: true,
-      }).start();
-    } else if (slides[step].animation === 'slide') {
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 700,
-        useNativeDriver: true,
-        easing: Easing.out(Easing.exp),
-      }).start();
-    }
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(logoScaleAnim, {
-          toValue: 1.08,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(logoScaleAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, [step, fadeAnim, scaleAnim, slideAnim, logoScaleAnim]);
-
-  const handleNext = () => {
-    console.log('Onboarding: handleNext pressed, step:', step);
-    if (step < slides.length - 1) {
-      setStep(step + 1);
-    } else {
-      if (!finished) {
-        setFinished(true);
-        console.log('Onboarding: calling onFinish from Get Started');
-        setTimeout(() => {
-          onFinish();
-        }, 150);
-      }
-    }
+  const finish = () => {
+    if (finished) return;
+    setFinished(true);
+    setTimeout(onFinish, 150);
   };
 
-  let animatedStyle = {};
-  if (slides[step].animation === 'fade') {
-    animatedStyle = { opacity: fadeAnim };
-  } else if (slides[step].animation === 'scale') {
-    animatedStyle = { transform: [{ scale: scaleAnim }] };
-  } else if (slides[step].animation === 'slide') {
-    animatedStyle = { transform: [{ translateX: slideAnim }] };
-  }
+  const handleNext = () => {
+    if (isLast) finish();
+    else setStep(step + 1);
+  };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}> 
-      <TouchableOpacity style={styles.skipBtn} onPress={() => { setTimeout(onFinish, 150); }}>
-        <Text style={[styles.skipText, { color: theme.colors.onSurface }]}>Skip</Text>
-      </TouchableOpacity>
-      <Animated.View style={[animatedStyle, styles.centered]}>
-        <Animated.View style={[styles.logoContainer, { backgroundColor: theme.colors.surface, transform: [{ scale: logoScaleAnim }] }]}> 
-          <Image source={LOGO} style={styles.logo} />
-        </Animated.View>
-        <Text style={[styles.title, { color: theme.colors.primary }]}>{slides[step].title}</Text>
-        <Text style={[styles.subtitle, { color: theme.colors.onSurface }]}>{slides[step].subtitle}</Text>
-      </Animated.View>
-      <View style={styles.footer}>
-        <View style={styles.dotsContainer}>
-          {slides.map((_, i) => (
-            <View
-              key={i}
-              style={[styles.dot, { backgroundColor: i === step ? theme.colors.primary : theme.colors.outlineVariant }]} />
-          ))}
-        </View>
-        <TouchableOpacity style={[styles.button, { backgroundColor: theme.colors.primary }]} onPress={handleNext} disabled={finished}>
-          <Text style={[styles.buttonText, { color: theme.colors.background }]}> 
-            {step === slides.length - 1 ? 'Get Started' : 'Next'}
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.column}>
+        <Button mode="text" onPress={finish} disabled={finished} style={styles.skip}>
+          Skip
+        </Button>
+
+        {/* Keyed by step so each Next brings the new slide in; layout animations follow the OS reduce-motion setting. */}
+        <Animated.View key={step} entering={step === 0 ? undefined : FadeInRight.springify()} style={styles.slide}>
+          <Image source={LOGO} style={styles.logo} accessibilityLabel="NoteSpark logo" />
+          <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]} accessibilityRole="header">
+            {slides[step].title}
           </Text>
-        </TouchableOpacity>
+          <Text variant="bodyLarge" style={[styles.body, { color: theme.colors.onSurfaceVariant }]}>
+            {slides[step].body}
+          </Text>
+        </Animated.View>
+
+        <View style={styles.footer}>
+          <View style={styles.dots} accessible accessibilityLabel={`Step ${step + 1} of ${slides.length}`}>
+            {slides.map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  { backgroundColor: i === step ? theme.colors.primary : theme.colors.outlineVariant },
+                  i === step && styles.dotActive,
+                ]}
+              />
+            ))}
+          </View>
+          <Button mode="contained" onPress={handleNext} disabled={finished}>
+            {isLast ? 'Start writing' : 'Next'}
+          </Button>
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -133,82 +83,54 @@ const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: 24,
   },
-  centered: {
-    alignItems: 'center',
-    justifyContent: 'center',
+  column: {
     flex: 1,
     width: '100%',
+    maxWidth: readingWidth,
+    alignSelf: 'center',
+    paddingHorizontal: space.xl,
+    paddingBottom: space.xl,
   },
-  logoContainer: {
-    width: 130,
-    height: 130,
-    borderRadius: 65,
-    alignItems: 'center',
+  skip: {
+    alignSelf: 'flex-end',
+    marginTop: space.sm,
+    marginRight: -space.md,
+  },
+  slide: {
+    flex: 1,
     justifyContent: 'center',
-    marginBottom: 24,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
+  // Round, matching the launcher icon in a circle mask.
   logo: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
-  },
-  skipBtn: {
-    position: 'absolute',
-    top: 50,
-    right: 18,
-    zIndex: 10,
-    padding: 4,
-  },
-  skipText: {
-    fontSize: 13,
-    fontWeight: '500',
-    opacity: 0.7,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    marginBottom: space.xl,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    textAlign: 'center',
+    marginBottom: space.md,
   },
-  subtitle: {
-    fontSize: 18,
-    textAlign: 'center',
-    marginBottom: 8,
+  body: {
+    maxWidth: 420,
   },
   footer: {
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  dotsContainer: {
     flexDirection: 'row',
-    justifyContent: 'center',
-    marginBottom: 18,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  dots: {
+    flexDirection: 'row',
+    gap: space.sm,
   },
   dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    marginHorizontal: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
-  button: {
-    paddingHorizontal: 32,
-    paddingVertical: 12,
-    borderRadius: 24,
-    marginTop: 8,
-  },
-  buttonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
+  // The current step is a longer pill, so it doesn't rely on color alone.
+  dotActive: {
+    width: 24,
   },
 });
 
