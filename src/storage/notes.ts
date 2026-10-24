@@ -6,7 +6,8 @@ export const getNotes = async (): Promise<Note[]> => {
   const rows = await db.getAllAsync('SELECT * FROM notes ORDER BY updatedAt DESC');
   return rows.map((item: any) => ({
     ...item,
-    isMarkdown: Boolean(item.isMarkdown)
+    isMarkdown: Boolean(item.isMarkdown),
+    isPinned: Boolean(item.isPinned)
   }));
 };
 
@@ -20,6 +21,7 @@ export const getNoteById = async (id: number): Promise<Note | null> => {
         title: item.title,
         content: item.content,
         isMarkdown: Boolean(item.isMarkdown),
+        isPinned: Boolean(item.isPinned),
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       };
@@ -32,7 +34,7 @@ export const getNoteById = async (id: number): Promise<Note | null> => {
   }
 };
 
-export const saveNote = async (note: Omit<Note, 'id'>): Promise<number> => {
+export const saveNote = async (note: Omit<Note, 'id' | 'isPinned'>): Promise<number> => {
   const now = new Date().toISOString();
   const result: any = await db.runAsync(
     `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)`,
@@ -68,6 +70,11 @@ export const deleteNote = async (id: number): Promise<void> => {
   } else {
     throw new Error('Note not found');
   }
+};
+
+// Pinning isn't an edit, so updatedAt stays as it is.
+export const setNotePinned = async (id: number, pinned: boolean): Promise<void> => {
+  await db.runAsync('UPDATE notes SET isPinned = ? WHERE id = ?', [pinned ? 1 : 0, id]);
 };
 
 export const clearAllNotes = async (): Promise<void> => {
@@ -113,13 +120,14 @@ export const importNotes = async (notes: any[], mode: ImportMode): Promise<{ imp
         seen.add(key);
       }
       await txn.runAsync(
-        `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)`,
+        `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned) VALUES (?, ?, ?, ?, ?, ?)`,
         [
           note.title,
           note.content,
           note.isMarkdown ? 1 : 0,
           note.createdAt || new Date().toISOString(),
-          note.updatedAt || new Date().toISOString()
+          note.updatedAt || new Date().toISOString(),
+          note.isPinned ? 1 : 0 // older backups have no isPinned: unpinned
         ]
       );
       imported++;

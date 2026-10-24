@@ -3,6 +3,7 @@ export interface Note {
   title: string;
   content: string;
   isMarkdown: boolean;
+  isPinned: boolean;
   createdAt: string;
   updatedAt: string;
 }

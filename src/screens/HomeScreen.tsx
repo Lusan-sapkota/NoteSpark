@@ -6,7 +6,7 @@ import { ActivityIndicator, AnimatedFAB, Appbar, Button, Chip, Menu, Searchbar, 
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import { getNotes, deleteNote } from '../storage/notes';
+import { getNotes, deleteNote, setNotePinned } from '../storage/notes';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
@@ -38,8 +38,6 @@ const HomeScreen: React.FC = () => {
   const [fabExtended, setFabExtended] = useState(true);
   const [snackbar, setSnackbar] = useState('');
   const lastOffset = useRef(0);
-  // Pin state: in-memory for now, should be persisted in DB for full support
-  const [pinned, setPinned] = useState<{ [id: number]: boolean }>({});
 
   const loadNotes = async () => {
     try {
@@ -85,8 +83,8 @@ const HomeScreen: React.FC = () => {
       });
     }
     filtered = [...filtered].sort((a, b) => {
-      const aPinned = pinned[a.id] ? 1 : 0;
-      const bPinned = pinned[b.id] ? 1 : 0;
+      const aPinned = a.isPinned ? 1 : 0;
+      const bPinned = b.isPinned ? 1 : 0;
       if (aPinned !== bPinned) return bPinned - aPinned; // pinned first
       if (sortType === 'edited') {
         return (new Date(b.updatedAt || 0).getTime()) - (new Date(a.updatedAt || 0).getTime());
@@ -95,7 +93,7 @@ const HomeScreen: React.FC = () => {
       }
     });
     return filtered;
-  }, [notes, searchText, searchType, filterMarkdown, sortType, pinned]);
+  }, [notes, searchText, searchType, filterMarkdown, sortType]);
 
   const handleNotePress = useCallback((noteId: number) => {
     navigation.navigate('NoteView', { noteId: noteId.toString() });
@@ -130,14 +128,24 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('Editor', { noteId: noteId.toString() });
   }, [navigation]);
 
-  const handlePinToggle = useCallback((noteId: number) => {
-    setPinned(prev => ({ ...prev, [noteId]: !prev[noteId] }));
-    // TODO: persist pin state in DB
-  }, []);
+  // Updates the list at once, then saves; puts it back if saving fails.
+  const handlePinToggle = useCallback(async (noteId: number) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+    const setPin = (isPinned: boolean) =>
+      setNotes(prev => prev.map(n => (n.id === noteId ? { ...n, isPinned } : n)));
+    setPin(!note.isPinned);
+    try {
+      await setNotePinned(noteId, !note.isPinned);
+    } catch (error) {
+      setPin(note.isPinned);
+      alert("Couldn't pin the note", 'Try again. If it keeps failing, restart the app.');
+    }
+  }, [notes, alert]);
 
   const renderNoteItem = useCallback(
     ({ item, index }: { item: Note; index: number }) => {
-      const isPinned = !!pinned[item.id];
+      const isPinned = item.isPinned;
       const prev = filteredNotes[index - 1];
       const next = filteredNotes[index + 1];
       return (
@@ -148,13 +156,13 @@ const HomeScreen: React.FC = () => {
           onEdit={handleEditNote}
           isPinned={isPinned}
           onPinToggle={handlePinToggle}
-          isFirst={!prev || !!pinned[prev.id] !== isPinned}
-          isLast={!next || !!pinned[next.id] !== isPinned}
+          isFirst={!prev || prev.isPinned !== isPinned}
+          isLast={!next || next.isPinned !== isPinned}
           showCreated={sortType === 'created'}
         />
       );
     },
-    [handleNotePress, handleDeleteNote, handleEditNote, pinned, handlePinToggle, filteredNotes, sortType]
+    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, filteredNotes, sortType]
   );
 
   const handleCreateNote = () => {
