@@ -6,7 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, Appbar, FAB, Snackbar, Text } from 'react-native-paper';
 import { getNoteById, deleteNote } from '../storage/database';
 import { Note } from '../types';
-import Header from '../components/Header';
+import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
@@ -41,6 +41,7 @@ const NoteViewScreen: React.FC = () => {
   const navigation = useNavigation<NoteViewScreenNavigationProp>();
   const route = useRoute<NoteViewScreenRouteProp>();
   const { theme } = useTheme();
+  const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
 
   const confirmOpenLink = (url: string) => {
@@ -145,7 +146,7 @@ const NoteViewScreen: React.FC = () => {
   if (!note) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-        <Header title="" showBackButton onBackPress={goBack} />
+        <Header elevated={elevated} title="" showBackButton onBackPress={goBack} />
         <View style={styles.loading}>
           <ActivityIndicator size="large" />
         </View>
@@ -157,10 +158,12 @@ const NoteViewScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right']}>
-      <Header title="" showBackButton onBackPress={goBack} />
+      <Header elevated={elevated} title="" showBackButton onBackPress={goBack} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={reloadNote} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
         }

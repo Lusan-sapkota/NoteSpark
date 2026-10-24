@@ -8,7 +8,7 @@ import { RootStackParamList } from '../types';
 import { exportNotesAsJson, importNotesFromJson } from '../storage/database';
 import { sendAppNotification } from '../utils/notifications';
 import { importNotesFromFile } from '../storage/database';
-import Header from '../components/Header';
+import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -20,6 +20,7 @@ type ImportExportScreenNavigationProp = NativeStackNavigationProp<RootStackParam
 const ImportExportScreen: React.FC = () => {
   const navigation = useNavigation<ImportExportScreenNavigationProp>();
   const { theme } = useTheme();
+  const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [importData, setImportData] = useState('');
   const [isExporting, setIsExporting] = useState(false);
@@ -390,7 +391,7 @@ const ImportExportScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-      <Header
+      <Header elevated={elevated}
         title="Import and export"
         showBackButton
         onBackPress={() => navigation.goBack()}
@@ -399,6 +400,8 @@ const ImportExportScreen: React.FC = () => {
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        onScroll={onScroll}
+        scrollEventThrottle={16}
         refreshControl={
           <RefreshControl
             refreshing={refreshing}

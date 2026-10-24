@@ -11,7 +11,7 @@ import Constants from 'expo-constants';
 import { useNavigation } from '@react-navigation/native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { List, Text } from 'react-native-paper';
-import Header from '../components/Header';
+import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useTheme } from '../theme/ThemeContext';
 import { readingWidth, space } from '../theme/theme';
@@ -33,6 +33,7 @@ const LICENSE = 'GPLv3';
 const AboutScreen = () => {
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const { elevated, onScroll } = useHeaderElevation();
   const appVersion = getAppVersion();
 
   const openLink = (url: string) => {
@@ -48,13 +49,13 @@ const AboutScreen = () => {
       style={[styles.safeArea, { backgroundColor: theme.colors.background }]}
       edges={['left', 'right', 'bottom']}
     >
-      <Header
+      <Header elevated={elevated}
         title="About"
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} onScroll={onScroll} scrollEventThrottle={16}>
         <View style={styles.column}>
           <View style={styles.identity}>
             <Image

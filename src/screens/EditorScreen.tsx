@@ -17,7 +17,7 @@ import { Button, Dialog, IconButton, Portal, SegmentedButtons, Text, TextInput a
 import { RootStackParamList } from '../types';
 import { getNoteById, saveNote, updateNote } from '../storage/database';
 import { sendAppNotification } from '../utils/notifications';
-import Header from '../components/Header';
+import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
@@ -34,6 +34,7 @@ const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
   const route = useRoute<EditorScreenRouteProp>();
   const { theme } = useTheme();
+  const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [saving, setSaving] = useState(false);
 
@@ -173,7 +174,7 @@ const EditorScreen: React.FC = () => {
   return (
     <KeyboardAvoidingView style={styles.flex} behavior="padding">
       <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-        <Header
+        <Header elevated={elevated}
           title={isEditing ? 'Edit note' : 'New note'}
           showBackButton
           onBackPress={() => navigation.goBack()}
@@ -187,6 +188,8 @@ const EditorScreen: React.FC = () => {
         <ScrollView
           style={styles.flex}
           contentContainerStyle={styles.scrollContent}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.column}>

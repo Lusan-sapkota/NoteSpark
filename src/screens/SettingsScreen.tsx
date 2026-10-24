@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, List, SegmentedButtons, Text } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { clearAllNotes } from '../storage/notes';
-import Header from '../components/Header';
+import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -21,6 +21,7 @@ const errorReason = (e: unknown) => (e instanceof Error ? `${e.message}. ` : '')
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const { theme, themeType, setThemeType } = useTheme();
+  const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const netInfo = useNetInfo();
@@ -106,13 +107,13 @@ const SettingsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-      <Header
+      <Header elevated={elevated}
         title="Settings"
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent} onScroll={onScroll} scrollEventThrottle={16}>
         <View style={styles.column}>
           {sectionTitle('Appearance')}
           <SegmentedButtons

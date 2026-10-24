@@ -8,7 +8,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, deleteNote } from '../storage/database';
 import { Note } from '../types';
-import Header from '../components/Header';
+import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -31,6 +31,7 @@ const themeOptions = [
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { theme, themeType, setThemeType, isDarkMode } = useTheme();
+  const { elevated, onScroll: onHeaderScroll } = useHeaderElevation();
   const alert = useAlert();
   const [notes, setNotes] = useState<Note[]>([]);
   const [loading, setLoading] = useState(true);
@@ -169,6 +170,7 @@ const HomeScreen: React.FC = () => {
 
   // Extended FAB collapses while scrolling down and expands on scroll up or at the top.
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    onHeaderScroll(e);
     const y = e.nativeEvent.contentOffset.y;
     const extended = y <= 0 || y < lastOffset.current;
     if (extended !== fabExtended) setFabExtended(extended);
@@ -208,7 +210,7 @@ const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-      <Header
+      <Header elevated={elevated}
         title="NoteSpark"
         rightActions={
           <>
@@ -234,7 +236,7 @@ const HomeScreen: React.FC = () => {
         }
       />
 
-      <View style={styles.controls}>
+      <View style={[styles.controls, { backgroundColor: elevated ? theme.colors.elevation.level2 : theme.colors.background }]}>
         <Searchbar
           placeholder="Search notes"
           value={searchText}
