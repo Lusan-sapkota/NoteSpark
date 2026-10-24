@@ -6,7 +6,7 @@ import Animated, { useAnimatedKeyboard, useAnimatedStyle } from 'react-native-re
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { initDatabase } from './src/storage/database';
+import { getNotes, initDatabase } from './src/storage/database';
 import { setupNotificationWorker } from './src/utils/notifications';
 import { ActivityIndicator, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -37,7 +37,7 @@ const AppContent = () => {
       try {
         await setupNotificationWorker();
         await initDatabase();
-        pruneImageCache();
+        getNotes().then(notes => pruneImageCache(notes.map(n => String(n.content ?? '')))).catch(() => {});
         setDbInitialized(true);
         const onboarded = await AsyncStorage.getItem('onboarded');
         setShowOnboarding(onboarded !== 'true');

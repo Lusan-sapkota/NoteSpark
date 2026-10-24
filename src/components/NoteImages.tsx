@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { Dimensions, Image, Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, IconButton, Text } from 'react-native-paper';
+import { ActivityIndicator, Button, Icon, IconButton, Text } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
 import { shape, space } from '../theme/theme';
 import { useCachedImage } from '../utils/imageCache';
 
 // Image references in note content: Markdown `![alt](uri)` and, for plain notes, `[Image: uri]`.
 export const extractImageUris = (content: string, includePlain = false) => {
-  const uris = Array.from(content.matchAll(/!\[[^\]]*\]\(([^)]+)\)/g), m => m[1].trim());
+  // The address ends at the first space, so an optional Markdown title (`![a](url "title")`) isn't part of it.
+  const uris = Array.from(content.matchAll(/!\[[^\]]*\]\(([^)\s]+)[^)]*\)/g), m => m[1].trim());
   if (includePlain) uris.push(...Array.from(content.matchAll(/\[Image: ([^\]]+)\]/g), m => m[1].trim()));
   return uris.filter(Boolean);
 };
@@ -19,27 +20,33 @@ const imageLabel = (uri: string) => {
 
 const NoteImage: React.FC<{ uri: string; onOpen: (src: string) => void }> = ({ uri, onOpen }) => {
   const { theme } = useTheme();
-  const [failed, setFailed] = useState(false);
-  const src = useCachedImage(uri);
+  const image = useCachedImage(uri);
+  const box = [styles.image, styles.placeholder, { backgroundColor: theme.colors.surfaceContainer }];
   return (
     <View style={styles.item}>
-      {failed ? (
-        <View style={[styles.image, styles.failed, { backgroundColor: theme.colors.surfaceContainer }]}>
-          <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Couldn't load this image</Text>
-        </View>
-      ) : !src ? (
-        <View style={[styles.image, styles.failed, { backgroundColor: theme.colors.surfaceContainer }]}>
+      {image.status === 'loading' ? (
+        <View style={box}>
           <ActivityIndicator accessibilityLabel="Loading image" />
         </View>
-      ) : (
-        <Pressable onPress={() => onOpen(src)} accessibilityRole="imagebutton" accessibilityLabel="Open image full screen">
+      ) : image.status === 'ready' && image.src ? (
+        <Pressable onPress={() => onOpen(image.src!)} accessibilityRole="imagebutton" accessibilityLabel="Open image full screen">
           <Image
-            source={{ uri: src }}
+            source={{ uri: image.src }}
             resizeMode="contain"
-            onError={() => setFailed(true)}
+            onError={image.onError}
             style={[styles.image, { backgroundColor: theme.colors.surfaceContainer }]}
           />
         </Pressable>
+      ) : (
+        <View style={box}>
+          <Icon source={image.status === 'gone' ? 'image-off-outline' : 'image-refresh-outline'} size={28} color={theme.colors.onSurfaceVariant} />
+          <Text variant="bodyMedium" style={[styles.placeholderText, { color: theme.colors.onSurfaceVariant }]}>
+            {image.status === 'gone'
+              ? 'This image is no longer available at its web address.'
+              : "Couldn't load this image. Check your connection and try again."}
+          </Text>
+          <Button mode="text" onPress={image.retry}>Try again</Button>
+        </View>
       )}
       <Text variant="bodySmall" numberOfLines={1} style={[styles.caption, { color: theme.colors.onSurfaceVariant }]}>
         {imageLabel(uri)}
@@ -97,10 +104,16 @@ const styles = StyleSheet.create({
     height: 240,
     borderRadius: shape.small,
   },
-  failed: {
-    height: 96,
+  placeholder: {
+    height: 'auto',
+    minHeight: 160,
     justifyContent: 'center',
     alignItems: 'center',
+    gap: space.sm,
+    padding: space.lg,
+  },
+  placeholderText: {
+    textAlign: 'center',
   },
   caption: {
     paddingHorizontal: space.xs,
