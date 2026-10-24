@@ -12,7 +12,8 @@
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ef5821"
+        "monochromeImage": "./assets/adaptive-icon-monochrome.png",
+        "backgroundColor": "#d7eb9b"
       },
       "package": "com.lusansapkota.notespark"
     },
@@ -23,11 +24,23 @@
       "expo-sqlite",
       "expo-font",
       [
+        "expo-notifications",
+        {
+          "icon": "./assets/notification-icon.png",
+          "color": "#546524"
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
           "resizeMode": "contain",
-          "backgroundColor": "#ef5821"
+          "backgroundColor": "#fbfaee",
+          "dark": {
+            "image": "./assets/splash-icon-dark.png",
+            "backgroundColor": "#12140d"
+          }
         }
       ],
       [
