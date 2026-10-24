@@ -82,15 +82,20 @@ export const importNotesFromJson = async (jsonData: string): Promise<void> => {
   if (!Array.isArray(notes)) {
     throw new Error('Invalid JSON format: expected an array of notes');
   }
-  await db.runAsync('DELETE FROM notes');
-  let importedCount = 0;
-  for (const note of notes) {
-    if (
-      typeof note.title === 'string' &&
-      typeof note.content === 'string' &&
-      (typeof note.isMarkdown === 'boolean' || typeof note.isMarkdown === 'number')
-    ) {
-      await db.runAsync(
+  // Validate before touching the database, so a bad backup never deletes anything.
+  const valid = notes.filter(note =>
+    typeof note.title === 'string' &&
+    typeof note.content === 'string' &&
+    (typeof note.isMarkdown === 'boolean' || typeof note.isMarkdown === 'number')
+  );
+  if (valid.length === 0) {
+    throw new Error('No valid notes found in import data.');
+  }
+  // One transaction: if any insert fails, the delete rolls back and the existing notes stay.
+  await db.withExclusiveTransactionAsync(async txn => {
+    await txn.runAsync('DELETE FROM notes');
+    for (const note of valid) {
+      await txn.runAsync(
         `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)`,
         [
           note.title,
@@ -100,10 +105,6 @@ export const importNotesFromJson = async (jsonData: string): Promise<void> => {
           note.updatedAt || new Date().toISOString()
         ]
       );
-      importedCount++;
     }
-  }
-  if (importedCount === 0) {
-    throw new Error('No valid notes found in import data.');
-  }
+  });
 };

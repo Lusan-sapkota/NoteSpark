@@ -33,22 +33,25 @@ export const importNotesFromJson = async (json: string): Promise<number> => {
     const notes = JSON.parse(json);
     if (!Array.isArray(notes)) throw new Error('Invalid notes format');
     let importedCount = 0;
-    for (const note of notes) {
-      if (
-        typeof note.title === 'string' &&
-        typeof note.content === 'string' &&
-        typeof note.isMarkdown === 'boolean'
-      ) {
-        await saveNote({
-          title: note.title,
-          content: note.content,
-          isMarkdown: note.isMarkdown,
-          createdAt: note.createdAt || new Date().toISOString(),
-          updatedAt: note.updatedAt || new Date().toISOString(),
-        });
-        importedCount++;
+    // All or nothing: a failure part-way rolls back the notes already added.
+    await db.withTransactionAsync(async () => {
+      for (const note of notes) {
+        if (
+          typeof note.title === 'string' &&
+          typeof note.content === 'string' &&
+          typeof note.isMarkdown === 'boolean'
+        ) {
+          await saveNote({
+            title: note.title,
+            content: note.content,
+            isMarkdown: note.isMarkdown,
+            createdAt: note.createdAt || new Date().toISOString(),
+            updatedAt: note.updatedAt || new Date().toISOString(),
+          });
+          importedCount++;
+        }
       }
-    }
+    });
     return importedCount;
   } catch (error) {
     throw error;
