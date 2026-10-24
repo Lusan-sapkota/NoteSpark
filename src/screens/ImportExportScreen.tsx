@@ -1,9 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StyleSheet, View, ScrollView, Share, Platform, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Icon, IconButton, Menu, RadioButton, Text, TextInput } from 'react-native-paper';
+import Animated, { cancelAnimation, Easing, SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
+import { Button, Dialog, Icon, IconButton, Menu, Portal, RadioButton, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { exportNotesAsJson, getNotes } from '../storage/database';
 import { sendAppNotification } from '../utils/notifications';
@@ -14,8 +15,55 @@ import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { groupCorners, lightTheme, readingWidth, shape, space } from '../theme/theme';
+import { lightTheme, readingWidth, shape, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+
+// M3 Expressive wavy progress indicator (indeterminate): a sine wave drawn from short rotated
+// segments that travels while work runs. Holds still when the OS asks for reduced motion.
+const WAVE = { amplitude: 3, wavelength: 22, stroke: 4, step: 4 };
+const WAVE_HEIGHT = WAVE.amplitude * 2 + WAVE.stroke + 4;
+
+const WaveSegment: React.FC<{ x: number; phase: SharedValue<number>; color: string }> = ({ x, phase, color }) => {
+  const style = useAnimatedStyle(() => {
+    const k = (2 * Math.PI) / WAVE.wavelength;
+    const t = k * (x + WAVE.step / 2) + phase.value;
+    return {
+      transform: [
+        { translateY: WAVE.amplitude * Math.sin(t) },
+        { rotate: `${Math.atan(WAVE.amplitude * k * Math.cos(t))}rad` },
+      ],
+    };
+  });
+  return <Animated.View style={[styles.segment, { left: x, backgroundColor: color }, style]} />;
+};
+
+const WavyProgress: React.FC<{ color: string; label: string }> = ({ color, label }) => {
+  const [width, setWidth] = useState(0);
+  const phase = useSharedValue(0);
+  const reduceMotion = useReducedMotion();
+  useEffect(() => {
+    if (reduceMotion) return;
+    phase.value = withRepeat(withTiming(-2 * Math.PI, { duration: 900, easing: Easing.linear }), -1, false);
+    return () => cancelAnimation(phase);
+  }, [reduceMotion, phase]);
+  const xs = Array.from({ length: Math.max(0, Math.floor(width / WAVE.step)) }, (_, i) => i * WAVE.step);
+  return (
+    <View
+      style={styles.wave}
+      onLayout={e => setWidth(e.nativeEvent.layout.width)}
+      accessibilityRole="progressbar"
+      accessibilityLabel={label}
+    >
+      {xs.map(x => <WaveSegment key={x} x={x} phase={phase} color={color} />)}
+    </View>
+  );
+};
+
+const importModes: { value: ImportMode; label: string; description: string }[] = [
+  { value: 'merge', label: 'Skip duplicates', description: "Adds only notes you don't already have" },
+  { value: 'append', label: 'Add everything', description: 'Adds every note, including copies' },
+  { value: 'replace', label: 'Replace all notes', description: 'Deletes your current notes first' },
+];
 
 type ImportExportScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ImportExport'>;
 
@@ -33,6 +81,7 @@ const ImportExportScreen: React.FC = () => {
   const [pdfExporting, setPdfExporting] = useState(false);
   const [noteCount, setNoteCount] = useState<number | null>(null);
   const [pasteOpen, setPasteOpen] = useState(false);
+  const [importDialogVisible, setImportDialogVisible] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
   const handleExportHistoryPDF = async () => {
@@ -362,12 +411,33 @@ const ImportExportScreen: React.FC = () => {
   const formatDate = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
   const lastBackup = history.find(h => h.type === 'export' && typeof h.count === 'number' && h.count > 0);
 
-  const sectionTitle = (title: string) => (
-    <Text variant="titleSmall" accessibilityRole="header" style={[styles.sectionTitle, { color: theme.colors.primary }]}>{title}</Text>
-  );
-  const panelIcon = (icon: string, background: string, color: string) => (
-    <View style={[styles.panelIcon, { backgroundColor: background }]}>
-      <Icon source={icon} size={22} color={color} />
+  const importing = isImporting || fileImporting;
+
+  const closeImportDialog = () => {
+    setImportDialogVisible(false);
+    setPasteOpen(false);
+  };
+
+  // An action tile: icon, title and a line of help; the wavy indicator replaces the help line's spacer while busy.
+  const tile = (opts: { icon: string; title: string; body: string; busyBody: string; busy: boolean; onPress: () => void; background: string; color: string }) => (
+    <View style={[styles.tile, { backgroundColor: opts.background }]}>
+      <TouchableRipple
+        onPress={opts.onPress}
+        disabled={opts.busy}
+        style={styles.tileInner}
+        accessibilityRole="button"
+        accessibilityLabel={opts.title}
+        accessibilityState={{ busy: opts.busy, disabled: opts.busy }}
+      >
+        <View style={styles.tileContent}>
+          <Icon source={opts.icon} size={28} color={opts.color} />
+          <View style={styles.tileText}>
+            <Text variant="titleMedium" style={{ color: opts.color }}>{opts.title}</Text>
+            <Text variant="bodySmall" style={{ color: opts.color }}>{opts.busy ? opts.busyBody : opts.body}</Text>
+          </View>
+          {opts.busy ? <WavyProgress color={opts.color} label={opts.busyBody} /> : <View style={styles.waveSpacer} />}
+        </View>
+      </TouchableRipple>
     </View>
   );
 
@@ -381,7 +451,6 @@ const ImportExportScreen: React.FC = () => {
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
         onScroll={onScroll}
         scrollEventThrottle={16}
         refreshControl={
@@ -395,98 +464,34 @@ const ImportExportScreen: React.FC = () => {
         <View style={styles.column}>
           <View style={styles.summary}>
             <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
-              {noteCount === null ? ' ' : noteCount === 1 ? '1 note on this device' : `${noteCount} notes on this device`}
+              {noteCount === null ? ' ' : noteCount === 1 ? '1 note' : `${noteCount} notes`}
             </Text>
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-              {lastBackup ? `Last backup ${formatDate(lastBackup.date)}` : 'No backup yet. Export your notes to keep a copy off this phone.'}
+              {lastBackup ? `Last backup ${formatDate(lastBackup.date)}` : 'Not backed up yet'}
             </Text>
           </View>
 
-          {sectionTitle('Back up')}
-          <View style={[styles.panel, { backgroundColor: theme.colors.surfaceContainerLow }]}>
-            <View style={styles.panelHeader}>
-              {panelIcon('export-variant', theme.colors.primaryContainer, theme.colors.onPrimaryContainer)}
-              <View style={styles.panelText}>
-                <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>Export all notes</Text>
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                  Saves every note as one JSON file. Keep it in your files or a cloud drive.
-                </Text>
-              </View>
-            </View>
-            <Button
-              mode="contained"
-              icon="export-variant"
-              onPress={handleExport}
-              loading={isExporting}
-              disabled={isExporting}
-              style={styles.panelAction}
-            >
-              Export notes
-            </Button>
-          </View>
-
-          {sectionTitle('Restore')}
-          <View style={[styles.panel, { backgroundColor: theme.colors.surfaceContainerLow }]}>
-            <View style={styles.panelHeader}>
-              {panelIcon('file-restore-outline', theme.colors.secondaryContainer, theme.colors.onSecondaryContainer)}
-              <View style={styles.panelText}>
-                <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>Import a backup</Text>
-                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                  Bring notes in from a NoteSpark export file. Choose how:
-                </Text>
-              </View>
-            </View>
-            <RadioButton.Group value={importMode} onValueChange={value => setImportMode(value as ImportMode)}>
-              <RadioButton.Item label="Add new notes, skip duplicates" value="merge" mode="android" style={styles.radio} labelVariant="bodyLarge" />
-              <RadioButton.Item label="Add all notes" value="append" mode="android" style={styles.radio} labelVariant="bodyLarge" />
-              <RadioButton.Item label="Replace all notes" value="replace" mode="android" style={styles.radio} labelVariant="bodyLarge" />
-            </RadioButton.Group>
-            {importMode === 'replace' && (
-              <View style={[styles.banner, { backgroundColor: theme.colors.errorContainer }]}>
-                <Icon source="alert-outline" size={20} color={theme.colors.onErrorContainer} />
-                <Text variant="bodyMedium" style={[styles.panelText, { color: theme.colors.onErrorContainer }]}>
-                  Replacing deletes every note on this device first. Export first if you want to keep them.
-                </Text>
-              </View>
-            )}
-            <Button
-              mode="contained-tonal"
-              icon="file-upload-outline"
-              onPress={handleFileImport}
-              loading={fileImporting}
-              disabled={fileImporting}
-              style={styles.panelAction}
-            >
-              Choose backup file
-            </Button>
-            {pasteOpen ? (
-              <>
-                <TextInput
-                  mode="outlined"
-                  label="Paste JSON"
-                  value={importData}
-                  onChangeText={setImportData}
-                  multiline
-                  numberOfLines={6}
-                  style={styles.pasteInput}
-                />
-                <View style={styles.pasteActions}>
-                  <Button mode="text" onPress={() => { setPasteOpen(false); setImportData(''); }}>Cancel</Button>
-                  <Button
-                    mode="outlined"
-                    onPress={handleImport}
-                    loading={isImporting}
-                    disabled={isImporting || !importData.trim()}
-                  >
-                    Import pasted JSON
-                  </Button>
-                </View>
-              </>
-            ) : (
-              <Button mode="text" icon="content-paste" onPress={() => setPasteOpen(true)} style={styles.pasteToggle}>
-                Paste JSON instead
-              </Button>
-            )}
+          <View style={styles.tiles}>
+            {tile({
+              icon: 'export-variant',
+              title: 'Back up',
+              body: 'Save all notes as a JSON file',
+              busyBody: 'Exporting notes',
+              busy: isExporting,
+              onPress: handleExport,
+              background: theme.colors.primaryContainer,
+              color: theme.colors.onPrimaryContainer,
+            })}
+            {tile({
+              icon: 'file-restore-outline',
+              title: 'Restore',
+              body: 'Bring notes in from a backup',
+              busyBody: 'Importing notes',
+              busy: importing,
+              onPress: () => setImportDialogVisible(true),
+              background: theme.colors.secondaryContainer,
+              color: theme.colors.onSecondaryContainer,
+            })}
           </View>
 
           <View style={styles.historyHeader}>
@@ -517,11 +522,9 @@ const ImportExportScreen: React.FC = () => {
             </Menu>
           </View>
           {history.length === 0 ? (
-            <View style={[styles.emptyHistory, groupCorners(true, true), { backgroundColor: theme.colors.surfaceContainerLow }]}>
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                Your imports and exports will appear here.
-              </Text>
-            </View>
+            <Text variant="bodyMedium" style={[styles.emptyHistory, { color: theme.colors.onSurfaceVariant }]}>
+              Backups and imports will appear here.
+            </Text>
           ) : (
             history.map((h, idx) => {
               const failed = !(typeof h.count === 'number' && h.count > 0);
@@ -540,6 +543,77 @@ const ImportExportScreen: React.FC = () => {
           )}
         </View>
       </ScrollView>
+
+      <Portal>
+        <Dialog visible={importDialogVisible} onDismiss={closeImportDialog}>
+          <Dialog.Title>Import notes</Dialog.Title>
+          <Dialog.ScrollArea style={styles.dialogScroll}>
+            <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.dialogContent}>
+              <RadioButton.Group value={importMode} onValueChange={value => setImportMode(value as ImportMode)}>
+                {importModes.map(mode => (
+                  <TouchableRipple
+                    key={mode.value}
+                    onPress={() => setImportMode(mode.value)}
+                    style={styles.modeRow}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: importMode === mode.value }}
+                  >
+                    <View style={styles.modeRowInner}>
+                      <RadioButton.Android value={mode.value} />
+                      <View style={styles.tileText}>
+                        <Text variant="bodyLarge" style={{ color: mode.value === 'replace' ? theme.colors.error : theme.colors.onSurface }}>
+                          {mode.label}
+                        </Text>
+                        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{mode.description}</Text>
+                      </View>
+                    </View>
+                  </TouchableRipple>
+                ))}
+              </RadioButton.Group>
+              {importMode === 'replace' && (
+                <View style={[styles.banner, { backgroundColor: theme.colors.errorContainer }]}>
+                  <Icon source="alert-outline" size={20} color={theme.colors.onErrorContainer} />
+                  <Text variant="bodyMedium" style={[styles.tileText, { color: theme.colors.onErrorContainer }]}>
+                    Every note on this device will be deleted. Back up first if you want to keep them.
+                  </Text>
+                </View>
+              )}
+              {pasteOpen ? (
+                <>
+                  <TextInput
+                    mode="outlined"
+                    label="Paste JSON"
+                    value={importData}
+                    onChangeText={setImportData}
+                    multiline
+                    numberOfLines={5}
+                    style={styles.pasteInput}
+                  />
+                  <Button
+                    mode="contained"
+                    onPress={() => { closeImportDialog(); handleImport(); }}
+                    disabled={!importData.trim()}
+                  >
+                    Import pasted JSON
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button mode="contained" icon="file-upload-outline" onPress={() => { closeImportDialog(); handleFileImport(); }}>
+                    Choose backup file
+                  </Button>
+                  <Button mode="text" icon="content-paste" onPress={() => setPasteOpen(true)}>
+                    Paste JSON instead
+                  </Button>
+                </>
+              )}
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={closeImportDialog}>Cancel</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </SafeAreaView>
   );
 };
@@ -560,57 +634,46 @@ const styles = StyleSheet.create({
   summary: {
     gap: space.xs,
     paddingTop: space.sm,
+    paddingHorizontal: space.xs,
   },
-  sectionTitle: {
-    marginTop: space.xl,
-    marginBottom: space.sm,
-    marginLeft: space.xs,
-  },
-  panel: {
-    borderRadius: shape.group,
-    padding: space.lg,
-    gap: space.md,
-  },
-  panelHeader: {
+  tiles: {
     flexDirection: 'row',
     gap: space.md,
+    marginTop: space.xl,
   },
-  panelIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+  tile: {
+    flex: 1,
+    borderRadius: shape.extraLarge,
+    overflow: 'hidden',
   },
-  panelText: {
+  tileInner: {
+    flexGrow: 1,
+  },
+  tileContent: {
+    flexGrow: 1,
+    minHeight: 168,
+    padding: space.lg,
+    justifyContent: 'space-between',
+    gap: space.md,
+  },
+  tileText: {
     flex: 1,
     gap: 2,
   },
-  panelAction: {
-    alignSelf: 'flex-start',
+  wave: {
+    height: WAVE_HEIGHT,
+    overflow: 'hidden',
   },
-  banner: {
-    flexDirection: 'row',
-    gap: space.md,
-    padding: space.md,
-    borderRadius: shape.small,
+  waveSpacer: {
+    height: WAVE_HEIGHT,
   },
-  radio: {
-    paddingHorizontal: 0,
-    paddingVertical: 0,
-  },
-  pasteToggle: {
-    alignSelf: 'flex-start',
-    marginLeft: -space.md,
-  },
-  pasteInput: {
-    minHeight: 120,
-  },
-  pasteActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    flexWrap: 'wrap',
-    gap: space.sm,
+  segment: {
+    position: 'absolute',
+    top: (WAVE_HEIGHT - WAVE.stroke) / 2,
+    width: WAVE.step * 1.5,
+    height: WAVE.stroke,
+    marginLeft: -WAVE.step * 0.25,
+    borderRadius: WAVE.stroke / 2,
   },
   historyHeader: {
     flexDirection: 'row',
@@ -622,7 +685,35 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   emptyHistory: {
-    padding: space.lg,
+    paddingHorizontal: space.xs,
+  },
+  dialogScroll: {
+    paddingHorizontal: 0,
+  },
+  dialogContent: {
+    paddingHorizontal: space.xl,
+    paddingVertical: space.sm,
+    gap: space.md,
+  },
+  modeRow: {
+    borderRadius: shape.small,
+    marginHorizontal: -space.sm,
+  },
+  modeRowInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.sm,
+    paddingVertical: space.xs,
+    paddingRight: space.sm,
+  },
+  banner: {
+    flexDirection: 'row',
+    gap: space.md,
+    padding: space.md,
+    borderRadius: shape.small,
+  },
+  pasteInput: {
+    minHeight: 120,
   },
 });
 
