@@ -19,7 +19,7 @@ const ProfileUnlockScreen = ({ profileId, profileName, onUnlock, onForgotPin }: 
     if (await unlockWithBiometrics({ id: profileId, name: profileName })) await onUnlock('');
   };
 
-  // Fingerprint on for this profile: ask for it straight away; "Use PIN" in the prompt falls back to the field.
+  // Asks for the fingerprint straight away when it's on; "Use PIN" falls back to the field.
   useEffect(() => {
     (async () => {
       const on = (await usesBiometrics(profileId)) && (await canUseBiometrics());

@@ -77,8 +77,7 @@ const NoteViewScreen: React.FC = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [related, setRelated] = useState<Note[]>([]);
   const [backlinks, setBacklinks] = useState<Note[]>([]);
-  // Version history dialog: the list, or one version being read. Kept after closing so the content doesn't
-  // change while the dialog fades out.
+  // Version history: the list, or one version being read. Kept after closing so it doesn't change while fading.
   const [history, setHistory] = useState<{ versions: NoteVersion[]; viewing: NoteVersion | null; open: boolean } | null>(null);
   const closeHistory = () => setHistory(h => h && { ...h, open: false });
   // The top bar shows the title only once the big title has scrolled under it.

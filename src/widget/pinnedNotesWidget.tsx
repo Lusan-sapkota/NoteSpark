@@ -1,6 +1,4 @@
-// Home-screen widget: New note and the open profile's pinned notes. Drawn by react-native-android-widget, which
-// turns this JSX into Android RemoteViews; colors come from the Firefly theme, light and dark follow the phone.
-// Load it through ./widgets, never directly: the library throws on import in Expo Go.
+// Home-screen widget: New note and the open profile's pinned notes. Import it only through ./widgets.
 import React from 'react';
 import { FlexWidget, ListWidget, registerWidgetTaskHandler, requestWidgetUpdate, TextWidget } from 'react-native-android-widget';
 import { darkTheme, lightTheme, shape, space } from '../theme/theme';
@@ -82,7 +80,7 @@ const render = async () => {
   return { light: <PinnedNotes c={lightTheme.colors} state={state} />, dark: <PinnedNotes c={darkTheme.colors} state={state} /> };
 };
 
-// Runs headless when the widget is added, resized or the system asks for an update (also while the app is closed).
+// Runs headless, also while the app is closed.
 export const register = () =>
   registerWidgetTaskHandler(async ({ widgetAction, renderWidget }) => {
     if (widgetAction === 'WIDGET_DELETED' || widgetAction === 'WIDGET_CLICK') return;

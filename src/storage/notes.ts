@@ -55,7 +55,7 @@ export const saveNote = async (note: Omit<Note, 'id' | 'isPinned' | 'isArchived'
 
 const VERSIONS_KEPT = 20;
 
-// Keeps the stored note as a version before it's overwritten, if the text changes. Oldest beyond VERSIONS_KEPT go.
+// Keeps the stored text as a version before it's overwritten; only the newest VERSIONS_KEPT stay.
 const saveVersion = async (note: Pick<Note, 'id' | 'title' | 'content' | 'isMarkdown'>, now: string) => {
   const old = await db.getFirstAsync<{ title: string; content: string; isMarkdown: number }>(
     'SELECT title, content, isMarkdown FROM notes WHERE id = ?', [note.id]
@@ -157,7 +157,7 @@ export const restoreBatch = async (deletedAt: string): Promise<void> => {
   await db.runAsync('UPDATE notes SET deletedAt = NULL WHERE deletedAt = ?', [deletedAt]);
 };
 
-// Erases every note not in the bin, skipping the bin. Notes already in the bin stay there.
+// Erases every note outside the bin; the bin is untouched.
 export const deleteAllNotesForever = async (): Promise<void> => {
   await db.runAsync('DELETE FROM notes WHERE deletedAt IS NULL');
 };

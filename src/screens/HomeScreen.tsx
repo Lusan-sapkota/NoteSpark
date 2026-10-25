@@ -95,7 +95,7 @@ const HomeScreen: React.FC = () => {
     try {
       const enteredPin = pin ?? '';
       if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
-        // Protected: fingerprint first if it's on for this profile, otherwise (or on "Use PIN") the PIN dialog.
+        // Fingerprint first if it's on; otherwise, or on "Use PIN", the PIN dialog.
         if (!(await unlockWithBiometrics(profile))) {
           setPinDialog({ profile, pin: '', open: true });
           return;
@@ -115,8 +115,7 @@ const HomeScreen: React.FC = () => {
     }
   };
 
-  // A PIN can't be recovered, so a forgotten one means erasing that profile. The dialog only opens for a
-  // profile other than the open one.
+  // A PIN can't be recovered, so a forgotten one means erasing that profile.
   const handleForgotPin = (profile: Profile) => {
     setPinDialog(d => d && { ...d, open: false });
     alert(
@@ -506,7 +505,6 @@ const HomeScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       {selecting ? (
-        // Contextual top bar while notes are selected.
         <Appbar.Header mode="small" elevated>
           <Appbar.Action icon="close" accessibilityLabel="Cancel selection" onPress={clearSelection} />
           <Appbar.Content title={`${selectedIds.length} selected`} />

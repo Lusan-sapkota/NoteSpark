@@ -30,8 +30,7 @@ type ProfileLockNavigationProp = NativeStackNavigationProp<RootStackParamList, '
 
 const digits = (value: string) => value.replace(/\D/g, '').slice(0, 4);
 
-// One way to lock a profile: a full-width row in a grouped list. Selected: tonal fill and a filled radio dot, so it
-// doesn't rely on color alone. Without a fingerprint on the phone, the fingerprint row links to the phone's settings.
+// A lock option. Selected shows a tonal fill and a filled radio, so it isn't color alone.
 const LockChoice: React.FC<{
   icon: string;
   title: string;
@@ -78,8 +77,7 @@ const LockChoice: React.FC<{
   );
 };
 
-// Full-screen form (M3 full-screen dialog) for a new profile, or for changing a profile's lock. A form this size
-// doesn't fit a centred dialog above the keyboard; here it scrolls with the keyboard instead.
+// New profile, or a profile's lock. An M3 full-screen dialog: this form doesn't fit a centred dialog above the keyboard.
 const ProfileLockScreen: React.FC = () => {
   const navigation = useNavigation<ProfileLockNavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'ProfileLock'>>();
@@ -172,7 +170,7 @@ const ProfileLockScreen: React.FC = () => {
     }
   };
 
-  // A PIN can't be recovered, so a forgotten one means erasing the profile. Never for the open profile.
+  // A PIN can't be recovered, so a forgotten one means erasing the profile.
   const forgotPin = () => {
     if (!profile) return;
     alert(

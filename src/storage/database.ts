@@ -5,8 +5,7 @@ import * as SQLite from 'expo-sqlite';
 
 export const dbName = (profileId: string) => (profileId === 'default' ? 'notespark.db' : `notespark-${profileId}.db`);
 
-// Live binding: importers see the new connection after openProfileDatabase. The first connection is opened
-// unkeyed and untouched; `dbReady` turns true once a profile has really been opened (keyed if it needs it).
+// Live binding, swapped by openProfileDatabase. The import-time connection stays unused until a profile opens.
 export let db = SQLite.openDatabaseSync(dbName('default'));
 let openName = dbName('default');
 let dbReady = false;
@@ -28,8 +27,7 @@ export const openProfileDatabase = async (profileId: string): Promise<void> => {
   if (previous !== next) await previous.closeAsync().catch(() => {});
 };
 
-// Protected profiles are encrypted with SQLCipher (expo-sqlite `useSQLCipher`). Each has a random 256-bit key in
-// SecureStore (Android Keystore, not restored by Android backup); the PIN or fingerprint only guards opening it.
+// Protected profiles are SQLCipher-encrypted with a random key in SecureStore; the PIN only guards the UI.
 const keyName = (id: string) => `profileKey_${id}`;
 // Saved before a key change swaps files and cleared after, so an interrupted change can still be opened.
 const pendingKeyName = (id: string) => `profileKeyPending_${id}`;
@@ -50,16 +48,14 @@ const unlock = async (conn: SQLite.SQLiteDatabase, key: string | null) => {
   await conn.getFirstAsync('SELECT count(*) FROM sqlite_master');
 };
 
-// A key change stopped after moving the original aside: put it back. Stopped after the new file was in place:
-// drop the leftover.
+// Finishes or undoes a key change that stopped mid-swap.
 const recoverSwap = async (name: string) => {
   if (!(await getInfoAsync(fileUri(`${name}.old`))).exists) return;
   if ((await getInfoAsync(fileUri(name))).exists) await deleteAsync(fileUri(`${name}.old`), { idempotent: true });
   else await moveAsync({ from: fileUri(`${name}.old`), to: fileUri(name) });
 };
 
-// Opens a profile's database with its key. During an unfinished key change it tries the pending key too and
-// keeps whichever opens the file.
+// Opens a profile's database with its key; after an interrupted key change, tries the pending key too.
 export const openProfileConnection = async (profileId: string, options?: SQLite.SQLiteOpenOptions): Promise<SQLite.SQLiteDatabase> => {
   const name = dbName(profileId);
   await recoverSwap(name);
@@ -82,9 +78,8 @@ export const openProfileConnection = async (profileId: string, options?: SQLite.
 
 export const isProfileEncrypted = async (id: string) => !!(await SecureStore.getItemAsync(keyName(id)));
 
-// Encrypts (or decrypts) a profile's database. Copies it into a new file with sqlcipher_export, then swaps the
-// files, so a failure before the swap leaves the original untouched. Returns false when nothing changed,
-// including builds without SQLCipher (Expo Go, older dev builds), where profiles stay unencrypted.
+// Copies the file with sqlcipher_export, then swaps it in, so a failure leaves the original intact.
+// Returns false when nothing changed, including builds without SQLCipher (Expo Go).
 export const setProfileEncryption = async (profileId: string, encrypt: boolean): Promise<boolean> => {
   if ((await isProfileEncrypted(profileId)) === encrypt) return false;
   const name = dbName(profileId);
@@ -149,7 +144,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', [
     new Date(Date.now() - BIN_DAYS * 86400000).toISOString(),
   ]);
-  // Earlier versions of each note, newest kept (see saveVersion in notes.ts). Rows of erased notes go here.
+  // Earlier versions of each note (see saveVersion in notes.ts).
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS note_versions (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

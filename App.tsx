@@ -31,8 +31,7 @@ const AppContent = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [lockedProfile, setLockedProfile] = useState<{ id: string; name: string } | null>(null);
   const [fontsLoaded, fontError] = useFonts(fontFiles);
-  // "Share to NoteSpark": text or a link from another app opens a new note in the open profile. Waits for the
-  // navigator, so a locked profile is unlocked first. Expo Go lacks the native part.
+  // Share to NoteSpark: opens a new note once the navigator (so an unlocked profile) is ready.
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent({ disabled: isRunningInExpoGo() });
   const [navReady, setNavReady] = useState(false);
   useEffect(() => {
@@ -46,8 +45,7 @@ const AppContent = () => {
     resetShareIntent();
   }, [hasShareIntent, navReady, shareIntent]);
 
-  // Widget taps: notespark://new and notespark://note/<id>. Like shares, they wait for the navigator (and an
-  // unlocked profile). expo-share-intent's own notespark://dataUrl=… links are left to it.
+  // Widget taps (notespark://new, notespark://note/<id>); expo-share-intent handles its own dataUrl links.
   const [widgetLink, setWidgetLink] = useState<string | null>(null);
   useEffect(() => {
     Linking.getInitialURL().then(url => url && setWidgetLink(url)).catch(() => {});
@@ -75,7 +73,6 @@ const AppContent = () => {
     setQuickAction(null);
   }, [quickAction, navReady]);
 
-  // Opens the default profile, or shows the unlock screen when it has a PIN.
   const openDefaultProfile = async () => {
     const defaultProfile = await getDefaultProfile();
     if (await hasProfilePin(defaultProfile.id)) {
@@ -108,7 +105,6 @@ const AppContent = () => {
     const sub = AppState.addEventListener('change', state => {
       if (state === 'active') runAutoBackupIfDue().catch(() => {});
     });
-    // A task reminder tapped while the app is open goes to Tasks.
     const tapped = Notifications?.addNotificationResponseReceivedListener(response => {
       if (response.notification.request.content.data?.screen === 'Tasks' && appNavigation.isReady()) appNavigation.navigate('Tasks');
     });

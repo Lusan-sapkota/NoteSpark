@@ -34,8 +34,7 @@ const saveProfiles = (profiles: Profile[]) => AsyncStorage.setItem('profiles', J
 const updateProfile = async (id: string, change: Partial<Profile>) =>
   saveProfiles((await getStoredProfiles()).map(p => (p.id === id ? { ...p, ...change } : p)));
 
-// PINs are kept as "salt:sha256(salt + pin)" in SecureStore (Android Keystore), one key per profile.
-// A four-digit PIN is a lock on the screen, not encryption: the notes databases themselves aren't encrypted.
+// PINs are stored as "salt:sha256(salt + pin)" in SecureStore, one key per profile.
 const pinKey = (id: string) => `profilePin_${id}`;
 const hashPin = (salt: string, pin: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, salt + pin);
 
@@ -82,8 +81,7 @@ export const setDefaultProfile = async (id: string, pin?: string): Promise<void>
   ]);
 };
 
-// Wrong PINs: after MAX_TRIES the profile locks for 30 s, doubling with each further wrong PIN up to 15 min.
-// Kept in AsyncStorage per profile ({ failures, lockedUntil }); a correct PIN clears it.
+// After MAX_TRIES wrong PINs the profile locks for 30 s, doubling per further miss up to 15 min.
 const MAX_TRIES = 5;
 const attemptsKey = 'pinAttempts';
 type Attempts = Record<string, { failures: number; lockedUntil?: number }>;
@@ -97,11 +95,9 @@ const saveAttempt = async (id: string, entry: Attempts[string] | null) => {
   await AsyncStorage.setItem(attemptsKey, JSON.stringify(attempts));
 };
 
-// Milliseconds until the profile accepts a PIN again (0 when it isn't locked).
 export const getPinLockout = async (id: string): Promise<number> =>
   Math.max(0, ((await getAttempts())[id]?.lockedUntil ?? 0) - Date.now());
 
-// What to tell someone after a PIN is refused.
 export const wrongPinMessage = async (id: string): Promise<string> => {
   const wait = await getPinLockout(id);
   if (!wait) return 'Enter the four-digit PIN for this profile.';
@@ -125,8 +121,7 @@ export const verifyProfilePin = async (id: string, pin: string): Promise<boolean
   return false;
 };
 
-// Fingerprint (or other phone biometrics) as a second way to open a profile that has a PIN. The PIN stays
-// required for changing or removing the PIN. AsyncStorage `biometricProfiles`: ids that allow it.
+// Fingerprint is an extra way to open a protected profile; changing or removing the PIN still needs the PIN.
 const biometricKey = 'biometricProfiles';
 
 const getBiometricIds = async (): Promise<string[]> => JSON.parse((await AsyncStorage.getItem(biometricKey)) ?? '[]');
@@ -138,12 +133,10 @@ export const setUsesBiometrics = async (id: string, on: boolean): Promise<void> 
   await AsyncStorage.setItem(biometricKey, JSON.stringify(on ? [...ids, id] : ids));
 };
 
-// Whether this phone has biometrics set up, so the option can be offered.
 export const canUseBiometrics = async (): Promise<boolean> =>
   (await LocalAuthentication.hasHardwareAsync()) && (await LocalAuthentication.isEnrolledAsync());
 
-// A passed fingerprint check lets open/switch/default/delete calls for that profile skip the PIN for a minute,
-// long enough for a confirmation dialog in between.
+// After a fingerprint check, open/switch/default/delete skip the PIN for a minute (time for a confirm dialog).
 let biometricGrant: { id: string; until: number } | null = null;
 
 export const unlockWithBiometrics = async (profile: Profile): Promise<boolean> => {
@@ -157,7 +150,6 @@ export const unlockWithBiometrics = async (profile: Profile): Promise<boolean> =
   return result.success;
 };
 
-// The PIN, or a fresh fingerprint grant for this profile.
 const isAuthorized = async (id: string, pin = ''): Promise<boolean> =>
   (biometricGrant?.id === id && biometricGrant.until > Date.now()) || verifyProfilePin(id, pin);
 
@@ -192,8 +184,7 @@ export const addProfile = async (name: string, pin?: string): Promise<Profile> =
   return profile;
 };
 
-// A profile's notes are encrypted while it has a PIN. A failed conversion leaves the file as it was and is retried
-// at the next start (syncProfileEncryption), so it never blocks setting or removing a PIN.
+// Notes are encrypted while a profile has a PIN. A failed conversion is retried at the next start.
 const encryptAsLocked = async (id: string) => {
   try {
     await setProfileEncryption(id, await hasProfilePin(id));
@@ -202,7 +193,7 @@ const encryptAsLocked = async (id: string) => {
   }
 };
 
-// Startup: brings every profile (binned too) in line, e.g. PINs set before encryption existed.
+// Startup: also converts profiles whose PIN predates encryption.
 export const syncProfileEncryption = async (): Promise<void> => {
   for (const profile of await getStoredProfiles()) await encryptAsLocked(profile.id);
 };
@@ -236,7 +227,6 @@ export const deleteProfileForever = async (id: string): Promise<void> => {
   await forgetProfileKey(id);
 };
 
-// Run at startup, like the notes bin purge in initDatabase.
 export const purgeProfileBin = async (): Promise<void> => {
   const cutoff = new Date(Date.now() - BIN_DAYS * 86400000).toISOString();
   for (const p of await getBinnedProfiles()) {
@@ -244,8 +234,8 @@ export const purgeProfileBin = async (): Promise<void> => {
   }
 };
 
-// Forgot PIN: a PIN can't be recovered, so the profile and its notes are erased instead. Another profile
-// takes over as default and open profile (a new Personal one if this was the only one). Returns that profile.
+// Forgot PIN: erase the profile, since a PIN can't be recovered. Another profile (or a new Personal one) takes
+// over as default and open profile; returns it.
 export const eraseForgottenProfile = async (id: string): Promise<Profile> => {
   const next = (await getProfiles()).find(p => p.id !== id) ?? (await addProfile('Personal'));
   // An open database can't be deleted. This only happens at startup, before any profile is shown.
@@ -256,7 +246,7 @@ export const eraseForgottenProfile = async (id: string): Promise<Profile> => {
   return next;
 };
 
-// Notes not in the bin from any profile's database, without switching to it (automatic backups).
+// Reads another profile's notes without switching to it.
 export const readProfileNotes = async (id: string): Promise<Note[]> => {
   const db = await openProfileConnection(id);
   try {

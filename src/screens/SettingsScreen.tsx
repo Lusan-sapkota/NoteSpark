@@ -64,7 +64,6 @@ const SettingsScreen: React.FC = () => {
 
   useFocusEffect(useCallback(() => { loadProfiles().catch(() => {}); }, [loadProfiles]));
 
-  // The profile form reports what it did when it closes.
   const message = route.params?.message;
   useEffect(() => {
     if (!message) return;
@@ -121,7 +120,7 @@ const SettingsScreen: React.FC = () => {
 
   const isProtected = (profile: Profile) => protectedProfileIds.includes(profile.id);
 
-  // A PIN can't be recovered, so a forgotten one means erasing the profile. Never offered for the open profile.
+  // A PIN can't be recovered, so a forgotten one means erasing the profile.
   const handleForgotPin = (profile: Profile) => {
     closePinDialog();
     alert(
@@ -545,7 +544,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  // Initial of the profile name; the open profile is tonal, the rest neutral.
   avatar: {
     width: 40,
     height: 40,

@@ -38,12 +38,11 @@ const stamp = (d: Date) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
 const safeName = (name: string) => name.replace(/[^\p{L}\p{N} _]/gu, '').trim().slice(0, 40) || 'profile';
 
-// notespark-<name>-<profile id>-<date>.json (Android may add " (1)" to a same-minute duplicate). The id keeps the "last 5" count per profile after a rename.
+// notespark-<name>-<id>-<date>.json, maybe with Android's " (1)". Matching by id keeps pruning right after a rename.
 const backupPattern = (id: string) => new RegExp(`^notespark-.*-${id.replace(/[^a-z0-9]/gi, '')}-(\\d{4}-\\d{2}-\\d{2}-\\d{4})(?: \\(\\d+\\))?(?:\\.json)?$`);
 const fileNameOf = (uri: string) => decodeURIComponent(uri).split('/').pop() ?? '';
 
-// Backs up every profile it may (one file each), then deletes that profile's oldest files beyond BACKUPS_KEPT.
-// Returns how many profiles were backed up.
+// One file per profile, then deletes that profile's files beyond BACKUPS_KEPT. Returns how many it backed up.
 export const runBackup = async (settings: AutoBackupSettings): Promise<number> => {
   const existing = await SAF.readDirectoryAsync(settings.folderUri);
   const now = stamp(new Date());
@@ -67,8 +66,7 @@ export const runBackup = async (settings: AutoBackupSettings): Promise<number> =
 
 let running = false;
 
-// Called at startup and whenever the app returns to the front. Failures are kept for the settings screen and
-// retried next time, since lastRun only moves on success.
+// lastRun only moves on success, so a failed backup is retried next time.
 export const runAutoBackupIfDue = async (): Promise<void> => {
   const settings = await getAutoBackup();
   if (!settings || running) return;

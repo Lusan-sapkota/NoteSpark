@@ -15,8 +15,7 @@ export const shareNotesAsJson = async (notes: Note[]): Promise<void> => {
   await Sharing.shareAsync(uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'Save or share your notes' });
 };
 
-// Markdown export: one file per note, named after the title, with dates and flags in front matter (Obsidian reads
-// it). Plain-text notes get .txt. Images that point to files on this phone won't open elsewhere.
+// One file per note, named after the title, with dates and flags in front matter; plain notes get .txt.
 export const noteToMarkdown = (note: Note) => {
   const meta = [
     `created: ${note.createdAt}`,
@@ -44,7 +43,6 @@ export const shareNoteAsMarkdown = async (note: Note): Promise<void> => {
   await Sharing.shareAsync(file.uri, { mimeType: note.isMarkdown ? 'text/markdown' : 'text/plain', dialogTitle: 'Save or share this note' });
 };
 
-// All notes as Markdown files in one zip.
 export const notesToZip = (notes: Note[]): Uint8Array => {
   const taken = new Set<string>();
   return zipSync(Object.fromEntries(notes.map(note => [fileName(note, taken), strToU8(noteToMarkdown(note))])));
