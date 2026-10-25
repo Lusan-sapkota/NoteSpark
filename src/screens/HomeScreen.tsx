@@ -15,6 +15,7 @@ import { Note } from '../types';
 import { extractTags } from '../utils/tags';
 import { shareNotesAsJson, shareNotesAsZip } from '../utils/exportNotes';
 import { syncTaskReminders } from '../utils/taskReminders';
+import { updateWidgets } from '../widget/widgets';
 import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
 import { useAlert } from '../components/DialogProvider';
@@ -72,6 +73,7 @@ const HomeScreen: React.FC = () => {
       setLoading(false);
       syncSearchIndex().catch(error => console.warn('Search index update failed:', error));
       syncTaskReminders().catch(error => console.warn('Task reminders update failed:', error));
+      updateWidgets().catch(error => console.warn('Widget update failed:', error));
     } catch (error) {
       setLoading(false);
       console.error('Failed to load notes:', error);

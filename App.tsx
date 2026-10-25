@@ -8,7 +8,7 @@ import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { eraseForgottenProfile, getDefaultProfile, syncProfileEncryption, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
-import { ActivityIndicator, AppState, View, StyleSheet, Button } from 'react-native';
+import { ActivityIndicator, AppState, Linking, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import { sendAppNotification } from './src/utils/notifications';
@@ -45,6 +45,22 @@ const AppContent = () => {
     }
     resetShareIntent();
   }, [hasShareIntent, navReady, shareIntent]);
+
+  // Widget taps: notespark://new and notespark://note/<id>. Like shares, they wait for the navigator (and an
+  // unlocked profile). expo-share-intent's own notespark://dataUrl=… links are left to it.
+  const [widgetLink, setWidgetLink] = useState<string | null>(null);
+  useEffect(() => {
+    Linking.getInitialURL().then(url => url && setWidgetLink(url)).catch(() => {});
+    const sub = Linking.addEventListener('url', ({ url }) => setWidgetLink(url));
+    return () => sub.remove();
+  }, []);
+  useEffect(() => {
+    if (!widgetLink || !navReady || !appNavigation.isReady()) return;
+    const noteId = /^notespark:\/\/note\/(\d+)$/.exec(widgetLink)?.[1];
+    if (widgetLink === 'notespark://new') appNavigation.dispatch(StackActions.push('Editor'));
+    else if (noteId) appNavigation.dispatch(StackActions.push('NoteView', { noteId }));
+    setWidgetLink(null);
+  }, [widgetLink, navReady]);
 
   // Long-press the app icon: "New note". `initial` is the shortcut that launched the app, if any.
   const [quickAction, setQuickAction] = useState<QuickActions.Action | null>(QuickActions.initial ?? null);

@@ -39,6 +39,7 @@
     "punycode": "^2.3.1",
     "react": "^19.3.0",
     "react-native": "^0.88.0",
+    "react-native-android-widget": "^0.24.0",
     "react-native-gesture-handler": "~3.3.0",
     "react-native-keyboard-controller": "1.22.7",
     "react-native-markdown-display": "^7.0.2",

@@ -68,6 +68,30 @@
       "expo-secure-store",
       "expo-share-intent",
       [
+        "react-native-android-widget",
+        {
+          "fonts": [
+            "./assets/fonts/Figtree-Regular.ttf",
+            "./assets/fonts/Figtree-Medium.ttf",
+            "./assets/fonts/Figtree-SemiBold.ttf"
+          ],
+          "widgets": [
+            {
+              "name": "PinnedNotes",
+              "label": "NoteSpark",
+              "description": "New note and your pinned notes",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "updatePeriodMillis": 0
+            }
+          ]
+        }
+      ],
+      [
         "expo-quick-actions",
         {
           "androidIcons": {
