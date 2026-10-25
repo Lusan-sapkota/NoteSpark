@@ -6,7 +6,7 @@ import { groupCorners } from '../theme/theme';
 
 interface GroupedRowProps {
   title: string;
-  description?: string;
+  description?: React.ReactNode;
   icon?: string;
   right?: React.ReactNode;
   onPress?: () => void;

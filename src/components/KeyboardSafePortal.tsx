@@ -1,9 +1,9 @@
 import React from 'react';
-import { StyleSheet } from 'react-native';
+import { StyleSheet, useWindowDimensions } from 'react-native';
 import { Portal } from 'react-native-paper';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import { useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
+import { useKeyboardState, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
 
 // A Portal that slides up with the keyboard so a Paper Dialog stays centred in the space above it. Paper
 // centres dialogs between the safe-area insets, so the lift is half of (keyboard height minus the bottom
@@ -22,6 +22,15 @@ const KeyboardSafePortal: React.FC<{ children: React.ReactNode }> = ({ children 
       </Animated.View>
     </Portal>
   );
+};
+
+// Max height for a dialog's scrolling body: the space above the keyboard (or the screen bottom) minus the
+// dialog's title, buttons and margins (about 240dp), so a tall dialog scrolls inside instead of running off screen.
+export const useDialogBodyMaxHeight = () => {
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const keyboard = useKeyboardState(state => state.height);
+  return Math.max(160, height - insets.top - (keyboard || insets.bottom) - 240);
 };
 
 export default KeyboardSafePortal;
