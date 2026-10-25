@@ -2,8 +2,7 @@ import React, { useEffect } from 'react';
 import { BackHandler } from 'react-native';
 import { Menu as PaperMenu, MenuProps } from 'react-native-paper';
 
-// Paper's Menu closes on back but doesn't consume the press, so Android also goes back a screen
-// (or leaves the app on Home). This one closes the menu and stops there.
+// Paper's Menu doesn't consume the back press, so Android also left the screen (or the app).
 const Menu = (props: MenuProps) => {
   const { visible, onDismiss } = props;
   useEffect(() => {

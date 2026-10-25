@@ -1,6 +1,4 @@
-// Text to model input for all-MiniLM-L6-v2: BERT's uncased WordPiece tokenizer, plus the mean pooling
-// and normalising that turn the model output into one sentence vector. No React Native imports, so it
-// can be checked against the reference tokenizer in Node.
+// BERT uncased WordPiece tokenizer and pooling for all-MiniLM-L6-v2.
 
 const isCjk = (cp: number) =>
   (cp >= 0x4e00 && cp <= 0x9fff) ||
@@ -12,13 +10,11 @@ const isCjk = (cp: number) =>
   (cp >= 0xf900 && cp <= 0xfaff) ||
   (cp >= 0x2f800 && cp <= 0x2fa1f);
 
-// BERT counts all non-alphanumeric ASCII as punctuation, plus Unicode P*.
 const isPunctuation = (ch: string) => {
   const cp = ch.codePointAt(0)!;
   return (cp >= 33 && cp <= 47) || (cp >= 58 && cp <= 64) || (cp >= 91 && cp <= 96) || (cp >= 123 && cp <= 126) || /\p{P}/u.test(ch);
 };
 
-// Lowercase, strip accents, drop control characters, then split on whitespace, punctuation and CJK characters.
 const basicTokenize = (text: string): string[] => {
   let cleaned = '';
   for (const ch of text) {
@@ -56,7 +52,6 @@ export const createTokenizer = (vocabText: string) => {
   const cls = vocab.get('[CLS]')!;
   const sep = vocab.get('[SEP]')!;
 
-  // Greedy longest-match-first; a word with any unknown piece becomes a single [UNK].
   const wordPiece = (word: string): number[] => {
     const chars = [...word];
     if (chars.length > 100) return [unk];
@@ -75,14 +70,12 @@ export const createTokenizer = (vocabText: string) => {
     return ids;
   };
 
-  // [CLS] tokens [SEP], cut to the model's 256-token window.
   return (text: string, maxLength = 256): number[] => {
     const ids = basicTokenize(text).flatMap(wordPiece);
     return [cls, ...ids.slice(0, maxLength - 2), sep];
   };
 };
 
-// Averages the token vectors (every token is real, no padding) and scales the result to length 1.
 export const meanPoolNormalize = (hidden: Float32Array, tokens: number, dims: number): Float32Array => {
   const out = new Float32Array(dims);
   for (let t = 0; t < tokens; t++) {

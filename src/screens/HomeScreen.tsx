@@ -35,7 +35,6 @@ const HomeScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [searchType, setSearchType] = useState<'all' | 'title' | 'content' | 'meaning'>('all');
-  // Note ids from search by meaning, closest first; null while not searching that way or if it failed.
   const [meaningIds, setMeaningIds] = useState<number[] | null>(null);
   const [filterMarkdown, setFilterMarkdown] = useState<'all' | 'markdown' | 'text'>('all');
   const [sortType, setSortType] = useState<'edited' | 'created'>('edited');
@@ -92,7 +91,6 @@ const HomeScreen: React.FC = () => {
     setRefreshing(false);
   };
 
-  // Search by meaning runs the model, so it waits until typing pauses.
   useEffect(() => {
     const query = searchText.trim();
     if (searchType !== 'meaning' || !query) {
@@ -115,7 +113,6 @@ const HomeScreen: React.FC = () => {
     if (filterMarkdown !== 'all') {
       filtered = filtered.filter(n => filterMarkdown === 'markdown' ? n.isMarkdown : !n.isMarkdown);
     }
-    // Closest meaning first; pins don't reorder these results.
     if (searchType === 'meaning' && searchText.trim() && meaningIds) {
       const byId = new Map(filtered.map(n => [n.id, n]));
       return meaningIds.map(id => byId.get(id)).filter((n): n is Note => !!n);

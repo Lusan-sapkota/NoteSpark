@@ -78,7 +78,6 @@ export const setNotePinned = async (id: number, pinned: boolean): Promise<void> 
   await db.runAsync('UPDATE notes SET isPinned = ? WHERE id = ?', [pinned ? 1 : 0, id]);
 };
 
-// Ticks or clears one checkbox in a note. Returns the new line, or null if the note or that line changed since it was read.
 export const toggleTaskInNote = async (noteId: number, task: Pick<TaskLine, 'line' | 'raw'>): Promise<string | null> => {
   const note = await getNoteById(noteId);
   const result = note && toggleTaskLine(note.content, task);

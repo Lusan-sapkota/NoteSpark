@@ -1,9 +1,8 @@
 import * as SQLite from 'expo-sqlite';
 
-// Each profile has its own database file; the first profile keeps the original one.
 export const dbName = (profileId: string) => (profileId === 'default' ? 'notespark.db' : `notespark-${profileId}.db`);
 
-// The active profile's database. A live binding: importers see the new one after openProfileDatabase.
+// Live binding: importers see the new connection after openProfileDatabase.
 export let db = SQLite.openDatabaseSync(dbName('default'));
 let openName = dbName('default');
 
@@ -40,8 +39,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   await initSearchIndex(db);
 };
 
-// Search by meaning: one 384-number vector per note (sqlite-vec) and the updatedAt it was made from.
-// sqlite-vec is only in builds made with withSQLiteVecExtension (not Expo Go); without it the tables are skipped.
+// sqlite-vec is missing in Expo Go; search by meaning is hidden there.
 const initSearchIndex = async (db: SQLite.SQLiteDatabase): Promise<void> => {
   const vec = SQLite.bundledExtensions['sqlite-vec'];
   if (!vec) return;

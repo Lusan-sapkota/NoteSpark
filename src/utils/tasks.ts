@@ -1,14 +1,13 @@
-// Markdown checkboxes ("- [ ] Call Sam due:2026-11-01"): the Tasks screen and tappable boxes in the note view.
 import { Note } from '../types';
 
 export interface Task {
   noteId: number;
   noteTitle: string;
   noteUpdatedAt: string;
-  line: number; // 0-based line in the note's content
-  raw: string; // the whole line, to check it hasn't changed before writing
+  line: number;
+  raw: string; // checked before writing, so a stale task can't overwrite an edited line
   text: string;
-  due?: string; // YYYY-MM-DD
+  due?: string;
 }
 
 export interface TaskLine {
@@ -19,11 +18,10 @@ export interface TaskLine {
 }
 
 const taskLine = /^(\s*(?:[-*+]|\d+[.)])\s+)\[( |x|X)\](\s+[^\n]*)$/;
-// "due:2026-11-01" is easy to type on a phone; "📅 2026-11-01" matches Obsidian Tasks.
+// "📅 2026-11-01" is the Obsidian Tasks syntax.
 const dueDate = /(?:due:|📅\s*)(\d{4}-\d{2}-\d{2})/;
 const fence = /^\s*(```|~~~)/;
 
-// Every checkbox line, open or done, in order. Lines inside fenced code blocks are skipped.
 export const findTaskLines = (content: string): TaskLine[] => {
   const tasks: TaskLine[] = [];
   let inFence = false;
@@ -49,7 +47,6 @@ export const extractTasks = (note: Note): Task[] =>
       due: dueDate.exec(t.text)?.[1],
     }));
 
-// Ticks an open box or clears a done one. Returns the new content and line, or null if the line changed since it was read.
 export const toggleTaskLine = (content: string, task: Pick<TaskLine, 'line' | 'raw'>): { content: string; raw: string } | null => {
   const lines = content.split('\n');
   if (lines[task.line] !== task.raw || !taskLine.test(task.raw)) return null;
@@ -58,7 +55,6 @@ export const toggleTaskLine = (content: string, task: Pick<TaskLine, 'line' | 'r
   return { content: lines.join('\n'), raw };
 };
 
-// For display: the found task lines get ☐ / ☑ in place of "[ ]" / "[x]". Line count is unchanged.
 export const markTaskBoxes = (content: string): string => {
   const lines = content.split('\n');
   findTaskLines(content).forEach(t => {

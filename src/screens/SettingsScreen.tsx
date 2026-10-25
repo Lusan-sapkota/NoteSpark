@@ -23,8 +23,7 @@ const SettingsScreen: React.FC = () => {
   const alert = useAlert();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeId, setActiveId] = useState('');
-  // The add or rename dialog: `editing` is the profile being renamed, or null when adding.
-  // Kept after closing so the dialog's text doesn't change while it fades out.
+  // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ editing: Profile | null; name: string; open: boolean } | null>(null);
   const closeNameDialog = () => setNameDialog(d => d && { ...d, open: false });
 

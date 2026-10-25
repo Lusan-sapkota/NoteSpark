@@ -1,5 +1,3 @@
-// Search by meaning: notes are turned into vectors by a small model bundled in the app (all-MiniLM-L6-v2, int8 ONNX)
-// and stored with sqlite-vec in each profile's database. Everything runs on the device.
 import { NativeModules } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import { Asset } from 'expo-asset';
@@ -8,17 +6,16 @@ import { db } from './database';
 import { createTokenizer, meanPoolNormalize } from '../utils/textEmbedding';
 
 const DIMS = 384;
-// Cosine distance above this counts as unrelated. ponytail: picked from a few test sentences; tune with real notes.
+// ponytail: cut-off picked from a few test sentences; tune with real notes.
 const MAX_DISTANCE = 0.7;
 
-// Both native parts are missing in Expo Go; then only word search is offered.
 export const isMeaningSearchAvailable = () => !!NativeModules.Onnxruntime && !!SQLite.bundledExtensions['sqlite-vec'];
 
 type Embed = (text: string) => Promise<Float32Array>;
 let embedder: Promise<Embed> | null = null;
 
 const loadEmbedder = async (): Promise<Embed> => {
-  // Required here, not imported: the package installs its native part on import and crashes where that's missing.
+  // Not a top-level import: it installs its native part on import, which crashes Expo Go.
   const { InferenceSession, Tensor } = require('onnxruntime-react-native') as typeof import('onnxruntime-react-native');
   const [model, vocab] = await Asset.loadAsync([
     require('../../assets/models/all-MiniLM-L6-v2-int8.onnx'),
@@ -37,7 +34,6 @@ const loadEmbedder = async (): Promise<Embed> => {
     });
     return meanPoolNormalize(out.last_hidden_state.data as Float32Array, n, DIMS);
   };
-  // One run at a time: indexing and a search can overlap.
   return text => {
     const next = queue.then(() => embed(text));
     queue = next.catch(() => {});
@@ -55,15 +51,12 @@ const getEmbedder = () => {
 
 const asBlob = (v: Float32Array) => new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
 
-// Images and link addresses are noise for meaning; keep the words.
 const noteText = (title: string, content: string) =>
   `${title}\n${content.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')}`;
 
 let syncing: Promise<void> | null = null;
 
-// Brings the open profile's vectors up to date: drops deleted notes, embeds new and edited ones.
-// ponytail: one vector per note from its first ~200 words (the model's 256-token window); chunk long notes if
-// matches deep inside them get missed.
+// ponytail: one vector per note from its first ~200 words; chunk long notes if deep matches get missed.
 export const syncSearchIndex = (): Promise<void> => {
   if (!isMeaningSearchAvailable()) return Promise.resolve();
   syncing ??= (async () => {
@@ -79,11 +72,9 @@ export const syncSearchIndex = (): Promise<void> => {
     if (!stale.length) return;
     const embed = await getEmbedder();
     for (const note of stale) {
-      if (conn !== db) return; // the profile was switched; the next sync picks up the new one
+      if (conn !== db) return; // profile switched
       const vector = await embed(noteText(note.title, note.content));
-      // No transaction: on the shared connection it could swallow a note being saved at the same moment. If this
-      // stops part-way, the state row still doesn't match and the next sync redoes the note.
-      // vec0 needs an integer rowid; a JS number may be bound as a float.
+      // No transaction: on the shared connection it could swallow a note being saved. vec0 rejects float rowids.
       await conn.runAsync('DELETE FROM note_vectors WHERE rowid = CAST(? AS INTEGER)', [note.id]);
       await conn.runAsync('INSERT INTO note_vectors (rowid, embedding) VALUES (CAST(? AS INTEGER), ?)', [note.id, asBlob(vector)]);
       await conn.runAsync('INSERT OR REPLACE INTO note_vector_state (noteId, updatedAt) VALUES (?, ?)', [note.id, note.updatedAt]);
@@ -94,7 +85,7 @@ export const syncSearchIndex = (): Promise<void> => {
   return syncing;
 };
 
-// Ids of related notes, closest first; null if search by meaning isn't working, so the caller can fall back to words.
+// null when it fails, so the caller falls back to word search.
 export const searchByMeaning = async (query: string): Promise<number[] | null> => {
   try {
     const vector = await (await getEmbedder())(query);
