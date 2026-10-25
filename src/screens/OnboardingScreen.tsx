@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { View, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInRight } from 'react-native-reanimated';
-import { Button, Text, TextInput } from 'react-native-paper';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { Button, Text } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, readingWidth, space } from '../theme/theme';
 
@@ -24,95 +23,55 @@ const slides = [
   },
 ];
 
-const OnboardingScreen = ({ onFinish, onProfileSetup }: { onFinish: () => void; onProfileSetup: (name: string, pin?: string) => Promise<void> }) => {
+const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
   const [finished, setFinished] = useState(false);
   const { theme } = useTheme();
   const [step, setStep] = useState(0);
-  const [setup, setSetup] = useState(false);
-  const [name, setName] = useState('Personal');
-  const [pin, setPin] = useState('');
-  const [pinConfirmation, setPinConfirmation] = useState('');
-  const [saving, setSaving] = useState(false);
   const isLast = step === slides.length - 1;
 
   const finish = () => {
     if (finished) return;
-    if (!setup) {
-      setSetup(true);
-      return;
-    }
     setFinished(true);
     setTimeout(onFinish, 150);
   };
 
   const handleNext = () => {
-    if (isLast) setSetup(true);
+    if (isLast) finish();
     else setStep(step + 1);
-  };
-
-  const saveProfile = async (withPin: boolean) => {
-    if (saving) return;
-    setSaving(true);
-    try {
-      await onProfileSetup(name.trim() || 'Personal', withPin ? pin : undefined);
-    } finally {
-      setSaving(false);
-    }
   };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.column}>
-        {!setup && (
-          <Button mode="text" onPress={finish} disabled={finished} style={styles.skip}>
-            Skip
+        <Button mode="text" onPress={finish} disabled={finished} style={styles.skip}>
+          Skip
+        </Button>
+        <Animated.View key={step} entering={step === 0 ? undefined : FadeInRight.springify()} style={styles.slide}>
+          <Image source={LOGO} style={styles.logo} accessibilityLabel="NoteSpark logo" />
+          <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]} accessibilityRole="header">
+            {slides[step].title}
+          </Text>
+          <Text variant="bodyLarge" style={[styles.body, { color: theme.colors.onSurfaceVariant }]}>
+            {slides[step].body}
+          </Text>
+        </Animated.View>
+        <View style={styles.footer}>
+          <View style={styles.dots} accessible accessibilityLabel={`Step ${step + 1} of ${slides.length}`}>
+            {slides.map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  { backgroundColor: i === step ? theme.colors.primary : theme.colors.outlineVariant },
+                  i === step && styles.dotActive,
+                ]}
+              />
+            ))}
+          </View>
+          <Button mode="contained" onPress={handleNext} theme={controlTheme} disabled={finished}>
+            {isLast ? 'Start writing' : 'Next'}
           </Button>
-        )}
-        {setup ? (
-          // The offset keeps the buttons under the last field above the keyboard too.
-          <KeyboardAwareScrollView keyboardShouldPersistTaps="handled" bottomOffset={96}>
-            <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]}>Set up your profile</Text>
-            <Text variant="bodyLarge" style={[styles.body, { color: theme.colors.onSurfaceVariant }]}>
-              Choose a name and optionally protect this profile with a four-digit PIN.
-            </Text>
-            <TextInput mode="outlined" label="Profile name" value={name} onChangeText={setName} style={styles.setupInput} autoFocus />
-            <TextInput mode="outlined" label="Four-digit PIN (optional)" value={pin} onChangeText={value => setPin(value.replace(/\D/g, '').slice(0, 4))} keyboardType="number-pad" secureTextEntry style={styles.setupInput} />
-            <TextInput mode="outlined" label="Confirm PIN" value={pinConfirmation} onChangeText={value => setPinConfirmation(value.replace(/\D/g, '').slice(0, 4))} keyboardType="number-pad" secureTextEntry style={styles.setupInput} />
-            <View style={styles.setupActions}>
-              <Button mode="text" onPress={() => saveProfile(false)} disabled={saving || !!pin || !!pinConfirmation}>Skip PIN</Button>
-              <Button mode="contained" onPress={() => saveProfile(true)} disabled={saving || !name.trim() || pin.length !== 4 || pin !== pinConfirmation}>Save profile</Button>
-            </View>
-          </KeyboardAwareScrollView>
-        ) : (
-          <>
-            <Animated.View key={step} entering={step === 0 ? undefined : FadeInRight.springify()} style={styles.slide}>
-              <Image source={LOGO} style={styles.logo} accessibilityLabel="NoteSpark logo" />
-              <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]} accessibilityRole="header">
-                {slides[step].title}
-              </Text>
-              <Text variant="bodyLarge" style={[styles.body, { color: theme.colors.onSurfaceVariant }]}>
-                {slides[step].body}
-              </Text>
-            </Animated.View>
-            <View style={styles.footer}>
-              <View style={styles.dots} accessible accessibilityLabel={`Step ${step + 1} of ${slides.length}`}>
-                {slides.map((_, i) => (
-                  <View
-                    key={i}
-                    style={[
-                      styles.dot,
-                      { backgroundColor: i === step ? theme.colors.primary : theme.colors.outlineVariant },
-                      i === step && styles.dotActive,
-                    ]}
-                  />
-                ))}
-              </View>
-              <Button mode="contained" onPress={handleNext} theme={controlTheme} disabled={finished}>
-                {isLast ? 'Start writing' : 'Next'}
-              </Button>
-            </View>
-          </>
-        )}
+        </View>
       </View>
     </SafeAreaView>
   );
@@ -151,16 +110,6 @@ const styles = StyleSheet.create({
   },
   body: {
     maxWidth: 420,
-  },
-  setupInput: {
-    marginTop: space.md,
-  },
-  setupActions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    marginTop: space.xl,
-    gap: space.sm,
   },
   footer: {
     flexDirection: 'row',

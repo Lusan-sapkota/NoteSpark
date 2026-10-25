@@ -6,7 +6,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { eraseForgottenProfile, getDefaultProfile, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, renameProfile, setDefaultProfile, setProfilePin, switchProfile } from './src/storage/profiles';
+import { eraseForgottenProfile, getDefaultProfile, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
 import { ActivityIndicator, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -76,18 +76,6 @@ const AppContent = () => {
     }
   };
 
-  const handleFinishProfileSetup = async (name: string, pin?: string) => {
-    try {
-      await renameProfile('default', name);
-      if (pin) await setProfilePin('default', pin);
-      await setDefaultProfile('default', pin);
-      await AsyncStorage.setItem('onboarded', 'true');
-      setShowOnboarding(false);
-    } catch (error) {
-      console.error('Profile setup error:', error);
-    }
-  };
-
   const unlockDefaultProfile = async (pin: string): Promise<boolean> => {
     if (!lockedProfile) return false;
     try {
@@ -120,7 +108,7 @@ const AppContent = () => {
           ) : lockedProfile ? (
             <ProfileUnlockScreen profileName={lockedProfile.name} onUnlock={unlockDefaultProfile} onForgotPin={eraseLockedProfile} />
           ) : showOnboarding ? (
-            <OnboardingScreen onFinish={handleFinishOnboarding} onProfileSetup={handleFinishProfileSetup} />
+            <OnboardingScreen onFinish={handleFinishOnboarding} />
           ) : (
             <AppNavigator />
           )}
