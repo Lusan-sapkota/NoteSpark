@@ -54,14 +54,22 @@ let lastScheduled = '';
 
 export const syncTaskReminders = async (): Promise<void> => {
   if (!Notifications) return;
-  const profiles: ProfileTasks[] = await Promise.all(
-    (await getProfiles()).map(async p => ({
-      id: p.id,
-      name: p.name,
-      locked: await hasProfilePin(p.id),
-      notes: await readProfileNotes(p.id),
-    }))
-  );
+  const profiles: ProfileTasks[] = (
+    await Promise.all(
+      (await getProfiles()).map(async p => {
+        try {
+          return {
+            id: p.id,
+            name: p.name,
+            locked: await hasProfilePin(p.id),
+            notes: await readProfileNotes(p.id),
+          };
+        } catch {
+          return null;
+        }
+      })
+    )
+  ).filter((p): p is ProfileTasks => p !== null);
   const reminders = buildReminders(profiles);
   const key = JSON.stringify(reminders.map(r => [r.id, r.date.getTime(), r.title, r.body]));
   if (key === lastScheduled) return;

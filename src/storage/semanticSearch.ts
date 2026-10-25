@@ -2,7 +2,7 @@ import { NativeModules } from 'react-native';
 import * as SQLite from 'expo-sqlite';
 import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
-import { db } from './database';
+import { db, isDatabaseReady, withDatabaseLock } from './database';
 import { createTokenizer, meanPoolNormalize } from '../utils/textEmbedding';
 
 const DIMS = 384;
@@ -61,23 +61,31 @@ export const syncSearchIndex = (): Promise<void> => {
   if (!isMeaningSearchAvailable()) return Promise.resolve();
   syncing ??= (async () => {
     const conn = db;
-    await conn.execAsync(
-      `DELETE FROM note_vectors WHERE rowid NOT IN (SELECT id FROM notes WHERE deletedAt IS NULL);
-       DELETE FROM note_vector_state WHERE noteId NOT IN (SELECT id FROM notes WHERE deletedAt IS NULL);`
-    );
-    const stale = await conn.getAllAsync<{ id: number; title: string; content: string; updatedAt: string }>(
-      `SELECT n.id, n.title, n.content, n.updatedAt FROM notes n
-       LEFT JOIN note_vector_state s ON s.noteId = n.id WHERE n.deletedAt IS NULL AND s.updatedAt IS NOT n.updatedAt`
-    );
+    const stale = await withDatabaseLock(async () => {
+      if (conn !== db || !isDatabaseReady()) return [];
+      await conn.execAsync(
+        `DELETE FROM note_vectors WHERE rowid NOT IN (SELECT id FROM notes WHERE deletedAt IS NULL);
+         DELETE FROM note_vector_state WHERE noteId NOT IN (SELECT id FROM notes WHERE deletedAt IS NULL);`
+      );
+      return conn.getAllAsync<{ id: number; title: string; content: string; updatedAt: string }>(
+        `SELECT n.id, n.title, n.content, n.updatedAt FROM notes n
+         LEFT JOIN note_vector_state s ON s.noteId = n.id WHERE n.deletedAt IS NULL AND s.updatedAt IS NOT n.updatedAt`
+      );
+    });
     if (!stale.length) return;
     const embed = await getEmbedder();
     for (const note of stale) {
-      if (conn !== db) return; // profile switched
+      if (conn !== db || !isDatabaseReady()) return; // profile switched or re-encrypting
       const vector = await embed(noteText(note.title, note.content));
-      // No transaction: on the shared connection it could swallow a note being saved. vec0 rejects float rowids.
-      await conn.runAsync('DELETE FROM note_vectors WHERE rowid = CAST(? AS INTEGER)', [note.id]);
-      await conn.runAsync('INSERT INTO note_vectors (rowid, embedding) VALUES (CAST(? AS INTEGER), ?)', [note.id, asBlob(vector)]);
-      await conn.runAsync('INSERT OR REPLACE INTO note_vector_state (noteId, updatedAt) VALUES (?, ?)', [note.id, note.updatedAt]);
+      const stopped = await withDatabaseLock(async () => {
+        if (conn !== db || !isDatabaseReady()) return true;
+        // No transaction: on the shared connection it could swallow a note being saved. vec0 rejects float rowids.
+        await conn.runAsync('DELETE FROM note_vectors WHERE rowid = CAST(? AS INTEGER)', [note.id]);
+        await conn.runAsync('INSERT INTO note_vectors (rowid, embedding) VALUES (CAST(? AS INTEGER), ?)', [note.id, asBlob(vector)]);
+        await conn.runAsync('INSERT OR REPLACE INTO note_vector_state (noteId, updatedAt) VALUES (?, ?)', [note.id, note.updatedAt]);
+        return false;
+      });
+      if (stopped) return;
     }
   })().finally(() => {
     syncing = null;

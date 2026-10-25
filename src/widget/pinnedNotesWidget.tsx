@@ -10,7 +10,7 @@ export const WIDGET_NAME = 'PinnedNotes';
 const MAX_NOTES = 20;
 
 type Colors = typeof lightTheme.colors;
-type State = { kind: 'notes'; notes: Note[] } | { kind: 'empty' } | { kind: 'locked' };
+type State = { kind: 'notes'; profileId: string; notes: Note[] } | { kind: 'empty' } | { kind: 'locked' };
 const hex = (color: string) => color as `#${string}`;
 
 const PinnedNotes = ({ c, state }: { c: Colors; state: State }) => (
@@ -41,7 +41,7 @@ const PinnedNotes = ({ c, state }: { c: Colors; state: State }) => (
           <FlexWidget
             key={note.id}
             clickAction="OPEN_URI"
-            clickActionData={{ uri: `notespark://note/${note.id}` }}
+            clickActionData={{ uri: `notespark://note/${state.profileId}/${note.id}` }}
             style={{
               width: 'match_parent',
               flexDirection: 'column',
@@ -72,7 +72,7 @@ const loadState = async (): Promise<State> => {
   const profile = await getActiveProfile();
   if (await hasProfilePin(profile.id)) return { kind: 'locked' };
   const notes = (await readProfileNotes(profile.id)).filter(n => n.isPinned && !n.isArchived).slice(0, MAX_NOTES);
-  return notes.length ? { kind: 'notes', notes } : { kind: 'empty' };
+  return notes.length ? { kind: 'notes', profileId: profile.id, notes } : { kind: 'empty' };
 };
 
 const render = async () => {

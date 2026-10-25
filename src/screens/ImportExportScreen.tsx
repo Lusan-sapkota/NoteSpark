@@ -212,8 +212,9 @@ const ImportExportScreen: React.FC = () => {
   const backUpNow = async (settings: AutoBackupSettings) => {
     setBackingUp(true);
     try {
-      await runBackup(settings);
-      await saveAutoBackup({ ...settings, lastRun: new Date().toISOString(), lastError: undefined });
+      const { error } = await runBackup(settings);
+      await saveAutoBackup({ ...settings, lastRun: new Date().toISOString(), lastError: error });
+      if (error) alert("Couldn't back up every profile", 'One or more profiles could not be read.');
     } catch (error) {
       await saveAutoBackup({ ...settings, lastError: error instanceof Error ? error.message : String(error) });
       alert("Couldn't back up to the folder", 'Choose the folder again, or pick another one, then try again.');

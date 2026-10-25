@@ -116,11 +116,19 @@ const HomeScreen: React.FC = () => {
       setPinDialog(d => d && { ...d, open: false });
       await switchProfile(profile.id, enteredPin);
       setSearchText('');
+      setUndo(null);
       await loadNotes();
       setSnackbar(`Switched to ${profile.name}`);
     } catch (error) {
       console.error('Failed to switch profile:', error);
-      alert("Couldn't switch profile", 'Try again. If it keeps failing, restart the app.');
+      alert(
+        `Couldn't open ${profile.name}`,
+        "This profile's database couldn't be read. If this phone was restored from a backup, a locked profile's encryption key isn't included in backups.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Erase profile', style: 'destructive', onPress: () => handleForgotPin(profile) },
+        ]
+      );
     }
   };
 
@@ -138,6 +146,7 @@ const HomeScreen: React.FC = () => {
           onPress: async () => {
             try {
               await eraseForgottenProfile(profile.id);
+              setUndo(null);
               await loadNotes();
               setSnackbar(`${profile.name} erased`);
             } catch (error) {

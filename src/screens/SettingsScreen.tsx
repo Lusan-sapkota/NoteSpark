@@ -114,7 +114,14 @@ const SettingsScreen: React.FC = () => {
       closePinDialog();
       setSnackbar(`${profile.name} is now the default profile`);
     } catch (error) {
-      alert("Couldn't set the default profile", 'Try again. If it keeps failing, restart the app.');
+      alert(
+        `Couldn't open ${profile.name}`,
+        "This profile's database couldn't be read. If this phone was restored from a backup, a locked profile's encryption key isn't included in backups.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Erase profile', style: 'destructive', onPress: () => handleForgotPin(profile) },
+        ]
+      );
     }
   };
 
@@ -161,7 +168,14 @@ const SettingsScreen: React.FC = () => {
       await switchProfile(profile.id, enteredPin);
       await loadProfiles();
     } catch (error) {
-      alert("Couldn't switch profile", 'Try again. If it keeps failing, restart the app.');
+      alert(
+        `Couldn't open ${profile.name}`,
+        "This profile's database couldn't be read. If this phone was restored from a backup, a locked profile's encryption key isn't included in backups.",
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Erase profile', style: 'destructive', onPress: () => handleForgotPin(profile) },
+        ]
+      );
     }
   };
 

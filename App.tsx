@@ -1,20 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer, StackActions } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { PaperProvider } from 'react-native-paper';
+import { Button, PaperProvider, Text } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { eraseForgottenProfile, getDefaultProfile, syncProfileEncryption, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
+import { eraseForgottenProfile, getActiveProfile, getDefaultProfile, syncProfileEncryption, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
-import { ActivityIndicator, AppState, Linking, View, StyleSheet, Button } from 'react-native';
+import { ActivityIndicator, AppState, Linking, View, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import { sendAppNotification } from './src/utils/notifications';
 import { useFonts } from 'expo-font';
-import { fontFiles } from './src/theme/theme';
-import { DialogProvider } from './src/components/DialogProvider';
+import { fontFiles, readingWidth, space } from './src/theme/theme';
+import { DialogProvider, useAlert } from './src/components/DialogProvider';
 import { pruneImageCache } from './src/utils/imageCache';
 import ProfileUnlockScreen from './src/screens/ProfileUnlockScreen';
 import { runAutoBackupIfDue } from './src/storage/autoBackup';
@@ -24,12 +24,58 @@ import { useShareIntent } from 'expo-share-intent';
 import * as QuickActions from 'expo-quick-actions';
 import { isRunningInExpoGo } from 'expo';
 
+const UnreadableProfileScreen = ({
+  profileName,
+  onRetry,
+  onErase,
+}: {
+  profileName: string;
+  onRetry: () => Promise<void>;
+  onErase: () => Promise<void>;
+}) => {
+  const { theme } = useTheme();
+  const alert = useAlert();
+  const confirmErase = () => {
+    alert(
+      'Erase this profile?',
+      `To use NoteSpark again, ${profileName} and all its notes will be erased from this device. Your other profiles stay as they are. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Erase profile',
+          style: 'destructive',
+          onPress: () => onErase().catch(() => alert("Couldn't erase the profile", 'Restart the app and try again.')),
+        },
+      ]
+    );
+  };
+  return (
+    <SafeAreaView style={[styles.root, { backgroundColor: theme.colors.background }]}>
+      <View style={styles.errorColumn}>
+        <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
+          Couldn't open {profileName}
+        </Text>
+        <Text variant="bodyLarge" style={[styles.errorBody, { color: theme.colors.onSurfaceVariant }]}>
+          This profile's database couldn't be read. If this phone was restored from a backup, a locked profile's encryption key isn't included in backups. You can try again, or erase this profile to use NoteSpark.
+        </Text>
+        <View style={styles.errorActions}>
+          <Button mode="contained" onPress={() => onRetry().catch(() => {})}>
+            Try again
+          </Button>
+          <Button onPress={confirmErase}>Erase profile</Button>
+        </View>
+      </View>
+    </SafeAreaView>
+  );
+};
+
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
   const navigationRef = React.useRef<any>(null);
   const [dbInitialized, setDbInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [lockedProfile, setLockedProfile] = useState<{ id: string; name: string } | null>(null);
+  const [unreadableProfile, setUnreadableProfile] = useState<{ id: string; name: string } | null>(null);
   const [fontsLoaded, fontError] = useFonts(fontFiles);
   // Share to NoteSpark: opens a new note once the navigator (so an unlocked profile) is ready.
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent({ disabled: isRunningInExpoGo() });
@@ -45,7 +91,7 @@ const AppContent = () => {
     resetShareIntent();
   }, [hasShareIntent, navReady, shareIntent]);
 
-  // Widget taps (notespark://new, notespark://note/<id>); expo-share-intent handles its own dataUrl links.
+  // Widget taps (notespark://new, notespark://note/<profileId>/<id>); expo-share-intent handles its own dataUrl links.
   const [widgetLink, setWidgetLink] = useState<string | null>(null);
   useEffect(() => {
     Linking.getInitialURL().then(url => url && setWidgetLink(url)).catch(() => {});
@@ -54,9 +100,19 @@ const AppContent = () => {
   }, []);
   useEffect(() => {
     if (!widgetLink || !navReady || !appNavigation.isReady()) return;
-    const noteId = /^notespark:\/\/note\/(\d+)$/.exec(widgetLink)?.[1];
-    if (widgetLink === 'notespark://new') appNavigation.dispatch(StackActions.push('Editor'));
-    else if (noteId) appNavigation.dispatch(StackActions.push('NoteView', { noteId }));
+    const match = /^notespark:\/\/note\/(?:([^/]+)\/)?(\d+)$/.exec(widgetLink);
+    if (widgetLink === 'notespark://new') {
+      appNavigation.dispatch(StackActions.push('Editor'));
+    } else if (match) {
+      const [, profileId, noteId] = match;
+      getActiveProfile()
+        .then(active => {
+          if (!profileId || profileId === active.id) {
+            appNavigation.dispatch(StackActions.push('NoteView', { noteId }));
+          }
+        })
+        .catch(() => {});
+    }
     setWidgetLink(null);
   }, [widgetLink, navReady]);
 
@@ -73,13 +129,40 @@ const AppContent = () => {
     setQuickAction(null);
   }, [quickAction, navReady]);
 
+  // Task reminder taps, including one that cold-started the app before navigation was ready.
+  const [notificationScreen, setNotificationScreen] = useState<'Tasks' | null>(null);
+  useEffect(() => {
+    const handleResponse = (response: { notification: { request: { content: { data?: Record<string, unknown> } } } } | null) => {
+      if (response?.notification.request.content.data?.screen === 'Tasks') {
+        setNotificationScreen('Tasks');
+        Notifications?.clearLastNotificationResponseAsync().catch(() => {});
+      }
+    };
+    Notifications?.getLastNotificationResponseAsync().then(handleResponse).catch(() => {});
+    const tapped = Notifications?.addNotificationResponseReceivedListener(handleResponse);
+    return () => tapped?.remove();
+  }, []);
+  useEffect(() => {
+    if (notificationScreen !== 'Tasks' || !navReady || !appNavigation.isReady()) return;
+    appNavigation.navigate('Tasks');
+    setNotificationScreen(null);
+  }, [notificationScreen, navReady]);
+
   const openDefaultProfile = async () => {
     const defaultProfile = await getDefaultProfile();
     if (await hasProfilePin(defaultProfile.id)) {
       setLockedProfile(defaultProfile);
+      setUnreadableProfile(null);
     } else {
-      await switchProfile(defaultProfile.id);
-      setLockedProfile(null);
+      try {
+        await switchProfile(defaultProfile.id);
+        setLockedProfile(null);
+        setUnreadableProfile(null);
+      } catch (error) {
+        console.error('Failed to open default profile:', error);
+        setLockedProfile(null);
+        setUnreadableProfile(defaultProfile);
+      }
     }
   };
 
@@ -87,18 +170,20 @@ const AppContent = () => {
     const setupApp = async () => {
       try {
         await setupNotificationWorker();
-        // Before any profile opens, so a protected profile's file isn't in use while it's converted.
         await syncProfileEncryption();
         await openDefaultProfile();
         await purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
         // Reads every profile's notes; waits so it doesn't compete with Home's first load.
         setTimeout(() => getAllProfilesNoteContents().then(pruneImageCache).catch(() => {}), 10000);
         runAutoBackupIfDue().catch(() => {});
-        setDbInitialized(true);
-        const onboarded = await AsyncStorage.getItem('onboarded');
-        setShowOnboarding(onboarded !== 'true');
       } catch (error) {
         console.error('Failed to initialize database:', error);
+        const fallback = await getDefaultProfile().catch(() => ({ id: 'default', name: 'Personal' }));
+        setUnreadableProfile(fallback);
+      } finally {
+        const onboarded = await AsyncStorage.getItem('onboarded').catch(() => 'true');
+        setShowOnboarding(onboarded !== 'true');
+        setDbInitialized(true);
       }
     };
     setupApp();
@@ -106,12 +191,8 @@ const AppContent = () => {
     const sub = AppState.addEventListener('change', state => {
       if (state === 'active') runAutoBackupIfDue().catch(() => {});
     });
-    const tapped = Notifications?.addNotificationResponseReceivedListener(response => {
-      if (response.notification.request.content.data?.screen === 'Tasks' && appNavigation.isReady()) appNavigation.navigate('Tasks');
-    });
     return () => {
       sub.remove();
-      tapped?.remove();
     };
   }, []);
 
@@ -154,6 +235,12 @@ const AppContent = () => {
     await openDefaultProfile();
   };
 
+  const eraseUnreadableProfile = async () => {
+    if (!unreadableProfile) return;
+    await eraseForgottenProfile(unreadableProfile.id);
+    await openDefaultProfile();
+  };
+
   // Font load failure falls back to the system font instead of blocking the app.
   const ready = dbInitialized && showOnboarding !== null && (fontsLoaded || !!fontError);
 
@@ -166,6 +253,8 @@ const AppContent = () => {
             <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
+          ) : unreadableProfile ? (
+            <UnreadableProfileScreen profileName={unreadableProfile.name} onRetry={openDefaultProfile} onErase={eraseUnreadableProfile} />
           ) : lockedProfile ? (
             <ProfileUnlockScreen profileId={lockedProfile.id} profileName={lockedProfile.name} onUnlock={unlockDefaultProfile} onForgotPin={eraseLockedProfile} />
           ) : showOnboarding ? (
@@ -201,5 +290,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  errorColumn: {
+    flex: 1,
+    width: '100%',
+    maxWidth: readingWidth,
+    alignSelf: 'center',
+    padding: space.xl,
+    justifyContent: 'center',
+  },
+  errorBody: {
+    marginTop: space.md,
+    marginBottom: space.xl,
+  },
+  errorActions: {
+    marginTop: space.xl,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
   },
 });

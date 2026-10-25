@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
 import { toNote } from './notes';
 import { Note } from '../types';
-import { BIN_DAYS, dbName, forgetProfileKey, initDatabase, isProfileDatabaseOpen, openProfileConnection, openProfileDatabase, setProfileEncryption } from './database';
+import { BIN_DAYS, dbName, deleteProfileDatabase, forgetProfileKey, initDatabase, isProfileDatabaseOpen, openProfileConnection, openProfileDatabase, setProfileEncryption, withDatabaseLock } from './database';
 
 export interface Profile {
   id: string;
@@ -218,19 +218,20 @@ export const moveProfileToBin = async (id: string, pin = ''): Promise<void> => {
 
 export const restoreProfile = (id: string): Promise<void> => updateProfile(id, { deletedAt: undefined });
 
+// The file goes first: if it can't be deleted yet (still open), the profile stays listed and a later purge retries.
 export const deleteProfileForever = async (id: string): Promise<void> => {
+  await deleteProfileDatabase(id);
   await saveProfiles((await getStoredProfiles()).filter(p => p.id !== id));
   await storePin(id, null);
   await saveAttempt(id, null);
   await setUsesBiometrics(id, false);
-  await SQLite.deleteDatabaseAsync(dbName(id)).catch(() => {});
   await forgetProfileKey(id);
 };
 
 export const purgeProfileBin = async (): Promise<void> => {
   const cutoff = new Date(Date.now() - BIN_DAYS * 86400000).toISOString();
   for (const p of await getBinnedProfiles()) {
-    if (p.deletedAt! < cutoff) await deleteProfileForever(p.id);
+    if (p.deletedAt! < cutoff) await deleteProfileForever(p.id).catch(error => console.warn('Profile purge will retry:', error));
   }
 };
 
@@ -239,7 +240,7 @@ export const purgeProfileBin = async (): Promise<void> => {
 export const eraseForgottenProfile = async (id: string): Promise<Profile> => {
   const next = (await getProfiles()).find(p => p.id !== id) ?? (await addProfile('Personal'));
   // An open database can't be deleted. This only happens at startup, before any profile is shown.
-  if (isProfileDatabaseOpen(id)) await openProfileDatabase(next.id);
+  if (isProfileDatabaseOpen(id) && !(await hasProfilePin(next.id))) await openProfileDatabase(next.id);
   if ((await getDefaultProfile()).id === id) await AsyncStorage.setItem(defaultProfileKey, next.id);
   if ((await getActiveProfile()).id === id) await AsyncStorage.setItem('activeProfile', next.id);
   await deleteProfileForever(id);
@@ -247,26 +248,29 @@ export const eraseForgottenProfile = async (id: string): Promise<Profile> => {
 };
 
 // Reads another profile's notes without switching to it.
-export const readProfileNotes = async (id: string): Promise<Note[]> => {
-  const db = await openProfileConnection(id);
-  try {
-    return (await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY updatedAt DESC')).map(toNote);
-  } finally {
-    await db.closeAsync();
-  }
-};
+export const readProfileNotes = (id: string): Promise<Note[]> =>
+  withDatabaseLock(async () => {
+    const db = await openProfileConnection(id, { useNewConnection: true });
+    try {
+      return (await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY updatedAt DESC')).map(toNote);
+    } finally {
+      await db.closeAsync();
+    }
+  });
 
 // Throws if any profile can't be read, so pruning is skipped instead of deleting images still in use.
 export const getAllProfilesNoteContents = async (): Promise<string[]> => {
   const contents: string[] = [];
   for (const profile of await getStoredProfiles()) {
-    const db = await openProfileConnection(profile.id);
-    try {
-      const rows = await db.getAllAsync<{ content: string }>('SELECT content FROM notes');
-      rows.forEach(r => contents.push(String(r.content ?? '')));
-    } finally {
-      await db.closeAsync();
-    }
+    await withDatabaseLock(async () => {
+      const db = await openProfileConnection(profile.id, { useNewConnection: true });
+      try {
+        const rows = await db.getAllAsync<{ content: string }>('SELECT content FROM notes');
+        rows.forEach(r => contents.push(String(r.content ?? '')));
+      } finally {
+        await db.closeAsync();
+      }
+    });
   }
   return contents;
 };

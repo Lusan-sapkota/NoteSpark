@@ -5,27 +5,49 @@ import * as SQLite from 'expo-sqlite';
 
 export const dbName = (profileId: string) => (profileId === 'default' ? 'notespark.db' : `notespark-${profileId}.db`);
 
-// Live binding, swapped by openProfileDatabase. The import-time connection stays unused until a profile opens.
-export let db = SQLite.openDatabaseSync(dbName('default'));
-let openName = dbName('default');
+// Live binding, swapped by openProfileDatabase. The import-time placeholder stays unused until a profile opens.
+export let db = SQLite.openDatabaseSync(':memory:');
+let openName = '';
 let dbReady = false;
+
+export const isDatabaseReady = () => dbReady;
+
+let lockChain: Promise<void> = Promise.resolve();
+
+// Serializes connection swaps, encryption changes, deletions and background reads across profiles.
+export const withDatabaseLock = <T>(fn: () => Promise<T>): Promise<T> => {
+  const next = lockChain.then(fn);
+  lockChain = next.then(
+    () => {},
+    () => {}
+  );
+  return next;
+};
 
 export const isProfileDatabaseOpen = (profileId: string) => dbName(profileId) === openName;
 
-export const openProfileDatabase = async (profileId: string): Promise<void> => {
-  const name = dbName(profileId);
-  if (name === openName && dbReady) {
-    await initDatabase(db);
-    return;
-  }
-  const next = await openProfileConnection(profileId);
-  await initDatabase(next);
-  const previous = db;
-  db = next;
-  openName = name;
-  dbReady = true;
-  if (previous !== next) await previous.closeAsync().catch(() => {});
+export const closeProfileDatabase = async (profileId: string): Promise<void> => {
+  if (!isProfileDatabaseOpen(profileId)) return;
+  dbReady = false;
+  openName = '';
+  await db.closeAsync().catch(() => {});
 };
+
+export const openProfileDatabase = (profileId: string): Promise<void> =>
+  withDatabaseLock(async () => {
+    const name = dbName(profileId);
+    if (name === openName && dbReady) {
+      await initDatabase(db);
+      return;
+    }
+    const next = await openProfileConnection(profileId);
+    await initDatabase(next);
+    const previous = db;
+    db = next;
+    openName = name;
+    dbReady = true;
+    if (previous !== next) await previous.closeAsync().catch(() => {});
+  });
 
 // Protected profiles are SQLCipher-encrypted with a random key in SecureStore; the PIN only guards the UI.
 const keyName = (id: string) => `profileKey_${id}`;
@@ -76,48 +98,61 @@ export const openProfileConnection = async (profileId: string, options?: SQLite.
   throw failure;
 };
 
+export const deleteProfileDatabase = (profileId: string): Promise<void> =>
+  withDatabaseLock(async () => {
+    const name = dbName(profileId);
+    await closeProfileDatabase(profileId);
+    if ((await getInfoAsync(fileUri(name))).exists) await SQLite.deleteDatabaseAsync(name);
+    await deleteAsync(fileUri(`${name}.old`), { idempotent: true });
+    await deleteAsync(fileUri(`${name}.new`), { idempotent: true });
+  });
+
 export const isProfileEncrypted = async (id: string) => !!(await SecureStore.getItemAsync(keyName(id)));
 
 // Copies the file with sqlcipher_export, then swaps it in, so a failure leaves the original intact.
 // Returns false when nothing changed, including builds without SQLCipher (Expo Go).
-export const setProfileEncryption = async (profileId: string, encrypt: boolean): Promise<boolean> => {
-  if ((await isProfileEncrypted(profileId)) === encrypt) return false;
-  const name = dbName(profileId);
-  const newKey = encrypt ? Array.from(Crypto.getRandomBytes(32), b => b.toString(16).padStart(2, '0')).join('') : null;
-  const wasOpen = isProfileDatabaseOpen(profileId);
-  if (wasOpen) await db.closeAsync().catch(() => {});
-  try {
-    const conn = await openProfileConnection(profileId, { useNewConnection: true });
+export const setProfileEncryption = (profileId: string, encrypt: boolean): Promise<boolean> =>
+  withDatabaseLock(async () => {
+    if ((await isProfileEncrypted(profileId)) === encrypt) return false;
+    const name = dbName(profileId);
+    const newKey = encrypt ? Array.from(Crypto.getRandomBytes(32), b => b.toString(16).padStart(2, '0')).join('') : null;
+    const wasOpen = isProfileDatabaseOpen(profileId) && dbReady;
+    await closeProfileDatabase(profileId);
     try {
-      if (!(await conn.getFirstAsync<{ cipher_version?: string }>('PRAGMA cipher_version'))?.cipher_version) return false;
-      // The search index is a sqlite-vec virtual table, which sqlcipher_export can't copy; the next sync rebuilds it.
-      await loadSearchExtension(conn);
-      await conn.execAsync('DROP TABLE IF EXISTS note_vectors; DROP TABLE IF EXISTS note_vector_state;');
-      await deleteAsync(fileUri(`${name}.new`), { idempotent: true });
-      const path = `${SQLite.defaultDatabaseDirectory}/${name}.new`.replace(/'/g, "''");
-      await conn.execAsync(
-        `ATTACH DATABASE '${path}' AS converted KEY ${newKey ? `"x'${newKey}'"` : "''"};
-         SELECT sqlcipher_export('converted');
-         DETACH DATABASE converted;`
-      );
+      const conn = await openProfileConnection(profileId, { useNewConnection: true });
+      try {
+        if (!(await conn.getFirstAsync<{ cipher_version?: string }>('PRAGMA cipher_version'))?.cipher_version) return false;
+        // The search index is a sqlite-vec virtual table, which sqlcipher_export can't copy; the next sync rebuilds it.
+        await loadSearchExtension(conn);
+        await conn.execAsync('DROP TABLE IF EXISTS note_vectors; DROP TABLE IF EXISTS note_vector_state;');
+        await deleteAsync(fileUri(`${name}.new`), { idempotent: true });
+        const path = `${SQLite.defaultDatabaseDirectory}/${name}.new`.replace(/'/g, "''");
+        await conn.execAsync(
+          `ATTACH DATABASE '${path}' AS converted KEY ${newKey ? `"x'${newKey}'"` : "''"};
+           SELECT sqlcipher_export('converted');
+           DETACH DATABASE converted;`
+        );
+      } finally {
+        await conn.closeAsync();
+      }
+      await SecureStore.setItemAsync(pendingKeyName(profileId), newKey ?? '');
+      await moveAsync({ from: fileUri(name), to: fileUri(`${name}.old`) });
+      await moveAsync({ from: fileUri(`${name}.new`), to: fileUri(name) });
+      await deleteAsync(fileUri(`${name}.old`), { idempotent: true });
+      await deleteAsync(fileUri(`${name}-journal`), { idempotent: true });
+      await commitKey(profileId, newKey);
+      return true;
     } finally {
-      await conn.closeAsync();
+      if (wasOpen) {
+        // A new connection: a cached one could still point at the file that was just replaced.
+        const next = await openProfileConnection(profileId, { useNewConnection: true });
+        await initDatabase(next);
+        db = next;
+        openName = name;
+        dbReady = true;
+      }
     }
-    await SecureStore.setItemAsync(pendingKeyName(profileId), newKey ?? '');
-    await moveAsync({ from: fileUri(name), to: fileUri(`${name}.old`) });
-    await moveAsync({ from: fileUri(`${name}.new`), to: fileUri(name) });
-    await deleteAsync(fileUri(`${name}.old`), { idempotent: true });
-    await deleteAsync(fileUri(`${name}-journal`), { idempotent: true });
-    await commitKey(profileId, newKey);
-    return true;
-  } finally {
-    if (wasOpen) {
-      db = await openProfileConnection(profileId);
-      dbReady = true;
-      await initDatabase(db);
-    }
-  }
-};
+  });
 
 // Notes in the bin are erased this many days after deletion, when the database next opens.
 export const BIN_DAYS = 30;

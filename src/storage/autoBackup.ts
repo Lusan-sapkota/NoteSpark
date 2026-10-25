@@ -42,31 +42,37 @@ const safeName = (name: string) => name.replace(/[^\p{L}\p{N} _]/gu, '').trim().
 const backupPattern = (id: string) => new RegExp(`^notespark-.*-${id.replace(/[^a-z0-9]/gi, '')}-(\\d{4}-\\d{2}-\\d{2}-\\d{4})(?: \\(\\d+\\))?(?:\\.json)?$`);
 const fileNameOf = (uri: string) => decodeURIComponent(uri).split('/').pop() ?? '';
 
-// One file per profile, then deletes that profile's files beyond BACKUPS_KEPT. Returns how many it backed up.
-export const runBackup = async (settings: AutoBackupSettings): Promise<number> => {
+// One file per profile, then deletes that profile's files beyond BACKUPS_KEPT. Returns how many it backed up and any profile error.
+export const runBackup = async (settings: AutoBackupSettings): Promise<{ count: number; error?: string }> => {
   const existing = await SAF.readDirectoryAsync(settings.folderUri);
   const now = stamp(new Date());
   let count = 0;
+  let lastError: string | undefined;
   for (const profile of await getProfiles()) {
     if (!settings.includeProtected && (await hasProfilePin(profile.id))) continue;
-    const notes = await readProfileNotes(profile.id);
-    const uri = await SAF.createFileAsync(settings.folderUri, `notespark-${safeName(profile.name)}-${profile.id}-${now}`, 'application/json');
-    await writeAsStringAsync(uri, notesToJson(notes));
-    count++;
-    const pattern = backupPattern(profile.id);
-    const old = existing
-      .map(uri => ({ uri, date: pattern.exec(fileNameOf(uri))?.[1] }))
-      .filter((f): f is { uri: string; date: string } => !!f.date)
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .slice(BACKUPS_KEPT - 1);
-    for (const f of old) await deleteAsync(f.uri, { idempotent: true });
+    try {
+      const notes = await readProfileNotes(profile.id);
+      const uri = await SAF.createFileAsync(settings.folderUri, `notespark-${safeName(profile.name)}-${profile.id}-${now}`, 'application/json');
+      await writeAsStringAsync(uri, notesToJson(notes));
+      count++;
+      const pattern = backupPattern(profile.id);
+      const old = existing
+        .map(uri => ({ uri, date: pattern.exec(fileNameOf(uri))?.[1] }))
+        .filter((f): f is { uri: string; date: string } => !!f.date)
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(BACKUPS_KEPT - 1);
+      for (const f of old) await deleteAsync(f.uri, { idempotent: true });
+    } catch (error) {
+      lastError = error instanceof Error ? error.message : String(error);
+    }
   }
-  return count;
+  if (count === 0 && lastError) throw new Error(lastError);
+  return { count, error: lastError };
 };
 
 let running = false;
 
-// lastRun only moves on success, so a failed backup is retried next time.
+// lastRun moves when at least one profile is backed up, so a single broken profile doesn't rotate out the others on every open.
 export const runAutoBackupIfDue = async (): Promise<void> => {
   const settings = await getAutoBackup();
   if (!settings || running) return;
@@ -74,8 +80,8 @@ export const runAutoBackupIfDue = async (): Promise<void> => {
   if (settings.lastRun && Date.now() - Date.parse(settings.lastRun) < days * 86400000 - 3600000) return;
   running = true;
   try {
-    await runBackup(settings);
-    await setAutoBackup({ ...settings, lastRun: new Date().toISOString(), lastError: undefined });
+    const { error } = await runBackup(settings);
+    await setAutoBackup({ ...settings, lastRun: new Date().toISOString(), lastError: error });
   } catch (error) {
     await setAutoBackup({ ...settings, lastError: error instanceof Error ? error.message : String(error) });
   } finally {
