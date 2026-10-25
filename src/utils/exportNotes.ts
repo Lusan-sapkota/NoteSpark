@@ -1,7 +1,7 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { File, Paths } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
-import { strToU8, zipSync } from 'fflate';
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { Note } from '../types';
 
 // The JSON backup format: the stored note fields, with isMarkdown as a boolean.
@@ -52,4 +52,51 @@ export const shareNotesAsZip = async (notes: Note[]): Promise<void> => {
   const file = new File(Paths.cache, `notespark-markdown-${Date.now()}.zip`);
   await file.write(notesToZip(notes));
   await Sharing.shareAsync(file.uri, { mimeType: 'application/zip', UTI: 'public.zip-archive', dialogTitle: 'Save or share your notes' });
+};
+
+// The reverse of noteToMarkdown, for Markdown and text files from NoteSpark or other apps (Obsidian, Markor…).
+// created/updated/pinned/archived come from front matter; other front matter keys stay in the note.
+export const markdownToNote = (fileName: string, text: string) => {
+  const base = fileName.split('/').pop() ?? fileName;
+  const ext = base.match(/\.([^.]+)$/)?.[1]?.toLowerCase() ?? '';
+  const meta: Record<string, string> = {};
+  let body = text.replace(/\r\n?/g, '\n');
+  const front = /^---\n([\s\S]*?)\n---(?:\n|$)/.exec(body);
+  if (front) {
+    const kept = front[1].split('\n').filter(line => {
+      const m = /^(created|updated|pinned|archived):\s*(.*)$/.exec(line);
+      if (m) meta[m[1]] = m[2].trim();
+      return !m;
+    });
+    body = (kept.some(l => l.trim()) ? `---\n${kept.join('\n')}\n---\n` : '') + body.slice(front[0].length).replace(/^\n+/, '');
+  }
+  const date = (value?: string) => (value && !isNaN(Date.parse(value)) ? new Date(value).toISOString() : new Date().toISOString());
+  return {
+    title: base.replace(/\.[^.]+$/, '').trim() || 'Untitled note',
+    content: body.replace(/\n$/, ''),
+    isMarkdown: ext !== 'txt',
+    createdAt: date(meta.created),
+    updatedAt: date(meta.updated ?? meta.created),
+    isPinned: meta.pinned === 'true',
+    isArchived: meta.archived === 'true',
+  };
+};
+
+const isNoteFile = (name: string) => /\.(md|markdown|txt)$/i.test(name) && !/(^|\/)(\.|__MACOSX\/)/.test(name);
+
+// Notes from one picked file: a NoteSpark .json backup, a .md or .txt note, or a .zip of those.
+// Throws when the file is none of these.
+export const notesFromFile = async (uri: string, name: string): Promise<any[]> => {
+  const file = new File(uri);
+  if (/\.json$/i.test(name)) {
+    const parsed = JSON.parse(await file.text());
+    if (!Array.isArray(parsed)) throw new Error('Not a NoteSpark backup');
+    return parsed;
+  }
+  if (isNoteFile(name)) return [markdownToNote(name, await file.text())];
+  if (/\.zip$/i.test(name)) {
+    const entries = unzipSync(await file.bytes(), { filter: f => isNoteFile(f.name) });
+    return Object.entries(entries).map(([path, data]) => markdownToNote(path, strFromU8(data)));
+  }
+  throw new Error('Unsupported file');
 };

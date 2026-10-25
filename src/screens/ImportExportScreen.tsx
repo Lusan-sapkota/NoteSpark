@@ -12,7 +12,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { exportNotesAsJson, getNotes, importNotes, ImportMode } from '../storage/notes';
-import { shareNotesAsZip } from '../utils/exportNotes';
+import { notesFromFile, shareNotesAsZip } from '../utils/exportNotes';
 import { AutoBackupSettings, BACKUPS_KEPT, folderName, getAutoBackup, pickBackupFolder, runBackup, setAutoBackup } from '../storage/autoBackup';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -450,19 +450,25 @@ const ImportExportScreen: React.FC = () => {
     confirmIfReplacing(async () => {
       try {
         setFileImporting(true);
-        const result = await DocumentPicker.getDocumentAsync({ type: 'application/json' });
-        const uri = result.assets?.[0]?.uri;
-        if (result.canceled || !uri) return;
-        let parsed: any;
-        try {
-          parsed = JSON.parse(await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.UTF8 }));
-          if (!Array.isArray(parsed)) throw new Error('Not an array');
-        } catch (e) {
-          alert("That file isn't a NoteSpark backup", 'Choose a .json file exported from NoteSpark.');
-          await logImport(0, 'File was not a valid backup.');
+        // Any type: Android often labels .md files as unknown, so the file name decides.
+        const result = await DocumentPicker.getDocumentAsync({ type: '*/*', multiple: true });
+        if (result.canceled || !result.assets?.length) return;
+        const parsed: any[] = [];
+        const unreadable: string[] = [];
+        for (const asset of result.assets) {
+          try {
+            parsed.push(...(await notesFromFile(asset.uri, asset.name)));
+          } catch {
+            unreadable.push(asset.name);
+          }
+        }
+        if (!parsed.length) {
+          alert("Couldn't read those files", 'Choose a NoteSpark .json backup, or Markdown (.md), text (.txt) or .zip files of them.');
+          await logImport(0, 'Files were not backups or notes.');
           return;
         }
-        const msg = await runImport(parsed, 0);
+        let msg = await runImport(parsed, 0);
+        if (unreadable.length) msg += ` Couldn't read ${unreadable.join(', ')}.`;
         alert('Notes imported', msg, [{ text: 'OK', onPress: () => navigation.goBack() }]);
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Import failed.';
@@ -564,7 +570,7 @@ const ImportExportScreen: React.FC = () => {
             {tile({
               icon: 'file-restore-outline',
               title: 'Restore',
-              body: 'Bring notes in from a backup',
+              body: 'Bring notes in from a backup or Markdown files',
               busyBody: 'Importing notes',
               busy: importing,
               onPress: () => setImportDialogVisible(true),
@@ -762,7 +768,7 @@ const ImportExportScreen: React.FC = () => {
               ) : (
                 <>
                   <Button mode="contained" icon="file-upload-outline" theme={controlTheme} onPress={() => { closeImportDialog(); handleFileImport(); }}>
-                    Choose backup file
+                    Choose files
                   </Button>
                   <Button mode="text" icon="content-paste" onPress={() => setPasteOpen(true)}>
                     Paste JSON instead
