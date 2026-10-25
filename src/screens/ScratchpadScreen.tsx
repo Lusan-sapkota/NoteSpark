@@ -80,6 +80,11 @@ const ScratchpadScreen: React.FC = () => {
     }, [append, flush])
   );
 
+  // Opens the keyboard once the pad has loaded (the field is read-only before, so autoFocus would do nothing).
+  useEffect(() => {
+    if (loaded) inputRef.current?.focus();
+  }, [loaded]);
+
   useEffect(() => {
     if (!pendingSelection) return;
     inputRef.current?.setSelection(pendingSelection.start, pendingSelection.end);
@@ -158,7 +163,6 @@ const ScratchpadScreen: React.FC = () => {
             multiline
             textAlignVertical="top"
             scrollEnabled={false}
-            autoFocus
             selectionColor={theme.colors.primary}
             placeholder="Jot it down. File it as a note later, or clear it."
             placeholderTextColor={theme.colors.onSurfaceVariant}
