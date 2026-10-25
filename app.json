@@ -62,7 +62,8 @@
         "productivity"
       ],
       "expo-asset",
-      "onnxruntime-react-native"
+      "onnxruntime-react-native",
+      "expo-secure-store"
     ],
     "extra": {
       "eas": {

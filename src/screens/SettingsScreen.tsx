@@ -5,7 +5,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
-import { addProfile, deleteProfile, getActiveProfile, getDefaultProfile, getProfiles, hasProfilePin, Profile, renameProfile, setDefaultProfile, setProfilePin, switchProfile, verifyProfilePin } from '../storage/profiles';
+import { addProfile, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, setProfilePin, switchProfile, verifyProfilePin } from '../storage/profiles';
+import { BIN_DAYS } from '../storage/database';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
@@ -17,12 +18,20 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 
+const profileTimeLeft = (deletedAt: string) => {
+  const days = BIN_DAYS - Math.floor((Date.now() - Date.parse(deletedAt)) / 86400000);
+  if (days <= 0) return 'Erased the next time the app opens';
+  if (days === 1) return 'Erased tomorrow';
+  return `Erased in ${days} days`;
+};
+
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const { theme, themeType, setThemeType } = useTheme();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [binnedProfiles, setBinnedProfiles] = useState<Profile[]>([]);
   const [deleteMode, setDeleteMode] = useState<'bin' | 'forever'>('bin');
   const [snackbar, setSnackbar] = useState('');
   const [undoBatch, setUndoBatch] = useState<string | null>(null);
@@ -31,14 +40,17 @@ const SettingsScreen: React.FC = () => {
   const [protectedProfileIds, setProtectedProfileIds] = useState<string[]>([]);
   // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ editing: Profile | null; name: string; pin: string; pinConfirmation: string; open: boolean } | null>(null);
-  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; pinConfirmation: string; mode: 'unlock' | 'manage' | 'makeDefault'; open: boolean } | null>(null);
+  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; pinConfirmation: string; currentPin: string; mode: 'unlock' | 'manage' | 'makeDefault' | 'delete'; open: boolean } | null>(null);
+  const openPinDialog = (profile: Profile, mode: 'unlock' | 'manage' | 'makeDefault' | 'delete') =>
+    setPinDialog({ profile, pin: '', pinConfirmation: '', currentPin: '', mode, open: true });
   const closeNameDialog = () => setNameDialog(d => d && { ...d, open: false });
   const closePinDialog = () => setPinDialog(d => d && { ...d, open: false });
 
   const loadProfiles = useCallback(async () => {
-    const [list, active] = await Promise.all([getProfiles(), getActiveProfile()]);
+    const [list, active, binned] = await Promise.all([getProfiles(), getActiveProfile(), getBinnedProfiles()]);
     const defaultProfile = await getDefaultProfile();
     setProfiles(list);
+    setBinnedProfiles(binned);
     setActiveId(active.id);
     setDefaultId(defaultProfile.id);
     setProtectedProfileIds((await Promise.all(list.map(async profile => (await hasProfilePin(profile.id)) ? profile.id : null))).filter((id): id is string => id !== null));
@@ -80,7 +92,7 @@ const SettingsScreen: React.FC = () => {
   const handleMakeDefault = async (profile: Profile, pin?: string) => {
     try {
       if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
-        setPinDialog({ profile, pin: '', pinConfirmation: '', mode: 'makeDefault', open: true });
+        openPinDialog(profile, 'makeDefault');
         return;
       }
       await setDefaultProfile(profile.id, pin ?? '');
@@ -92,42 +104,75 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  const openPinManager = (profile: Profile) => {
-    setPinDialog({ profile, pin: '', pinConfirmation: '', mode: 'manage', open: true });
+  const isProtected = (profile: Profile) => protectedProfileIds.includes(profile.id);
+
+  // Changing or removing a PIN needs the current one.
+  const checkCurrentPin = async (profile: Profile, currentPin: string) => {
+    if (await verifyProfilePin(profile.id, currentPin)) return true;
+    alert('Incorrect PIN', `Enter the current four-digit PIN for ${profile.name}.`);
+    return false;
   };
 
   const handleSavePin = async () => {
     if (!pinDialog || pinDialog.mode !== 'manage') return;
-    if (pinDialog.pin.length !== 4 || pinDialog.pin !== pinDialog.pinConfirmation) return;
+    const { profile, pin, pinConfirmation, currentPin } = pinDialog;
+    if (pin.length !== 4 || pin !== pinConfirmation) return;
     try {
-      await setProfilePin(pinDialog.profile.id, pinDialog.pin);
+      if (!(await checkCurrentPin(profile, currentPin))) return;
+      await setProfilePin(profile.id, pin, currentPin);
       closePinDialog();
       await loadProfiles();
-      setSnackbar(`PIN set for ${pinDialog.profile.name}`);
+      setSnackbar(`PIN set for ${profile.name}`);
     } catch (error) {
       alert("Couldn't save the PIN", 'Try again. If it keeps failing, restart the app.');
     }
   };
 
-  const handleResetPin = () => {
+  const handleRemovePin = async () => {
     if (!pinDialog || pinDialog.mode !== 'manage') return;
-    const profile = pinDialog.profile;
+    const { profile, currentPin } = pinDialog;
+    if (!(await checkCurrentPin(profile, currentPin))) return;
     alert(
-      'Reset profile PIN?',
-      `${profile.name} will no longer require a PIN when you switch to it.`,
+      'Remove profile PIN?',
+      `${profile.name} will no longer ask for a PIN.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Reset PIN',
+          text: 'Remove PIN',
           style: 'destructive',
           onPress: async () => {
             try {
-              await setProfilePin(profile.id, null);
+              await setProfilePin(profile.id, null, currentPin);
               closePinDialog();
               await loadProfiles();
-              setSnackbar(`PIN reset for ${profile.name}`);
+              setSnackbar(`PIN removed from ${profile.name}`);
             } catch (error) {
-              alert("Couldn't reset the PIN", 'Try again. If it keeps failing, restart the app.');
+              alert("Couldn't remove the PIN", 'Try again. If it keeps failing, restart the app.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  // A PIN can't be recovered, so a forgotten one means erasing the profile. Never offered for the open profile.
+  const handleForgotPin = (profile: Profile) => {
+    closePinDialog();
+    alert(
+      'Erase this profile?',
+      `A forgotten PIN can't be recovered. ${profile.name} and all its notes will be erased from this device. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Erase profile',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await eraseForgottenProfile(profile.id);
+              await loadProfiles();
+              setSnackbar(`${profile.name} erased`);
+            } catch (error) {
+              alert("Couldn't erase the profile", 'Try again. If it keeps failing, restart the app.');
             }
           },
         },
@@ -139,7 +184,7 @@ const SettingsScreen: React.FC = () => {
     if (profile.id === activeId) return;
     try {
       if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
-        setPinDialog({ profile, pin: '', pinConfirmation: '', mode: 'unlock', open: true });
+        openPinDialog(profile, 'unlock');
         return;
       }
       const enteredPin = pin ?? '';
@@ -155,10 +200,19 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  const handleDeleteProfile = (profile: Profile) => {
+  const handleDeleteProfile = async (profile: Profile, pin?: string) => {
+    if (pin === undefined && isProtected(profile)) {
+      openPinDialog(profile, 'delete');
+      return;
+    }
+    if (pin !== undefined && !(await verifyProfilePin(profile.id, pin))) {
+      alert('Incorrect PIN', 'Enter the four-digit PIN for this profile.');
+      return;
+    }
+    closePinDialog();
     alert(
       'Delete profile?',
-      `"${profile.name}" and all its notes will be deleted from this device. This can't be undone. Switch to it and export its notes first if you want a backup.`,
+      `${profile.name} and its notes move to the bin. You can restore it from Settings for ${BIN_DAYS} days.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -166,8 +220,42 @@ const SettingsScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteProfile(profile.id);
+              await moveProfileToBin(profile.id, pin);
               await loadProfiles();
+              setSnackbar('Profile deleted');
+            } catch (error) {
+              alert("Couldn't delete the profile", 'Try again. If it keeps failing, restart the app.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleRestoreProfile = async (profile: Profile) => {
+    try {
+      await restoreProfile(profile.id);
+      await loadProfiles();
+      setSnackbar('Profile restored');
+    } catch (error) {
+      alert("Couldn't restore the profile", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
+  const handleDeleteProfileForever = (profile: Profile) => {
+    alert(
+      'Delete profile forever?',
+      `${profile.name} and all its notes are erased now. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete forever',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteProfileForever(profile.id);
+              await loadProfiles();
+              setSnackbar('Profile deleted forever');
             } catch (error) {
               alert("Couldn't delete the profile", 'Try again. If it keeps failing, restart the app.');
             }
@@ -231,6 +319,26 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+  const digits = (value: string) => value.replace(/\D/g, '').slice(0, 4);
+  const changingPin = pinDialog?.mode === 'manage' && isProtected(pinDialog.profile);
+  const pinName = pinDialog?.profile.name ?? '';
+  const { pinTitle, pinMessage, pinAction } = {
+    unlock: { pinTitle: 'Enter profile PIN', pinMessage: `Enter the four-digit PIN for ${pinName}.`, pinAction: 'Unlock' },
+    makeDefault: { pinTitle: 'Enter PIN to make default', pinMessage: `Enter the four-digit PIN for ${pinName} to make it the default profile.`, pinAction: 'Make default' },
+    delete: { pinTitle: 'Enter PIN to delete', pinMessage: `Enter the four-digit PIN for ${pinName} to delete it.`, pinAction: 'Delete profile' },
+    manage: changingPin
+      ? { pinTitle: 'Change profile PIN', pinMessage: `Enter the current PIN for ${pinName}, then the new one.`, pinAction: 'Save PIN' }
+      : { pinTitle: 'Set profile PIN', pinMessage: `${pinName} will ask for this PIN when you open it.`, pinAction: 'Save PIN' },
+  }[pinDialog?.mode ?? 'unlock'];
+  const submitPin = () => {
+    if (!pinDialog) return;
+    const { profile, pin, mode } = pinDialog;
+    if (mode === 'manage') handleSavePin();
+    else if (mode === 'makeDefault') handleMakeDefault(profile, pin);
+    else if (mode === 'delete') handleDeleteProfile(profile, pin);
+    else handleSwitch(profile, pin);
+  };
+
   const chevron = <List.Icon icon="chevron-right" color={theme.colors.onSurfaceVariant} />;
   const sectionTitle = (title: string) => (
     <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>{title}</Text>
@@ -275,7 +383,7 @@ const SettingsScreen: React.FC = () => {
                   <IconButton
                     icon={protectedProfileIds.includes(p.id) ? 'lock-outline' : 'lock-open-outline'}
                     accessibilityLabel={protectedProfileIds.includes(p.id) ? `Change or reset PIN for ${p.name}` : `Set PIN for ${p.name}`}
-                    onPress={() => openPinManager(p)}
+                    onPress={() => openPinDialog(p, 'manage')}
                   />
                   <IconButton
                     icon={p.id === defaultId ? 'star' : 'star-outline'}
@@ -305,6 +413,24 @@ const SettingsScreen: React.FC = () => {
             isFirst={false}
             isLast
           />
+
+          {binnedProfiles.length > 0 && sectionTitle('Deleted profiles')}
+          {binnedProfiles.map((p, i) => (
+            <GroupedRow
+              key={p.id}
+              title={p.name}
+              description={profileTimeLeft(p.deletedAt!)}
+              icon="account-remove-outline"
+              right={
+                <View style={styles.rowActions}>
+                  <IconButton icon="restore" accessibilityLabel={`Restore ${p.name}`} onPress={() => handleRestoreProfile(p)} />
+                  <IconButton icon="delete-forever-outline" accessibilityLabel={`Delete ${p.name} forever`} onPress={() => handleDeleteProfileForever(p)} />
+                </View>
+              }
+              isFirst={i === 0}
+              isLast={i === binnedProfiles.length - 1}
+            />
+          ))}
 
           {sectionTitle('Your notes')}
           <GroupedRow
@@ -419,47 +545,57 @@ const SettingsScreen: React.FC = () => {
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={!!pinDialog?.open} onDismiss={closePinDialog}>
-          <Dialog.Title>{pinDialog?.mode === 'manage' ? (protectedProfileIds.includes(pinDialog.profile.id) ? 'Change profile PIN' : 'Set profile PIN') : pinDialog?.mode === 'makeDefault' ? 'Enter PIN to make default' : 'Enter profile PIN'}</Dialog.Title>
+          <Dialog.Title>{pinTitle}</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">
-              {pinDialog?.mode === 'manage'
-                ? 'A PIN is optional. Leave this dialog open to set or change it.'
-                : pinDialog?.mode === 'makeDefault'
-                ? `Enter the four-digit PIN for ${pinDialog.profile.name} to make it the default profile.`
-                : `Enter the four-digit PIN for ${pinDialog?.profile.name}.`}
-            </Text>
+            <Text variant="bodyMedium">{pinMessage}</Text>
+            {changingPin && (
+              <TextInput
+                mode="outlined"
+                label="Current PIN"
+                value={pinDialog.currentPin}
+                onChangeText={currentPin => setPinDialog(d => d && { ...d, currentPin: digits(currentPin) })}
+                keyboardType="number-pad"
+                secureTextEntry
+                autoFocus
+                style={styles.dialogInput}
+              />
+            )}
             <TextInput
               mode="outlined"
-              label="PIN"
+              label={changingPin ? 'New PIN' : 'PIN'}
               value={pinDialog?.pin ?? ''}
-              onChangeText={pin => setPinDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
+              onChangeText={pin => setPinDialog(d => d && { ...d, pin: digits(pin) })}
               keyboardType="number-pad"
               secureTextEntry
-              autoFocus
-              onSubmitEditing={() => pinDialog && (pinDialog.mode === 'manage' ? handleSavePin() : pinDialog.mode === 'makeDefault' ? handleMakeDefault(pinDialog.profile, pinDialog.pin) : handleSwitch(pinDialog.profile, pinDialog.pin))}
+              autoFocus={!changingPin}
+              onSubmitEditing={submitPin}
               style={styles.dialogInput}
             />
             {pinDialog?.mode === 'manage' && (
               <TextInput
                 mode="outlined"
-                label="Confirm PIN"
+                label={changingPin ? 'Confirm new PIN' : 'Confirm PIN'}
                 value={pinDialog.pinConfirmation}
-                onChangeText={pinConfirmation => setPinDialog(d => d && { ...d, pinConfirmation: pinConfirmation.replace(/\D/g, '').slice(0, 4) })}
+                onChangeText={pinConfirmation => setPinDialog(d => d && { ...d, pinConfirmation: digits(pinConfirmation) })}
                 keyboardType="number-pad"
                 secureTextEntry
                 onSubmitEditing={handleSavePin}
                 style={styles.dialogInput}
               />
             )}
+            {pinDialog && isProtected(pinDialog.profile) && pinDialog.profile.id !== activeId && (
+              <Button onPress={() => handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>Forgot PIN?</Button>
+            )}
           </Dialog.Content>
           <Dialog.Actions>
-            {pinDialog?.mode === 'manage' && protectedProfileIds.includes(pinDialog.profile.id) && <Button onPress={handleResetPin} textColor={theme.colors.error}>Reset PIN</Button>}
+            {changingPin && <Button onPress={handleRemovePin} disabled={pinDialog.currentPin.length !== 4} textColor={theme.colors.error}>Remove PIN</Button>}
             <Button onPress={closePinDialog}>Cancel</Button>
-            {pinDialog?.mode === 'manage'
-              ? <Button onPress={handleSavePin} disabled={pinDialog.pin.length !== 4 || pinDialog.pin !== pinDialog.pinConfirmation}>Save PIN</Button>
-              : pinDialog?.mode === 'makeDefault'
-              ? <Button onPress={() => pinDialog && handleMakeDefault(pinDialog.profile, pinDialog.pin)} disabled={pinDialog.pin.length !== 4}>Make default</Button>
-              : <Button onPress={() => pinDialog && handleSwitch(pinDialog.profile, pinDialog.pin)} disabled={pinDialog?.pin.length !== 4}>Unlock</Button>}
+            <Button
+              onPress={submitPin}
+              disabled={!pinDialog || pinDialog.pin.length !== 4 || (pinDialog.mode === 'manage' && (pinDialog.pin !== pinDialog.pinConfirmation || (changingPin && pinDialog.currentPin.length !== 4)))}
+            >
+              {pinAction}
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </KeyboardSafePortal>
@@ -486,6 +622,10 @@ const styles = StyleSheet.create({
   },
   dialogInput: {
     marginTop: space.md,
+  },
+  forgotPin: {
+    alignSelf: 'flex-start',
+    marginTop: space.sm,
   },
   sectionTitle: {
     marginTop: space.xl,

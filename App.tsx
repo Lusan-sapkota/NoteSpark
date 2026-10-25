@@ -6,7 +6,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { getDefaultProfile, getAllProfilesNoteContents, hasProfilePin, renameProfile, setDefaultProfile, setProfilePin, switchProfile } from './src/storage/profiles';
+import { eraseForgottenProfile, getDefaultProfile, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, renameProfile, setDefaultProfile, setProfilePin, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
 import { ActivityIndicator, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,16 +26,23 @@ const AppContent = () => {
   const [lockedProfile, setLockedProfile] = useState<{ id: string; name: string } | null>(null);
   const [fontsLoaded, fontError] = useFonts(fontFiles);
 
+  // Opens the default profile, or shows the unlock screen when it has a PIN.
+  const openDefaultProfile = async () => {
+    const defaultProfile = await getDefaultProfile();
+    if (await hasProfilePin(defaultProfile.id)) {
+      setLockedProfile(defaultProfile);
+    } else {
+      await switchProfile(defaultProfile.id);
+      setLockedProfile(null);
+    }
+  };
+
   useEffect(() => {
     const setupApp = async () => {
       try {
         await setupNotificationWorker();
-        const defaultProfile = await getDefaultProfile();
-        if (await hasProfilePin(defaultProfile.id)) {
-          setLockedProfile(defaultProfile);
-        } else {
-          await switchProfile(defaultProfile.id);
-        }
+        await openDefaultProfile();
+        await purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
         getAllProfilesNoteContents().then(pruneImageCache).catch(() => {});
         setDbInitialized(true);
         const onboarded = await AsyncStorage.getItem('onboarded');
@@ -92,6 +99,12 @@ const AppContent = () => {
     }
   };
 
+  const eraseLockedProfile = async () => {
+    if (!lockedProfile) return;
+    await eraseForgottenProfile(lockedProfile.id);
+    await openDefaultProfile();
+  };
+
   // Font load failure falls back to the system font instead of blocking the app.
   const ready = dbInitialized && showOnboarding !== null && (fontsLoaded || !!fontError);
 
@@ -105,7 +118,7 @@ const AppContent = () => {
               <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
           ) : lockedProfile ? (
-            <ProfileUnlockScreen profileName={lockedProfile.name} onUnlock={unlockDefaultProfile} />
+            <ProfileUnlockScreen profileName={lockedProfile.name} onUnlock={unlockDefaultProfile} onForgotPin={eraseLockedProfile} />
           ) : showOnboarding ? (
             <OnboardingScreen onFinish={handleFinishOnboarding} onProfileSetup={handleFinishProfileSetup} />
           ) : (

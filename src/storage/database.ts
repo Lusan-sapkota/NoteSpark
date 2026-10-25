@@ -6,6 +6,8 @@ export const dbName = (profileId: string) => (profileId === 'default' ? 'notespa
 export let db = SQLite.openDatabaseSync(dbName('default'));
 let openName = dbName('default');
 
+export const isProfileDatabaseOpen = (profileId: string) => dbName(profileId) === openName;
+
 export const openProfileDatabase = async (profileId: string): Promise<void> => {
   const name = dbName(profileId);
   const next = name === openName ? db : SQLite.openDatabaseSync(name);
