@@ -356,16 +356,26 @@ const HomeScreen: React.FC = () => {
         />
         <View style={styles.chips}>
           {typeFilters.map(f => (
-            <Chip
-              key={f.value}
-              mode="outlined"
-              selected={filter === f.value}
-              showSelectedOverlay={false}
-              onPress={() => setFilter(f.value)}
-              accessibilityState={{ selected: filter === f.value }}
-            >
-              {f.label}
-            </Chip>
+            <View key={f.value} style={styles.chip}>
+              {/* Selected is filled with no outline; a check mark doesn't fit at a quarter of the row. */}
+              <Chip
+                mode={filter === f.value ? 'flat' : 'outlined'}
+                selected={filter === f.value}
+                showSelectedCheck={false}
+                showSelectedOverlay={false}
+                onPress={() => setFilter(f.value)}
+                accessibilityState={{ selected: filter === f.value }}
+                style={filter === f.value && { backgroundColor: theme.colors.secondaryContainer }}
+                textStyle={[
+                  theme.fonts.labelMedium,
+                  styles.chipText,
+                  { color: filter === f.value ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant },
+                ]}
+                maxFontSizeMultiplier={1.5}
+              >
+                {f.label}
+              </Chip>
+            </View>
           ))}
         </View>
       </View>
@@ -429,8 +439,17 @@ const styles = StyleSheet.create({
   },
   chips: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     gap: space.sm,
+  },
+  // Equal widths across the row.
+  chip: {
+    flex: 1,
+  },
+  chipText: {
+    flex: 1,
+    textAlign: 'center',
+    marginLeft: space.sm,
+    marginRight: space.sm,
   },
   loading: {
     flex: 1,
