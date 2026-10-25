@@ -112,6 +112,18 @@ export const setDefaultProfile = async (id: string, pin?: string): Promise<void>
   ]);
 };
 
+// A protected profile asks for its PIN again after NoteSpark has been in the background this long.
+// ponytail: locks the screen only; the database stays open (and decrypted) until the app is closed.
+const autoLockKey = 'autoLockMinutes';
+export const AUTO_LOCK_MINUTES = [0, 1, 5, 15];
+
+export const getAutoLockMinutes = async (): Promise<number> => {
+  const stored = await AsyncStorage.getItem(autoLockKey).catch(() => null);
+  return stored !== null && AUTO_LOCK_MINUTES.includes(Number(stored)) ? Number(stored) : 1;
+};
+
+export const setAutoLockMinutes = (minutes: number) => AsyncStorage.setItem(autoLockKey, String(minutes));
+
 // After MAX_TRIES wrong PINs the profile locks for 30 s, doubling per further miss up to 15 min.
 const MAX_TRIES = 5;
 const attemptsKey = 'pinAttempts';

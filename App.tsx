@@ -1,14 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer, StackActions } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
-import { Button, PaperProvider, Text } from 'react-native-paper';
+import { Button, PaperProvider, Portal, Text } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { eraseForgottenProfile, getActiveProfile, getDefaultProfile, syncProfileEncryption, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
+import { eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, getDefaultProfile, syncProfileEncryption, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
-import { ActivityIndicator, AppState, Linking, View, StyleSheet } from 'react-native';
+import { ActivityIndicator, AppState, BackHandler, Linking, View, StyleSheet } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import { sendAppNotification } from './src/utils/notifications';
@@ -76,6 +76,38 @@ const AppContent = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [lockedProfile, setLockedProfile] = useState<{ id: string; name: string } | null>(null);
   const [unreadableProfile, setUnreadableProfile] = useState<{ id: string; name: string } | null>(null);
+  // A protected profile locked again after time in the background. Drawn over the open screens, so whatever
+  // was on them (an unsaved note too) is still there after unlocking.
+  const [relocked, setRelocked] = useState<{ id: string; name: string } | null>(null);
+  const backgroundSince = useRef<number | null>(null);
+  const lockState = useRef({ blocked: true, relocked: false });
+  lockState.current = { blocked: !dbInitialized || !!lockedProfile || !!unreadableProfile, relocked: !!relocked };
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', async state => {
+      if (lockState.current.blocked || lockState.current.relocked) {
+        backgroundSince.current = null;
+        return;
+      }
+      if (state === 'background') {
+        backgroundSince.current = Date.now();
+        return;
+      }
+      if (state !== 'active' || backgroundSince.current === null) return;
+      const away = Date.now() - backgroundSince.current;
+      backgroundSince.current = null;
+      try {
+        const active = await getActiveProfile();
+        if ((await hasProfilePin(active.id)) && away >= (await getAutoLockMinutes()) * 60000) setRelocked(active);
+      } catch {}
+    });
+    return () => sub.remove();
+  }, []);
+  // Back must not reach the screens under the lock.
+  useEffect(() => {
+    if (!relocked) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => true);
+    return () => sub.remove();
+  }, [relocked]);
   const [fontsLoaded, fontError] = useFonts(fontFiles);
   // Share to NoteSpark: opens a new note once the navigator (so an unlocked profile) is ready.
   const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent({ disabled: isRunningInExpoGo() });
@@ -235,6 +267,25 @@ const AppContent = () => {
     await openDefaultProfile();
   };
 
+  const unlockRelocked = async (pin: string): Promise<boolean> => {
+    if (!relocked) return false;
+    try {
+      await switchProfile(relocked.id, pin);
+      setRelocked(null);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const eraseRelockedProfile = async () => {
+    if (!relocked) return;
+    await eraseForgottenProfile(relocked.id);
+    setRelocked(null);
+    if (appNavigation.isReady()) appNavigation.reset({ index: 0, routes: [{ name: 'Home' }] });
+    await openDefaultProfile();
+  };
+
   const eraseUnreadableProfile = async () => {
     if (!unreadableProfile) return;
     await eraseForgottenProfile(unreadableProfile.id);
@@ -261,6 +312,16 @@ const AppContent = () => {
             <OnboardingScreen onFinish={handleFinishOnboarding} />
           ) : (
             <AppNavigator onReady={() => setNavReady(true)} />
+          )}
+          {relocked && (
+            <Portal>
+              {/* Its own dialogs, so Forgot PIN's confirmation shows above the lock. */}
+              <DialogProvider>
+                <View style={StyleSheet.absoluteFill}>
+                  <ProfileUnlockScreen profileId={relocked.id} profileName={relocked.name} onUnlock={unlockRelocked} onForgotPin={eraseRelockedProfile} />
+                </View>
+              </DialogProvider>
+            </Portal>
           )}
         </DialogProvider>
       </PaperProvider>

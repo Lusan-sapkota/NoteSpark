@@ -55,7 +55,7 @@ const ProfileUnlockScreen = ({ profileId, profileName, onUnlock, onForgotPin }: 
       <View style={styles.column}>
         <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>Unlock {profileName}</Text>
         <Text variant="bodyLarge" style={[styles.body, { color: theme.colors.onSurfaceVariant }]}>
-          Enter the four-digit PIN for the default profile.
+          Enter the four-digit PIN for this profile.
         </Text>
         <TextInput
           mode="outlined"
