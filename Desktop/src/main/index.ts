@@ -42,6 +42,11 @@ const showWindow = () => {
   else { if (window.isMinimized()) window.restore(); window.show(); window.focus(); }
 };
 
+// Software rendering in the main process: no separate GPU process, which would stay alive in the tray
+// (about 125 MB less RAM there). ponytail: revisit if the web UI scrolls badly on low-end CPUs.
+app.disableHardwareAcceleration();
+app.commandLine.appendSwitch('in-process-gpu');
+
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', showWindow);

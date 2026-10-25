@@ -11,11 +11,8 @@
     "start": "electron-vite preview",
     "dist": "electron-vite build && electron-builder --linux AppImage"
   },
-  "dependencies": {
-    "better-sqlite3-multiple-ciphers": "13.0.3",
-    "electron": "45.0.0"
-  },
   "devDependencies": {
+    "electron": "45.0.0",
     "electron-builder": "26.18.0",
     "electron-vite": "6.0.0",
     "typescript": "6.0.3",
@@ -23,5 +20,28 @@
   },
   "allowScripts": {
     "electron-winstaller": false
+  },
+  "homepage": "https://github.com/Lusan-Sapkota/NoteSpark",
+  "build": {
+    "appId": "dev.notespark.desktop",
+    "productName": "NoteSpark",
+    "files": [
+      "out/**",
+      "resources/icon.png"
+    ],
+    "electronLanguages": [
+      "en-US"
+    ],
+    "npmRebuild": false,
+    "asar": true,
+    "publish": null,
+    "linux": {
+      "target": [
+        "AppImage"
+      ],
+      "category": "Office",
+      "icon": "resources/icon.png",
+      "maintainer": "Lusan Sapkota <lusan@aigeeks.dev>"
+    }
   }
 }
