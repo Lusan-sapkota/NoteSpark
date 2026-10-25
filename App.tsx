@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, StackActions } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
@@ -20,6 +20,8 @@ import ProfileUnlockScreen from './src/screens/ProfileUnlockScreen';
 import { runAutoBackupIfDue } from './src/storage/autoBackup';
 import { navigationRef as appNavigation } from './src/navigation/AppNavigator';
 import { Notifications } from './src/utils/notifications';
+import { useShareIntent } from 'expo-share-intent';
+import { isRunningInExpoGo } from 'expo';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
@@ -28,6 +30,20 @@ const AppContent = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [lockedProfile, setLockedProfile] = useState<{ id: string; name: string } | null>(null);
   const [fontsLoaded, fontError] = useFonts(fontFiles);
+  // "Share to NoteSpark": text or a link from another app opens a new note in the open profile. Waits for the
+  // navigator, so a locked profile is unlocked first. Expo Go lacks the native part.
+  const { hasShareIntent, shareIntent, resetShareIntent } = useShareIntent({ disabled: isRunningInExpoGo() });
+  const [navReady, setNavReady] = useState(false);
+  useEffect(() => {
+    if (!hasShareIntent || !navReady || !appNavigation.isReady()) return;
+    const text = (shareIntent.text ?? '').trim();
+    if (text) {
+      const title = shareIntent.meta?.title?.trim() || text.split('\n')[0].slice(0, 60);
+      // push, not navigate: an editor that's already open keeps what's being typed.
+      appNavigation.dispatch(StackActions.push('Editor', { title, text }));
+    }
+    resetShareIntent();
+  }, [hasShareIntent, navReady, shareIntent]);
 
   // Opens the default profile, or shows the unlock screen when it has a PIN.
   const openDefaultProfile = async () => {
@@ -128,7 +144,7 @@ const AppContent = () => {
           ) : showOnboarding ? (
             <OnboardingScreen onFinish={handleFinishOnboarding} />
           ) : (
-            <AppNavigator />
+            <AppNavigator onReady={() => setNavReady(true)} />
           )}
         </DialogProvider>
       </PaperProvider>

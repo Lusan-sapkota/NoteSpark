@@ -22,7 +22,8 @@ export interface NoteVersion {
 export type RootStackParamList = {
   // binnedNoteId: set by the note page after moving a note to the bin; tag: a tag tapped on the note page.
   Home: { binnedNoteId?: number; tag?: string } | undefined;
-  Editor: { noteId?: string; title?: string } | undefined; // title: prefill for a new note (from a [[link]])
+  // title / text: prefill for a new note (from a [[link]], or text shared from another app).
+  Editor: { noteId?: string; title?: string; text?: string } | undefined;
   NoteView: { noteId: string } | undefined;
   Settings: undefined;
   ImportExport: undefined;

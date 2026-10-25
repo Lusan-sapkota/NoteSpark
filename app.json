@@ -2,6 +2,7 @@
   "expo": {
     "name": "NoteSpark",
     "slug": "notespark",
+    "scheme": "notespark",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -64,7 +65,8 @@
       ],
       "expo-asset",
       "onnxruntime-react-native",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-share-intent"
     ],
     "extra": {
       "eas": {

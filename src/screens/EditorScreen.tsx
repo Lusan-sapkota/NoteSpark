@@ -43,7 +43,7 @@ const EditorScreen: React.FC = () => {
   const alert = useAlert();
   const [saving, setSaving] = useState(false);
 
-  const { noteId, title: titleParam } = route.params ?? {};
+  const { noteId, title: titleParam, text: textParam } = route.params ?? {};
 
   const [title, setTitle] = useState<string>('');
   const [content, setContent] = useState<string>('');
@@ -72,7 +72,8 @@ const EditorScreen: React.FC = () => {
     if (!noteId) {
       setIsEditing(false);
       setTitle(titleParam ?? '');
-      setContent('');
+      setContent(textParam ?? '');
+      committed.current = textParam ?? '';
       setIsMarkdown(false);
       setCreatedAt(null);
       setUpdatedAt(null);
@@ -100,7 +101,7 @@ const EditorScreen: React.FC = () => {
       }
     };
     loadNote();
-  }, [noteId, titleParam]);
+  }, [noteId, titleParam, textParam]);
 
   const handleSave = async () => {
     if (saving) return;
