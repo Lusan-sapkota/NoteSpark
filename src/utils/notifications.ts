@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 // Expo Go on Android doesn't ship native parts that expo-notifications loads on import
 // (ExpoTopicSubscriptionModule), so importing it there crashes the app. Load it only outside
 // Expo Go; there, notifications are skipped. Development and store builds are unaffected.
-const Notifications: typeof import('expo-notifications') | null =
+export const Notifications: typeof import('expo-notifications') | null =
   Platform.OS === 'android' && isRunningInExpoGo() ? null : require('expo-notifications');
 
 export async function setupNotificationWorker() {

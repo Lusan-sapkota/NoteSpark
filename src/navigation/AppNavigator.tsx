@@ -1,5 +1,5 @@
 import React from 'react';
-import { NavigationContainer } from '@react-navigation/native';
+import { createNavigationContainerRef, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
@@ -14,14 +14,26 @@ import TasksScreen from '../screens/TasksScreen';
 import BinScreen from '../screens/BinScreen';
 import { useTheme } from '../theme/ThemeContext';
 import { navDarkTheme, navLightTheme } from '../theme/theme';
+import { Notifications } from '../utils/notifications';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
+
+// For opening screens from outside a screen: notification taps, shared text, the app shortcut.
+export const navigationRef = createNavigationContainerRef<RootStackParamList>();
+
+// A reminder tapped while the app was closed: open Tasks once navigation is ready.
+const openLaunchNotification = () => {
+  const response = Notifications?.getLastNotificationResponse();
+  if (response?.notification.request.content.data?.screen !== 'Tasks') return;
+  Notifications?.clearLastNotificationResponse();
+  navigationRef.navigate('Tasks');
+};
 
 const AppNavigator: React.FC = () => {
   const { theme, isDarkMode } = useTheme();
 
   return (
-    <NavigationContainer theme={isDarkMode ? navDarkTheme : navLightTheme}>
+    <NavigationContainer ref={navigationRef} onReady={openLaunchNotification} theme={isDarkMode ? navDarkTheme : navLightTheme}>
       <Stack.Navigator
         initialRouteName="Home"
         screenOptions={{

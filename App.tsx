@@ -18,6 +18,8 @@ import { DialogProvider } from './src/components/DialogProvider';
 import { pruneImageCache } from './src/utils/imageCache';
 import ProfileUnlockScreen from './src/screens/ProfileUnlockScreen';
 import { runAutoBackupIfDue } from './src/storage/autoBackup';
+import { navigationRef as appNavigation } from './src/navigation/AppNavigator';
+import { Notifications } from './src/utils/notifications';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
@@ -58,7 +60,14 @@ const AppContent = () => {
     const sub = AppState.addEventListener('change', state => {
       if (state === 'active') runAutoBackupIfDue().catch(() => {});
     });
-    return () => sub.remove();
+    // A task reminder tapped while the app is open goes to Tasks.
+    const tapped = Notifications?.addNotificationResponseReceivedListener(response => {
+      if (response.notification.request.content.data?.screen === 'Tasks' && appNavigation.isReady()) appNavigation.navigate('Tasks');
+    });
+    return () => {
+      sub.remove();
+      tapped?.remove();
+    };
   }, []);
 
   const handleFinishOnboarding = async () => {

@@ -37,7 +37,7 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
   {
     heading: 'Permissions',
     bullets: [
-      "Notifications: to tell you things like an export finishing. These notifications are created on your device; NoteSpark doesn't use push notifications.",
+      "Notifications: to tell you things like an export finishing, and to remind you of tasks on their due date. These notifications are created and scheduled on your device; NoteSpark doesn't use push notifications. Reminders for profiles with a PIN don't show the task text.",
       'Photos: only the images you pick when adding an image to a note.',
       'Files: only the backup file you pick when importing notes.',
       'Internet: only to show images from web addresses that you add to notes.',
