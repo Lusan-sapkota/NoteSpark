@@ -37,4 +37,21 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   const now = new Date().toISOString();
   await db.runAsync("UPDATE notes SET createdAt = ? WHERE createdAt IS NULL OR createdAt = ''", [now]);
   await db.runAsync("UPDATE notes SET updatedAt = ? WHERE updatedAt IS NULL OR updatedAt = ''", [now]);
+  await initSearchIndex(db);
+};
+
+// Search by meaning: one 384-number vector per note (sqlite-vec) and the updatedAt it was made from.
+// sqlite-vec is only in builds made with withSQLiteVecExtension (not Expo Go); without it the tables are skipped.
+const initSearchIndex = async (db: SQLite.SQLiteDatabase): Promise<void> => {
+  const vec = SQLite.bundledExtensions['sqlite-vec'];
+  if (!vec) return;
+  try {
+    await db.loadExtensionAsync(vec.libPath, vec.entryPoint);
+    await db.execAsync(
+      `CREATE VIRTUAL TABLE IF NOT EXISTS note_vectors USING vec0(embedding float[384] distance_metric=cosine);
+       CREATE TABLE IF NOT EXISTS note_vector_state (noteId INTEGER PRIMARY KEY, updatedAt TEXT NOT NULL);`
+    );
+  } catch (error) {
+    console.warn('Search by meaning is unavailable:', error);
+  }
 };

@@ -9,6 +9,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, deleteNote, setNotePinned } from '../storage/notes';
 import { getActiveProfile, getProfiles, Profile, switchProfile } from '../storage/profiles';
+import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
@@ -33,7 +34,9 @@ const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
-  const [searchType, setSearchType] = useState<'all' | 'title' | 'content'>('all');
+  const [searchType, setSearchType] = useState<'all' | 'title' | 'content' | 'meaning'>('all');
+  // Note ids from search by meaning, closest first; null while not searching that way or if it failed.
+  const [meaningIds, setMeaningIds] = useState<number[] | null>(null);
   const [filterMarkdown, setFilterMarkdown] = useState<'all' | 'markdown' | 'text'>('all');
   const [sortType, setSortType] = useState<'edited' | 'created'>('edited');
   const [optionsVisible, setOptionsVisible] = useState(false);
@@ -53,6 +56,7 @@ const HomeScreen: React.FC = () => {
       const fetchedNotes = await getNotes();
       setNotes(fetchedNotes);
       setLoading(false);
+      syncSearchIndex().catch(error => console.warn('Search index update failed:', error));
     } catch (error) {
       setLoading(false);
       console.error('Failed to load notes:', error);
@@ -88,10 +92,33 @@ const HomeScreen: React.FC = () => {
     setRefreshing(false);
   };
 
+  // Search by meaning runs the model, so it waits until typing pauses.
+  useEffect(() => {
+    const query = searchText.trim();
+    if (searchType !== 'meaning' || !query) {
+      setMeaningIds(null);
+      return;
+    }
+    let current = true;
+    const timer = setTimeout(async () => {
+      const ids = await searchByMeaning(query);
+      if (current) setMeaningIds(ids);
+    }, 300);
+    return () => {
+      current = false;
+      clearTimeout(timer);
+    };
+  }, [searchText, searchType, notes]);
+
   const filteredNotes = useMemo(() => {
     let filtered = notes;
     if (filterMarkdown !== 'all') {
       filtered = filtered.filter(n => filterMarkdown === 'markdown' ? n.isMarkdown : !n.isMarkdown);
+    }
+    // Closest meaning first; pins don't reorder these results.
+    if (searchType === 'meaning' && searchText.trim() && meaningIds) {
+      const byId = new Map(filtered.map(n => [n.id, n]));
+      return meaningIds.map(id => byId.get(id)).filter((n): n is Note => !!n);
     }
     if (searchText.trim()) {
       const text = searchText.trim().toLowerCase();
@@ -115,7 +142,7 @@ const HomeScreen: React.FC = () => {
       }
     });
     return filtered;
-  }, [notes, searchText, searchType, filterMarkdown, sortType]);
+  }, [notes, searchText, searchType, filterMarkdown, sortType, meaningIds]);
 
   const handleNotePress = useCallback((noteId: number) => {
     navigation.navigate('NoteView', { noteId: noteId.toString() });
@@ -271,7 +298,7 @@ const HomeScreen: React.FC = () => {
 
       <View style={[styles.controls, { backgroundColor: elevated ? theme.colors.elevation.level2 : theme.colors.background }]}>
         <Searchbar
-          placeholder="Search notes"
+          placeholder={searchType === 'meaning' ? 'Search by meaning' : 'Search notes'}
           value={searchText}
           onChangeText={setSearchText}
           style={{ backgroundColor: theme.colors.surfaceContainerHigh }}
@@ -314,6 +341,13 @@ const HomeScreen: React.FC = () => {
                 trailingIcon={searchType === 'content' ? 'check' : undefined}
                 onPress={() => { setSearchType('content'); setOptionsVisible(false); }}
               />
+              {isMeaningSearchAvailable() && (
+                <Menu.Item
+                  title="Search by meaning"
+                  trailingIcon={searchType === 'meaning' ? 'check' : undefined}
+                  onPress={() => { setSearchType('meaning'); setOptionsVisible(false); }}
+                />
+              )}
             </Menu>
           )}
         />

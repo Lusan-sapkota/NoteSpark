@@ -21,7 +21,12 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite",
+      [
+        "expo-sqlite",
+        {
+          "withSQLiteVecExtension": true
+        }
+      ],
       "expo-font",
       [
         "expo-notifications",
@@ -55,7 +60,9 @@
       [
         "./plugins/withAppCategory",
         "productivity"
-      ]
+      ],
+      "expo-asset",
+      "onnxruntime-react-native"
     ],
     "extra": {
       "eas": {

@@ -16,6 +16,7 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
     heading: 'What NoteSpark stores',
     bullets: [
       'Your notes: the title, text, format, whether they are pinned, and the dates they were created and edited. They are kept in a database on your device, one for each profile.',
+      'A search index: for search by meaning, each note is turned into a list of numbers by a small model that is part of the app and runs on your device. The index is kept in the same database as your notes.',
       "Images you add to a note aren't copied or uploaded. The note keeps a link to the image file on your device.",
       "Your profile names, which profile is open, your theme choice, whether you've finished the welcome screens, and a list of your last 20 imports and exports. These are also kept on your device.",
     ],
