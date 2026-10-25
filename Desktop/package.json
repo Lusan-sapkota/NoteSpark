@@ -12,6 +12,8 @@
     "dist": "electron-vite build && electron-builder --linux AppImage"
   },
   "devDependencies": {
+    "@types/react": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
     "electron": "45.0.0",
     "electron-builder": "26.18.0",
     "electron-vite": "6.0.0",
@@ -43,5 +45,13 @@
       "icon": "resources/icon.png",
       "maintainer": "Lusan Sapkota <lusan@aigeeks.dev>"
     }
+  },
+  "dependencies": {
+    "@expo/vector-icons": "15.1.1",
+    "better-sqlite3-multiple-ciphers": "13.0.3",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native-paper": "5.15.3",
+    "react-native-web": "0.21.4"
   }
 }

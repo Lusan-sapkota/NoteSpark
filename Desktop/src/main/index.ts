@@ -61,6 +61,15 @@ else {
     ses.setPermissionRequestHandler((_wc, _permission, done) => done(false));
     ses.webRequest.onBeforeRequest((details, done) => done({ cancel: !isAppUrl(details.url) && !details.url.startsWith('ws://localhost') }));
 
+    // Read-only list for the UI spike. The native SQLite module loads only when the list is first asked for.
+    ipcMain.handle('notes:list', async () => {
+      const { default: Database } = await import('better-sqlite3-multiple-ciphers');
+      const db = new Database(process.env.NOTESPARK_DB ?? join(app.getPath('userData'), 'notes.db'), { readonly: true, fileMustExist: true });
+      try {
+        const rows = db.prepare('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY isPinned DESC, updatedAt DESC').all() as Record<string, unknown>[];
+        return rows.map(r => ({ ...r, isMarkdown: !!r.isMarkdown, isPinned: !!r.isPinned, isArchived: !!r.isArchived }));
+      } finally { db.close(); }
+    });
     ipcMain.handle('theme:get', () => nativeTheme.themeSource);
     ipcMain.handle('theme:set', (_e, mode: unknown) => {
       if (mode === 'light' || mode === 'dark' || mode === 'system') nativeTheme.themeSource = mode;
