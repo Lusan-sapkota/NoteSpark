@@ -2,7 +2,7 @@ import React from 'react';
 import { StyleSheet, View } from 'react-native';
 import { List } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
-import { groupCorners } from '../theme/theme';
+import { groupCorners, space } from '../theme/theme';
 
 interface GroupedRowProps {
   title: string;
@@ -37,7 +37,7 @@ const GroupedRow: React.FC<GroupedRowProps> = ({ title, description, icon, left,
         descriptionNumberOfLines={3}
         titleStyle={danger && { color: theme.colors.error }}
         left={left ? props => <View style={[props.style, styles.left]}>{left}</View> : icon ? props => <List.Icon {...props} icon={icon} color={color} /> : undefined}
-        right={right ? () => right : undefined}
+        right={right ? () => <View style={styles.right}>{right}</View> : undefined}
         onPress={onPress}
         disabled={disabled}
         accessibilityRole={onPress ? 'button' : undefined}
@@ -55,6 +55,11 @@ const styles = StyleSheet.create({
   },
   left: {
     justifyContent: 'center',
+  },
+  // Keeps a switch or chevron clear of wrapped text, centred on the row.
+  right: {
+    alignSelf: 'center',
+    marginLeft: space.md,
   },
 });
 
