@@ -2,14 +2,13 @@ import React, { useCallback, useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
+import { Button, Dialog, IconButton, List, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
 import { addProfile, deleteProfile, getActiveProfile, getProfiles, Profile, renameProfile, switchProfile } from '../storage/profiles';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
-import Menu from '../components/Menu';
 import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -24,7 +23,6 @@ const SettingsScreen: React.FC = () => {
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [profiles, setProfiles] = useState<Profile[]>([]);
-  const [deleteMenuVisible, setDeleteMenuVisible] = useState(false);
   const [deleteMode, setDeleteMode] = useState<'bin' | 'forever'>('bin');
   const [snackbar, setSnackbar] = useState('');
   const [undoBatch, setUndoBatch] = useState<string | null>(null);
@@ -225,7 +223,7 @@ const SettingsScreen: React.FC = () => {
             isFirst={false}
             isLast={false}
           />
-          {/* One row whose action can be switched: move everything to the bin, or erase it without the bin. */}
+          {/* The switch decides whether this row moves everything to the bin or erases it without the bin. */}
           <GroupedRow
             title={deleteMode === 'bin' ? 'Move all notes to bin' : 'Delete all notes forever'}
             description={deleteMode === 'bin' ? 'Restorable from Bin for 30 days' : "Skips the bin. Can't be undone."}
@@ -233,34 +231,12 @@ const SettingsScreen: React.FC = () => {
             danger
             onPress={deleteMode === 'bin' ? handleMoveAllToBin : handleDeleteAllForever}
             right={
-              <View style={styles.modeSwitch}>
-                <View style={[styles.modeDivider, { backgroundColor: theme.colors.outlineVariant }]} />
-                <Menu
-                  visible={deleteMenuVisible}
-                  onDismiss={() => setDeleteMenuVisible(false)}
-                  anchor={
-                    <IconButton
-                      icon="menu-down"
-                      iconColor={theme.colors.error}
-                      accessibilityLabel="Choose how to delete all notes"
-                      onPress={() => setDeleteMenuVisible(true)}
-                    />
-                  }
-                >
-                  <Menu.Item
-                    leadingIcon="delete-sweep-outline"
-                    title="Move all to bin"
-                    trailingIcon={deleteMode === 'bin' ? 'check' : undefined}
-                    onPress={() => { setDeleteMode('bin'); setDeleteMenuVisible(false); }}
-                  />
-                  <Menu.Item
-                    leadingIcon="delete-forever-outline"
-                    title="Delete all forever"
-                    trailingIcon={deleteMode === 'forever' ? 'check' : undefined}
-                    onPress={() => { setDeleteMode('forever'); setDeleteMenuVisible(false); }}
-                  />
-                </Menu>
-              </View>
+              <Switch
+                value={deleteMode === 'forever'}
+                onValueChange={on => setDeleteMode(on ? 'forever' : 'bin')}
+                color={theme.colors.error}
+                accessibilityLabel="Skip the bin"
+              />
             }
             isFirst={false}
             isLast
@@ -338,14 +314,6 @@ const styles = StyleSheet.create({
   rowActions: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  modeSwitch: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  modeDivider: {
-    width: 1,
-    height: 32,
   },
   sectionTitle: {
     marginTop: space.xl,
