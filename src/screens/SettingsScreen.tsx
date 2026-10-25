@@ -65,6 +65,18 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+  const confirmMakeDefault = (profile: Profile) => {
+    if (profile.id === defaultId) return;
+    alert(
+      'Change default profile?',
+      `NoteSpark will open ${profile.name} when it starts.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Make default', onPress: () => handleMakeDefault(profile) },
+      ]
+    );
+  };
+
   const handleMakeDefault = async (profile: Profile, pin?: string) => {
     try {
       if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
@@ -269,9 +281,10 @@ const SettingsScreen: React.FC = () => {
                     icon={p.id === defaultId ? 'star' : 'star-outline'}
                     iconColor={p.id === defaultId ? theme.colors.primary : theme.colors.onSurfaceVariant}
                     accessibilityLabel={p.id === defaultId ? `${p.name} is the default profile` : `Make ${p.name} the default profile`}
-                    onPress={() => handleMakeDefault(p)}
+                    onPress={() => confirmMakeDefault(p)}
                   />
-                  {p.id !== activeId && (
+                  {/* The default profile can't be deleted; make another profile the default first. */}
+                  {p.id !== activeId && p.id !== defaultId && (
                     <IconButton
                       icon="delete-outline"
                       accessibilityLabel={`Delete ${p.name}`}

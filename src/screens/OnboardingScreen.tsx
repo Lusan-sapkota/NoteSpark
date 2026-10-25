@@ -3,6 +3,7 @@ import { View, StyleSheet, Image } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { Button, Text, TextInput } from 'react-native-paper';
+import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, readingWidth, space } from '../theme/theme';
 
@@ -68,7 +69,8 @@ const OnboardingScreen = ({ onFinish, onProfileSetup }: { onFinish: () => void; 
           </Button>
         )}
         {setup ? (
-          <>
+          // The offset keeps the buttons under the last field above the keyboard too.
+          <KeyboardAwareScrollView keyboardShouldPersistTaps="handled" bottomOffset={96}>
             <Text variant="headlineSmall" style={[styles.title, { color: theme.colors.onSurface }]}>Set up your profile</Text>
             <Text variant="bodyLarge" style={[styles.body, { color: theme.colors.onSurfaceVariant }]}>
               Choose a name and optionally protect this profile with a four-digit PIN.
@@ -80,7 +82,7 @@ const OnboardingScreen = ({ onFinish, onProfileSetup }: { onFinish: () => void; 
               <Button mode="text" onPress={() => saveProfile(false)} disabled={saving || !!pin || !!pinConfirmation}>Skip PIN</Button>
               <Button mode="contained" onPress={() => saveProfile(true)} disabled={saving || !name.trim() || pin.length !== 4 || pin !== pinConfirmation}>Save profile</Button>
             </View>
-          </>
+          </KeyboardAwareScrollView>
         ) : (
           <>
             <Animated.View key={step} entering={step === 0 ? undefined : FadeInRight.springify()} style={styles.slide}>
