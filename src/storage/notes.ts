@@ -104,8 +104,20 @@ export const toggleTaskInNote = async (noteId: number, task: Pick<TaskLine, 'lin
   return result.raw;
 };
 
-export const moveAllNotesToBin = async (): Promise<void> => {
-  await db.runAsync('UPDATE notes SET deletedAt = ? WHERE deletedAt IS NULL', [new Date().toISOString()]);
+// Returns the deletion time, which marks this batch for restoreBatch.
+export const moveAllNotesToBin = async (): Promise<string> => {
+  const now = new Date().toISOString();
+  await db.runAsync('UPDATE notes SET deletedAt = ? WHERE deletedAt IS NULL', [now]);
+  return now;
+};
+
+export const restoreBatch = async (deletedAt: string): Promise<void> => {
+  await db.runAsync('UPDATE notes SET deletedAt = NULL WHERE deletedAt = ?', [deletedAt]);
+};
+
+// Erases every note not in the bin, skipping the bin. Notes already in the bin stay there.
+export const deleteAllNotesForever = async (): Promise<void> => {
+  await db.runAsync('DELETE FROM notes WHERE deletedAt IS NULL');
 };
 
 export const exportNotesAsJson = async (): Promise<string> => {

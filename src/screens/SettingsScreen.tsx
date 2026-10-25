@@ -4,11 +4,13 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
-import { moveAllNotesToBin } from '../storage/notes';
+import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
 import { addProfile, deleteProfile, getActiveProfile, getProfiles, Profile, renameProfile, switchProfile } from '../storage/profiles';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
+import Menu from '../components/Menu';
+import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, readingWidth, space } from '../theme/theme';
@@ -22,6 +24,10 @@ const SettingsScreen: React.FC = () => {
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [deleteMenuVisible, setDeleteMenuVisible] = useState(false);
+  const [deleteMode, setDeleteMode] = useState<'bin' | 'forever'>('bin');
+  const [snackbar, setSnackbar] = useState('');
+  const [undoBatch, setUndoBatch] = useState<string | null>(null);
   const [activeId, setActiveId] = useState('');
   // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ editing: Profile | null; name: string; open: boolean } | null>(null);
@@ -83,7 +89,7 @@ const SettingsScreen: React.FC = () => {
     );
   };
 
-  const handleDeleteAll = () => {
+  const handleMoveAllToBin = () => {
     alert(
       'Move all notes to bin?',
       `Every note in the ${activeName} profile moves to the bin. You can restore them from Bin for 30 days.`,
@@ -94,8 +100,8 @@ const SettingsScreen: React.FC = () => {
           style: 'destructive',
           onPress: async () => {
             try {
-              await moveAllNotesToBin();
-              alert('All notes moved to bin', 'Restore them from Bin within 30 days.');
+              setUndoBatch(await moveAllNotesToBin());
+              setSnackbar('All notes moved to bin');
             } catch (error) {
               alert("Couldn't move your notes to the bin", 'Try again. If it keeps failing, restart the app.');
             }
@@ -103,6 +109,38 @@ const SettingsScreen: React.FC = () => {
         },
       ]
     );
+  };
+
+  const handleDeleteAllForever = () => {
+    alert(
+      'Delete all notes forever?',
+      `Every note in the ${activeName} profile is erased now, without going to the bin. Notes already in the bin stay there. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete forever',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteAllNotesForever();
+              setUndoBatch(null);
+              setSnackbar('All notes deleted forever');
+            } catch (error) {
+              alert("Couldn't delete your notes", 'Try again. If it keeps failing, restart the app.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleUndoMoveAll = async () => {
+    if (!undoBatch) return;
+    try {
+      await restoreBatch(undoBatch);
+    } catch (error) {
+      alert("Couldn't restore your notes", 'Open Bin to restore them.');
+    }
   };
 
   const chevron = <List.Icon icon="chevron-right" color={theme.colors.onSurfaceVariant} />;
@@ -187,12 +225,43 @@ const SettingsScreen: React.FC = () => {
             isFirst={false}
             isLast={false}
           />
+          {/* One row whose action can be switched: move everything to the bin, or erase it without the bin. */}
           <GroupedRow
-            title="Move all notes to bin"
-            description={`Every note in ${activeName}`}
-            icon="delete-sweep-outline"
+            title={deleteMode === 'bin' ? 'Move all notes to bin' : 'Delete all notes forever'}
+            description={deleteMode === 'bin' ? 'Restorable from Bin for 30 days' : "Skips the bin. Can't be undone."}
+            icon={deleteMode === 'bin' ? 'delete-sweep-outline' : 'delete-forever-outline'}
             danger
-            onPress={handleDeleteAll}
+            onPress={deleteMode === 'bin' ? handleMoveAllToBin : handleDeleteAllForever}
+            right={
+              <View style={styles.modeSwitch}>
+                <View style={[styles.modeDivider, { backgroundColor: theme.colors.outlineVariant }]} />
+                <Menu
+                  visible={deleteMenuVisible}
+                  onDismiss={() => setDeleteMenuVisible(false)}
+                  anchor={
+                    <IconButton
+                      icon="menu-down"
+                      iconColor={theme.colors.error}
+                      accessibilityLabel="Choose how to delete all notes"
+                      onPress={() => setDeleteMenuVisible(true)}
+                    />
+                  }
+                >
+                  <Menu.Item
+                    leadingIcon="delete-sweep-outline"
+                    title="Move all to bin"
+                    trailingIcon={deleteMode === 'bin' ? 'check' : undefined}
+                    onPress={() => { setDeleteMode('bin'); setDeleteMenuVisible(false); }}
+                  />
+                  <Menu.Item
+                    leadingIcon="delete-forever-outline"
+                    title="Delete all forever"
+                    trailingIcon={deleteMode === 'forever' ? 'check' : undefined}
+                    onPress={() => { setDeleteMode('forever'); setDeleteMenuVisible(false); }}
+                  />
+                </Menu>
+              </View>
+            }
             isFirst={false}
             isLast
           />
@@ -218,6 +287,15 @@ const SettingsScreen: React.FC = () => {
           />
         </View>
       </ScrollView>
+
+      <Snackbar
+        visible={!!snackbar}
+        onDismiss={() => { setSnackbar(''); setUndoBatch(null); }}
+        duration={5000}
+        action={undoBatch ? { label: 'Undo', onPress: handleUndoMoveAll } : undefined}
+      >
+        {snackbar}
+      </Snackbar>
 
       <KeyboardSafePortal>
         <Dialog visible={!!nameDialog?.open} onDismiss={closeNameDialog}>
@@ -260,6 +338,14 @@ const styles = StyleSheet.create({
   rowActions: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  modeSwitch: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  modeDivider: {
+    width: 1,
+    height: 32,
   },
   sectionTitle: {
     marginTop: space.xl,

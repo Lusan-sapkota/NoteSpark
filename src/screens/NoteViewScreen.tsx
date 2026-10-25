@@ -3,7 +3,8 @@ import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking, Nativ
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Appbar, Divider, FAB, Icon, ProgressBar, Snackbar, Text } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Divider, FAB, Icon, ProgressBar, Text } from 'react-native-paper';
+import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { getNoteById, moveNoteToBin, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
