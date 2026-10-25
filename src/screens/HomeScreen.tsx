@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
-import { ActivityIndicator, AnimatedFAB, Appbar, Button, Chip, Dialog, List, Portal, Searchbar, Text, TextInput } from 'react-native-paper';
+import { AnimatedFAB, Appbar, Button, Chip, Dialog, List, Portal, Searchbar, Text, TextInput } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -16,7 +16,7 @@ import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { shape, space } from '../theme/theme';
+import { groupCorners, shape, space } from '../theme/theme';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -52,8 +52,8 @@ const HomeScreen: React.FC = () => {
   const lastOffset = useRef(0);
 
   const loadNotes = async () => {
+    // Only the first load shows the skeleton; reloads on focus keep the current list until the new one arrives.
     try {
-      setLoading(true);
       const [list, active] = await Promise.all([getProfiles(), getActiveProfile()]);
       setProfiles(list);
       setActiveProfile(active);
@@ -396,9 +396,18 @@ const HomeScreen: React.FC = () => {
         </View>
       </View>
 
-      {loading && notes.length === 0 ? (
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" />
+      {loading ? (
+        // Static placeholder cards shaped like NoteItem; no shimmer, since motion only follows user actions.
+        <View style={styles.listContent} accessible accessibilityLabel="Loading notes">
+          {[0, 1, 2, 3].map(i => (
+            <View
+              key={i}
+              style={[styles.skeletonCard, groupCorners(i === 0, i === 3), { backgroundColor: theme.colors.surfaceContainerLow }]}
+            >
+              <View style={[styles.skeletonLine, styles.skeletonTitle, { backgroundColor: theme.colors.surfaceContainerHighest }]} />
+              <View style={[styles.skeletonLine, { backgroundColor: theme.colors.surfaceContainerHighest }]} />
+            </View>
+          ))}
         </View>
       ) : (
         <Animated.FlatList
@@ -520,10 +529,21 @@ const styles = StyleSheet.create({
     marginLeft: space.sm,
     marginRight: space.sm,
   },
-  loading: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+  skeletonCard: {
+    marginHorizontal: space.lg,
+    marginBottom: 2,
+    minHeight: 88,
+    padding: space.lg,
+    gap: space.md,
+  },
+  skeletonLine: {
+    height: 12,
+    width: '80%',
+    borderRadius: shape.extraSmall,
+  },
+  skeletonTitle: {
+    height: 16,
+    width: '45%',
   },
   listContent: {
     flexGrow: 1,
