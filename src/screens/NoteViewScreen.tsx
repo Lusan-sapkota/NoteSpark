@@ -77,8 +77,10 @@ const NoteViewScreen: React.FC = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [related, setRelated] = useState<Note[]>([]);
   const [backlinks, setBacklinks] = useState<Note[]>([]);
-  // Version history dialog: the list, or one version being read.
-  const [history, setHistory] = useState<{ versions: NoteVersion[]; viewing: NoteVersion | null } | null>(null);
+  // Version history dialog: the list, or one version being read. Kept after closing so the content doesn't
+  // change while the dialog fades out.
+  const [history, setHistory] = useState<{ versions: NoteVersion[]; viewing: NoteVersion | null; open: boolean } | null>(null);
+  const closeHistory = () => setHistory(h => h && { ...h, open: false });
   // The top bar shows the title only once the big title has scrolled under it.
   const [titleBottom, setTitleBottom] = useState(0);
   const [titleInBar, setTitleInBar] = useState(false);
@@ -192,7 +194,7 @@ const NoteViewScreen: React.FC = () => {
   const openHistory = async () => {
     if (!note) return;
     try {
-      setHistory({ versions: await getNoteVersions(note.id), viewing: null });
+      setHistory({ versions: await getNoteVersions(note.id), viewing: null, open: true });
     } catch (error) {
       alert("Couldn't load the version history", 'Try again. If it keeps failing, restart the app.');
     }
@@ -203,7 +205,7 @@ const NoteViewScreen: React.FC = () => {
     if (!note) return;
     try {
       await updateNote({ id: note.id, title: version.title, content: version.content, isMarkdown: version.isMarkdown });
-      setHistory(null);
+      closeHistory();
       await reloadNote();
       setSnackbar('Version restored');
     } catch (error) {
@@ -456,7 +458,7 @@ const NoteViewScreen: React.FC = () => {
       />
 
       <Portal>
-        <Dialog visible={!!history} onDismiss={() => setHistory(null)}>
+        <Dialog visible={!!history?.open} onDismiss={closeHistory}>
           <Dialog.Title>{history?.viewing ? history.viewing.title || 'Untitled note' : 'Version history'}</Dialog.Title>
           {history?.viewing ? (
             <>
@@ -496,7 +498,7 @@ const NoteViewScreen: React.FC = () => {
                 </ScrollView>
               </Dialog.ScrollArea>
               <Dialog.Actions>
-                <Button onPress={() => setHistory(null)}>Close</Button>
+                <Button onPress={() => closeHistory()}>Close</Button>
               </Dialog.Actions>
             </>
           )}

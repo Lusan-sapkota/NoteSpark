@@ -197,7 +197,7 @@ const ImportExportScreen: React.FC = () => {
         return;
       }
       await shareNotesAsZip(notes);
-      await addHistory({ type: 'export', date: new Date().toISOString(), count: notes.length, error: '' });
+      await addHistory({ type: 'export', format: 'markdown', date: new Date().toISOString(), count: notes.length, error: '' });
     } catch (error) {
       alert("Couldn't export as Markdown", 'Try again. If it keeps failing, restart the app.');
     }
@@ -482,9 +482,11 @@ const ImportExportScreen: React.FC = () => {
   const historyTitle = (h: any) => {
     const kind = h.type === 'import' ? 'Import' : 'Export';
     const count = typeof h.count === 'number' ? h.count : 0;
+    if (count > 0 && h.format === 'markdown') return `Exported ${count} notes as Markdown`;
     return count > 0 ? `${kind}ed ${count} notes` : `${kind} didn't finish`;
   };
-  const lastBackup = history.find(h => h.type === 'export' && typeof h.count === 'number' && h.count > 0);
+  // Markdown exports can't be restored, so they don't count as a backup.
+  const lastBackup = history.find(h => h.type === 'export' && h.format !== 'markdown' && typeof h.count === 'number' && h.count > 0);
 
   const importing = isImporting || fileImporting;
 
