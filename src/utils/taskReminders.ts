@@ -76,7 +76,7 @@ export const syncTaskReminders = async (): Promise<void> => {
             id: p.id,
             name: p.name,
             locked: await hasProfilePin(p.id),
-            notes: await readProfileNotes(p.id),
+            notes: await readProfileNotes(p.id, { withScratchpad: true }),
           };
         } catch {
           return null;

@@ -3,7 +3,7 @@ import * as Crypto from 'expo-crypto';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
-import { changesNotes, toNote } from './notes';
+import { changesNotes, scratchpadAsNote, toNote } from './notes';
 import { Note } from '../types';
 import { BIN_DAYS, db, dbName, deleteProfileDatabase, forgetProfileKey, getProfileKey, initDatabase, isProfileDatabaseOpen, isProfileEncrypted, openProfileConnection, openProfileDatabase, restoreProfileKey, setProfileEncryption, withDatabaseLock } from './database';
 
@@ -306,12 +306,16 @@ export const eraseForgottenProfile = async (id: string): Promise<Profile> => {
   return next;
 };
 
-// Reads another profile's notes without switching to it.
-export const readProfileNotes = (id: string): Promise<Note[]> =>
+// Reads another profile's notes without switching to it. `withScratchpad` adds its scratchpad as a note (SCRATCHPAD_ID).
+export const readProfileNotes = (id: string, { withScratchpad = false } = {}): Promise<Note[]> =>
   withDatabaseLock(async () => {
     const db = await openProfileConnection(id, { useNewConnection: true });
     try {
-      return (await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY updatedAt DESC')).map(toNote);
+      const notes = (await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY updatedAt DESC')).map(toNote);
+      if (!withScratchpad) return notes;
+      // A profile not opened since the scratchpad was added has no table yet.
+      const pad = await db.getFirstAsync<{ content: string; updatedAt: string }>('SELECT content, updatedAt FROM scratchpad WHERE id = 1').catch(() => null);
+      return pad ? [...notes, scratchpadAsNote(pad.content, pad.updatedAt)] : notes;
     } finally {
       await db.closeAsync();
     }

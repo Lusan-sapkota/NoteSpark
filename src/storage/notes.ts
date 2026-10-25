@@ -86,11 +86,31 @@ export const clearDraft = () => AsyncStorage.removeItem(DRAFT_KEY).catch(() => {
 export const getScratchpad = async (): Promise<string> =>
   (await db.getFirstAsync<{ content: string }>('SELECT content FROM scratchpad WHERE id = 1'))?.content ?? '';
 
-export const saveScratchpad = (content: string) =>
-  db.runAsync(
+// Counts as a notes change, so Home's next load resyncs reminders for the scratchpad's tasks.
+export const saveScratchpad = changesNotes(async (content: string): Promise<void> => {
+  await db.runAsync(
     'INSERT INTO scratchpad (id, content, updatedAt) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET content = excluded.content, updatedAt = excluded.updatedAt',
     [content, new Date().toISOString()]
   );
+});
+
+// The scratchpad's tasks are listed (and ticked) on Tasks under this id; note ids start at 1.
+export const SCRATCHPAD_ID = 0;
+export const scratchpadAsNote = (content: string, updatedAt: string): Note => ({
+  id: SCRATCHPAD_ID,
+  title: 'Scratchpad',
+  content,
+  isMarkdown: false,
+  isPinned: false,
+  isArchived: false,
+  createdAt: updatedAt,
+  updatedAt,
+});
+
+export const getScratchpadNote = async (): Promise<Note> => {
+  const row = await db.getFirstAsync<{ content: string; updatedAt: string }>('SELECT content, updatedAt FROM scratchpad WHERE id = 1');
+  return scratchpadAsNote(row?.content ?? '', row?.updatedAt ?? '');
+};
 
 export const saveNote = changesNotes(async (note: Omit<Note, 'id' | 'isPinned' | 'isArchived'>): Promise<number> => {
   const now = new Date().toISOString();
@@ -205,21 +225,26 @@ export const setNoteArchived = changesNotes(async (id: number, archived: boolean
 });
 
 // The line as written now, and the next due date if the task repeats; null if the line changed meanwhile.
+// Task ticks read and write a note, or the scratchpad for SCRATCHPAD_ID.
+const readTaskSource = (noteId: number) => (noteId === SCRATCHPAD_ID ? getScratchpadNote() : getNoteById(noteId));
+const writeTaskSource = (note: Note, content: string) =>
+  note.id === SCRATCHPAD_ID ? saveScratchpad(content) : updateNote({ ...note, content }, { keepVersion: false });
+
 export const toggleTaskInNote = async (noteId: number, task: Pick<TaskLine, 'line' | 'raw'>): Promise<{ raw: string; next?: string } | null> => {
-  const note = await getNoteById(noteId);
+  const note = await readTaskSource(noteId);
   const result = note && toggleTaskLine(note.content, task);
   if (!note || !result) return null;
-  await updateNote({ ...note, content: result.content }, { keepVersion: false });
+  await writeTaskSource(note, result.content);
   return { raw: result.raw, next: result.next };
 };
 
 // Undo for a tick: puts the line back as it was, if it's still as the tick left it.
 export const restoreTaskLine = async (noteId: number, line: number, current: string, previous: string): Promise<boolean> => {
-  const note = await getNoteById(noteId);
+  const note = await readTaskSource(noteId);
   const lines = note?.content.split('\n');
   if (!note || !lines || lines[line] !== current) return false;
   lines[line] = previous;
-  await updateNote({ ...note, content: lines.join('\n') }, { keepVersion: false });
+  await writeTaskSource(note, lines.join('\n'));
   return true;
 };
 

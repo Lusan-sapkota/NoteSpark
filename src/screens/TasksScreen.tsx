@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Appbar, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import { RootStackParamList } from '../types';
-import { getNotes, restoreTaskLine, toggleTaskInNote } from '../storage/notes';
+import { getNotes, getScratchpadNote, restoreTaskLine, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
 import { dueLabel, extractTasks, formatDue, repeatLabel, Task, today as getToday } from '../utils/tasks';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
@@ -65,8 +65,8 @@ const TasksScreen: React.FC = () => {
 
   const load = useCallback(async () => {
     try {
-      const notes = await getNotes();
-      setTasks(notes.filter(n => !n.isArchived).flatMap(n => extractTasks(n, { done: showDone })));
+      const [notes, pad] = await Promise.all([getNotes(), getScratchpadNote().catch(() => null)]);
+      setTasks([...notes.filter(n => !n.isArchived), ...(pad ? [pad] : [])].flatMap(n => extractTasks(n, { done: showDone })));
     } catch {
       alert("Couldn't load tasks", 'Pull down on the list to try again.');
     }
@@ -111,7 +111,8 @@ const TasksScreen: React.FC = () => {
     load();
   };
 
-  const openNote = (noteId: number) => navigation.navigate('NoteView', { noteId: String(noteId) });
+  const openNote = (noteId: number) =>
+    noteId === SCRATCHPAD_ID ? navigation.navigate('Scratchpad') : navigation.navigate('NoteView', { noteId: String(noteId) });
 
   const renderItem = ({ item }: { item: Row }) => {
     if (item.kind === 'header') {
