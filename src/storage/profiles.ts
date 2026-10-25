@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
 import { toNote } from './notes';
 import { Note } from '../types';
-import { BIN_DAYS, dbName, initDatabase, isProfileDatabaseOpen, openProfileDatabase } from './database';
+import { BIN_DAYS, dbName, forgetProfileKey, initDatabase, isProfileDatabaseOpen, openProfileConnection, openProfileDatabase, setProfileEncryption } from './database';
 
 export interface Profile {
   id: string;
@@ -185,8 +185,26 @@ export const addProfile = async (name: string, pin?: string): Promise<Profile> =
   if (!(await AsyncStorage.getItem(defaultProfileKey))) {
     await AsyncStorage.setItem(defaultProfileKey, firstId);
   }
-  if (pin) await storePin(profile.id, pin);
+  if (pin) {
+    await storePin(profile.id, pin);
+    await encryptAsLocked(profile.id);
+  }
   return profile;
+};
+
+// A profile's notes are encrypted while it has a PIN. A failed conversion leaves the file as it was and is retried
+// at the next start (syncProfileEncryption), so it never blocks setting or removing a PIN.
+const encryptAsLocked = async (id: string) => {
+  try {
+    await setProfileEncryption(id, await hasProfilePin(id));
+  } catch (error) {
+    console.warn('Profile encryption change failed:', error);
+  }
+};
+
+// Startup: brings every profile (binned too) in line, e.g. PINs set before encryption existed.
+export const syncProfileEncryption = async (): Promise<void> => {
+  for (const profile of await getStoredProfiles()) await encryptAsLocked(profile.id);
 };
 
 // Setting, changing or removing (null) a PIN needs the current one when the profile has one.
@@ -195,6 +213,7 @@ export const setProfilePin = async (id: string, pin: string | null, currentPin =
   if (!(await verifyProfilePin(id, currentPin))) throw new Error('Invalid profile PIN');
   await storePin(id, pin);
   if (pin === null) await setUsesBiometrics(id, false);
+  await encryptAsLocked(id);
 };
 
 export const renameProfile = (id: string, name: string): Promise<void> => updateProfile(id, { name });
@@ -214,6 +233,7 @@ export const deleteProfileForever = async (id: string): Promise<void> => {
   await saveAttempt(id, null);
   await setUsesBiometrics(id, false);
   await SQLite.deleteDatabaseAsync(dbName(id)).catch(() => {});
+  await forgetProfileKey(id);
 };
 
 // Run at startup, like the notes bin purge in initDatabase.
@@ -238,7 +258,7 @@ export const eraseForgottenProfile = async (id: string): Promise<Profile> => {
 
 // Notes not in the bin from any profile's database, without switching to it (automatic backups).
 export const readProfileNotes = async (id: string): Promise<Note[]> => {
-  const db = await SQLite.openDatabaseAsync(dbName(id));
+  const db = await openProfileConnection(id);
   try {
     return (await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY updatedAt DESC')).map(toNote);
   } finally {
@@ -250,7 +270,7 @@ export const readProfileNotes = async (id: string): Promise<Note[]> => {
 export const getAllProfilesNoteContents = async (): Promise<string[]> => {
   const contents: string[] = [];
   for (const profile of await getStoredProfiles()) {
-    const db = await SQLite.openDatabaseAsync(dbName(profile.id));
+    const db = await openProfileConnection(profile.id);
     try {
       const rows = await db.getAllAsync<{ content: string }>('SELECT content FROM notes');
       rows.forEach(r => contents.push(String(r.content ?? '')));

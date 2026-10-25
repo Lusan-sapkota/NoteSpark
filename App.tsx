@@ -6,7 +6,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { eraseForgottenProfile, getDefaultProfile, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
+import { eraseForgottenProfile, getDefaultProfile, syncProfileEncryption, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
 import { ActivityIndicator, AppState, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -44,6 +44,8 @@ const AppContent = () => {
     const setupApp = async () => {
       try {
         await setupNotificationWorker();
+        // Before any profile opens, so a protected profile's file isn't in use while it's converted.
+        await syncProfileEncryption();
         await openDefaultProfile();
         await purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
         getAllProfilesNoteContents().then(pruneImageCache).catch(() => {});

@@ -24,7 +24,8 @@
       [
         "expo-sqlite",
         {
-          "withSQLiteVecExtension": true
+          "withSQLiteVecExtension": true,
+          "useSQLCipher": true
         }
       ],
       "expo-font",
