@@ -20,7 +20,7 @@ interface NoteItemProps {
 }
 
 // Plain-text preview: drop images, keep link text, strip Markdown markers, show task boxes as ☐ / ☑.
-const toPreview = (content: string) =>
+export const toPreview = (content: string) =>
   markTaskBoxes(content)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
     .replace(/\[Image: [^\]]+\]/g, '')

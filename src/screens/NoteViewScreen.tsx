@@ -11,6 +11,9 @@ import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import TaskRow from '../components/TaskRow';
+import GroupedRow from '../components/GroupedRow';
+import { toPreview } from '../components/NoteItem';
+import { relatedNotes } from '../storage/semanticSearch';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -66,6 +69,7 @@ const NoteViewScreen: React.FC = () => {
   const [showRaw, setShowRaw] = useState(false);
   const [snackbar, setSnackbar] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
+  const [related, setRelated] = useState<Note[]>([]);
   // The top bar shows the title only once the big title has scrolled under it.
   const [titleBottom, setTitleBottom] = useState(0);
   const [titleInBar, setTitleInBar] = useState(false);
@@ -89,6 +93,11 @@ const NoteViewScreen: React.FC = () => {
       try {
         const fetchedNote = await getNoteById((route.params as any).noteId);
         setNote(fetchedNote);
+        if (fetchedNote) {
+          const ids = await relatedNotes(fetchedNote.id);
+          const notes = await Promise.all(ids.map(id => getNoteById(id).catch(() => null)));
+          setRelated(notes.filter((n): n is Note => !!n));
+        }
       } catch (error) {
         alert("Couldn't load the note", 'Pull down to try again.');
       }
@@ -314,6 +323,24 @@ const NoteViewScreen: React.FC = () => {
             )}
             <NoteImages uris={extractImageUris(content, !note.isMarkdown)} />
           </View>
+
+          {related.length > 0 && (
+            <View>
+              <Divider style={styles.divider} />
+              <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Related notes</Text>
+              {related.map((r, i) => (
+                <GroupedRow
+                  key={r.id}
+                  title={r.title || 'Untitled note'}
+                  description={toPreview(r.content) || undefined}
+                  icon="note-text-outline"
+                  onPress={() => navigation.push('NoteView', { noteId: String(r.id) })}
+                  isFirst={i === 0}
+                  isLast={i === related.length - 1}
+                />
+              ))}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -378,6 +405,10 @@ const styles = StyleSheet.create({
   },
   divider: {
     marginVertical: space.lg,
+  },
+  sectionTitle: {
+    marginBottom: space.sm,
+    marginLeft: space.xs,
   },
   fab: {
     position: 'absolute',

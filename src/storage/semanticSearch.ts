@@ -99,3 +99,25 @@ export const searchByMeaning = async (query: string): Promise<number[] | null> =
     return null;
   }
 };
+
+const RELATED_MAX_DISTANCE = 0.55;
+
+// From the note's stored vector, so no model run. Empty when the note isn't indexed yet or search by meaning is missing.
+export const relatedNotes = async (noteId: number, limit = 5): Promise<number[]> => {
+  if (!isMeaningSearchAvailable()) return [];
+  try {
+    const row = await db.getFirstAsync<{ embedding: Uint8Array }>(
+      'SELECT embedding FROM note_vectors WHERE rowid = CAST(? AS INTEGER)',
+      [noteId]
+    );
+    if (!row) return [];
+    const rows = await db.getAllAsync<{ id: number; distance: number }>(
+      `SELECT rowid AS id, distance FROM note_vectors WHERE embedding MATCH ? AND k = ${limit + 1} ORDER BY distance`,
+      [row.embedding]
+    );
+    return rows.filter(r => r.id !== noteId && r.distance <= RELATED_MAX_DISTANCE).map(r => r.id);
+  } catch (error) {
+    console.warn('Related notes failed:', error);
+    return [];
+  }
+};
