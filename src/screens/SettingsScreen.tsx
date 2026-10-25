@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
-import { addProfile, deleteProfile, getActiveProfile, getProfiles, Profile, renameProfile, switchProfile } from '../storage/profiles';
+import { addProfile, deleteProfile, getActiveProfile, getProfiles, Profile, renameProfile, switchProfile, verifyProfilePin } from '../storage/profiles';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
@@ -28,8 +28,10 @@ const SettingsScreen: React.FC = () => {
   const [undoBatch, setUndoBatch] = useState<string | null>(null);
   const [activeId, setActiveId] = useState('');
   // Kept after closing so the text doesn't change while the dialog fades out.
-  const [nameDialog, setNameDialog] = useState<{ editing: Profile | null; name: string; open: boolean } | null>(null);
+  const [nameDialog, setNameDialog] = useState<{ editing: Profile | null; name: string; pin: string; pinConfirmation: string; open: boolean } | null>(null);
+  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; open: boolean } | null>(null);
   const closeNameDialog = () => setNameDialog(d => d && { ...d, open: false });
+  const closePinDialog = () => setPinDialog(d => d && { ...d, open: false });
 
   const loadProfiles = useCallback(async () => {
     const [list, active] = await Promise.all([getProfiles(), getActiveProfile()]);
@@ -47,7 +49,10 @@ const SettingsScreen: React.FC = () => {
     if (!name) return;
     try {
       if (nameDialog.editing) await renameProfile(nameDialog.editing.id, name);
-      else await addProfile(name);
+      else {
+        if (!nameDialog.pin || nameDialog.pin !== nameDialog.pinConfirmation || !/^\d{4}$/.test(nameDialog.pin)) return;
+        await addProfile(name, nameDialog.pin);
+      }
       closeNameDialog();
       await loadProfiles();
     } catch (error) {
@@ -55,10 +60,20 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  const handleSwitch = async (profile: Profile) => {
+  const handleSwitch = async (profile: Profile, pin?: string) => {
     if (profile.id === activeId) return;
     try {
-      await switchProfile(profile.id);
+      if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
+        setPinDialog({ profile, pin: '', open: true });
+        return;
+      }
+      const enteredPin = pin ?? '';
+      if (!(await verifyProfilePin(profile.id, enteredPin))) {
+        alert('Incorrect PIN', 'Enter the four-digit PIN for this profile.');
+        return;
+      }
+      closePinDialog();
+      await switchProfile(profile.id, enteredPin);
       await loadProfiles();
     } catch (error) {
       alert("Couldn't switch profile", 'Try again. If it keeps failing, restart the app.');
@@ -180,7 +195,7 @@ const SettingsScreen: React.FC = () => {
                   <IconButton
                     icon="pencil-outline"
                     accessibilityLabel={`Rename ${p.name}`}
-                    onPress={() => setNameDialog({ editing: p, name: p.name, open: true })}
+                    onPress={() => setNameDialog({ editing: p, name: p.name, pin: '', pinConfirmation: '', open: true })}
                   />
                   {p.id !== activeId && (
                     <IconButton
@@ -199,7 +214,7 @@ const SettingsScreen: React.FC = () => {
             title="Add profile"
             description="A separate set of notes, for work or school"
             icon="account-plus-outline"
-            onPress={() => setNameDialog({ editing: null, name: '', open: true })}
+            onPress={() => setNameDialog({ editing: null, name: '', pin: '', pinConfirmation: '', open: true })}
             isFirst={false}
             isLast
           />
@@ -285,12 +300,56 @@ const SettingsScreen: React.FC = () => {
               autoFocus
               onSubmitEditing={handleSaveName}
             />
+            {!nameDialog?.editing && (
+              <>
+                <TextInput
+                  mode="outlined"
+                  label="Four-digit PIN"
+                  value={nameDialog?.pin ?? ''}
+                  onChangeText={pin => setNameDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  style={styles.dialogInput}
+                />
+                <TextInput
+                  mode="outlined"
+                  label="Confirm PIN"
+                  value={nameDialog?.pinConfirmation ?? ''}
+                  onChangeText={pinConfirmation => setNameDialog(d => d && { ...d, pinConfirmation: pinConfirmation.replace(/\D/g, '').slice(0, 4) })}
+                  keyboardType="number-pad"
+                  secureTextEntry
+                  onSubmitEditing={handleSaveName}
+                  style={styles.dialogInput}
+                />
+              </>
+            )}
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={closeNameDialog}>Cancel</Button>
-            <Button onPress={handleSaveName} disabled={!nameDialog?.name.trim()}>
+            <Button onPress={handleSaveName} disabled={!nameDialog?.name.trim() || (!nameDialog?.editing && ((nameDialog?.pin.length ?? 0) !== 4 || nameDialog?.pin !== nameDialog?.pinConfirmation))}>
               {nameDialog?.editing ? 'Rename' : 'Add profile'}
             </Button>
+          </Dialog.Actions>
+        </Dialog>
+        <Dialog visible={!!pinDialog?.open} onDismiss={closePinDialog}>
+          <Dialog.Title>Enter profile PIN</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">Enter the four-digit PIN for {pinDialog?.profile.name}.</Text>
+            <TextInput
+              mode="outlined"
+              label="PIN"
+              value={pinDialog?.pin ?? ''}
+              onChangeText={pin => setPinDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
+              keyboardType="number-pad"
+              secureTextEntry
+              autoFocus
+              onSubmitEditing={() => pinDialog && handleSwitch(pinDialog.profile, pinDialog.pin)}
+              style={styles.dialogInput}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={closePinDialog}>Cancel</Button>
+            <Button onPress={() => pinDialog && handleSwitch(pinDialog.profile, pinDialog.pin)} disabled={pinDialog?.pin.length !== 4}>Unlock</Button>
           </Dialog.Actions>
         </Dialog>
       </KeyboardSafePortal>
@@ -314,6 +373,9 @@ const styles = StyleSheet.create({
   rowActions: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  dialogInput: {
+    marginTop: space.md,
   },
   sectionTitle: {
     marginTop: space.xl,

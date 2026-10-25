@@ -8,6 +8,8 @@ export interface Profile {
 }
 
 const defaultProfile: Profile = { id: 'default', name: 'Personal' };
+const profilePinsKey = 'profilePins';
+const PIN_PATTERN = /^\d{4}$/;
 
 export const getProfiles = async (): Promise<Profile[]> => {
   const stored = await AsyncStorage.getItem('profiles');
@@ -17,17 +19,32 @@ export const getProfiles = async (): Promise<Profile[]> => {
 
 const saveProfiles = (profiles: Profile[]) => AsyncStorage.setItem('profiles', JSON.stringify(profiles));
 
+const getProfilePins = async (): Promise<Record<string, string>> => {
+  const stored = await AsyncStorage.getItem(profilePinsKey);
+  return stored ? (JSON.parse(stored) as Record<string, string>) : {};
+};
+
 export const getActiveProfile = async (): Promise<Profile> => {
   const [profiles, id] = await Promise.all([getProfiles(), AsyncStorage.getItem('activeProfile')]);
   return profiles.find(p => p.id === id) ?? profiles[0];
 };
 
-export const switchProfile = async (id: string): Promise<void> => {
+export const verifyProfilePin = async (id: string, pin: string): Promise<boolean> => {
+  if (!PIN_PATTERN.test(pin)) return false;
+  const pins = await getProfilePins();
+  return !pins[id] || pins[id] === pin;
+};
+
+export const switchProfile = async (id: string, pin?: string): Promise<void> => {
+  if (!(await verifyProfilePin(id, pin ?? ''))) {
+    throw new Error('Invalid profile PIN');
+  }
   await openProfileDatabase(id);
   await AsyncStorage.setItem('activeProfile', id);
 };
 
-export const addProfile = async (name: string): Promise<Profile> => {
+export const addProfile = async (name: string, pin: string): Promise<Profile> => {
+  if (!PIN_PATTERN.test(pin)) throw new Error('Profile PIN must be exactly four digits');
   const profile = { id: Date.now().toString(36), name };
   const db = await SQLite.openDatabaseAsync(dbName(profile.id));
   try {
@@ -36,6 +53,8 @@ export const addProfile = async (name: string): Promise<Profile> => {
     await db.closeAsync();
   }
   await saveProfiles([...(await getProfiles()), profile]);
+  const pins = await getProfilePins();
+  await AsyncStorage.setItem(profilePinsKey, JSON.stringify({ ...pins, [profile.id]: pin }));
   return profile;
 };
 
@@ -45,6 +64,9 @@ export const renameProfile = async (id: string, name: string): Promise<void> => 
 
 export const deleteProfile = async (id: string): Promise<void> => {
   await saveProfiles((await getProfiles()).filter(p => p.id !== id));
+  const pins = await getProfilePins();
+  delete pins[id];
+  await AsyncStorage.setItem(profilePinsKey, JSON.stringify(pins));
   await SQLite.deleteDatabaseAsync(dbName(id)).catch(() => {});
 };
 

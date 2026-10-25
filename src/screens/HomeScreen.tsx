@@ -2,14 +2,14 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
-import { ActivityIndicator, AnimatedFAB, Appbar, Button, Chip, Dialog, List, Portal, Searchbar, Text } from 'react-native-paper';
+import { ActivityIndicator, AnimatedFAB, Appbar, Button, Chip, Dialog, List, Portal, Searchbar, Text, TextInput } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, moveNoteToBin, restoreNote, setNotePinned } from '../storage/notes';
-import { getActiveProfile, getProfiles, Profile, switchProfile } from '../storage/profiles';
+import { getActiveProfile, getProfiles, Profile, switchProfile, verifyProfilePin } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -48,6 +48,7 @@ const HomeScreen: React.FC = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [profileDialogVisible, setProfileDialogVisible] = useState(false);
+  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; open: boolean } | null>(null);
   const lastOffset = useRef(0);
 
   const loadNotes = async () => {
@@ -75,11 +76,21 @@ const HomeScreen: React.FC = () => {
     return unsubscribe;
   }, [navigation]);
 
-  const handleSwitchProfile = async (profile: Profile) => {
+  const handleSwitchProfile = async (profile: Profile, pin?: string) => {
     setProfileDialogVisible(false);
     if (profile.id === activeProfile?.id) return;
     try {
-      await switchProfile(profile.id);
+      if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
+        setPinDialog({ profile, pin: '', open: true });
+        return;
+      }
+      const enteredPin = pin ?? '';
+      if (!(await verifyProfilePin(profile.id, enteredPin))) {
+        alert('Incorrect PIN', 'Enter the four-digit PIN for this profile.');
+        return;
+      }
+      setPinDialog(d => d && { ...d, open: false });
+      await switchProfile(profile.id, enteredPin);
       setSearchText('');
       await loadNotes();
       setSnackbar(`Switched to ${profile.name}`);
@@ -444,6 +455,27 @@ const HomeScreen: React.FC = () => {
             <Button onPress={() => setProfileDialogVisible(false)}>Cancel</Button>
           </Dialog.Actions>
         </Dialog>
+        <Dialog visible={!!pinDialog?.open} onDismiss={() => setPinDialog(d => d && { ...d, open: false })}>
+          <Dialog.Title>Enter profile PIN</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">Enter the four-digit PIN for {pinDialog?.profile.name}.</Text>
+            <TextInput
+              mode="outlined"
+              label="PIN"
+              value={pinDialog?.pin ?? ''}
+              onChangeText={pin => setPinDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
+              keyboardType="number-pad"
+              secureTextEntry
+              autoFocus
+              onSubmitEditing={() => pinDialog && handleSwitchProfile(pinDialog.profile, pinDialog.pin)}
+              style={styles.pinInput}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => setPinDialog(d => d && { ...d, open: false })}>Cancel</Button>
+            <Button onPress={() => pinDialog && handleSwitchProfile(pinDialog.profile, pinDialog.pin)} disabled={pinDialog?.pin.length !== 4}>Unlock</Button>
+          </Dialog.Actions>
+        </Dialog>
       </Portal>
 
       <Snackbar
@@ -521,6 +553,9 @@ const styles = StyleSheet.create({
   },
   snackbar: {
     bottom: 80,
+  },
+  pinInput: {
+    marginTop: space.md,
   },
 });
 
