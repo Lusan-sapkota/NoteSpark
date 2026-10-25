@@ -55,9 +55,10 @@ const LockOption: React.FC<{ icon: string; label: string; caption: string; selec
         accessibilityLabel={`${label}. ${caption}`}
         style={[
           styles.lockOptionInner,
+          // Same 2dp border in both states (unselected matches its fill), so selecting never shifts the content.
           selected
-            ? { backgroundColor: theme.colors.secondaryContainer, borderColor: theme.colors.primary, borderWidth: 2 }
-            : { backgroundColor: theme.colors.surfaceContainerHighest, borderColor: theme.colors.outlineVariant, borderWidth: 1 },
+            ? { backgroundColor: theme.colors.secondaryContainer, borderColor: theme.colors.primary }
+            : { backgroundColor: theme.colors.surfaceContainerHighest, borderColor: theme.colors.surfaceContainerHighest },
         ]}
       >
         {selected && (
@@ -736,8 +737,10 @@ const styles = StyleSheet.create({
   lockOption: {
     flex: 1,
   },
-  // Square-ish tiles; rows grow with large text instead of clipping.
+  // Fills the tile, so both tiles are as tall as the taller one; rows grow with large text instead of clipping.
   lockOptionInner: {
+    flex: 1,
+    borderWidth: 2,
     minHeight: 112,
     borderRadius: shape.control,
     padding: space.md,
