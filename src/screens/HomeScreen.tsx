@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { AnimatedFAB, Appbar, Button, Chip, Dialog, List, Portal, Searchbar, Text, TextInput } from 'react-native-paper';
@@ -417,8 +417,14 @@ const HomeScreen: React.FC = () => {
           itemLayoutAnimation={LinearTransition.springify()}
           ListEmptyComponent={renderEmpty}
           contentContainerStyle={styles.listContent}
-          refreshing={refreshing}
-          onRefresh={handleRefresh}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={handleRefresh}
+              colors={[theme.colors.primary]}
+              progressBackgroundColor={theme.colors.surfaceContainerHigh}
+            />
+          }
           onScroll={handleScroll}
           scrollEventThrottle={64}
           initialNumToRender={10}

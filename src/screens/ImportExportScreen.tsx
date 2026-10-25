@@ -459,6 +459,7 @@ const ImportExportScreen: React.FC = () => {
             refreshing={refreshing}
             onRefresh={onRefresh}
             colors={[theme.colors.primary]}
+            progressBackgroundColor={theme.colors.surfaceContainerHigh}
           />
         }
       >
