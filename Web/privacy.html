@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light" data-theme-pref="system">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy policy — NoteSpark</title>
+  <meta name="description" content="NoteSpark is an offline notes app. It has no account, no ads, no analytics and no tracking. Everything you write stays on your phone." />
+  <meta name="theme-color" content="#fbfaee" />
+  <link rel="canonical" href="https://notespark.lusansapkota.com.np/privacy.html" />
+  <meta property="og:title" content="Privacy policy — NoteSpark" />
+  <meta property="og:description" content="NoteSpark is an offline notes app. Everything you write stays on your phone." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://notespark.lusansapkota.com.np/privacy.html" />
+  <link rel="icon" type="image/png" href="./assets/favicon.png" />
+  <script>
+    (function () {
+      try {
+        var pref = localStorage.getItem('themePreference') || 'system';
+        var dark = pref === 'dark' || (pref === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        document.documentElement.setAttribute('data-theme-pref', pref);
+      } catch (e) {}
+    })();
+  </script>
+  <link rel="stylesheet" href="./assets/styles.css" />
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <div class="container header-inner">
+      <a href="./index.html" class="brand" aria-label="NoteSpark home">
+        <img src="./assets/round.svg" alt="" width="36" height="36" />
+        <span>NoteSpark</span>
+      </a>
+      <nav class="nav" aria-label="Main">
+        <a href="./index.html#features">Features</a>
+        <a href="./index.html#get">Download</a>
+        <a href="./changelog.html">Changelog</a>
+        <a href="./privacy.html" aria-current="page">Privacy policy</a>
+      </nav>
+      <div class="theme-switch" role="group" aria-label="Page theme">
+        <button type="button" data-theme-option="light" aria-pressed="false" aria-label="Light theme">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+        </button>
+        <button type="button" data-theme-option="dark" aria-pressed="false" aria-label="Dark theme">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+        </button>
+        <button type="button" data-theme-option="system" aria-pressed="true" aria-label="Same as your device">
+          <svg class="i" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+
+  <main class="page-main" id="main">
+    <article class="reading-column">
+      <h1 class="headline-small" style="margin-bottom: var(--space-xs);">Privacy policy</h1>
+      <p class="body-small policy-text">Effective October 25, 2026</p>
+
+      <p class="body-large policy-lead">
+        NoteSpark is an offline notes app. It has no account, no ads, no analytics and no tracking. Everything you write stays on your phone. This policy explains what the app stores and where.
+      </p>
+
+      <section class="policy-section" aria-labelledby="sec-stores">
+        <h2 id="sec-stores" class="title-medium">What NoteSpark stores</h2>
+        <ul class="policy-bullets body-large">
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Your notes: the title, text, format, whether they are pinned, and the dates they were created and edited, and your scratchpad. They are kept in a database on your device, one for each profile.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>A search index: for search by meaning, each note is turned into a list of numbers by a small model that is part of the app and runs on your device. The index is kept in the same database as your notes.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Images you add from your phone are copied into NoteSpark's own storage on your device, so they keep showing if the original is moved or your phone clears its cache. They aren't uploaded. A copy is deleted once no note uses it.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Your profile names, which profile is open, your theme choice, whether you've finished the welcome screens, and a list of your last 20 imports and exports. These are also kept on your device.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Profile PINs: only a scrambled form of each PIN (a salted hash) is kept, in Android's secure storage. The PIN itself isn't stored, so it can't be recovered if you forget it. A profile with a PIN also has its notes encrypted on your phone, with a key kept in Android's secure storage.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>A deleted profile stays on your device for 30 days so you can restore it, then it and its notes are erased.</span>
+          </li>
+        </ul>
+        <p class="body-large policy-text">None of this is sent to the developer or anyone else.</p>
+      </section>
+
+      <section class="policy-section" aria-labelledby="sec-nothing-leaves">
+        <h2 id="sec-nothing-leaves" class="title-medium">Nothing leaves your device</h2>
+        <p class="body-large policy-text">
+          NoteSpark makes no network requests of its own: no sync, no analytics, no crash reporting and no update checks. App updates come only through the store you installed it from.
+        </p>
+        <ul class="policy-bullets body-large">
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>If you add an image from a web address to a note, it's downloaded from that website the first time you view the note, then kept on your phone so it shows offline, even if the website removes it. A saved copy is deleted once no note uses it and it hasn't been viewed for 30 days.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>When you export or share notes, the file goes only where you choose in the share sheet.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Automatic backups, if you turn them on, are saved only to the folder you pick. Profiles with a PIN are left out unless you include them; backup files can be read without the PIN.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Android's own backup: if backup is turned on in your phone's settings, Android may copy NoteSpark's data, including your notes, to your Google account, so it can be restored on a new phone. This is a feature of Android that you control in your phone's settings; NoteSpark doesn't send anything itself.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="policy-section" aria-labelledby="sec-permissions">
+        <h2 id="sec-permissions" class="title-medium">Permissions</h2>
+        <ul class="policy-bullets body-large">
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Notifications: to tell you things like an export finishing, and to remind you of tasks on their due date. These notifications are created and scheduled on your device; NoteSpark doesn't use push notifications. Reminders for profiles with a PIN don't show the task text.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Photos: only the images you pick when adding an image to a note.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Files: only the backup or note files you pick when importing notes, and the folder you pick for automatic backups.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Fingerprint: only if you turn on fingerprint unlock for a profile. Android checks your fingerprint; NoteSpark never sees or stores it.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Internet: only to show images from web addresses that you add to notes.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="policy-section" aria-labelledby="sec-control">
+        <h2 id="sec-control" class="title-medium">Your control over your data</h2>
+        <ul class="policy-bullets body-large">
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Move a note to the bin from its menu, or every note from Settings. Notes in the bin are erased for good 30 days later, or straight away if you delete them forever or empty the bin in Settings, under Bin.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Export a copy of your notes at any time in Settings, under Import and export.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Uninstalling NoteSpark deletes all of its data from your device. The developer has no copy, so deleted notes can't be recovered unless you exported them or Android's backup restores them.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="policy-section" aria-labelledby="sec-children">
+        <h2 id="sec-children" class="title-medium">Children</h2>
+        <p class="body-large policy-text">
+          NoteSpark doesn't collect personal information from anyone, including children under 13.
+        </p>
+      </section>
+
+      <section class="policy-section" aria-labelledby="sec-changes">
+        <h2 id="sec-changes" class="title-medium">Changes to this policy</h2>
+        <p class="body-large policy-text">
+          If this policy changes, the new version will appear here and on notespark.lusansapkota.com.np with a new effective date.
+        </p>
+      </section>
+
+      <section class="policy-section" aria-labelledby="sec-contact">
+        <h2 id="sec-contact" class="title-medium">Contact</h2>
+        <p class="body-large policy-text">
+          Questions about privacy: <a href="mailto:contact@lusansapkota.com.np">contact@lusansapkota.com.np</a>
+        </p>
+      </section>
+    </article>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <p style="margin:0">NoteSpark is made by <a href="https://lusansapkota.com.np" target="_blank" rel="noopener noreferrer">Lusan Sapkota</a> and licensed under GPLv3.</p>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="./changelog.html">Changelog</a>
+        <a href="./privacy.html">Privacy policy</a>
+        <a href="https://github.com/Lusan-sapkota/NoteSpark" target="_blank" rel="noopener noreferrer">GitHub</a>
+        <a href="mailto:contact@lusansapkota.com.np">Contact</a>
+      </nav>
+    </div>
+  </footer>
+
+
+  <script src="./app.js" defer></script>
+</body>
+</html>

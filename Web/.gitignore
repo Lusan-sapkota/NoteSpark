@@ -1,0 +1,4 @@
+# Static site: nothing is built here.
+.DS_Store
+node_modules/
+.env*
