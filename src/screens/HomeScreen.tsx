@@ -21,8 +21,9 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'H
 
 const typeFilters = [
   { value: 'all', label: 'All' },
+  { value: 'pinned', label: 'Pinned' },
   { value: 'markdown', label: 'Markdown' },
-  { value: 'text', label: 'Plain text' },
+  { value: 'text', label: 'Text' },
 ] as const;
 
 const HomeScreen: React.FC = () => {
@@ -36,7 +37,7 @@ const HomeScreen: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [searchType, setSearchType] = useState<'all' | 'title' | 'content' | 'meaning'>('all');
   const [meaningIds, setMeaningIds] = useState<number[] | null>(null);
-  const [filterMarkdown, setFilterMarkdown] = useState<'all' | 'markdown' | 'text'>('all');
+  const [filter, setFilter] = useState<'all' | 'pinned' | 'markdown' | 'text'>('all');
   const [sortType, setSortType] = useState<'edited' | 'created'>('edited');
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [fabExtended, setFabExtended] = useState(true);
@@ -110,8 +111,9 @@ const HomeScreen: React.FC = () => {
 
   const filteredNotes = useMemo(() => {
     let filtered = notes;
-    if (filterMarkdown !== 'all') {
-      filtered = filtered.filter(n => filterMarkdown === 'markdown' ? n.isMarkdown : !n.isMarkdown);
+    if (filter === 'pinned') filtered = filtered.filter(n => n.isPinned);
+    else if (filter !== 'all') {
+      filtered = filtered.filter(n => filter === 'markdown' ? n.isMarkdown : !n.isMarkdown);
     }
     if (searchType === 'meaning' && searchText.trim() && meaningIds) {
       const byId = new Map(filtered.map(n => [n.id, n]));
@@ -139,7 +141,7 @@ const HomeScreen: React.FC = () => {
       }
     });
     return filtered;
-  }, [notes, searchText, searchType, filterMarkdown, sortType, meaningIds]);
+  }, [notes, searchText, searchType, filter, sortType, meaningIds]);
 
   const handleNotePress = useCallback((noteId: number) => {
     navigation.navigate('NoteView', { noteId: noteId.toString() });
@@ -224,21 +226,25 @@ const HomeScreen: React.FC = () => {
     lastOffset.current = y;
   };
 
-  const isFiltered = !!searchText.trim() || filterMarkdown !== 'all';
+  const isFiltered = !!searchText.trim() || filter !== 'all';
 
   const renderEmpty = () => (
     <View style={styles.empty}>
       {isFiltered ? (
         <>
           <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
-            {searchText.trim() ? `No notes match "${searchText.trim()}"` : 'No notes of this type'}
+            {searchText.trim()
+              ? `No notes match "${searchText.trim()}"`
+              : filter === 'pinned' ? 'No pinned notes' : 'No notes of this type'}
           </Text>
           <Text variant="bodyMedium" style={[styles.emptyBody, { color: theme.colors.onSurfaceVariant }]}>
-            Try another word or filter.
+            {!searchText.trim() && filter === 'pinned'
+              ? 'Tap the pin on a note to keep it at the top and find it here.'
+              : 'Try another word or filter.'}
           </Text>
           <Button
             mode="text"
-            onPress={() => { setSearchText(''); setFilterMarkdown('all'); }}
+            onPress={() => { setSearchText(''); setFilter('all'); }}
             style={styles.emptyAction}
           >
             Clear search and filters
@@ -353,10 +359,10 @@ const HomeScreen: React.FC = () => {
             <Chip
               key={f.value}
               mode="outlined"
-              selected={filterMarkdown === f.value}
+              selected={filter === f.value}
               showSelectedOverlay={false}
-              onPress={() => setFilterMarkdown(f.value)}
-              accessibilityState={{ selected: filterMarkdown === f.value }}
+              onPress={() => setFilter(f.value)}
+              accessibilityState={{ selected: filter === f.value }}
             >
               {f.label}
             </Chip>
