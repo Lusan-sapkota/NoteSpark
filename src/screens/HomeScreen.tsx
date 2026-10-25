@@ -9,7 +9,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
-import { getActiveProfile, getProfiles, Profile, switchProfile, verifyProfilePin } from '../storage/profiles';
+import { getActiveProfile, getProfiles, Profile, switchProfile, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
 import { extractTags } from '../utils/tags';
@@ -97,7 +97,7 @@ const HomeScreen: React.FC = () => {
       }
       const enteredPin = pin ?? '';
       if (!(await verifyProfilePin(profile.id, enteredPin))) {
-        alert('Incorrect PIN', 'Enter the four-digit PIN for this profile.');
+        alert('Incorrect PIN', await wrongPinMessage(profile.id));
         return;
       }
       setPinDialog(d => d && { ...d, open: false });

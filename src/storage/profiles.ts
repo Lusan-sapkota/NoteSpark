@@ -81,12 +81,47 @@ export const setDefaultProfile = async (id: string, pin?: string): Promise<void>
   ]);
 };
 
+// Wrong PINs: after MAX_TRIES the profile locks for 30 s, doubling with each further wrong PIN up to 15 min.
+// Kept in AsyncStorage per profile ({ failures, lockedUntil }); a correct PIN clears it.
+const MAX_TRIES = 5;
+const attemptsKey = 'pinAttempts';
+type Attempts = Record<string, { failures: number; lockedUntil?: number }>;
+
+const getAttempts = async (): Promise<Attempts> => JSON.parse((await AsyncStorage.getItem(attemptsKey)) ?? '{}');
+
+const saveAttempt = async (id: string, entry: Attempts[string] | null) => {
+  const attempts = await getAttempts();
+  if (entry) attempts[id] = entry;
+  else delete attempts[id];
+  await AsyncStorage.setItem(attemptsKey, JSON.stringify(attempts));
+};
+
+// Milliseconds until the profile accepts a PIN again (0 when it isn't locked).
+export const getPinLockout = async (id: string): Promise<number> =>
+  Math.max(0, ((await getAttempts())[id]?.lockedUntil ?? 0) - Date.now());
+
+// What to tell someone after a PIN is refused.
+export const wrongPinMessage = async (id: string): Promise<string> => {
+  const wait = await getPinLockout(id);
+  if (!wait) return 'Enter the four-digit PIN for this profile.';
+  const seconds = Math.ceil(wait / 1000);
+  return `Too many wrong PINs. Try again in ${seconds < 90 ? `${seconds} seconds` : `${Math.ceil(seconds / 60)} minutes`}.`;
+};
+
+// Only a four-digit attempt counts as a try: screens pass '' just to ask whether a profile has a PIN.
 export const verifyProfilePin = async (id: string, pin: string): Promise<boolean> => {
   const stored = await getStoredPin(id);
   if (!stored) return true;
-  if (!PIN_PATTERN.test(pin)) return false;
+  if (!PIN_PATTERN.test(pin) || (await getPinLockout(id)) > 0) return false;
   const [salt, hash] = stored.split(':');
-  return (await hashPin(salt, pin)) === hash;
+  if ((await hashPin(salt, pin)) === hash) {
+    await saveAttempt(id, null);
+    return true;
+  }
+  const failures = ((await getAttempts())[id]?.failures ?? 0) + 1;
+  const lockedUntil = failures >= MAX_TRIES ? Date.now() + Math.min(30000 * 2 ** (failures - MAX_TRIES), 900000) : undefined;
+  await saveAttempt(id, { failures, lockedUntil });
+  return false;
 };
 
 export const hasProfilePin = async (id: string): Promise<boolean> => Boolean(await getStoredPin(id));
@@ -138,6 +173,7 @@ export const restoreProfile = (id: string): Promise<void> => updateProfile(id, {
 export const deleteProfileForever = async (id: string): Promise<void> => {
   await saveProfiles((await getStoredProfiles()).filter(p => p.id !== id));
   await storePin(id, null);
+  await saveAttempt(id, null);
   await SQLite.deleteDatabaseAsync(dbName(id)).catch(() => {});
 };
 

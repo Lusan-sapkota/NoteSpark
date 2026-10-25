@@ -3,19 +3,21 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, TextInput } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
 import { useAlert } from '../components/DialogProvider';
+import { getPinLockout, wrongPinMessage } from '../storage/profiles';
 import { readingWidth, space } from '../theme/theme';
 import { StyleSheet, View } from 'react-native';
 
-const ProfileUnlockScreen = ({ profileName, onUnlock, onForgotPin }: { profileName: string; onUnlock: (pin: string) => Promise<boolean>; onForgotPin: () => Promise<void> }) => {
+const ProfileUnlockScreen = ({ profileId, profileName, onUnlock, onForgotPin }: { profileId: string; profileName: string; onUnlock: (pin: string) => Promise<boolean>; onForgotPin: () => Promise<void> }) => {
   const { theme } = useTheme();
   const alert = useAlert();
   const [pin, setPin] = useState('');
-  const [invalid, setInvalid] = useState(false);
+  // Shown under the field after a refused PIN: wrong, or locked after too many tries.
+  const [error, setError] = useState('');
 
   const unlock = async () => {
     const success = await onUnlock(pin);
-    setInvalid(!success);
-    if (success) setPin('');
+    setError(success ? '' : (await getPinLockout(profileId)) ? await wrongPinMessage(profileId) : 'Incorrect PIN. Try again.');
+    setPin('');
   };
 
   // The PIN can't be recovered, so the only way back in is erasing this profile.
@@ -45,14 +47,14 @@ const ProfileUnlockScreen = ({ profileName, onUnlock, onForgotPin }: { profileNa
           mode="outlined"
           label="Profile PIN"
           value={pin}
-          onChangeText={value => { setPin(value.replace(/\D/g, '').slice(0, 4)); setInvalid(false); }}
+          onChangeText={value => { setPin(value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
           keyboardType="number-pad"
           secureTextEntry
           autoFocus
-          error={invalid}
+          error={!!error}
           onSubmitEditing={unlock}
         />
-        {invalid && <Text variant="bodySmall" style={{ color: theme.colors.error }}>Incorrect PIN. Try again.</Text>}
+        {!!error && <Text variant="bodySmall" style={{ color: theme.colors.error }} accessibilityLiveRegion="polite">{error}</Text>}
         <View style={styles.actions}>
           <Button mode="contained" onPress={unlock} disabled={pin.length !== 4}>Unlock</Button>
           <Button onPress={forgotPin}>Forgot PIN?</Button>

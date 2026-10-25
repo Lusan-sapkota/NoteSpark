@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
-import { addProfile, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, setProfilePin, switchProfile, verifyProfilePin } from '../storage/profiles';
+import { addProfile, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, setProfilePin, switchProfile, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { BIN_DAYS } from '../storage/database';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
@@ -95,12 +95,16 @@ const SettingsScreen: React.FC = () => {
         openPinDialog(profile, 'makeDefault');
         return;
       }
+      if (pin !== undefined && !(await verifyProfilePin(profile.id, pin))) {
+        alert('Incorrect PIN', await wrongPinMessage(profile.id));
+        return;
+      }
       await setDefaultProfile(profile.id, pin ?? '');
       await loadProfiles();
       closePinDialog();
       setSnackbar(`${profile.name} is now the default profile`);
     } catch (error) {
-      alert("Couldn't set the default profile", 'Enter the correct PIN and try again.');
+      alert("Couldn't set the default profile", 'Try again. If it keeps failing, restart the app.');
     }
   };
 
@@ -109,7 +113,7 @@ const SettingsScreen: React.FC = () => {
   // Changing or removing a PIN needs the current one.
   const checkCurrentPin = async (profile: Profile, currentPin: string) => {
     if (await verifyProfilePin(profile.id, currentPin)) return true;
-    alert('Incorrect PIN', `Enter the current four-digit PIN for ${profile.name}.`);
+    alert('Incorrect PIN', await wrongPinMessage(profile.id));
     return false;
   };
 
@@ -189,7 +193,7 @@ const SettingsScreen: React.FC = () => {
       }
       const enteredPin = pin ?? '';
       if (!(await verifyProfilePin(profile.id, enteredPin))) {
-        alert('Incorrect PIN', 'Enter the four-digit PIN for this profile.');
+        alert('Incorrect PIN', await wrongPinMessage(profile.id));
         return;
       }
       closePinDialog();
@@ -206,7 +210,7 @@ const SettingsScreen: React.FC = () => {
       return;
     }
     if (pin !== undefined && !(await verifyProfilePin(profile.id, pin))) {
-      alert('Incorrect PIN', 'Enter the four-digit PIN for this profile.');
+      alert('Incorrect PIN', await wrongPinMessage(profile.id));
       return;
     }
     closePinDialog();

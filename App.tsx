@@ -122,7 +122,7 @@ const AppContent = () => {
               <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
           ) : lockedProfile ? (
-            <ProfileUnlockScreen profileName={lockedProfile.name} onUnlock={unlockDefaultProfile} onForgotPin={eraseLockedProfile} />
+            <ProfileUnlockScreen profileId={lockedProfile.id} profileName={lockedProfile.name} onUnlock={unlockDefaultProfile} onForgotPin={eraseLockedProfile} />
           ) : showOnboarding ? (
             <OnboardingScreen onFinish={handleFinishOnboarding} />
           ) : (
