@@ -437,9 +437,11 @@ const HomeScreen: React.FC = () => {
     await executeTransfer(profile, notesToMove, pin);
   };
 
+  // A text search carries over: the note opens finding it.
   const handleNotePress = useCallback((noteId: number) => {
-    navigation.navigate('NoteView', { noteId: noteId.toString() });
-  }, [navigation]);
+    const find = searchType === 'meaning' ? undefined : deferredSearch.trim() || undefined;
+    navigation.navigate('NoteView', { noteId: noteId.toString(), find });
+  }, [navigation, searchType, deferredSearch]);
 
   const showBinned = (noteId: number) => {
     setUndo(() => async () => {

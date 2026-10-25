@@ -1,15 +1,16 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Appbar, Button, Dialog, Divider, FAB, Icon, List, Portal, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Button, Dialog, Divider, FAB, Icon, IconButton, List, Portal, ProgressBar, Searchbar, Text, TouchableRipple } from 'react-native-paper';
+import { useReducedMotion } from 'react-native-reanimated';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, formatDue, splitDue, toggleTaskLine } from '../utils/tasks';
 import { extractTags } from '../utils/tags';
-import { findNoteByTitle, linksTo, noteLinkPattern } from '../utils/noteLinks';
+import { findMention, findNoteByTitle, linkMention, linksTo, noteLinkPattern } from '../utils/noteLinks';
 import { shareNoteAsMarkdown } from '../utils/exportNotes';
 import { Note, NoteVersion } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -51,6 +52,45 @@ const formatDate = (dateString: string) => {
   return `${date.toLocaleDateString([], { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) })}, ${time}`;
 };
 
+type Change = { text: string; type: 'same' | 'removed' | 'added' };
+
+// Word-level changes from a to b. The common start and end are skipped first; a middle too big to compare
+// shows as replaced as a whole.
+const diffWords = (a: string, b: string): Change[] => {
+  const A = a.split(/(\s+)/);
+  const B = b.split(/(\s+)/);
+  let s = 0;
+  while (s < A.length && s < B.length && A[s] === B[s]) s++;
+  let e = 0;
+  while (e < A.length - s && e < B.length - s && A[A.length - 1 - e] === B[B.length - 1 - e]) e++;
+  const a2 = A.slice(s, A.length - e);
+  const b2 = B.slice(s, B.length - e);
+  const parts: Change[] = [{ text: A.slice(0, s).join(''), type: 'same' }];
+  const push = (text: string, type: Change['type']) => {
+    const last = parts[parts.length - 1];
+    if (last.type === type) last.text += text;
+    else parts.push({ text, type });
+  };
+  if (a2.length * b2.length > 1_000_000) {
+    push(a2.join(''), 'removed');
+    push(b2.join(''), 'added');
+  } else {
+    // Longest common subsequence, from the end, then walked from the start.
+    const L = Array.from({ length: a2.length + 1 }, () => new Uint16Array(b2.length + 1));
+    for (let i = a2.length - 1; i >= 0; i--)
+      for (let j = b2.length - 1; j >= 0; j--) L[i][j] = a2[i] === b2[j] ? L[i + 1][j + 1] + 1 : Math.max(L[i + 1][j], L[i][j + 1]);
+    let i = 0;
+    let j = 0;
+    while (i < a2.length || j < b2.length) {
+      if (i < a2.length && j < b2.length && a2[i] === b2[j]) { push(a2[i++], 'same'); j++; }
+      else if (j >= b2.length || (i < a2.length && L[i + 1][j] >= L[i][j + 1])) push(a2[i++], 'removed');
+      else push(b2[j++], 'added');
+    }
+  }
+  push(A.slice(A.length - e).join(''), 'same');
+  return parts.filter(p => p.text);
+};
+
 const linkRegex = /(https?:\/\/[^\s)]+|www\.[^\s)]+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}\b)/g;
 // Plain notes: a [[note link]] (group 1) or a web link.
 const plainLinkRegex = new RegExp(`${noteLinkPattern.source}|${linkRegex.source}`, 'g');
@@ -77,6 +117,16 @@ const NoteViewScreen: React.FC = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [related, setRelated] = useState<Note[]>([]);
   const [backlinks, setBacklinks] = useState<Note[]>([]);
+  // Notes that name this one without a [[link]].
+  const [mentions, setMentions] = useState<Note[]>([]);
+  const [showChanges, setShowChanges] = useState(true);
+  // Find in note: the query and which match is current. Lines are drawn plain while finding, so each can be measured.
+  const [find, setFind] = useState<{ query: string; index: number } | null>(null);
+  const findParam: string | undefined = (route.params as any)?.find;
+  const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
+  const bodyY = useRef(0);
+  const lineY = useRef<Record<number, number>>({});
+  const reduceMotion = useReducedMotion();
   // Version history: the list, or one version being read. Kept after closing so it doesn't change while fading.
   const [history, setHistory] = useState<{ versions: NoteVersion[]; viewing: NoteVersion | null; open: boolean } | null>(null);
   const closeHistory = () => setHistory(h => h && { ...h, open: false });
@@ -107,6 +157,8 @@ const NoteViewScreen: React.FC = () => {
         if (fetchedNote) {
           const linking = await getNotesWithLinks();
           setBacklinks(linking.filter(n => n.id !== fetchedNote.id && linksTo(n.content, fetchedNote.title)));
+          const others = (await getNotes()).filter(n => n.id !== fetchedNote.id && !linksTo(n.content, fetchedNote.title));
+          setMentions(others.filter(n => findMention(n.content, fetchedNote.title) >= 0).slice(0, 10));
           const ids = await relatedNotes(fetchedNote.id);
           const notes = await Promise.all(ids.map(id => getNoteById(id).catch(() => null)));
           setRelated(notes.filter((n): n is Note => !!n));
@@ -192,6 +244,17 @@ const NoteViewScreen: React.FC = () => {
     }
   };
 
+  const linkFromMention = async (other: Note) => {
+    if (!note) return;
+    try {
+      await updateNote({ ...other, content: linkMention(other.content, note.title) });
+      await reloadNote();
+      setSnackbar('Link added');
+    } catch (error) {
+      alert("Couldn't add the link", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
   const openHistory = async () => {
     if (!note) return;
     try {
@@ -271,6 +334,65 @@ const NoteViewScreen: React.FC = () => {
 
   const goBack = () => navigation.goBack();
 
+  // Opened from a Home search: start finding that text, if the note has it.
+  const findOpened = useRef(false);
+  useEffect(() => {
+    if (!note || findOpened.current || !findParam?.trim()) return;
+    findOpened.current = true;
+    if (note.content.toLowerCase().includes(findParam.trim().toLowerCase())) setFind({ query: findParam.trim(), index: 0 });
+  }, [note, findParam]);
+
+  const query = find?.query.trim().toLowerCase() ?? '';
+  const matches: { line: number; start: number }[] = [];
+  if (note && query) {
+    String(note.content).split('\n').forEach((text, line) => {
+      const lower = text.toLowerCase();
+      for (let i = lower.indexOf(query); i >= 0; i = lower.indexOf(query, i + query.length)) matches.push({ line, start: i });
+    });
+  }
+  const current = find && matches.length ? matches[find.index % matches.length] : null;
+  const stepFind = (by: number) => setFind(f => f && { ...f, index: (f.index + by + matches.length) % matches.length });
+
+  // Scrolls the current match into view, once its line has been laid out.
+  useEffect(() => {
+    if (!current) return;
+    const timer = setTimeout(() => {
+      const y = lineY.current[current.line];
+      if (y !== undefined) scrollRef.current?.scrollTo({ y: Math.max(0, bodyY.current + y - 96), animated: !reduceMotion });
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [current?.line, current?.start, query]);
+
+  const renderFindLines = (content: string) =>
+    content.split('\n').map((text, line) => {
+      const parts: React.ReactNode[] = [];
+      let last = 0;
+      matches.filter(m => m.line === line).forEach(m => {
+        const isCurrent = m === current;
+        parts.push(text.slice(last, m.start));
+        parts.push(
+          <Text
+            key={m.start}
+            style={{
+              backgroundColor: isCurrent ? theme.colors.tertiary : theme.colors.tertiaryContainer,
+              color: isCurrent ? theme.colors.onTertiary : theme.colors.onTertiaryContainer,
+            }}
+          >
+            {text.slice(m.start, m.start + query.length)}
+          </Text>
+        );
+        last = m.start + query.length;
+      });
+      parts.push(text.slice(last));
+      return (
+        <View key={line} onLayout={e => { lineY.current[line] = e.nativeEvent.layout.y; }}>
+          <NoteText variant="noteBody" style={{ color: theme.colors.onSurface }} selectable selectionColor={theme.colors.primary}>
+            {text ? parts : ' '}
+          </NoteText>
+        </View>
+      );
+    });
+
   if (!note) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
@@ -331,6 +453,11 @@ const NoteViewScreen: React.FC = () => {
                 }}
               />
               <Menu.Item
+                leadingIcon="magnify"
+                title="Find in note"
+                onPress={() => { setMenuVisible(false); setFind({ query: '', index: 0 }); }}
+              />
+              <Menu.Item
                 leadingIcon="history"
                 title="Version history"
                 onPress={() => { setMenuVisible(false); openHistory(); }}
@@ -350,7 +477,34 @@ const NoteViewScreen: React.FC = () => {
           </>
         }
       />
+      {find && (
+        <View style={[styles.findBar, { backgroundColor: elevated ? theme.colors.elevation.level2 : theme.colors.background }]}>
+          <Searchbar
+            autoFocus
+            placeholder="Find in note"
+            value={find.query}
+            onChangeText={text => setFind({ query: text, index: 0 })}
+            icon="close"
+            onIconPress={() => setFind(null)}
+            searchAccessibilityLabel="Close find"
+            style={{ backgroundColor: theme.colors.surfaceContainerHigh, borderRadius: shape.control }}
+            inputStyle={styles.findInput}
+            right={() => (
+              <View style={styles.findActions}>
+                {!!query && (
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} accessibilityLiveRegion="polite">
+                    {matches.length ? `${(find.index % matches.length) + 1} of ${matches.length}` : 'No matches'}
+                  </Text>
+                )}
+                <IconButton icon="chevron-up" disabled={!matches.length} onPress={() => stepFind(-1)} accessibilityLabel="Previous match" />
+                <IconButton icon="chevron-down" disabled={!matches.length} onPress={() => stepFind(1)} accessibilityLabel="Next match" />
+              </View>
+            )}
+          />
+        </View>
+      )}
       <ScrollView
+        ref={scrollRef}
         style={styles.container}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: 96 + insets.bottom }]}
         onScroll={handleScroll}
@@ -397,8 +551,10 @@ const NoteViewScreen: React.FC = () => {
           )}
           <Divider style={styles.divider} />
 
-          <View>
-            {note.isMarkdown ? (
+          <View onLayout={e => { bodyY.current = e.nativeEvent.layout.y; }}>
+            {query ? (
+              renderFindLines(content)
+            ) : note.isMarkdown ? (
               showRaw ? (
                 <NoteText variant="noteBody" style={{ color: theme.colors.onSurface }} selectable selectionColor={theme.colors.primary}>
                   {getPlainText(content)}
@@ -425,6 +581,29 @@ const NoteViewScreen: React.FC = () => {
                   onPress={() => navigation.push('NoteView', { noteId: String(b.id) })}
                   isFirst={i === 0}
                   isLast={i === backlinks.length - 1}
+                />
+              ))}
+            </View>
+          )}
+
+          {mentions.length > 0 && (
+            <View>
+              <Divider style={styles.divider} />
+              <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Mentioned in</Text>
+              {mentions.map((m, i) => (
+                <GroupedRow
+                  key={m.id}
+                  title={m.title || 'Untitled note'}
+                  description={toPreview(m.content) || undefined}
+                  icon="text-search"
+                  onPress={() => navigation.push('NoteView', { noteId: String(m.id) })}
+                  right={
+                    <Button compact onPress={() => linkFromMention(m)} accessibilityLabel={`Link this note from ${m.title || 'Untitled note'}`}>
+                      Link
+                    </Button>
+                  }
+                  isFirst={i === 0}
+                  isLast={i === mentions.length - 1}
                 />
               ))}
             </View>
@@ -468,13 +647,31 @@ const NoteViewScreen: React.FC = () => {
                   <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
                     Saved until {formatDate(history.viewing.savedAt)}
                   </Text>
+                  {showChanges && (
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                      Changes made after this version: removed text is struck through, added text is underlined.
+                    </Text>
+                  )}
                   <NoteText variant="noteBody" style={{ color: theme.colors.onSurface }} selectable>
-                    {history.viewing.content || ' '}
+                    {showChanges
+                      ? diffWords(history.viewing.content, (history.versions[history.versions.indexOf(history.viewing) - 1] ?? note).content).map((c, i) =>
+                          c.type === 'same' ? c.text : (
+                            <Text
+                              key={i}
+                              style={c.type === 'removed'
+                                ? { textDecorationLine: 'line-through', backgroundColor: theme.colors.errorContainer, color: theme.colors.onErrorContainer }
+                                : { textDecorationLine: 'underline', backgroundColor: theme.colors.tertiaryContainer, color: theme.colors.onTertiaryContainer }}
+                            >
+                              {c.text}
+                            </Text>
+                          ))
+                      : history.viewing.content || ' '}
                   </NoteText>
                 </ScrollView>
               </Dialog.ScrollArea>
               <Dialog.Actions>
                 <Button onPress={() => setHistory(h => h && { ...h, viewing: null })}>Back</Button>
+                <Button onPress={() => setShowChanges(v => !v)}>{showChanges ? 'Hide changes' : 'Show changes'}</Button>
                 <Button onPress={() => history.viewing && restoreVersion(history.viewing)}>Restore</Button>
               </Dialog.Actions>
             </>
@@ -525,6 +722,17 @@ const styles = StyleSheet.create({
     paddingHorizontal: space.xl,
     paddingVertical: space.md,
     gap: space.sm,
+  },
+  findBar: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.sm,
+  },
+  findInput: {
+    minHeight: 0,
+  },
+  findActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   loading: {
     flex: 1,
