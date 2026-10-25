@@ -6,7 +6,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { getActiveProfile, getAllProfilesNoteContents, switchProfile } from './src/storage/profiles';
+import { getDefaultProfile, getAllProfilesNoteContents, hasProfilePin, renameProfile, setDefaultProfile, setProfilePin, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
 import { ActivityIndicator, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -16,19 +16,26 @@ import { useFonts } from 'expo-font';
 import { fontFiles } from './src/theme/theme';
 import { DialogProvider } from './src/components/DialogProvider';
 import { pruneImageCache } from './src/utils/imageCache';
+import ProfileUnlockScreen from './src/screens/ProfileUnlockScreen';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
   const navigationRef = React.useRef<any>(null);
   const [dbInitialized, setDbInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [lockedProfile, setLockedProfile] = useState<{ id: string; name: string } | null>(null);
   const [fontsLoaded, fontError] = useFonts(fontFiles);
 
   useEffect(() => {
     const setupApp = async () => {
       try {
         await setupNotificationWorker();
-        await switchProfile((await getActiveProfile()).id);
+        const defaultProfile = await getDefaultProfile();
+        if (await hasProfilePin(defaultProfile.id)) {
+          setLockedProfile(defaultProfile);
+        } else {
+          await switchProfile(defaultProfile.id);
+        }
         getAllProfilesNoteContents().then(pruneImageCache).catch(() => {});
         setDbInitialized(true);
         const onboarded = await AsyncStorage.getItem('onboarded');
@@ -62,6 +69,29 @@ const AppContent = () => {
     }
   };
 
+  const handleFinishProfileSetup = async (name: string, pin?: string) => {
+    try {
+      await renameProfile('default', name);
+      if (pin) await setProfilePin('default', pin);
+      await setDefaultProfile('default', pin);
+      await AsyncStorage.setItem('onboarded', 'true');
+      setShowOnboarding(false);
+    } catch (error) {
+      console.error('Profile setup error:', error);
+    }
+  };
+
+  const unlockDefaultProfile = async (pin: string): Promise<boolean> => {
+    if (!lockedProfile) return false;
+    try {
+      await switchProfile(lockedProfile.id, pin);
+      setLockedProfile(null);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
   // Font load failure falls back to the system font instead of blocking the app.
   const ready = dbInitialized && showOnboarding !== null && (fontsLoaded || !!fontError);
 
@@ -74,8 +104,10 @@ const AppContent = () => {
             <View style={[styles.loadingContainer, { backgroundColor: theme.colors.background }]}>
               <ActivityIndicator size="large" color={theme.colors.primary} />
             </View>
+          ) : lockedProfile ? (
+            <ProfileUnlockScreen profileName={lockedProfile.name} onUnlock={unlockDefaultProfile} />
           ) : showOnboarding ? (
-            <OnboardingScreen onFinish={handleFinishOnboarding} />
+            <OnboardingScreen onFinish={handleFinishOnboarding} onProfileSetup={handleFinishProfileSetup} />
           ) : (
             <AppNavigator />
           )}

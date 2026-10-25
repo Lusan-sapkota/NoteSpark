@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
-import { addProfile, deleteProfile, getActiveProfile, getProfiles, hasProfilePin, Profile, renameProfile, setProfilePin, switchProfile, verifyProfilePin } from '../storage/profiles';
+import { addProfile, deleteProfile, getActiveProfile, getDefaultProfile, getProfiles, hasProfilePin, Profile, renameProfile, setDefaultProfile, setProfilePin, switchProfile, verifyProfilePin } from '../storage/profiles';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
@@ -27,17 +27,20 @@ const SettingsScreen: React.FC = () => {
   const [snackbar, setSnackbar] = useState('');
   const [undoBatch, setUndoBatch] = useState<string | null>(null);
   const [activeId, setActiveId] = useState('');
+  const [defaultId, setDefaultId] = useState('');
   const [protectedProfileIds, setProtectedProfileIds] = useState<string[]>([]);
   // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ editing: Profile | null; name: string; pin: string; pinConfirmation: string; open: boolean } | null>(null);
-  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; pinConfirmation: string; mode: 'unlock' | 'manage'; open: boolean } | null>(null);
+  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; pinConfirmation: string; mode: 'unlock' | 'manage' | 'makeDefault'; open: boolean } | null>(null);
   const closeNameDialog = () => setNameDialog(d => d && { ...d, open: false });
   const closePinDialog = () => setPinDialog(d => d && { ...d, open: false });
 
   const loadProfiles = useCallback(async () => {
     const [list, active] = await Promise.all([getProfiles(), getActiveProfile()]);
+    const defaultProfile = await getDefaultProfile();
     setProfiles(list);
     setActiveId(active.id);
+    setDefaultId(defaultProfile.id);
     setProtectedProfileIds((await Promise.all(list.map(async profile => (await hasProfilePin(profile.id)) ? profile.id : null))).filter((id): id is string => id !== null));
   }, []);
 
@@ -59,6 +62,21 @@ const SettingsScreen: React.FC = () => {
       await loadProfiles();
     } catch (error) {
       alert(nameDialog.editing ? "Couldn't rename the profile" : "Couldn't add the profile", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
+  const handleMakeDefault = async (profile: Profile, pin?: string) => {
+    try {
+      if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
+        setPinDialog({ profile, pin: '', pinConfirmation: '', mode: 'makeDefault', open: true });
+        return;
+      }
+      await setDefaultProfile(profile.id, pin ?? '');
+      await loadProfiles();
+      closePinDialog();
+      setSnackbar(`${profile.name} is now the default profile`);
+    } catch (error) {
+      alert("Couldn't set the default profile", 'Enter the correct PIN and try again.');
     }
   };
 
@@ -247,6 +265,12 @@ const SettingsScreen: React.FC = () => {
                     accessibilityLabel={protectedProfileIds.includes(p.id) ? `Change or reset PIN for ${p.name}` : `Set PIN for ${p.name}`}
                     onPress={() => openPinManager(p)}
                   />
+                  <IconButton
+                    icon={p.id === defaultId ? 'star' : 'star-outline'}
+                    iconColor={p.id === defaultId ? theme.colors.primary : theme.colors.onSurfaceVariant}
+                    accessibilityLabel={p.id === defaultId ? `${p.name} is the default profile` : `Make ${p.name} the default profile`}
+                    onPress={() => handleMakeDefault(p)}
+                  />
                   {p.id !== activeId && (
                     <IconButton
                       icon="delete-outline"
@@ -382,11 +406,13 @@ const SettingsScreen: React.FC = () => {
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={!!pinDialog?.open} onDismiss={closePinDialog}>
-          <Dialog.Title>{pinDialog?.mode === 'manage' ? (protectedProfileIds.includes(pinDialog.profile.id) ? 'Change profile PIN' : 'Set profile PIN') : 'Enter profile PIN'}</Dialog.Title>
+          <Dialog.Title>{pinDialog?.mode === 'manage' ? (protectedProfileIds.includes(pinDialog.profile.id) ? 'Change profile PIN' : 'Set profile PIN') : pinDialog?.mode === 'makeDefault' ? 'Enter PIN to make default' : 'Enter profile PIN'}</Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
               {pinDialog?.mode === 'manage'
                 ? 'A PIN is optional. Leave this dialog open to set or change it.'
+                : pinDialog?.mode === 'makeDefault'
+                ? `Enter the four-digit PIN for ${pinDialog.profile.name} to make it the default profile.`
                 : `Enter the four-digit PIN for ${pinDialog?.profile.name}.`}
             </Text>
             <TextInput
@@ -397,7 +423,7 @@ const SettingsScreen: React.FC = () => {
               keyboardType="number-pad"
               secureTextEntry
               autoFocus
-              onSubmitEditing={() => pinDialog && (pinDialog.mode === 'manage' ? handleSavePin() : handleSwitch(pinDialog.profile, pinDialog.pin))}
+              onSubmitEditing={() => pinDialog && (pinDialog.mode === 'manage' ? handleSavePin() : pinDialog.mode === 'makeDefault' ? handleMakeDefault(pinDialog.profile, pinDialog.pin) : handleSwitch(pinDialog.profile, pinDialog.pin))}
               style={styles.dialogInput}
             />
             {pinDialog?.mode === 'manage' && (
@@ -418,6 +444,8 @@ const SettingsScreen: React.FC = () => {
             <Button onPress={closePinDialog}>Cancel</Button>
             {pinDialog?.mode === 'manage'
               ? <Button onPress={handleSavePin} disabled={pinDialog.pin.length !== 4 || pinDialog.pin !== pinDialog.pinConfirmation}>Save PIN</Button>
+              : pinDialog?.mode === 'makeDefault'
+              ? <Button onPress={() => pinDialog && handleMakeDefault(pinDialog.profile, pinDialog.pin)} disabled={pinDialog.pin.length !== 4}>Make default</Button>
               : <Button onPress={() => pinDialog && handleSwitch(pinDialog.profile, pinDialog.pin)} disabled={pinDialog?.pin.length !== 4}>Unlock</Button>}
           </Dialog.Actions>
         </Dialog>

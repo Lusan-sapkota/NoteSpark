@@ -9,6 +9,7 @@ export interface Profile {
 
 const defaultProfile: Profile = { id: 'default', name: 'Personal' };
 const profilePinsKey = 'profilePins';
+const defaultProfileKey = 'defaultProfile';
 const PIN_PATTERN = /^\d{4}$/;
 
 export const getProfiles = async (): Promise<Profile[]> => {
@@ -27,6 +28,20 @@ const getProfilePins = async (): Promise<Record<string, string>> => {
 export const getActiveProfile = async (): Promise<Profile> => {
   const [profiles, id] = await Promise.all([getProfiles(), AsyncStorage.getItem('activeProfile')]);
   return profiles.find(p => p.id === id) ?? profiles[0];
+};
+
+export const getDefaultProfile = async (): Promise<Profile> => {
+  const [profiles, id] = await Promise.all([getProfiles(), AsyncStorage.getItem(defaultProfileKey)]);
+  return profiles.find(p => p.id === id) ?? profiles[0];
+};
+
+export const setDefaultProfile = async (id: string, pin?: string): Promise<void> => {
+  if (!(await verifyProfilePin(id, pin ?? ''))) throw new Error('Invalid profile PIN');
+  await openProfileDatabase(id);
+  await Promise.all([
+    AsyncStorage.setItem(defaultProfileKey, id),
+    AsyncStorage.setItem('activeProfile', id),
+  ]);
 };
 
 export const verifyProfilePin = async (id: string, pin: string): Promise<boolean> => {
@@ -54,7 +69,11 @@ export const addProfile = async (name: string, pin?: string): Promise<Profile> =
   } finally {
     await db.closeAsync();
   }
-  await saveProfiles([...(await getProfiles()), profile]);
+  const profiles = await getProfiles();
+  await saveProfiles([...profiles, profile]);
+  if (!(await AsyncStorage.getItem(defaultProfileKey))) {
+    await AsyncStorage.setItem(defaultProfileKey, profiles[0].id);
+  }
   if (pin) {
     const pins = await getProfilePins();
     await AsyncStorage.setItem(profilePinsKey, JSON.stringify({ ...pins, [profile.id]: pin }));
