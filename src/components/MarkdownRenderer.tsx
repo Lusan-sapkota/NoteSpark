@@ -212,7 +212,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
         rules={{
           // Same cached, retryable image view the screens use.
           image: (node) => <NoteImages key={node.key} uris={node.attributes.src ? [node.attributes.src] : []} />,
-          link: (node, children, parent, styles) => renderLink({ ...node.attributes, children }),
+          link: (node, children) => <React.Fragment key={node.key}>{renderLink({ ...node.attributes, children })}</React.Fragment>,
           body: (node, children, parent, styles) => {
             taskIndex = 0;
             return renderRules.body!(node, children, parent, styles);
