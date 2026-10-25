@@ -1,7 +1,7 @@
 // All note reads and writes. database.ts only opens the database and runs migrations.
 import { db } from './database';
 import { Note } from '../types';
-import { setTaskDone, Task } from '../utils/tasks';
+import { TaskLine, toggleTaskLine } from '../utils/tasks';
 
 export const getNotes = async (): Promise<Note[]> => {
   const rows = await db.getAllAsync('SELECT * FROM notes ORDER BY updatedAt DESC');
@@ -78,13 +78,13 @@ export const setNotePinned = async (id: number, pinned: boolean): Promise<void> 
   await db.runAsync('UPDATE notes SET isPinned = ? WHERE id = ?', [pinned ? 1 : 0, id]);
 };
 
-// Ticks or unticks one checkbox in its note. Returns false if the note or that line changed since it was read.
-export const setTaskDoneInNote = async (task: Task, done: boolean): Promise<boolean> => {
-  const note = await getNoteById(task.noteId);
-  const content = note && setTaskDone(note.content, task, done);
-  if (!note || content == null) return false;
-  await updateNote({ ...note, content });
-  return true;
+// Ticks or clears one checkbox in a note. Returns the new line, or null if the note or that line changed since it was read.
+export const toggleTaskInNote = async (noteId: number, task: Pick<TaskLine, 'line' | 'raw'>): Promise<string | null> => {
+  const note = await getNoteById(noteId);
+  const result = note && toggleTaskLine(note.content, task);
+  if (!note || !result) return null;
+  await updateNote({ ...note, content: result.content });
+  return result.raw;
 };
 
 export const clearAllNotes = async (): Promise<void> => {

@@ -2,6 +2,7 @@ import React, { memo, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Icon, IconButton, Text, TouchableRipple } from 'react-native-paper';
 import Menu from './Menu';
+import { markTaskBoxes } from '../utils/tasks';
 import { Note } from '../types';
 import { useTheme } from '../theme/ThemeContext';
 import { groupCorners, shape, space } from '../theme/theme';
@@ -18,9 +19,9 @@ interface NoteItemProps {
   showCreated?: boolean;
 }
 
-// Plain-text preview: drop images, keep link text, strip Markdown markers.
+// Plain-text preview: drop images, keep link text, strip Markdown markers, show task boxes as ☐ / ☑.
 const toPreview = (content: string) =>
-  content
+  markTaskBoxes(content)
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
     .replace(/\[Image: [^\]]+\]/g, '')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')

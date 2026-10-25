@@ -4,7 +4,8 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, Appbar, FAB, Snackbar, Text } from 'react-native-paper';
-import { getNoteById, deleteNote } from '../storage/notes';
+import { getNoteById, deleteNote, updateNote } from '../storage/notes';
+import { findTaskLines, toggleTaskLine } from '../utils/tasks';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -104,6 +105,22 @@ const NoteViewScreen: React.FC = () => {
     ]);
   };
 
+  // Ticks on screen at once, then saves; puts it back if saving fails.
+  const handleToggleTask = async (index: number) => {
+    if (!note) return;
+    const task = findTaskLines(note.content)[index];
+    const result = task && toggleTaskLine(note.content, task);
+    if (!result) return;
+    const updated = { ...note, content: result.content, updatedAt: new Date().toISOString() };
+    setNote(updated);
+    try {
+      await updateNote(updated);
+    } catch (error) {
+      setNote(note);
+      alert("Couldn't update the task", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
   const handleEdit = () => {
     navigation.navigate('Editor', { noteId: note!.id });
   };
@@ -195,7 +212,7 @@ const NoteViewScreen: React.FC = () => {
                   {getPlainText(content)}
                 </NoteText>
               ) : (
-                <MarkdownRenderer content={content.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '')} />
+                <MarkdownRenderer content={content.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '')} onToggleTask={handleToggleTask} />
               )
             ) : (
               renderPlainText(content)

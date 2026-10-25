@@ -1,27 +1,32 @@
 import React from 'react';
-import { View, Text } from 'react-native';
+import { Pressable, View, Text } from 'react-native';
 import Markdown, { ASTNode, renderRules } from 'react-native-markdown-display';
 import { useAlert } from './DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
 import NoteImages from './NoteImages';
+import { markTaskBoxes } from '../utils/tasks';
 
 const firstText = (node: ASTNode): string => (node.children?.length ? firstText(node.children[0]) : node.content ?? '');
 
 interface MarkdownRendererProps {
   content: string;
+  // Called with the task's position among the note's checkboxes (findTaskLines order). Without it, boxes are display-only.
+  onToggleTask?: (index: number) => void;
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTask }) => {
   const { theme } = useTheme();
   const alert = useAlert();
 
   // Replace <br> tags with newlines so markdown treats them as line breaks
-  const processedContent = content
-    .replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n')
-    // Task list items: show a box instead of the literal "[ ]" / "[x]".
-    .replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\[ \]/gm, '$1☐')
-    .replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\[[xX]\]/gm, '$1☑');
+  // Task boxes first, while line numbers still match the note.
+  const processedContent = markTaskBoxes(content).replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n');
+
+  // Rules run in document order, so task items are numbered as they render; body renders last and resets the count.
+  // ponytail: a task line markdown-it doesn't render as a list item (e.g. inside an indented code block) shifts later
+  // numbers; the write then fails its line check rather than ticking the wrong box.
+  let taskIndex = 0;
 
   const f = theme.fonts;
   const heading = (font: typeof f.noteH1) => ({
@@ -186,15 +191,33 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
           // Same cached, retryable image view the screens use.
           image: (node) => <NoteImages key={node.key} uris={node.attributes.src ? [node.attributes.src] : []} />,
           link: (node, children, parent, styles) => renderLink({ ...node.attributes, children }),
-          // Task items: the box replaces the bullet instead of sitting next to it.
-          list_item: (node, children, parent, styles, inheritedStyles) =>
-            /^[☐☑]/.test(firstText(node)) ? (
-              <View key={node.key} style={styles._VIEW_SAFE_list_item}>
-                <View style={styles._VIEW_SAFE_bullet_list_content}>{children}</View>
-              </View>
-            ) : (
-              renderRules.list_item!(node, children, parent, styles, inheritedStyles)
-            ),
+          body: (node, children, parent, styles) => {
+            taskIndex = 0;
+            return renderRules.body!(node, children, parent, styles);
+          },
+          // Task items: the box replaces the bullet, and the whole row ticks it when onToggleTask is set.
+          list_item: (node, children, parent, styles, inheritedStyles) => {
+            const box = firstText(node)[0];
+            if (box !== '☐' && box !== '☑') return renderRules.list_item!(node, children, parent, styles, inheritedStyles);
+            const index = taskIndex++;
+            const item = <View style={styles._VIEW_SAFE_bullet_list_content}>{children}</View>;
+            if (!onToggleTask) return <View key={node.key} style={styles._VIEW_SAFE_list_item}>{item}</View>;
+            return (
+              <Pressable
+                key={node.key}
+                onPress={() => onToggleTask(index)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: box === '☑' }}
+                style={({ pressed }) => [
+                  styles._VIEW_SAFE_list_item,
+                  { minHeight: 48, alignItems: 'center', borderRadius: shape.small },
+                  pressed && { backgroundColor: theme.colors.surfaceContainerHigh },
+                ]}
+              >
+                {item}
+              </Pressable>
+            );
+          },
         }}
       >
         {processedContent}

@@ -6,7 +6,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { IconButton, List, SegmentedButtons, Snackbar, Text } from 'react-native-paper';
 import { RootStackParamList } from '../types';
-import { getNotes, setTaskDoneInNote } from '../storage/notes';
+import { getNotes, toggleTaskInNote } from '../storage/notes';
 import { extractTasks, Task } from '../utils/tasks';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
@@ -56,12 +56,14 @@ const TasksScreen: React.FC = () => {
     });
   }, [tasks, sortBy]);
 
-  const setDone = async (task: Task, done: boolean) => {
+  // Ticking keeps the ticked line in lastDone, so Undo can clear it again.
+  const toggle = async (task: Task, undo = false) => {
     try {
-      if (!(await setTaskDoneInNote(task, done))) {
+      const raw = await toggleTaskInNote(task.noteId, task);
+      if (raw == null) {
         alert('This task changed', 'Its note was edited. The list has been refreshed.');
       } else {
-        setLastDone(done ? task : null);
+        setLastDone(undo ? null : { ...task, raw });
       }
     } catch {
       alert("Couldn't update the task", 'Try again. If it keeps failing, restart the app.');
@@ -104,7 +106,7 @@ const TasksScreen: React.FC = () => {
               onPress={() => navigation.navigate('NoteView', { noteId: String(item.noteId) })}
             />
           )}
-          onPress={() => setDone(item, true)}
+          onPress={() => toggle(item)}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: false }}
           accessibilityHint="Marks the task done in its note"
@@ -149,7 +151,7 @@ const TasksScreen: React.FC = () => {
         visible={!!lastDone}
         onDismiss={() => setLastDone(null)}
         duration={4000}
-        action={{ label: 'Undo', onPress: () => lastDone && setDone(lastDone, false) }}
+        action={{ label: 'Undo', onPress: () => lastDone && toggle(lastDone, true) }}
       >
         Task done
       </Snackbar>
