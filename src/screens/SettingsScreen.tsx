@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, IconButton, List, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
+import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
 import { addProfile, deleteProfile, getActiveProfile, getProfiles, Profile, renameProfile, switchProfile } from '../storage/profiles';
@@ -223,7 +223,7 @@ const SettingsScreen: React.FC = () => {
             isFirst={false}
             isLast={false}
           />
-          {/* The switch decides whether this row moves everything to the bin or erases it without the bin. */}
+          {/* The swap button flips this row between moving everything to the bin and erasing it without the bin. */}
           <GroupedRow
             title={deleteMode === 'bin' ? 'Move all notes to bin' : 'Delete all notes forever'}
             description={deleteMode === 'bin' ? 'Restorable from Bin for 30 days' : "Skips the bin. Can't be undone."}
@@ -231,11 +231,11 @@ const SettingsScreen: React.FC = () => {
             danger
             onPress={deleteMode === 'bin' ? handleMoveAllToBin : handleDeleteAllForever}
             right={
-              <Switch
-                value={deleteMode === 'forever'}
-                onValueChange={on => setDeleteMode(on ? 'forever' : 'bin')}
-                color={theme.colors.error}
-                accessibilityLabel="Skip the bin"
+              <IconButton
+                icon="swap-horizontal"
+                iconColor={theme.colors.onSurfaceVariant}
+                accessibilityLabel={deleteMode === 'bin' ? 'Switch to delete all forever' : 'Switch to move all to bin'}
+                onPress={() => setDeleteMode(m => (m === 'bin' ? 'forever' : 'bin'))}
               />
             }
             isFirst={false}
