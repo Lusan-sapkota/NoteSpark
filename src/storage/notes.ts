@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './database';
 import { Note, NoteVersion } from '../types';
 import { TaskLine, toggleTaskLine } from '../utils/tasks';
+import { renameLinks } from '../utils/noteLinks';
 
 // Bumped after every write finishes, so screens can skip reloading when nothing changed. After, not before:
 // a reload in between would read the old rows and then believe it was up to date.
@@ -123,17 +124,31 @@ export const updateNote = changesNotes(async (
   { keepVersion = true } = {},
 ): Promise<void> => {
   const now = new Date().toISOString();
+  const old = await db.getFirstAsync<{ title: string }>('SELECT title FROM notes WHERE id = ?', [note.id]);
   if (keepVersion) await saveVersion(note, now);
   const result = await db.runAsync(
     `UPDATE notes SET title = ?, content = ?, isMarkdown = ?, updatedAt = ? WHERE id = ?`,
     [note.title, note.content, note.isMarkdown ? 1 : 0, now, note.id]
   );
-  if (result.changes > 0) {
-    return;
-  } else {
-    throw new Error('Note not found or no changes made');
-  }
+  if (result.changes === 0) throw new Error('Note not found or no changes made');
+  if (old) await updateLinksAfterRename(note.id, old.title, note.title);
 });
+
+// Renaming a note rewrites [[Old title]] links in other notes, unless another note still has the old title
+// or the new one can't be linked. Not an edit of those notes: their updatedAt and history stay.
+const updateLinksAfterRename = async (id: number, from: string, to: string) => {
+  const key = (t: string) => t.trim().toLowerCase();
+  if (!key(from) || !key(to) || key(from) === key(to) || /[[\]\n]/.test(to)) return;
+  const rows = await db.getAllAsync<{ id: number; title: string; content: string }>(
+    "SELECT id, title, content FROM notes WHERE content LIKE '%[[%'"
+  );
+  const others = await db.getAllAsync<{ title: string }>('SELECT title FROM notes WHERE id != ? AND deletedAt IS NULL', [id]);
+  if (others.some(n => key(n.title) === key(from))) return;
+  for (const row of rows) {
+    const content = renameLinks(row.content, from, to);
+    if (content !== row.content) await db.runAsync('UPDATE notes SET content = ? WHERE id = ?', [content, row.id]);
+  }
+};
 
 export const moveNoteToBin = changesNotes(async (id: number): Promise<void> => {
   await db.runAsync('UPDATE notes SET deletedAt = ? WHERE id = ?', [new Date().toISOString(), id]);

@@ -13,3 +13,7 @@ export const findNoteByTitle = (notes: Note[], title: string): Note | undefined 
 
 export const linksTo = (content: string, title: string): boolean =>
   !!title.trim() && linkedTitles(content).some(t => titleKey(t) === titleKey(title));
+
+// [[from]] links rewritten to [[to]]; other links stay as typed.
+export const renameLinks = (content: string, from: string, to: string): string =>
+  content.replace(noteLinkPattern, (whole, title: string) => (titleKey(title) === titleKey(from) ? `[[${to.trim()}]]` : whole));
