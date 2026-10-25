@@ -1,8 +1,8 @@
-import React, { useCallback, useState } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { AppState, Linking, StyleSheet, View, ScrollView } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, IconButton, List, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
+import { Button, Dialog, Icon, IconButton, List, SegmentedButtons, Switch, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
 import { addProfile, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, setProfilePin, setUsesBiometrics, switchProfile, unlockWithBiometrics, usesBiometrics, canUseBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
@@ -13,7 +13,7 @@ import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { controlTheme, readingWidth, space } from '../theme/theme';
+import { controlTheme, readingWidth, shape, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
@@ -62,6 +62,14 @@ const SettingsScreen: React.FC = () => {
   }, []);
 
   useFocusEffect(useCallback(() => { loadProfiles().catch(() => {}); }, [loadProfiles]));
+
+  // Back from the phone's settings (after "Open settings" in the PIN dialog): check for a fingerprint again.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') canUseBiometrics().then(setFingerprintReady).catch(() => {});
+    });
+    return () => sub.remove();
+  }, []);
 
   const activeName = profiles.find(p => p.id === activeId)?.name ?? '';
 
@@ -598,23 +606,46 @@ const SettingsScreen: React.FC = () => {
               />
             )}
             {pinDialog?.mode === 'manage' && (
-              <View style={styles.fingerprintRow}>
-                <View style={styles.fingerprintText}>
-                  <Text variant="bodyLarge" style={{ color: fingerprintReady ? theme.colors.onSurface : theme.colors.onSurfaceVariant }}>
-                    Also unlock with fingerprint
-                  </Text>
-                  {!fingerprintReady && (
-                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                      Set up a fingerprint in your phone's settings to use this.
-                    </Text>
-                  )}
-                </View>
-                <Switch
-                  value={pinDialog.fingerprint && fingerprintReady}
-                  disabled={!fingerprintReady}
-                  onValueChange={fingerprint => setPinDialog(d => d && { ...d, fingerprint })}
-                  accessibilityLabel="Also unlock with fingerprint"
-                />
+              // A tonal card: the whole card toggles. Without a fingerprint on the phone it explains that and links
+              // to the phone's security settings instead of showing a switch that can't be used.
+              <View style={[styles.fingerprintCard, { backgroundColor: theme.colors.surfaceContainerHighest }]}>
+                {fingerprintReady ? (
+                  <TouchableRipple
+                    onPress={() => setPinDialog(d => d && { ...d, fingerprint: !d.fingerprint })}
+                    accessibilityRole="switch"
+                    accessibilityState={{ checked: pinDialog.fingerprint }}
+                    accessibilityLabel="Also unlock with fingerprint"
+                    style={styles.fingerprintPress}
+                  >
+                    <View style={styles.fingerprintRow}>
+                      <Icon source="fingerprint" size={24} color={pinDialog.fingerprint ? theme.colors.primary : theme.colors.onSurfaceVariant} />
+                      <View style={styles.fingerprintText}>
+                        <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>Also unlock with fingerprint</Text>
+                        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>The PIN still works, and is needed to change it.</Text>
+                      </View>
+                      <Switch
+                        value={pinDialog.fingerprint}
+                        onValueChange={fingerprint => setPinDialog(d => d && { ...d, fingerprint })}
+                        importantForAccessibility="no-hide-descendants"
+                      />
+                    </View>
+                  </TouchableRipple>
+                ) : (
+                  <View style={[styles.fingerprintPress, styles.fingerprintRow, styles.fingerprintTop]}>
+                    <Icon source="fingerprint-off" size={24} color={theme.colors.onSurfaceVariant} />
+                    <View style={styles.fingerprintText}>
+                      <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>Fingerprint unlock</Text>
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Add a fingerprint in your phone's settings to use it here.</Text>
+                      <Button
+                        compact
+                        onPress={() => Linking.sendIntent('android.settings.SECURITY_SETTINGS').catch(() => Linking.openSettings())}
+                        style={styles.fingerprintAction}
+                      >
+                        Open settings
+                      </Button>
+                    </View>
+                  </View>
+                )}
               </View>
             )}
             {pinDialog && isProtected(pinDialog.profile) && pinDialog.profile.id !== activeId && (
@@ -662,15 +693,35 @@ const styles = StyleSheet.create({
   dialogInput: {
     marginTop: space.md,
   },
+  // Tonal card inside the dialog, 12dp corners like other controls.
+  fingerprintCard: {
+    marginTop: space.lg,
+    borderRadius: shape.control,
+    overflow: 'hidden',
+  },
+  fingerprintPress: {
+    paddingVertical: space.md,
+    paddingLeft: space.lg,
+    paddingRight: space.sm,
+    minHeight: 64,
+  },
   fingerprintRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: space.md,
-    marginTop: space.md,
-    minHeight: 48,
+    gap: space.lg,
+  },
+  // With the "Open settings" button under the text, the icon sits beside the title.
+  fingerprintTop: {
+    alignItems: 'flex-start',
   },
   fingerprintText: {
     flex: 1,
+    gap: 2,
+  },
+  fingerprintAction: {
+    alignSelf: 'flex-start',
+    marginLeft: -space.md,
+    marginTop: space.xs,
   },
   forgotPin: {
     alignSelf: 'flex-start',
