@@ -9,7 +9,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
-import { getActiveProfile, getProfiles, Profile, switchProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
+import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
 import { extractTags } from '../utils/tags';
@@ -113,6 +113,32 @@ const HomeScreen: React.FC = () => {
       console.error('Failed to switch profile:', error);
       alert("Couldn't switch profile", 'Try again. If it keeps failing, restart the app.');
     }
+  };
+
+  // A PIN can't be recovered, so a forgotten one means erasing that profile. The dialog only opens for a
+  // profile other than the open one.
+  const handleForgotPin = (profile: Profile) => {
+    setPinDialog(d => d && { ...d, open: false });
+    alert(
+      'Erase this profile?',
+      `A forgotten PIN can't be recovered. ${profile.name} and all its notes will be erased from this device. This can't be undone.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Erase profile',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await eraseForgottenProfile(profile.id);
+              await loadNotes();
+              setSnackbar(`${profile.name} erased`);
+            } catch (error) {
+              alert("Couldn't erase the profile", 'Try again. If it keeps failing, restart the app.');
+            }
+          },
+        },
+      ]
+    );
   };
 
   const handleRefresh = async () => {
@@ -686,6 +712,7 @@ const HomeScreen: React.FC = () => {
               onSubmitEditing={() => pinDialog && handleSwitchProfile(pinDialog.profile, pinDialog.pin)}
               style={styles.pinInput}
             />
+            <Button onPress={() => pinDialog && handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>Forgot PIN?</Button>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setPinDialog(d => d && { ...d, open: false })}>Cancel</Button>
@@ -781,6 +808,10 @@ const styles = StyleSheet.create({
   },
   pinInput: {
     marginTop: space.md,
+  },
+  forgotPin: {
+    alignSelf: 'flex-start',
+    marginTop: space.sm,
   },
 });
 
