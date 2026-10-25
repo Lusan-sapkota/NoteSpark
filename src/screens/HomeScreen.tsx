@@ -12,6 +12,7 @@ import { getNotes, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } 
 import { getActiveProfile, getProfiles, Profile, switchProfile, verifyProfilePin } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
+import { extractTags } from '../utils/tags';
 import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
 import { useAlert } from '../components/DialogProvider';
@@ -28,7 +29,7 @@ const typeFilters = [
   { value: 'archived', label: 'Archived' },
 ] as const;
 
-type Filter = typeof typeFilters[number]['value'];
+type Filter = typeof typeFilters[number]['value'] | `tag:${string}`;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -127,10 +128,19 @@ const HomeScreen: React.FC = () => {
     };
   }, [searchText, searchType, notes]);
 
+  // Tag chips, most used first, from notes outside the archive.
+  const tagsByNote = useMemo(() => new Map(notes.map(n => [n.id, extractTags(n.content)])), [notes]);
+  const tags = useMemo(() => {
+    const counts = new Map<string, number>();
+    notes.filter(n => !n.isArchived).forEach(n => tagsByNote.get(n.id)!.forEach(t => counts.set(t, (counts.get(t) ?? 0) + 1)));
+    return [...counts.keys()].sort((a, b) => counts.get(b)! - counts.get(a)! || a.localeCompare(b));
+  }, [notes, tagsByNote]);
+
   const filteredNotes = useMemo(() => {
     // Archived notes only show under the Archived filter.
     let filtered = notes.filter(n => (filter === 'archived') === n.isArchived);
     if (filter === 'pinned') filtered = filtered.filter(n => n.isPinned);
+    else if (filter.startsWith('tag:')) filtered = filtered.filter(n => tagsByNote.get(n.id)!.includes(filter.slice(4)));
     else if (filter === 'markdown' || filter === 'text') {
       filtered = filtered.filter(n => filter === 'markdown' ? n.isMarkdown : !n.isMarkdown);
     }
@@ -160,7 +170,7 @@ const HomeScreen: React.FC = () => {
       }
     });
     return filtered;
-  }, [notes, searchText, searchType, filter, sortType, meaningIds]);
+  }, [notes, tagsByNote, searchText, searchType, filter, sortType, meaningIds]);
 
   const handleNotePress = useCallback((noteId: number) => {
     navigation.navigate('NoteView', { noteId: noteId.toString() });
@@ -185,6 +195,15 @@ const HomeScreen: React.FC = () => {
     showBinned(binnedNoteId);
     navigation.setParams({ binnedNoteId: undefined });
   }, [binnedNoteId]);
+
+  // A tag tapped on the note page opens Home filtered to it.
+  const tagParam = route.params?.tag;
+  useEffect(() => {
+    if (tagParam === undefined) return;
+    setFilter(`tag:${tagParam}`);
+    setSearchText('');
+    navigation.setParams({ tag: undefined });
+  }, [tagParam]);
 
   const handleDeleteNote = useCallback((noteId: number) => {
     const title = notes.find(n => n.id === noteId)?.title || 'This note';
@@ -292,6 +311,14 @@ const HomeScreen: React.FC = () => {
 
   const isFiltered = !!searchText.trim() || filter !== 'all';
 
+  // All and Pinned, then tags (keeping a selected tag that no note uses any more), then the rest.
+  const selectedTag = filter.startsWith('tag:') && !tags.includes(filter.slice(4)) ? [filter.slice(4)] : [];
+  const chipFilters: { value: Filter; label: string }[] = [
+    ...typeFilters.slice(0, 2),
+    ...[...tags, ...selectedTag].map(t => ({ value: `tag:${t}` as Filter, label: `#${t}` })),
+    ...typeFilters.slice(2),
+  ];
+
   const renderEmpty = () => (
     <View style={styles.empty}>
       {isFiltered ? (
@@ -299,7 +326,7 @@ const HomeScreen: React.FC = () => {
           <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
             {searchText.trim()
               ? `No notes match "${searchText.trim()}"`
-              : filter === 'pinned' ? 'No pinned notes' : filter === 'archived' ? 'No archived notes' : 'No notes of this type'}
+              : filter === 'pinned' ? 'No pinned notes' : filter === 'archived' ? 'No archived notes' : filter.startsWith('tag:') ? `No notes tagged #${filter.slice(4)}` : 'No notes of this type'}
           </Text>
           <Text variant="bodyMedium" style={[styles.emptyBody, { color: theme.colors.onSurfaceVariant }]}>
             {searchText.trim()
@@ -402,7 +429,7 @@ const HomeScreen: React.FC = () => {
           )}
         />
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipRow}>
-          {typeFilters.map(f => (
+          {chipFilters.map(f => (
             <View key={f.value}>
               {/* Selected is filled with no outline and no check mark, so chips don't change width. */}
               <Chip

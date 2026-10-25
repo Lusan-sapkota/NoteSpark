@@ -11,7 +11,8 @@ export interface Note {
 }
 
 export type RootStackParamList = {
-  Home: { binnedNoteId?: number } | undefined; // set by the note page after moving a note to the bin
+  // binnedNoteId: set by the note page after moving a note to the bin; tag: a tag tapped on the note page.
+  Home: { binnedNoteId?: number; tag?: string } | undefined;
   Editor: { noteId?: string } | undefined;
   NoteView: { noteId: string } | undefined;
   Settings: undefined;

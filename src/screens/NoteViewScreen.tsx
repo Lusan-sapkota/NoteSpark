@@ -3,11 +3,12 @@ import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking, Nativ
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Appbar, Divider, FAB, Icon, ProgressBar, Text } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Divider, FAB, Icon, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { getNoteById, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
+import { extractTags } from '../utils/tags';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -303,6 +304,19 @@ const NoteViewScreen: React.FC = () => {
             {note.isMarkdown ? infoLabel('language-markdown', 'Markdown') : infoLabel('text', 'Text')}
             {infoLabel('pencil-outline', `Edited ${formatDate(note.updatedAt)}`)}
             {note.isArchived && infoLabel('archive-outline', 'Archived')}
+            {extractTags(content).map(tag => (
+              <TouchableRipple
+                key={tag}
+                onPress={() => navigation.popTo('Home', { tag })}
+                accessibilityRole="button"
+                accessibilityLabel={`Show notes tagged ${tag}`}
+                hitSlop={12}
+                borderless
+                style={[styles.info, { backgroundColor: theme.colors.tertiaryContainer }]}
+              >
+                <Text variant="labelMedium" maxFontSizeMultiplier={1.5} style={{ color: theme.colors.onTertiaryContainer }}>#{tag}</Text>
+              </TouchableRipple>
+            ))}
           </View>
           {taskLines.length > 0 && (
             <View style={styles.progress}>
