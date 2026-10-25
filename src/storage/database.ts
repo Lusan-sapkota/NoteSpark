@@ -128,7 +128,7 @@ export const setProfileEncryption = (profileId: string, encrypt: boolean): Promi
         if (!(await conn.getFirstAsync<{ cipher_version?: string }>('PRAGMA cipher_version'))?.cipher_version) return false;
         // The search index is a sqlite-vec virtual table, which sqlcipher_export can't copy; the next sync rebuilds it.
         await loadSearchExtension(conn);
-        await conn.execAsync('DROP TABLE IF EXISTS note_vectors; DROP TABLE IF EXISTS note_vector_state;');
+        await conn.execAsync(DROP_SEARCH_INDEX);
         await deleteAsync(fileUri(`${name}.new`), { idempotent: true });
         const path = `${SQLite.defaultDatabaseDirectory}/${name}.new`.replace(/'/g, "''");
         await conn.execAsync(
@@ -213,12 +213,20 @@ const loadSearchExtension = async (db: SQLite.SQLiteDatabase): Promise<boolean> 
   return true;
 };
 
+// Search index: one vector per chunk of a note (chunk_vectors rowid = note_chunks.id), and the updatedAt each
+// note was indexed at. note_vectors / note_vector_state held one vector per note before 2026-10-25.
+const DROP_SEARCH_INDEX = `DROP TABLE IF EXISTS note_vectors; DROP TABLE IF EXISTS note_vector_state;
+  DROP TABLE IF EXISTS chunk_vectors; DROP TABLE IF EXISTS note_chunks; DROP TABLE IF EXISTS chunk_state;`;
+
 const initSearchIndex = async (db: SQLite.SQLiteDatabase): Promise<void> => {
   try {
     if (!(await loadSearchExtension(db))) return;
     await db.execAsync(
-      `CREATE VIRTUAL TABLE IF NOT EXISTS note_vectors USING vec0(embedding float[384] distance_metric=cosine);
-       CREATE TABLE IF NOT EXISTS note_vector_state (noteId INTEGER PRIMARY KEY, updatedAt TEXT NOT NULL);`
+      `DROP TABLE IF EXISTS note_vectors; DROP TABLE IF EXISTS note_vector_state;
+       CREATE VIRTUAL TABLE IF NOT EXISTS chunk_vectors USING vec0(embedding float[384] distance_metric=cosine);
+       CREATE TABLE IF NOT EXISTS note_chunks (id INTEGER PRIMARY KEY, noteId INTEGER NOT NULL);
+       CREATE INDEX IF NOT EXISTS note_chunks_note ON note_chunks (noteId);
+       CREATE TABLE IF NOT EXISTS chunk_state (noteId INTEGER PRIMARY KEY, updatedAt TEXT NOT NULL);`
     );
   } catch (error) {
     console.warn('Search by meaning is unavailable:', error);

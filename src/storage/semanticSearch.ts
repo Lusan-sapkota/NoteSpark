@@ -51,38 +51,74 @@ const getEmbedder = () => {
 
 const asBlob = (v: Float32Array) => new Uint8Array(v.buffer, v.byteOffset, v.byteLength);
 
-const noteText = (title: string, content: string) =>
-  `${title}\n${content.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')}`;
+const cleanText = (content: string) =>
+  content.replace(/!\[[^\]]*\]\([^)]*\)/g, '').replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
+
+// ponytail: chunks by words, not tokens; about 1.3 tokens a word keeps the title plus a chunk under the model's 256.
+const CHUNK_WORDS = 150;
+const MAX_CHUNKS = 40; // bounds indexing time for very long notes; text past 6,000 words isn't searched
+
+// Paragraphs packed into chunks of up to CHUNK_WORDS words; a heading starts a new chunk, a long paragraph is split.
+export const chunkText = (content: string): string[] => {
+  const chunks: string[] = [];
+  let words: string[] = [];
+  const flush = () => {
+    if (words.length) chunks.push(words.join(' '));
+    words = [];
+  };
+  for (const block of content.split(/\n\s*\n|\n(?=#{1,6}\s)/)) {
+    const blockWords = block.trim().split(/\s+/).filter(Boolean);
+    if (/^#{1,6}\s/.test(block.trim())) flush();
+    for (let i = 0; i < blockWords.length; i += CHUNK_WORDS) {
+      const piece = blockWords.slice(i, i + CHUNK_WORDS);
+      if (words.length + piece.length > CHUNK_WORDS) flush();
+      words.push(...piece);
+    }
+  }
+  flush();
+  return chunks.length ? chunks.slice(0, MAX_CHUNKS) : [''];
+};
+
+// Every chunk carries the title, so a match deep in a note still knows what the note is about.
+const noteChunks = (title: string, content: string) => chunkText(cleanText(content)).map(chunk => `${title}\n${chunk}`);
 
 let syncing: Promise<void> | null = null;
 
-// ponytail: one vector per note from its first ~200 words; chunk long notes if deep matches get missed.
 export const syncSearchIndex = (): Promise<void> => {
   if (!isMeaningSearchAvailable()) return Promise.resolve();
   syncing ??= (async () => {
     const conn = db;
+    const live = 'SELECT id FROM notes WHERE deletedAt IS NULL';
     const stale = await withDatabaseLock(async () => {
       if (conn !== db || !isDatabaseReady()) return [];
+      const gone = await conn.getAllAsync<{ id: number }>(`SELECT id FROM note_chunks WHERE noteId NOT IN (${live})`);
+      for (const { id } of gone) await conn.runAsync('DELETE FROM chunk_vectors WHERE rowid = CAST(? AS INTEGER)', [id]);
       await conn.execAsync(
-        `DELETE FROM note_vectors WHERE rowid NOT IN (SELECT id FROM notes WHERE deletedAt IS NULL);
-         DELETE FROM note_vector_state WHERE noteId NOT IN (SELECT id FROM notes WHERE deletedAt IS NULL);`
+        `DELETE FROM note_chunks WHERE noteId NOT IN (${live});
+         DELETE FROM chunk_state WHERE noteId NOT IN (${live});`
       );
       return conn.getAllAsync<{ id: number; title: string; content: string; updatedAt: string }>(
         `SELECT n.id, n.title, n.content, n.updatedAt FROM notes n
-         LEFT JOIN note_vector_state s ON s.noteId = n.id WHERE n.deletedAt IS NULL AND s.updatedAt IS NOT n.updatedAt`
+         LEFT JOIN chunk_state s ON s.noteId = n.id WHERE n.deletedAt IS NULL AND s.updatedAt IS NOT n.updatedAt`
       );
     });
     if (!stale.length) return;
     const embed = await getEmbedder();
     for (const note of stale) {
       if (conn !== db || !isDatabaseReady()) return; // profile switched or re-encrypting
-      const vector = await embed(noteText(note.title, note.content));
+      const vectors: Float32Array[] = [];
+      for (const chunk of noteChunks(note.title, note.content)) vectors.push(await embed(chunk));
       const stopped = await withDatabaseLock(async () => {
         if (conn !== db || !isDatabaseReady()) return true;
         // No transaction: on the shared connection it could swallow a note being saved. vec0 rejects float rowids.
-        await conn.runAsync('DELETE FROM note_vectors WHERE rowid = CAST(? AS INTEGER)', [note.id]);
-        await conn.runAsync('INSERT INTO note_vectors (rowid, embedding) VALUES (CAST(? AS INTEGER), ?)', [note.id, asBlob(vector)]);
-        await conn.runAsync('INSERT OR REPLACE INTO note_vector_state (noteId, updatedAt) VALUES (?, ?)', [note.id, note.updatedAt]);
+        const old = await conn.getAllAsync<{ id: number }>('SELECT id FROM note_chunks WHERE noteId = ?', [note.id]);
+        for (const { id } of old) await conn.runAsync('DELETE FROM chunk_vectors WHERE rowid = CAST(? AS INTEGER)', [id]);
+        await conn.runAsync('DELETE FROM note_chunks WHERE noteId = ?', [note.id]);
+        for (const vector of vectors) {
+          const { lastInsertRowId } = await conn.runAsync('INSERT INTO note_chunks (noteId) VALUES (?)', [note.id]);
+          await conn.runAsync('INSERT INTO chunk_vectors (rowid, embedding) VALUES (CAST(? AS INTEGER), ?)', [lastInsertRowId, asBlob(vector)]);
+        }
+        await conn.runAsync('INSERT OR REPLACE INTO chunk_state (noteId, updatedAt) VALUES (?, ?)', [note.id, note.updatedAt]);
         return false;
       });
       if (stopped) return;
@@ -93,15 +129,31 @@ export const syncSearchIndex = (): Promise<void> => {
   return syncing;
 };
 
+// Nearest chunks to `vector`, as notes: each note's closest chunk, closest notes first.
+const nearestNotes = async (vector: Uint8Array, k: number): Promise<{ id: number; distance: number }[]> => {
+  const rows = await db.getAllAsync<{ id: number; distance: number }>(
+    `SELECT rowid AS id, distance FROM chunk_vectors WHERE embedding MATCH ? AND k = ${k} ORDER BY distance`,
+    [vector]
+  );
+  if (!rows.length) return [];
+  const owners = await db.getAllAsync<{ id: number; noteId: number }>(
+    `SELECT id, noteId FROM note_chunks WHERE id IN (${rows.map(() => '?').join(',')})`,
+    rows.map(r => r.id)
+  );
+  const noteOf = new Map(owners.map(o => [o.id, o.noteId]));
+  const best = new Map<number, number>();
+  for (const r of rows) {
+    const noteId = noteOf.get(r.id);
+    if (noteId !== undefined && !best.has(noteId)) best.set(noteId, r.distance);
+  }
+  return [...best].map(([id, distance]) => ({ id, distance }));
+};
+
 // null when it fails, so the caller falls back to word search.
 export const searchByMeaning = async (query: string): Promise<number[] | null> => {
   try {
     const vector = await (await getEmbedder())(query);
-    const rows = await db.getAllAsync<{ id: number; distance: number }>(
-      'SELECT rowid AS id, distance FROM note_vectors WHERE embedding MATCH ? AND k = 30 ORDER BY distance',
-      [asBlob(vector)]
-    );
-    return rows.filter(r => r.distance <= MAX_DISTANCE).map(r => r.id);
+    return (await nearestNotes(asBlob(vector), 90)).filter(r => r.distance <= MAX_DISTANCE).slice(0, 30).map(r => r.id);
   } catch (error) {
     console.warn('Search by meaning failed:', error);
     return null;
@@ -109,21 +161,25 @@ export const searchByMeaning = async (query: string): Promise<number[] | null> =
 };
 
 const RELATED_MAX_DISTANCE = 0.55;
+const RELATED_CHUNKS = 8; // the note's first chunks, each searched; long notes find what their later parts are about
 
-// From the note's stored vector, so no model run. Empty when the note isn't indexed yet or search by meaning is missing.
+// From the note's stored vectors, so no model run. Empty when the note isn't indexed yet or search by meaning is missing.
 export const relatedNotes = async (noteId: number, limit = 5): Promise<number[]> => {
   if (!isMeaningSearchAvailable()) return [];
   try {
-    const row = await db.getFirstAsync<{ embedding: Uint8Array }>(
-      'SELECT embedding FROM note_vectors WHERE rowid = CAST(? AS INTEGER)',
+    const chunks = await db.getAllAsync<{ id: number }>(
+      `SELECT id FROM note_chunks WHERE noteId = ? ORDER BY id LIMIT ${RELATED_CHUNKS}`,
       [noteId]
     );
-    if (!row) return [];
-    const rows = await db.getAllAsync<{ id: number; distance: number }>(
-      `SELECT rowid AS id, distance FROM note_vectors WHERE embedding MATCH ? AND k = ${limit + 1} ORDER BY distance`,
-      [row.embedding]
-    );
-    return rows.filter(r => r.id !== noteId && r.distance <= RELATED_MAX_DISTANCE).map(r => r.id);
+    const best = new Map<number, number>();
+    for (const { id } of chunks) {
+      const row = await db.getFirstAsync<{ embedding: Uint8Array }>('SELECT embedding FROM chunk_vectors WHERE rowid = CAST(? AS INTEGER)', [id]);
+      if (!row) continue;
+      for (const r of await nearestNotes(row.embedding, limit * 4)) {
+        if (r.id !== noteId && r.distance <= RELATED_MAX_DISTANCE && r.distance < (best.get(r.id) ?? Infinity)) best.set(r.id, r.distance);
+      }
+    }
+    return [...best].sort((a, b) => a[1] - b[1]).slice(0, limit).map(([id]) => id);
   } catch (error) {
     console.warn('Related notes failed:', error);
     return [];
