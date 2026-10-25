@@ -11,15 +11,15 @@ const LOGO = require('../../assets/icon.png');
 const slides = [
   {
     title: 'Notes that stay on your phone',
-    body: 'No account, no cloud, no ads. Everything you write is saved on this device.',
+    body: 'No account, no cloud, no ads. Even search works offline: it finds notes by meaning, not just by matching words.',
   },
   {
     title: 'Write it down fast',
     body: 'Tap New note on the home screen and start typing. Pin the notes you need most.',
   },
   {
-    title: 'Plain text or Markdown',
-    body: 'Switch any note to Markdown for headings, lists and links. Back up everything as a JSON file.',
+    title: 'Tasks inside your notes',
+    body: 'Start a line with [ ] to make a task, and add due:2026-11-01 for a date. Tasks shows every task from every note in one place.',
   },
 ];
 
