@@ -17,7 +17,7 @@ import { readingWidth, space } from '../theme/theme';
 
 const GITHUB_URL = 'https://github.com/Lusan-sapkota/NoteSpark';
 const DEVELOPER_EMAIL = 'contact@lusansapkota.com.np';
-const WEBSITE = 'https://lusansapkota.com.np';
+const WEBSITE = 'https://notespark.lusansapkota.com.np';
 // Read from the installed app, so it always matches the build (e.g. "1.2.0 (14)").
 const getAppVersion = () => {
   const version = Application.nativeApplicationVersion;
