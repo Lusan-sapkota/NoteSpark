@@ -1,0 +1,56 @@
+# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+
+# dependencies
+node_modules/
+
+# Expo
+.expo/
+dist/
+web-build/
+expo-env.d.ts
+
+# MODES
+.github/chatmodes/BEASTMODE.chatmode.md
+
+# Native
+.kotlin/
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Metro
+.metro-health-check*
+
+# debug
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+
+# macOS
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+# typescript
+*.tsbuildinfo
+
+
+
+# Secrets: never commit (keystores, Firebase and Play Console keys, env files)
+.env
+.env*
+*.keystore
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+play-console*.json
+credentials.json
+
+# Generated native projects (Expo prebuild)
+/android
+/ios

@@ -1,42 +1,21 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
+# Repo-wide. Each app folder (Mobile, Desktop, Docker, Web) has its own .gitignore too.
 
-# dependencies
-node_modules/
-
-# Expo
-.expo/
-dist/
-web-build/
-expo-env.d.ts
-
-# MODES
-.github/chatmodes/BEASTMODE.chatmode.md
-
-# Native
-.kotlin/
-*.orig.*
+# Secrets, anywhere in the repo
+.env
+.env*
 *.jks
+*.keystore
 *.p8
 *.p12
-*.key
-*.mobileprovision
-
-# Metro
-.metro-health-check*
-
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
-.DS_Store
 *.pem
+*.key
+google-services.json
+GoogleService-Info.plist
+service-account*.json
+play-console*.json
+credentials.json
 
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-
+# Dependencies and editors
+node_modules/
+.DS_Store
+*.log

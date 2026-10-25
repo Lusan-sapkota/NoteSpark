@@ -1,0 +1,16 @@
+# Electron app
+node_modules/
+dist/
+out/
+release/
+.vite/
+*.log
+
+# Signing and secrets
+.env
+.env*
+*.p12
+*.pfx
+*.pem
+*.key
+*.provisionprofile

@@ -1,0 +1,12 @@
+# Sync hub image
+node_modules/
+dist/
+*.log
+
+# Local data and secrets: notes, keys and env files stay on your server
+data/
+volumes/
+.env
+.env*
+*.pem
+*.key
