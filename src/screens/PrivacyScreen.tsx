@@ -15,9 +15,9 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
   {
     heading: 'What NoteSpark stores',
     bullets: [
-      'Your notes: the title, text, format, whether they are pinned, and the dates they were created and edited. They are kept in a database on your device, one for each profile.',
+      'Your notes: the title, text, format, whether they are pinned, and the dates they were created and edited, and your scratchpad. They are kept in a database on your device, one for each profile.',
       'A search index: for search by meaning, each note is turned into a list of numbers by a small model that is part of the app and runs on your device. The index is kept in the same database as your notes.',
-      "Images you add to a note aren't copied or uploaded. The note keeps a link to the image file on your device.",
+      "Images you add from your phone are copied into NoteSpark's own storage on your device, so they keep showing if the original is moved or your phone clears its cache. They aren't uploaded. A copy is deleted once no note uses it.",
       "Your profile names, which profile is open, your theme choice, whether you've finished the welcome screens, and a list of your last 20 imports and exports. These are also kept on your device.",
       "Profile PINs: only a scrambled form of each PIN (a salted hash) is kept, in Android's secure storage. The PIN itself isn't stored, so it can't be recovered if you forget it. A profile with a PIN also has its notes encrypted on your phone, with a key kept in Android's secure storage.",
       'A deleted profile stays on your device for 30 days so you can restore it, then it and its notes are erased.',
