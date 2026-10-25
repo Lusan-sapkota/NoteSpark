@@ -998,10 +998,12 @@ const styles = StyleSheet.create({
     height: 16,
     width: '45%',
   },
+  // Same inset as the note cards (NoteItem).
   rediscover: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     overflow: 'hidden',
+    marginHorizontal: space.lg,
     marginBottom: space.md,
   },
   rediscoverBody: {
