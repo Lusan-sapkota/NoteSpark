@@ -158,7 +158,7 @@ const NoteViewScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right']}>
-      <Header elevated={elevated} title="" showBackButton onBackPress={goBack} />
+      <Header elevated={elevated} title={note.title} showBackButton onBackPress={goBack} />
       <ScrollView
         style={styles.container}
         contentContainerStyle={styles.scrollContent}

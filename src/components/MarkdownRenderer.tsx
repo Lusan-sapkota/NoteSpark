@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import Markdown from 'react-native-markdown-display';
+import Markdown, { ASTNode, renderRules } from 'react-native-markdown-display';
 import { useAlert } from './DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
 import NoteImages from './NoteImages';
+
+const firstText = (node: ASTNode): string => (node.children?.length ? firstText(node.children[0]) : node.content ?? '');
 
 interface MarkdownRendererProps {
   content: string;
@@ -184,6 +186,15 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
           // Same cached, retryable image view the screens use.
           image: (node) => <NoteImages key={node.key} uris={node.attributes.src ? [node.attributes.src] : []} />,
           link: (node, children, parent, styles) => renderLink({ ...node.attributes, children }),
+          // Task items: the box replaces the bullet instead of sitting next to it.
+          list_item: (node, children, parent, styles, inheritedStyles) =>
+            /^[☐☑]/.test(firstText(node)) ? (
+              <View key={node.key} style={styles._VIEW_SAFE_list_item}>
+                <View style={styles._VIEW_SAFE_bullet_list_content}>{children}</View>
+              </View>
+            ) : (
+              renderRules.list_item!(node, children, parent, styles, inheritedStyles)
+            ),
         }}
       >
         {processedContent}
