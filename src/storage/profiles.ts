@@ -3,9 +3,9 @@ import * as Crypto from 'expo-crypto';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
-import { toNote } from './notes';
+import { changesNotes, toNote } from './notes';
 import { Note } from '../types';
-import { BIN_DAYS, dbName, deleteProfileDatabase, forgetProfileKey, getProfileKey, initDatabase, isProfileDatabaseOpen, isProfileEncrypted, openProfileConnection, openProfileDatabase, restoreProfileKey, setProfileEncryption, withDatabaseLock } from './database';
+import { BIN_DAYS, db, dbName, deleteProfileDatabase, forgetProfileKey, getProfileKey, initDatabase, isProfileDatabaseOpen, isProfileEncrypted, openProfileConnection, openProfileDatabase, restoreProfileKey, setProfileEncryption, withDatabaseLock } from './database';
 
 export interface Profile {
   id: string;
@@ -304,6 +304,79 @@ export const readProfileNotes = (id: string): Promise<Note[]> =>
       await db.closeAsync();
     }
   });
+
+// Moves notes (and their version history) from the open profile to another profile.
+// Writes to the target profile first, so a failure leaves the source notes untouched. Returns an undo callback.
+export const transferNotesToProfile = changesNotes(
+  async (notes: Note[], targetProfileId: string, pin?: string): Promise<() => Promise<void>> => {
+    if (!(await isAuthorized(targetProfileId, pin))) throw new Error('Invalid profile PIN');
+    if (isProfileDatabaseOpen(targetProfileId)) throw new Error('Notes are already in this profile');
+    const versionsByNote = new Map<number, { title: string; content: string; isMarkdown: number; savedAt: string }[]>();
+    for (const note of notes) {
+      versionsByNote.set(
+        note.id,
+        await db.getAllAsync('SELECT title, content, isMarkdown, savedAt FROM note_versions WHERE noteId = ? ORDER BY id ASC', [note.id])
+      );
+    }
+    const insertedIds: number[] = [];
+    await withDatabaseLock(async () => {
+      const targetDb = await openProfileConnection(targetProfileId, { useNewConnection: true });
+      try {
+        await initDatabase(targetDb);
+        await targetDb.withExclusiveTransactionAsync(async txn => {
+          for (const note of notes) {
+            const res = await txn.runAsync(
+              'INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              [note.title, note.content, note.isMarkdown ? 1 : 0, note.createdAt, note.updatedAt, note.isPinned ? 1 : 0, note.isArchived ? 1 : 0]
+            );
+            const newId = res.lastInsertRowId;
+            insertedIds.push(newId);
+            for (const v of versionsByNote.get(note.id) ?? []) {
+              await txn.runAsync(
+                'INSERT INTO note_versions (noteId, title, content, isMarkdown, savedAt) VALUES (?, ?, ?, ?, ?)',
+                [newId, v.title, v.content, v.isMarkdown ? 1 : 0, v.savedAt]
+              );
+            }
+          }
+        });
+      } finally {
+        await targetDb.closeAsync();
+      }
+      for (const note of notes) {
+        await db.runAsync('DELETE FROM notes WHERE id = ?', [note.id]);
+        await db.runAsync('DELETE FROM note_versions WHERE noteId = ?', [note.id]);
+      }
+    });
+    return changesNotes(async () => {
+      await withDatabaseLock(async () => {
+        for (const note of notes) {
+          const res = await db.runAsync(
+            'INSERT INTO notes (id, title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            [note.id, note.title, note.content, note.isMarkdown ? 1 : 0, note.createdAt, note.updatedAt, note.isPinned ? 1 : 0, note.isArchived ? 1 : 0]
+          );
+          const restoredId = res.lastInsertRowId || note.id;
+          for (const v of versionsByNote.get(note.id) ?? []) {
+            await db.runAsync(
+              'INSERT INTO note_versions (noteId, title, content, isMarkdown, savedAt) VALUES (?, ?, ?, ?, ?)',
+              [restoredId, v.title, v.content, v.isMarkdown ? 1 : 0, v.savedAt]
+            );
+          }
+        }
+        const targetDb = await openProfileConnection(targetProfileId, { useNewConnection: true });
+        try {
+          await targetDb.withExclusiveTransactionAsync(async txn => {
+            for (const id of insertedIds) {
+              await txn.runAsync('DELETE FROM notes WHERE id = ?', [id]);
+              await txn.runAsync('DELETE FROM note_versions WHERE noteId = ?', [id]);
+            }
+          });
+        } finally {
+          await targetDb.closeAsync();
+        }
+      });
+    });
+  }
+);
 
 // Throws if any profile can't be read, so pruning is skipped instead of deleting images still in use.
 export const getAllProfilesNoteContents = async (): Promise<string[]> => {

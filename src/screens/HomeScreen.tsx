@@ -9,7 +9,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, getNotesVersion, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
-import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
+import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
 import { extractTags } from '../utils/tags';
@@ -58,7 +58,8 @@ const HomeScreen: React.FC = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [profileDialogVisible, setProfileDialogVisible] = useState(false);
-  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; open: boolean } | null>(null);
+  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; notesToMove?: Note[]; open: boolean } | null>(null);
+  const [transferDialog, setTransferDialog] = useState<{ notes: Note[]; open: boolean } | null>(null);
   const lastOffset = useRef(0);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
   const selecting = selectedIds.length > 0;
@@ -333,6 +334,96 @@ const HomeScreen: React.FC = () => {
     );
   };
 
+  const executeTransfer = async (profile: Profile, targets: Note[], pin?: string) => {
+    try {
+      const revert = await transferNotesToProfile(targets, profile.id, pin);
+      clearSelection();
+      setUndo(() => async () => {
+        try {
+          await revert();
+        } catch (error) {
+          alert("Couldn't undo", 'Some notes may have changed. Check them and try again.');
+        }
+        await loadNotes();
+      });
+      await loadNotes();
+      setSnackbar(`${countLabel(targets.length)} moved to ${profile.name}`);
+    } catch (error) {
+      console.error('Failed to transfer notes:', error);
+      alert(`Couldn't move notes to ${profile.name}`, 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
+  const promptTransferToProfile = async (profile: Profile, targets: Note[]) => {
+    setTransferDialog(d => d && { ...d, open: false });
+    if (profile.id === activeProfile?.id || targets.length === 0) return;
+    const unlocked = await verifyProfilePin(profile.id, '');
+    if (unlocked) {
+      alert(
+        `Move ${countLabel(targets.length)} to ${profile.name}?`,
+        targets.length === 1
+          ? `"${targets[0].title || 'Untitled note'}" will be moved to ${profile.name}.`
+          : `${countLabel(targets.length)} will be moved to ${profile.name}.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Move',
+            onPress: () => { executeTransfer(profile, targets); },
+          },
+        ]
+      );
+      return;
+    }
+    // Locked profile: try fingerprint first when PIN + fingerprint is enabled; otherwise (or on "Use PIN") show PIN dialog.
+    if (await unlockWithBiometrics(profile)) {
+      await executeTransfer(profile, targets);
+      return;
+    }
+    setPinDialog({ profile, pin: '', notesToMove: targets, open: true });
+  };
+
+  const startTransfer = (targets: Note[]) => {
+    if (targets.length === 0) return;
+    const otherProfiles = profiles.filter(p => p.id !== activeProfile?.id);
+    if (otherProfiles.length === 0) {
+      alert(
+        'No other profiles',
+        'Add another profile in Settings first, then move notes to it.',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Manage profiles',
+            onPress: () => {
+              clearSelection();
+              navigation.navigate('Settings');
+            },
+          },
+        ]
+      );
+      return;
+    }
+    if (otherProfiles.length === 1) {
+      promptTransferToProfile(otherProfiles[0], targets);
+      return;
+    }
+    setTransferDialog({ notes: targets, open: true });
+  };
+
+  const handlePinDialogSubmit = async () => {
+    if (!pinDialog || pinDialog.pin.length !== 4) return;
+    const { profile, pin, notesToMove } = pinDialog;
+    if (!notesToMove) {
+      await handleSwitchProfile(profile, pin);
+      return;
+    }
+    if (!(await verifyProfilePin(profile.id, pin))) {
+      alert('Incorrect PIN', await wrongPinMessage(profile.id));
+      return;
+    }
+    setPinDialog(d => d && { ...d, open: false });
+    await executeTransfer(profile, notesToMove, pin);
+  };
+
   const handleNotePress = useCallback((noteId: number) => {
     navigation.navigate('NoteView', { noteId: noteId.toString() });
   }, [navigation]);
@@ -434,6 +525,11 @@ const HomeScreen: React.FC = () => {
     }
   }, [notes, alert]);
 
+  const handleTransferNote = useCallback((noteId: number) => {
+    const note = notes.find(n => n.id === noteId);
+    if (note) startTransfer([note]);
+  }, [notes, profiles, activeProfile]);
+
   const renderNoteItem = useCallback(
     ({ item, index }: { item: Note; index: number }) => {
       const isPinned = item.isPinned;
@@ -448,6 +544,7 @@ const HomeScreen: React.FC = () => {
           isPinned={isPinned}
           onPinToggle={handlePinToggle}
           onArchiveToggle={handleArchiveToggle}
+          onTransfer={profiles.length > 1 ? handleTransferNote : undefined}
           onSelect={handleSelect}
           selecting={selecting}
           selected={selectedIds.includes(item.id)}
@@ -457,7 +554,7 @@ const HomeScreen: React.FC = () => {
         />
       );
     },
-    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleSelect, selecting, selectedIds, filteredNotes, sortType]
+    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, filteredNotes, sortType]
   );
 
   const handleCreateNote = () => {
@@ -535,6 +632,11 @@ const HomeScreen: React.FC = () => {
             icon={filter === 'archived' ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
             accessibilityLabel={filter === 'archived' ? 'Unarchive selected notes' : 'Archive selected notes'}
             onPress={handleArchiveSelected}
+          />
+          <Appbar.Action
+            icon="account-arrow-right-outline"
+            accessibilityLabel="Move selected notes to another profile"
+            onPress={() => startTransfer(selectedNotes)}
           />
           <Appbar.Action icon="export-variant" accessibilityLabel="Export selected notes" onPress={handleExportSelected} />
           <Appbar.Action icon="delete-outline" accessibilityLabel="Move selected notes to bin" onPress={handleBinSelected} />
@@ -713,10 +815,36 @@ const HomeScreen: React.FC = () => {
             <Button onPress={() => setProfileDialogVisible(false)}>Cancel</Button>
           </Dialog.Actions>
         </Dialog>
+        <Dialog visible={!!transferDialog?.open} onDismiss={() => setTransferDialog(d => d && { ...d, open: false })}>
+          <Dialog.Title>Move {countLabel(transferDialog?.notes.length ?? 0)} to</Dialog.Title>
+          <Dialog.ScrollArea style={styles.profileList}>
+            <ScrollView>
+              {profiles
+                .filter(p => p.id !== activeProfile?.id)
+                .map(p => (
+                  <List.Item
+                    key={p.id}
+                    title={p.name}
+                    left={props => <List.Icon {...props} icon="account-outline" />}
+                    onPress={() => transferDialog && promptTransferToProfile(p, transferDialog.notes)}
+                  />
+                ))}
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setTransferDialog(d => d && { ...d, open: false })}>Cancel</Button>
+          </Dialog.Actions>
+        </Dialog>
         <Dialog visible={!!pinDialog?.open} onDismiss={() => setPinDialog(d => d && { ...d, open: false })}>
-          <Dialog.Title>Enter profile PIN</Dialog.Title>
+          <Dialog.Title>
+            {pinDialog?.notesToMove ? `Move to ${pinDialog.profile.name}` : 'Enter profile PIN'}
+          </Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">Enter the four-digit PIN for {pinDialog?.profile.name}.</Text>
+            <Text variant="bodyMedium">
+              {pinDialog?.notesToMove
+                ? `Enter the four-digit PIN for ${pinDialog.profile.name} to move ${countLabel(pinDialog.notesToMove.length)} to it.`
+                : `Enter the four-digit PIN for ${pinDialog?.profile.name}.`}
+            </Text>
             <TextInput
               mode="outlined"
               label="PIN"
@@ -725,14 +853,16 @@ const HomeScreen: React.FC = () => {
               keyboardType="number-pad"
               secureTextEntry
               autoFocus
-              onSubmitEditing={() => pinDialog && handleSwitchProfile(pinDialog.profile, pinDialog.pin)}
+              onSubmitEditing={handlePinDialogSubmit}
               style={styles.pinInput}
             />
             <Button onPress={() => pinDialog && handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>Forgot PIN?</Button>
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={() => setPinDialog(d => d && { ...d, open: false })}>Cancel</Button>
-            <Button onPress={() => pinDialog && handleSwitchProfile(pinDialog.profile, pinDialog.pin)} disabled={pinDialog?.pin.length !== 4}>Unlock</Button>
+            <Button onPress={handlePinDialogSubmit} disabled={pinDialog?.pin.length !== 4}>
+              {pinDialog?.notesToMove ? 'Move' : 'Unlock'}
+            </Button>
           </Dialog.Actions>
         </Dialog>
       </Portal>

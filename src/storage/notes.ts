@@ -8,7 +8,7 @@ import { TaskLine, toggleTaskLine } from '../utils/tasks';
 let notesVersion = 0;
 export const getNotesVersion = () => notesVersion;
 
-const changesNotes = <A extends unknown[], R>(write: (...args: A) => Promise<R>) => async (...args: A): Promise<R> => {
+export const changesNotes = <A extends unknown[], R>(write: (...args: A) => Promise<R>) => async (...args: A): Promise<R> => {
   try {
     return await write(...args);
   } finally {

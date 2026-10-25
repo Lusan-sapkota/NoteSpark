@@ -15,6 +15,7 @@ interface NoteItemProps {
   isPinned: boolean;
   onPinToggle: (noteId: number) => void;
   onArchiveToggle: (noteId: number) => void;
+  onTransfer?: (noteId: number) => void;
   // Selecting: long-press starts it; while it's on, a tap selects instead of opening.
   onSelect: (noteId: number) => void;
   selecting?: boolean;
@@ -64,6 +65,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   isPinned,
   onPinToggle,
   onArchiveToggle,
+  onTransfer,
   onSelect,
   selecting = false,
   selected = false,
@@ -161,6 +163,13 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                     title={note.isArchived ? 'Unarchive' : 'Archive'}
                     onPress={() => { setMenuVisible(false); onArchiveToggle(note.id); }}
                   />
+                  {onTransfer && (
+                    <Menu.Item
+                      leadingIcon="account-arrow-right-outline"
+                      title="Move to profile"
+                      onPress={() => { setMenuVisible(false); onTransfer(note.id); }}
+                    />
+                  )}
                   <Menu.Item
                     leadingIcon="delete-outline"
                     title="Move to bin"
