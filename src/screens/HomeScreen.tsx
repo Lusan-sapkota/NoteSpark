@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback, useRef, useDeferredVa
 import { BackHandler, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
-import { AnimatedFAB, Appbar, Button, Chip, Dialog, List, Portal, Searchbar, Text, TextInput } from 'react-native-paper';
+import { AnimatedFAB, Appbar, Button, Chip, Dialog, Icon, IconButton, List, Portal, Searchbar, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
@@ -17,7 +17,8 @@ import { shareNotesAsJson, shareNotesAsZip } from '../utils/exportNotes';
 import { syncTaskReminders } from '../utils/taskReminders';
 import { updateWidgets } from '../widget/widgets';
 import Header, { useHeaderElevation } from '../components/Header';
-import NoteItem from '../components/NoteItem';
+import NoteItem, { toPreview } from '../components/NoteItem';
+import { hideRediscoverToday, isRediscoverHiddenToday, isRediscoverOn, pickRediscovery, Rediscovery } from '../utils/rediscover';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { groupCorners, shape, space } from '../theme/theme';
@@ -65,6 +66,25 @@ const HomeScreen: React.FC = () => {
   const selecting = selectedIds.length > 0;
   const clearSelection = () => setSelectedIds([]);
 
+  // The Rediscover card: whether it may show (on in Settings, not hidden today), and the pick for the current notes.
+  const [rediscoverAllowed, setRediscoverAllowed] = useState(false);
+  const [rediscovery, setRediscovery] = useState<Rediscovery | null>(null);
+  const checkRediscover = () =>
+    Promise.all([isRediscoverOn(), isRediscoverHiddenToday()])
+      .then(([on, hidden]) => setRediscoverAllowed(on && !hidden))
+      .catch(() => {});
+  useEffect(() => {
+    if (!rediscoverAllowed) {
+      setRediscovery(null);
+      return;
+    }
+    let active = true;
+    pickRediscovery(notes).then(r => active && setRediscovery(r)).catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [notes, rediscoverAllowed]);
+
   // Profile and note version of the list on screen: coming back to Home reloads only when one of them changed.
   const loadedKey = useRef('');
 
@@ -106,8 +126,10 @@ const HomeScreen: React.FC = () => {
 
   useEffect(() => {
     loadNotes();
+    checkRediscover();
     const unsubscribe = navigation.addListener('focus', () => {
       loadNotes();
+      checkRediscover();
     });
     return unsubscribe;
   }, [navigation]);
@@ -666,6 +688,7 @@ const HomeScreen: React.FC = () => {
                 accessibilityLabel={`Switch profile, current profile ${activeProfile?.name ?? ''}`}
                 onPress={() => setProfileDialogVisible(true)}
               />
+              <Appbar.Action icon="notebook-edit-outline" accessibilityLabel="Scratchpad" onPress={() => navigation.navigate('Scratchpad')} />
               <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel="Tasks" onPress={() => navigation.navigate('Tasks')} />
               <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
             </>
@@ -774,6 +797,43 @@ const HomeScreen: React.FC = () => {
           renderItem={renderNoteItem}
           itemLayoutAnimation={LinearTransition.springify()}
           ListEmptyComponent={renderEmpty}
+          ListHeaderComponent={
+            rediscovery && !isFiltered && !selecting ? (
+              <View style={[styles.rediscover, groupCorners(true, true), { backgroundColor: theme.colors.surfaceContainerLow }]}>
+                <TouchableRipple
+                  onPress={() => handleNotePress(rediscovery.note.id)}
+                  style={styles.rediscoverBody}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${rediscovery.reason}: ${rediscovery.note.title || 'Untitled note'}`}
+                >
+                  <View style={styles.rediscoverText}>
+                    <View style={styles.rediscoverReason}>
+                      <Icon source="history" size={16} color={theme.colors.onSurfaceVariant} />
+                      <Text variant="labelMedium" style={[styles.flexText, { color: theme.colors.onSurfaceVariant }]} numberOfLines={2}>
+                        {rediscovery.reason}
+                      </Text>
+                    </View>
+                    <Text variant="titleMedium" style={{ color: theme.colors.onSurface }} numberOfLines={2}>
+                      {rediscovery.note.title || 'Untitled note'}
+                    </Text>
+                    {!!toPreview(rediscovery.note.content) && (
+                      <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={2}>
+                        {toPreview(rediscovery.note.content)}
+                      </Text>
+                    )}
+                  </View>
+                </TouchableRipple>
+                <IconButton
+                  icon="close"
+                  accessibilityLabel="Hide for today"
+                  onPress={() => {
+                    setRediscoverAllowed(false);
+                    hideRediscoverToday().catch(() => {});
+                  }}
+                />
+              </View>
+            ) : undefined
+          }
           contentContainerStyle={styles.listContent}
           refreshControl={
             <RefreshControl
@@ -937,6 +997,28 @@ const styles = StyleSheet.create({
   skeletonTitle: {
     height: 16,
     width: '45%',
+  },
+  rediscover: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    overflow: 'hidden',
+    marginBottom: space.md,
+  },
+  rediscoverBody: {
+    flex: 1,
+  },
+  rediscoverText: {
+    gap: space.xs,
+    paddingVertical: space.md,
+    paddingLeft: space.lg,
+  },
+  rediscoverReason: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+  },
+  flexText: {
+    flex: 1,
   },
   listContent: {
     flexGrow: 1,

@@ -2,9 +2,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, Icon, IconButton, List, RadioButton, SegmentedButtons, Text, TextInput } from 'react-native-paper';
+import { Button, Dialog, Icon, IconButton, List, RadioButton, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
+import { isRediscoverOn, setRediscoverOn } from '../utils/rediscover';
 import { formatHour, getReminderHour, REMINDER_HOURS, setReminderHour } from '../utils/taskReminders';
 import { AUTO_LOCK_MINUTES, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { BIN_DAYS } from '../storage/database';
@@ -45,6 +46,7 @@ const SettingsScreen: React.FC = () => {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [reminderHour, setReminderHourState] = useState(9);
   const [autoLock, setAutoLock] = useState(1);
+  const [rediscover, setRediscover] = useState(true);
   // A pick-one dialog (reminder time, auto-lock); kept after closing so it doesn't change while fading.
   const [choice, setChoice] = useState<{ title: string; options: { label: string; value: number }[]; value: number; onPick: (value: number) => void; open: boolean } | null>(null);
   // Kept after closing so the text doesn't change while the dialog fades out.
@@ -67,6 +69,7 @@ const SettingsScreen: React.FC = () => {
     setFingerprintProfileIds(await idsWhere(usesBiometrics));
     setReminderHourState(await getReminderHour());
     setAutoLock(await getAutoLockMinutes());
+    setRediscover(await isRediscoverOn());
   }, []);
 
   const lockLabel = (minutes: number) => (minutes === 0 ? 'Right away' : `After ${minutes} minute${minutes === 1 ? '' : 's'}`);
@@ -368,6 +371,23 @@ const SettingsScreen: React.FC = () => {
               { value: 'system', label: 'System', icon: 'theme-light-dark' },
             ]}
           />
+          <View style={styles.afterSegmented}>
+            <GroupedRow
+              title="Rediscover on Home"
+              description="One older note a day at the top of your list"
+              icon="history"
+              right={
+                <Switch
+                  value={rediscover}
+                  onValueChange={on => { setRediscover(on); setRediscoverOn(on).catch(() => {}); }}
+                  accessibilityLabel="Rediscover on Home"
+                />
+              }
+              onPress={() => { setRediscover(!rediscover); setRediscoverOn(!rediscover).catch(() => {}); }}
+              isFirst
+              isLast
+            />
+          </View>
 
           {sectionTitle('Profiles')}
           {profiles.map((p, i) => {
@@ -623,6 +643,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: readingWidth,
     alignSelf: 'center',
+  },
+  afterSegmented: {
+    marginTop: space.md,
   },
   choiceList: {
     paddingHorizontal: 0,
