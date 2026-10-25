@@ -9,7 +9,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
-import { getActiveProfile, getProfiles, Profile, switchProfile, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
+import { getActiveProfile, getProfiles, Profile, switchProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
 import { extractTags } from '../utils/tags';
@@ -91,12 +91,14 @@ const HomeScreen: React.FC = () => {
     setProfileDialogVisible(false);
     if (profile.id === activeProfile?.id) return;
     try {
-      if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
-        setPinDialog({ profile, pin: '', open: true });
-        return;
-      }
       const enteredPin = pin ?? '';
-      if (!(await verifyProfilePin(profile.id, enteredPin))) {
+      if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
+        // Protected: fingerprint first if it's on for this profile, otherwise (or on "Use PIN") the PIN dialog.
+        if (!(await unlockWithBiometrics(profile))) {
+          setPinDialog({ profile, pin: '', open: true });
+          return;
+        }
+      } else if (!(await verifyProfilePin(profile.id, enteredPin))) {
         alert('Incorrect PIN', await wrongPinMessage(profile.id));
         return;
       }

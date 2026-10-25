@@ -39,7 +39,8 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
     bullets: [
       "Notifications: to tell you things like an export finishing, and to remind you of tasks on their due date. These notifications are created and scheduled on your device; NoteSpark doesn't use push notifications. Reminders for profiles with a PIN don't show the task text.",
       'Photos: only the images you pick when adding an image to a note.',
-      'Files: only the backup file you pick when importing notes.',
+      'Files: only the backup file you pick when importing notes, and the folder you pick for automatic backups.',
+      "Fingerprint: only if you turn on fingerprint unlock for a profile. Android checks your fingerprint; NoteSpark never sees or stores it.",
       'Internet: only to show images from web addresses that you add to notes.',
     ],
   },

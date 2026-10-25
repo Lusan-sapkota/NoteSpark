@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
+import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
 import { toNote } from './notes';
@@ -73,7 +74,7 @@ export const getDefaultProfile = async (): Promise<Profile> => {
 };
 
 export const setDefaultProfile = async (id: string, pin?: string): Promise<void> => {
-  if (!(await verifyProfilePin(id, pin ?? ''))) throw new Error('Invalid profile PIN');
+  if (!(await isAuthorized(id, pin))) throw new Error('Invalid profile PIN');
   await openProfileDatabase(id);
   await Promise.all([
     AsyncStorage.setItem(defaultProfileKey, id),
@@ -124,10 +125,46 @@ export const verifyProfilePin = async (id: string, pin: string): Promise<boolean
   return false;
 };
 
+// Fingerprint (or other phone biometrics) as a second way to open a profile that has a PIN. The PIN stays
+// required for changing or removing the PIN. AsyncStorage `biometricProfiles`: ids that allow it.
+const biometricKey = 'biometricProfiles';
+
+const getBiometricIds = async (): Promise<string[]> => JSON.parse((await AsyncStorage.getItem(biometricKey)) ?? '[]');
+
+export const usesBiometrics = async (id: string): Promise<boolean> => (await getBiometricIds()).includes(id);
+
+export const setUsesBiometrics = async (id: string, on: boolean): Promise<void> => {
+  const ids = (await getBiometricIds()).filter(x => x !== id);
+  await AsyncStorage.setItem(biometricKey, JSON.stringify(on ? [...ids, id] : ids));
+};
+
+// Whether this phone has biometrics set up, so the option can be offered.
+export const canUseBiometrics = async (): Promise<boolean> =>
+  (await LocalAuthentication.hasHardwareAsync()) && (await LocalAuthentication.isEnrolledAsync());
+
+// A passed fingerprint check lets open/switch/default/delete calls for that profile skip the PIN for a minute,
+// long enough for a confirmation dialog in between.
+let biometricGrant: { id: string; until: number } | null = null;
+
+export const unlockWithBiometrics = async (profile: Profile): Promise<boolean> => {
+  if (!(await usesBiometrics(profile.id)) || !(await canUseBiometrics())) return false;
+  const result = await LocalAuthentication.authenticateAsync({
+    promptMessage: `Open ${profile.name}`,
+    cancelLabel: 'Use PIN',
+    disableDeviceFallback: true,
+  });
+  if (result.success) biometricGrant = { id: profile.id, until: Date.now() + 60000 };
+  return result.success;
+};
+
+// The PIN, or a fresh fingerprint grant for this profile.
+const isAuthorized = async (id: string, pin = ''): Promise<boolean> =>
+  (biometricGrant?.id === id && biometricGrant.until > Date.now()) || verifyProfilePin(id, pin);
+
 export const hasProfilePin = async (id: string): Promise<boolean> => Boolean(await getStoredPin(id));
 
 export const switchProfile = async (id: string, pin?: string): Promise<void> => {
-  if (!(await verifyProfilePin(id, pin ?? ''))) {
+  if (!(await isAuthorized(id, pin))) {
     throw new Error('Invalid profile PIN');
   }
   await openProfileDatabase(id);
@@ -157,6 +194,7 @@ export const setProfilePin = async (id: string, pin: string | null, currentPin =
   if (pin !== null && !PIN_PATTERN.test(pin)) throw new Error('Profile PIN must be exactly four digits');
   if (!(await verifyProfilePin(id, currentPin))) throw new Error('Invalid profile PIN');
   await storePin(id, pin);
+  if (pin === null) await setUsesBiometrics(id, false);
 };
 
 export const renameProfile = (id: string, name: string): Promise<void> => updateProfile(id, { name });
@@ -164,7 +202,7 @@ export const renameProfile = (id: string, name: string): Promise<void> => update
 export const moveProfileToBin = async (id: string, pin = ''): Promise<void> => {
   if ((await getDefaultProfile()).id === id) throw new Error("The default profile can't be deleted");
   if ((await getActiveProfile()).id === id) throw new Error("The open profile can't be deleted");
-  if (!(await verifyProfilePin(id, pin))) throw new Error('Invalid profile PIN');
+  if (!(await isAuthorized(id, pin))) throw new Error('Invalid profile PIN');
   await updateProfile(id, { deletedAt: new Date().toISOString() });
 };
 
@@ -174,6 +212,7 @@ export const deleteProfileForever = async (id: string): Promise<void> => {
   await saveProfiles((await getStoredProfiles()).filter(p => p.id !== id));
   await storePin(id, null);
   await saveAttempt(id, null);
+  await setUsesBiometrics(id, false);
   await SQLite.deleteDatabaseAsync(dbName(id)).catch(() => {});
 };
 

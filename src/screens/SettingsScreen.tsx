@@ -2,10 +2,10 @@ import React, { useCallback, useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
+import { Button, Dialog, IconButton, List, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
-import { addProfile, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, setProfilePin, switchProfile, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
+import { addProfile, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, setProfilePin, setUsesBiometrics, switchProfile, unlockWithBiometrics, usesBiometrics, canUseBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { BIN_DAYS } from '../storage/database';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
@@ -40,9 +40,14 @@ const SettingsScreen: React.FC = () => {
   const [protectedProfileIds, setProtectedProfileIds] = useState<string[]>([]);
   // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ editing: Profile | null; name: string; pin: string; pinConfirmation: string; open: boolean } | null>(null);
-  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; pinConfirmation: string; currentPin: string; mode: 'unlock' | 'manage' | 'makeDefault' | 'delete'; open: boolean } | null>(null);
-  const openPinDialog = (profile: Profile, mode: 'unlock' | 'manage' | 'makeDefault' | 'delete') =>
-    setPinDialog({ profile, pin: '', pinConfirmation: '', currentPin: '', mode, open: true });
+  // `fingerprint`: the dialog's "Also unlock with fingerprint" switch (manage mode).
+  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; pinConfirmation: string; currentPin: string; fingerprint: boolean; mode: 'unlock' | 'manage' | 'makeDefault' | 'delete'; open: boolean } | null>(null);
+  const [fingerprintReady, setFingerprintReady] = useState(false);
+  const openPinDialog = async (profile: Profile, mode: 'unlock' | 'manage' | 'makeDefault' | 'delete') => {
+    const fingerprint = mode === 'manage' && (await usesBiometrics(profile.id).catch(() => false));
+    if (mode === 'manage') setFingerprintReady(await canUseBiometrics().catch(() => false));
+    setPinDialog({ profile, pin: '', pinConfirmation: '', currentPin: '', fingerprint, mode, open: true });
+  };
   const closeNameDialog = () => setNameDialog(d => d && { ...d, open: false });
   const closePinDialog = () => setPinDialog(d => d && { ...d, open: false });
 
@@ -91,7 +96,8 @@ const SettingsScreen: React.FC = () => {
 
   const handleMakeDefault = async (profile: Profile, pin?: string) => {
     try {
-      if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
+      // Protected: fingerprint first if it's on for this profile, otherwise the PIN dialog.
+      if (pin === undefined && !(await verifyProfilePin(profile.id, '')) && !(await unlockWithBiometrics(profile))) {
         openPinDialog(profile, 'makeDefault');
         return;
       }
@@ -117,16 +123,20 @@ const SettingsScreen: React.FC = () => {
     return false;
   };
 
+  // Setting a PIN needs a new one; changing needs the current one, and the new one is optional, so the
+  // fingerprint switch can be changed on its own.
   const handleSavePin = async () => {
     if (!pinDialog || pinDialog.mode !== 'manage') return;
-    const { profile, pin, pinConfirmation, currentPin } = pinDialog;
-    if (pin.length !== 4 || pin !== pinConfirmation) return;
+    const { profile, pin, pinConfirmation, currentPin, fingerprint } = pinDialog;
+    const changing = isProtected(profile);
+    if ((pin || !changing) && (pin.length !== 4 || pin !== pinConfirmation)) return;
     try {
       if (!(await checkCurrentPin(profile, currentPin))) return;
-      await setProfilePin(profile.id, pin, currentPin);
+      if (pin) await setProfilePin(profile.id, pin, currentPin);
+      await setUsesBiometrics(profile.id, fingerprint && fingerprintReady);
       closePinDialog();
       await loadProfiles();
-      setSnackbar(`PIN set for ${profile.name}`);
+      setSnackbar(pin ? `PIN set for ${profile.name}` : `Fingerprint unlock ${fingerprint ? 'on' : 'off'} for ${profile.name}`);
     } catch (error) {
       alert("Couldn't save the PIN", 'Try again. If it keeps failing, restart the app.');
     }
@@ -187,12 +197,12 @@ const SettingsScreen: React.FC = () => {
   const handleSwitch = async (profile: Profile, pin?: string) => {
     if (profile.id === activeId) return;
     try {
-      if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
+      if (pin === undefined && !(await verifyProfilePin(profile.id, '')) && !(await unlockWithBiometrics(profile))) {
         openPinDialog(profile, 'unlock');
         return;
       }
       const enteredPin = pin ?? '';
-      if (!(await verifyProfilePin(profile.id, enteredPin))) {
+      if (pin !== undefined && !(await verifyProfilePin(profile.id, enteredPin))) {
         alert('Incorrect PIN', await wrongPinMessage(profile.id));
         return;
       }
@@ -205,7 +215,7 @@ const SettingsScreen: React.FC = () => {
   };
 
   const handleDeleteProfile = async (profile: Profile, pin?: string) => {
-    if (pin === undefined && isProtected(profile)) {
+    if (pin === undefined && isProtected(profile) && !(await unlockWithBiometrics(profile))) {
       openPinDialog(profile, 'delete');
       return;
     }
@@ -331,7 +341,7 @@ const SettingsScreen: React.FC = () => {
     makeDefault: { pinTitle: 'Enter PIN to make default', pinMessage: `Enter the four-digit PIN for ${pinName} to make it the default profile.`, pinAction: 'Make default' },
     delete: { pinTitle: 'Enter PIN to delete', pinMessage: `Enter the four-digit PIN for ${pinName} to delete it.`, pinAction: 'Delete profile' },
     manage: changingPin
-      ? { pinTitle: 'Change profile PIN', pinMessage: `Enter the current PIN for ${pinName}, then the new one.`, pinAction: 'Save PIN' }
+      ? { pinTitle: 'Profile lock', pinMessage: `Enter the current PIN for ${pinName}. Leave the new PIN empty to keep it.`, pinAction: 'Save' }
       : { pinTitle: 'Set profile PIN', pinMessage: `${pinName} will ask for this PIN when you open it.`, pinAction: 'Save PIN' },
   }[pinDialog?.mode ?? 'unlock'];
   const submitPin = () => {
@@ -386,7 +396,7 @@ const SettingsScreen: React.FC = () => {
                   />
                   <IconButton
                     icon={protectedProfileIds.includes(p.id) ? 'lock-outline' : 'lock-open-outline'}
-                    accessibilityLabel={protectedProfileIds.includes(p.id) ? `Change or reset PIN for ${p.name}` : `Set PIN for ${p.name}`}
+                    accessibilityLabel={protectedProfileIds.includes(p.id) ? `Change PIN or fingerprint unlock for ${p.name}` : `Set PIN for ${p.name}`}
                     onPress={() => openPinDialog(p, 'manage')}
                   />
                   <IconButton
@@ -566,7 +576,7 @@ const SettingsScreen: React.FC = () => {
             )}
             <TextInput
               mode="outlined"
-              label={changingPin ? 'New PIN' : 'PIN'}
+              label={changingPin ? 'New PIN (optional)' : 'PIN'}
               value={pinDialog?.pin ?? ''}
               onChangeText={pin => setPinDialog(d => d && { ...d, pin: digits(pin) })}
               keyboardType="number-pad"
@@ -587,6 +597,26 @@ const SettingsScreen: React.FC = () => {
                 style={styles.dialogInput}
               />
             )}
+            {pinDialog?.mode === 'manage' && (
+              <View style={styles.fingerprintRow}>
+                <View style={styles.fingerprintText}>
+                  <Text variant="bodyLarge" style={{ color: fingerprintReady ? theme.colors.onSurface : theme.colors.onSurfaceVariant }}>
+                    Also unlock with fingerprint
+                  </Text>
+                  {!fingerprintReady && (
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                      Set up a fingerprint in your phone's settings to use this.
+                    </Text>
+                  )}
+                </View>
+                <Switch
+                  value={pinDialog.fingerprint && fingerprintReady}
+                  disabled={!fingerprintReady}
+                  onValueChange={fingerprint => setPinDialog(d => d && { ...d, fingerprint })}
+                  accessibilityLabel="Also unlock with fingerprint"
+                />
+              </View>
+            )}
             {pinDialog && isProtected(pinDialog.profile) && pinDialog.profile.id !== activeId && (
               <Button onPress={() => handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>Forgot PIN?</Button>
             )}
@@ -596,7 +626,12 @@ const SettingsScreen: React.FC = () => {
             <Button onPress={closePinDialog}>Cancel</Button>
             <Button
               onPress={submitPin}
-              disabled={!pinDialog || pinDialog.pin.length !== 4 || (pinDialog.mode === 'manage' && (pinDialog.pin !== pinDialog.pinConfirmation || (changingPin && pinDialog.currentPin.length !== 4)))}
+              disabled={
+                !pinDialog ||
+                (changingPin
+                  ? pinDialog.currentPin.length !== 4 || (!!(pinDialog.pin || pinDialog.pinConfirmation) && (pinDialog.pin.length !== 4 || pinDialog.pin !== pinDialog.pinConfirmation))
+                  : pinDialog.pin.length !== 4 || (pinDialog.mode === 'manage' && pinDialog.pin !== pinDialog.pinConfirmation))
+              }
             >
               {pinAction}
             </Button>
@@ -626,6 +661,16 @@ const styles = StyleSheet.create({
   },
   dialogInput: {
     marginTop: space.md,
+  },
+  fingerprintRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.md,
+    minHeight: 48,
+  },
+  fingerprintText: {
+    flex: 1,
   },
   forgotPin: {
     alignSelf: 'flex-start',

@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, TextInput } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
 import { useAlert } from '../components/DialogProvider';
-import { getPinLockout, wrongPinMessage } from '../storage/profiles';
+import { canUseBiometrics, getPinLockout, unlockWithBiometrics, usesBiometrics, wrongPinMessage } from '../storage/profiles';
 import { readingWidth, space } from '../theme/theme';
 import { StyleSheet, View } from 'react-native';
 
@@ -13,6 +13,20 @@ const ProfileUnlockScreen = ({ profileId, profileName, onUnlock, onForgotPin }: 
   const [pin, setPin] = useState('');
   // Shown under the field after a refused PIN: wrong, or locked after too many tries.
   const [error, setError] = useState('');
+  const [fingerprint, setFingerprint] = useState(false);
+
+  const unlockWithFingerprint = async () => {
+    if (await unlockWithBiometrics({ id: profileId, name: profileName })) await onUnlock('');
+  };
+
+  // Fingerprint on for this profile: ask for it straight away; "Use PIN" in the prompt falls back to the field.
+  useEffect(() => {
+    (async () => {
+      const on = (await usesBiometrics(profileId)) && (await canUseBiometrics());
+      setFingerprint(on);
+      if (on) await unlockWithFingerprint();
+    })().catch(() => {});
+  }, [profileId]);
 
   const unlock = async () => {
     const success = await onUnlock(pin);
@@ -57,6 +71,7 @@ const ProfileUnlockScreen = ({ profileId, profileName, onUnlock, onForgotPin }: 
         {!!error && <Text variant="bodySmall" style={{ color: theme.colors.error }} accessibilityLiveRegion="polite">{error}</Text>}
         <View style={styles.actions}>
           <Button mode="contained" onPress={unlock} disabled={pin.length !== 4}>Unlock</Button>
+          {fingerprint && <Button icon="fingerprint" onPress={() => unlockWithFingerprint().catch(() => {})}>Use fingerprint</Button>}
           <Button onPress={forgotPin}>Forgot PIN?</Button>
         </View>
       </View>
