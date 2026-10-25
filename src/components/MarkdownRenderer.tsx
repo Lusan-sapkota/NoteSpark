@@ -7,6 +7,7 @@ import { shape } from '../theme/theme';
 import NoteImages from './NoteImages';
 import TaskRow from './TaskRow';
 import { findTaskLines, mapTaskLines, splitDue } from '../utils/tasks';
+import { noteLinkPattern } from '../utils/noteLinks';
 
 const firstText = (node: ASTNode): string => (node.children?.length ? firstText(node.children[0]) : node.content ?? '');
 
@@ -19,9 +20,15 @@ interface MarkdownRendererProps {
   content: string;
   // Gets the task's index in findTaskLines order. Without it, boxes are display-only.
   onToggleTask?: (index: number) => void;
+  // Opens a [[Note title]] link. Without it, those links are plain text.
+  onOpenNoteLink?: (title: string) => void;
 }
 
-const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTask }) => {
+// [[Title]] becomes a Markdown link on this made-up scheme, which renderLink hands to onOpenNoteLink.
+// ponytail: also rewritten inside code blocks; skip fenced code if that ever matters.
+const NOTE_LINK = 'notespark-note:';
+
+const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTask, onOpenNoteLink }) => {
   const { theme } = useTheme();
   const alert = useAlert();
 
@@ -29,7 +36,9 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
   const tasks = findTaskLines(content);
   // Task markers first, while line numbers still match the note.
   const processedContent = mapTaskLines(content, (t, lead) => `${lead}${t.done ? DONE : OPEN}${splitDue(t.text).text}`)
-    .replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n');
+    .replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n')
+    .replace(noteLinkPattern, (whole, title: string) =>
+      onOpenNoteLink ? `[${title.trim()}](${NOTE_LINK}${encodeURIComponent(title.trim())})` : whole);
 
   // Rules run in document order and body renders last, so task items are numbered as they render.
   // ponytail: a task line that doesn't render as a list item (indented code block) shifts later numbers; the write
@@ -142,6 +151,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
 
   const renderLink = (props: any) => {
     const { children, href } = props;
+    const noteTitle = typeof href === 'string' && href.startsWith(NOTE_LINK) ? decodeURIComponent(href.slice(NOTE_LINK.length)) : null;
     let url = href;
     let openUrl = url;
     if (!/^https?:\/\//.test(url)) {
@@ -172,6 +182,10 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
       <Text
         style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
         onPress={() => {
+          if (noteTitle !== null) {
+            onOpenNoteLink?.(noteTitle);
+            return;
+          }
           alert(
             'Open link?',
             `This opens ${url} in your browser.`,

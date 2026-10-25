@@ -6,9 +6,10 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, Appbar, Divider, FAB, Icon, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
-import { getNoteById, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
+import { getNoteById, getNotes, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
 import { extractTags } from '../utils/tags';
+import { findNoteByTitle, linksTo, noteLinkPattern } from '../utils/noteLinks';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -50,6 +51,8 @@ const formatDate = (dateString: string) => {
 };
 
 const linkRegex = /(https?:\/\/[^\s)]+|www\.[^\s)]+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}\b)/g;
+// Plain notes: a [[note link]] (group 1) or a web link.
+const plainLinkRegex = new RegExp(`${noteLinkPattern.source}|${linkRegex.source}`, 'g');
 
 const NoteViewScreen: React.FC = () => {
   const navigation = useNavigation<NoteViewScreenNavigationProp>();
@@ -72,6 +75,7 @@ const NoteViewScreen: React.FC = () => {
   const [snackbar, setSnackbar] = useState('');
   const [menuVisible, setMenuVisible] = useState(false);
   const [related, setRelated] = useState<Note[]>([]);
+  const [backlinks, setBacklinks] = useState<Note[]>([]);
   // The top bar shows the title only once the big title has scrolled under it.
   const [titleBottom, setTitleBottom] = useState(0);
   const [titleInBar, setTitleInBar] = useState(false);
@@ -96,6 +100,8 @@ const NoteViewScreen: React.FC = () => {
         const fetchedNote = await getNoteById((route.params as any).noteId);
         setNote(fetchedNote);
         if (fetchedNote) {
+          const allNotes = await getNotes();
+          setBacklinks(allNotes.filter(n => n.id !== fetchedNote.id && linksTo(n.content, fetchedNote.title)));
           const ids = await relatedNotes(fetchedNote.id);
           const notes = await Promise.all(ids.map(id => getNoteById(id).catch(() => null)));
           setRelated(notes.filter((n): n is Note => !!n));
@@ -163,6 +169,23 @@ const NoteViewScreen: React.FC = () => {
     }
   };
 
+  // [[Title]]: open the note with that title, or offer to start one.
+  const openNoteLink = async (title: string) => {
+    try {
+      const target = findNoteByTitle(await getNotes(), title);
+      if (target) {
+        navigation.push('NoteView', { noteId: String(target.id) });
+        return;
+      }
+      alert(`No note called "${title}"`, 'Start a new note with this title?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'New note', onPress: () => navigation.navigate('Editor', { title }) },
+      ]);
+    } catch (error) {
+      alert("Couldn't open the linked note", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
   const handleEdit = () => {
     navigation.navigate('Editor', { noteId: note!.id });
   };
@@ -188,16 +211,17 @@ const NoteViewScreen: React.FC = () => {
       }
       const parts: React.ReactNode[] = [];
       let lastIndex = 0;
-      for (const match of line.matchAll(linkRegex)) {
+      for (const match of line.matchAll(plainLinkRegex)) {
         const url = match[0];
+        const noteTitle = match[1]?.trim();
         if (match.index! > lastIndex) parts.push(line.substring(lastIndex, match.index));
         parts.push(
           <Text
             key={`link-${lineIdx}-${match.index}`}
             style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
-            onPress={() => confirmOpenLink(url)}
+            onPress={() => (noteTitle ? openNoteLink(noteTitle) : confirmOpenLink(url))}
           >
-            {url}
+            {noteTitle ?? url}
           </Text>
         );
         lastIndex = match.index! + url.length;
@@ -339,13 +363,31 @@ const NoteViewScreen: React.FC = () => {
                   {getPlainText(content)}
                 </NoteText>
               ) : (
-                <MarkdownRenderer content={content.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '')} onToggleTask={handleToggleTask} />
+                <MarkdownRenderer content={content.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '')} onToggleTask={handleToggleTask} onOpenNoteLink={openNoteLink} />
               )
             ) : (
               renderPlainText(content)
             )}
             <NoteImages uris={extractImageUris(content, !note.isMarkdown)} />
           </View>
+
+          {backlinks.length > 0 && (
+            <View>
+              <Divider style={styles.divider} />
+              <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Linked from</Text>
+              {backlinks.map((b, i) => (
+                <GroupedRow
+                  key={b.id}
+                  title={b.title || 'Untitled note'}
+                  description={toPreview(b.content) || undefined}
+                  icon="link-variant"
+                  onPress={() => navigation.push('NoteView', { noteId: String(b.id) })}
+                  isFirst={i === 0}
+                  isLast={i === backlinks.length - 1}
+                />
+              ))}
+            </View>
+          )}
 
           {related.length > 0 && (
             <View>

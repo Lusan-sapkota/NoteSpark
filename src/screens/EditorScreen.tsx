@@ -14,8 +14,8 @@ import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboa
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, IconButton, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
-import { RootStackParamList } from '../types';
+import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
+import { Note, RootStackParamList } from '../types';
 import { getNoteById, getNotes, saveNote, updateNote } from '../storage/notes';
 import { sendAppNotification } from '../utils/notifications';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
@@ -43,7 +43,7 @@ const EditorScreen: React.FC = () => {
   const alert = useAlert();
   const [saving, setSaving] = useState(false);
 
-  const { noteId } = route.params ?? {};
+  const { noteId, title: titleParam } = route.params ?? {};
 
   const [title, setTitle] = useState<string>('');
   const [content, setContent] = useState<string>('');
@@ -61,11 +61,13 @@ const EditorScreen: React.FC = () => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  // "Link a note" picker: inserts [[Title]] at the cursor.
+  const [notePicker, setNotePicker] = useState<{ query: string; notes: Note[] } | null>(null);
 
   useEffect(() => {
     if (!noteId) {
       setIsEditing(false);
-      setTitle('');
+      setTitle(titleParam ?? '');
       setContent('');
       setIsMarkdown(false);
       setCreatedAt(null);
@@ -91,7 +93,7 @@ const EditorScreen: React.FC = () => {
       }
     };
     loadNote();
-  }, [noteId]);
+  }, [noteId, titleParam]);
 
   const handleSave = async () => {
     if (saving) return;
@@ -184,6 +186,19 @@ const EditorScreen: React.FC = () => {
     setLinkText('');
     setLinkUrl('');
   };
+
+  const openNotePicker = async () => {
+    try {
+      const notes = (await getNotes()).filter(n => String(n.id) !== String(noteId) && n.title.trim());
+      setNotePicker({ query: '', notes });
+    } catch (error) {
+      alert("Couldn't load your notes", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
+  const pickerMatches = notePicker
+    ? notePicker.notes.filter(n => n.title.toLowerCase().includes(notePicker.query.trim().toLowerCase())).slice(0, 6)
+    : [];
 
   const hasSelection = selection.start !== selection.end;
   const showPreview = isMarkdown && isPreview;
@@ -289,6 +304,7 @@ const EditorScreen: React.FC = () => {
                   <IconButton icon="link-variant" onPress={() => setShowLinkDialog(true)} accessibilityLabel="Add link" />
                 </>
               )}
+              <IconButton icon="note-multiple-outline" onPress={openNotePicker} accessibilityLabel="Link a note" />
               <IconButton icon="image-outline" onPress={handleAddImage} accessibilityLabel="Add image" />
               <IconButton
                 icon="selection-remove"
@@ -320,6 +336,35 @@ const EditorScreen: React.FC = () => {
             <Dialog.Actions>
               <Button onPress={() => setShowLinkDialog(false)}>Cancel</Button>
               <Button onPress={handleInsertLink} disabled={!linkUrl.trim()}>Add link</Button>
+            </Dialog.Actions>
+          </Dialog>
+          <Dialog visible={!!notePicker} onDismiss={() => setNotePicker(null)}>
+            <Dialog.Title>Link a note</Dialog.Title>
+            <Dialog.Content style={styles.dialogContent}>
+              <PaperTextInput
+                mode="outlined"
+                label="Search note titles"
+                value={notePicker?.query ?? ''}
+                onChangeText={query => setNotePicker(p => p && { ...p, query })}
+                autoFocus
+              />
+              {pickerMatches.map(n => (
+                <List.Item
+                  key={n.id}
+                  title={n.title}
+                  titleNumberOfLines={2}
+                  left={props => <List.Icon {...props} icon="note-text-outline" />}
+                  onPress={() => { insert(`[[${n.title.trim()}]]`); setNotePicker(null); }}
+                />
+              ))}
+              {notePicker && pickerMatches.length === 0 && (
+                <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                  {notePicker.notes.length ? 'No note titles match. Try another word.' : 'Save another note first, then link to it here.'}
+                </Text>
+              )}
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setNotePicker(null)}>Cancel</Button>
             </Dialog.Actions>
           </Dialog>
         </KeyboardSafePortal>

@@ -30,6 +30,7 @@ export const toPreview = (content: string) =>
     .replace(/!\[[^\]]*\]\([^)]*\)/g, '')
     .replace(/\[Image: [^\]]+\]/g, '')
     .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/\[\[([^[\]\n]+)\]\]/g, '$1')
     .replace(/^\s*(#{1,6}|[-*+]|\d+\.|>)\s+/gm, '')
     .replace(/[*_~`]/g, '')
     .replace(/\s+/g, ' ')
