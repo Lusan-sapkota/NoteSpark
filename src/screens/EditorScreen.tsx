@@ -14,12 +14,13 @@ import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboa
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, usePreventRemove, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
+import { Button, Chip, Dialog, IconButton, List, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import { Note, RootStackParamList } from '../types';
 import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, saveNote, updateNote } from '../storage/notes';
 import { getActiveProfile } from '../storage/profiles';
 import { keepDeviceImage } from '../utils/imageCache';
 import { addDays, setLineDue } from '../utils/tasks';
+import { extractTags } from '../utils/tags';
 import { sendAppNotification } from '../utils/notifications';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -95,6 +96,8 @@ const EditorScreen: React.FC = () => {
   // "Link a note" picker: inserts [[Title]] at the cursor.
   const [notePicker, setNotePicker] = useState<{ query: string; notes: Note[] } | null>(null);
   const [showDueDialog, setShowDueDialog] = useState(false);
+  // For suggestions while typing #tags and [[links]]: the profile's tags and other notes' titles.
+  const [known, setKnown] = useState<{ tags: string[]; titles: string[] }>({ tags: [], titles: [] });
   // The note as last loaded or saved; anything different is unsaved and kept as a draft.
   const [saved, setSaved] = useState({ title: '', content: '', isMarkdown: false });
   const [loaded, setLoaded] = useState(false);
@@ -145,6 +148,18 @@ const EditorScreen: React.FC = () => {
     };
     loadNote();
   }, [noteId, titleParam, textParam]);
+
+  useEffect(() => {
+    getNotes()
+      .then(notes => {
+        const others = notes.filter(n => String(n.id) !== String(noteId));
+        setKnown({
+          tags: [...new Set(others.flatMap(n => extractTags(n.content)))].sort(),
+          titles: others.map(n => n.title.trim()).filter(Boolean),
+        });
+      })
+      .catch(() => {});
+  }, [noteId]);
 
   // Keeps unsaved text as a draft a second after typing stops; Home offers it back after a restart.
   useEffect(() => {
@@ -342,6 +357,25 @@ const EditorScreen: React.FC = () => {
     : [];
 
   const hasSelection = selection.start !== selection.end;
+
+  // The #tag or [[link]] being typed at the cursor, and what could complete it.
+  const typed = content.slice(0, selection.start);
+  const typingLink = !hasSelection ? /\[\[([^[\]\n]*)$/.exec(typed) : null;
+  const typingTag = !hasSelection && !typingLink ? /(?:^|\s)#([\p{L}\p{N}_][\p{L}\p{N}_/-]*)$/u.exec(typed) : null;
+  const partial = (typingLink ?? typingTag)?.[1] ?? '';
+  const suggestions = typingLink
+    ? known.titles.filter(t => t.toLowerCase().includes(partial.trim().toLowerCase())).slice(0, 8)
+    : typingTag
+      ? known.tags.filter(t => t.startsWith(partial.toLowerCase()) && t !== partial.toLowerCase()).slice(0, 8)
+      : [];
+  const completeWith = (word: string) => {
+    const start = selection.start - partial.length;
+    const closing = typingLink && !content.startsWith(']]', selection.start) ? ']]' : '';
+    const text = typingLink ? `${word}${closing}` : `${word} `;
+    const end = start + text.length + (typingLink && !closing ? 2 : 0);
+    setContent(content.slice(0, start) + text + content.slice(selection.start));
+    setPendingSelection({ start: end, end });
+  };
   const showPreview = isMarkdown && isPreview;
 
   return (
@@ -365,7 +399,7 @@ const EditorScreen: React.FC = () => {
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
-          bottomOffset={TOOLBAR_HEIGHT + space.lg}
+          bottomOffset={TOOLBAR_HEIGHT + (suggestions.length ? 48 : 0) + space.lg}
         >
           <View style={styles.column}>
             <View style={styles.modeRow}>
@@ -435,6 +469,25 @@ const EditorScreen: React.FC = () => {
         {!showPreview && (
           <KeyboardStickyView offset={{ opened: insets.bottom }}>
           <View style={[styles.toolbar, { backgroundColor: theme.colors.surfaceContainer }]}>
+            {suggestions.length > 0 && (
+              <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.suggestions}>
+                {suggestions.map(word => (
+                  <Chip
+                    key={word}
+                    compact
+                    icon={typingLink ? 'note-text-outline' : 'pound'}
+                    onPress={() => completeWith(word)}
+                    hitSlop={8}
+                    style={{ backgroundColor: theme.colors.tertiaryContainer }}
+                    textStyle={{ color: theme.colors.onTertiaryContainer }}
+                    maxFontSizeMultiplier={1.5}
+                    accessibilityLabel={typingLink ? `Link to ${word}` : `Tag ${word}`}
+                  >
+                    {typingLink ? word : `#${word}`}
+                  </Chip>
+                ))}
+              </ScrollView>
+            )}
             <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.toolbarContent}>
               <IconButton icon="undo" disabled={!canUndo} onPress={handleUndo} accessibilityLabel="Undo" />
               <IconButton icon="redo" disabled={!canRedo} onPress={handleRedo} accessibilityLabel="Redo" />
@@ -580,6 +633,12 @@ const styles = StyleSheet.create({
   },
   toolbarContent: {
     alignItems: 'center',
+  },
+  suggestions: {
+    alignItems: 'center',
+    gap: space.sm,
+    minHeight: 48,
+    paddingHorizontal: space.sm,
   },
   dialogContent: {
     gap: space.md,
