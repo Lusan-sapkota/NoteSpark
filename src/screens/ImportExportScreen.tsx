@@ -12,6 +12,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { exportNotesAsJson, getNotes, importNotes, ImportMode } from '../storage/notes';
+import { shareNotesAsZip } from '../utils/exportNotes';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
@@ -182,6 +183,21 @@ const ImportExportScreen: React.FC = () => {
       ]
     );
   };
+  // Markdown for other apps (Obsidian, Markor); the JSON backup stays the format NoteSpark restores from.
+  const handleExportMarkdown = async () => {
+    try {
+      const notes = await getNotes();
+      if (!notes.length) {
+        alert('No notes to export', 'Write a note first, then export it here.');
+        return;
+      }
+      await shareNotesAsZip(notes);
+      await addHistory({ type: 'export', date: new Date().toISOString(), count: notes.length, error: '' });
+    } catch (error) {
+      alert("Couldn't export as Markdown", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
   const handleExport = async () => {
     setIsExporting(true);
     let notesArr: any[] = [];
@@ -496,6 +512,17 @@ const ImportExportScreen: React.FC = () => {
             })}
           </View>
 
+          <View style={styles.rows}>
+            <GroupedRow
+              title="Export as Markdown"
+              description="Every note as a Markdown file, in one zip, for other notes apps"
+              icon="language-markdown-outline"
+              onPress={handleExportMarkdown}
+              isFirst
+              isLast
+            />
+          </View>
+
           <View style={styles.historyHeader}>
             <Text variant="titleSmall" accessibilityRole="header" style={[styles.historyTitle, { color: theme.colors.primary }]}>History</Text>
             <Menu
@@ -677,6 +704,9 @@ const styles = StyleSheet.create({
     height: WAVE.stroke,
     marginLeft: -WAVE.step * 0.25,
     borderRadius: WAVE.stroke / 2,
+  },
+  rows: {
+    marginTop: space.md,
   },
   historyHeader: {
     flexDirection: 'row',

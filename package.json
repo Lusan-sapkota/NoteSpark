@@ -31,6 +31,7 @@
     "expo-splash-screen": "~58.0.11",
     "expo-sqlite": "~58.0.14",
     "expo-status-bar": "~58.0.4",
+    "fflate": "^0.8.3",
     "onnxruntime-react-native": "^1.24.3",
     "punycode": "^2.3.1",
     "react": "^19.3.0",

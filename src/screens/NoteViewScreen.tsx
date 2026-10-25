@@ -10,6 +10,7 @@ import { getNoteById, getNotes, getNoteVersions, moveNoteToBin, setNoteArchived,
 import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
 import { extractTags } from '../utils/tags';
 import { findNoteByTitle, linksTo, noteLinkPattern } from '../utils/noteLinks';
+import { shareNoteAsMarkdown } from '../utils/exportNotes';
 import { Note, NoteVersion } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
@@ -318,6 +319,14 @@ const NoteViewScreen: React.FC = () => {
                   onPress={() => { setMenuVisible(false); setShowRaw(v => !v); }}
                 />
               )}
+              <Menu.Item
+                leadingIcon="export-variant"
+                title={note.isMarkdown ? 'Export as Markdown' : 'Export as text file'}
+                onPress={() => {
+                  setMenuVisible(false);
+                  shareNoteAsMarkdown(note).catch(() => alert("Couldn't export the note", 'Try again. If it keeps failing, restart the app.'));
+                }}
+              />
               <Menu.Item
                 leadingIcon="history"
                 title="Version history"

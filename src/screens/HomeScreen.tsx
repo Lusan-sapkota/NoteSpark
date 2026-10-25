@@ -13,7 +13,7 @@ import { getActiveProfile, getProfiles, Profile, switchProfile, verifyProfilePin
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
 import { extractTags } from '../utils/tags';
-import { shareNotesAsJson } from '../utils/exportNotes';
+import { shareNotesAsJson, shareNotesAsZip } from '../utils/exportNotes';
 import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
 import { useAlert } from '../components/DialogProvider';
@@ -263,13 +263,25 @@ const HomeScreen: React.FC = () => {
     );
   };
 
-  const handleExportSelected = async () => {
-    try {
-      await shareNotesAsJson(selectedNotes);
-      clearSelection();
-    } catch (error) {
-      alert("Couldn't export the notes", 'Try again. If it keeps failing, use Import and export in Settings.');
-    }
+  const handleExportSelected = () => {
+    const targets = selectedNotes;
+    const run = (share: (notes: Note[]) => Promise<void>) => async () => {
+      try {
+        await share(targets);
+        clearSelection();
+      } catch (error) {
+        alert("Couldn't export the notes", 'Try again. If it keeps failing, use Import and export in Settings.');
+      }
+    };
+    alert(
+      `Export ${countLabel(targets.length)}?`,
+      'A JSON backup can be restored into NoteSpark. Markdown files (in a zip) open in other notes apps.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'JSON backup', onPress: run(shareNotesAsJson) },
+        { text: 'Markdown', onPress: run(shareNotesAsZip) },
+      ]
+    );
   };
 
   const handleNotePress = useCallback((noteId: number) => {
