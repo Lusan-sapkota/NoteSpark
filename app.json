@@ -66,7 +66,18 @@
       "expo-asset",
       "onnxruntime-react-native",
       "expo-secure-store",
-      "expo-share-intent"
+      "expo-share-intent",
+      [
+        "expo-quick-actions",
+        {
+          "androidIcons": {
+            "new_note": {
+              "foregroundImage": "./assets/shortcut-new-note.png",
+              "backgroundColor": "#d7eb9b"
+            }
+          }
+        }
+      ]
     ],
     "extra": {
       "eas": {

@@ -21,6 +21,7 @@ import { runAutoBackupIfDue } from './src/storage/autoBackup';
 import { navigationRef as appNavigation } from './src/navigation/AppNavigator';
 import { Notifications } from './src/utils/notifications';
 import { useShareIntent } from 'expo-share-intent';
+import * as QuickActions from 'expo-quick-actions';
 import { isRunningInExpoGo } from 'expo';
 
 const AppContent = () => {
@@ -44,6 +45,19 @@ const AppContent = () => {
     }
     resetShareIntent();
   }, [hasShareIntent, navReady, shareIntent]);
+
+  // Long-press the app icon: "New note". `initial` is the shortcut that launched the app, if any.
+  const [quickAction, setQuickAction] = useState<QuickActions.Action | null>(QuickActions.initial ?? null);
+  useEffect(() => {
+    QuickActions.setItems([{ id: 'new-note', title: 'New note', icon: 'new_note' }]).catch(() => {});
+    const sub = QuickActions.addListener(setQuickAction);
+    return () => sub.remove();
+  }, []);
+  useEffect(() => {
+    if (quickAction?.id !== 'new-note' || !navReady || !appNavigation.isReady()) return;
+    appNavigation.dispatch(StackActions.push('Editor'));
+    setQuickAction(null);
+  }, [quickAction, navReady]);
 
   // Opens the default profile, or shows the unlock screen when it has a PIN.
   const openDefaultProfile = async () => {

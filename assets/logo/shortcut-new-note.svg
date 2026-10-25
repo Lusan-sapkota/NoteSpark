@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 108 108">
+  <!-- App shortcut "New note": a plus in onPrimaryContainer, inside the 66dp safe circle; the background colour is set in app.json -->
+  <path d="M54 38 V70 M38 54 H70" stroke="#3d4c0d" stroke-width="7" stroke-linecap="round" fill="none"/>
+</svg>
