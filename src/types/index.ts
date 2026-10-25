@@ -32,5 +32,6 @@ export type RootStackParamList = {
   About: undefined;
   Privacy: undefined;
   Tasks: undefined;
+  Scratchpad: undefined;
   Bin: undefined;
 };

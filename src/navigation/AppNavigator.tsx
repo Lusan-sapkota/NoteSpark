@@ -61,6 +61,11 @@ const AppNavigator: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           }}
         />
         <Stack.Screen
+          name="Scratchpad"
+          component={require('../screens/ScratchpadScreen').default}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="Settings"
           component={SettingsScreen}
           options={{

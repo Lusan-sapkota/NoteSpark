@@ -196,6 +196,10 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
     CREATE INDEX IF NOT EXISTS note_versions_note ON note_versions (noteId, savedAt);`
   );
   await db.runAsync('DELETE FROM note_versions WHERE noteId NOT IN (SELECT id FROM notes)');
+  // The profile's scratchpad: one row, plain text (see getScratchpad in notes.ts).
+  await db.execAsync(
+    `CREATE TABLE IF NOT EXISTS scratchpad (id INTEGER PRIMARY KEY CHECK (id = 1), content TEXT NOT NULL, updatedAt TEXT NOT NULL)`
+  );
   await db.runAsync("UPDATE notes SET createdAt = ? WHERE createdAt IS NULL OR createdAt = ''", [now]);
   await db.runAsync("UPDATE notes SET updatedAt = ? WHERE updatedAt IS NULL OR updatedAt = ''", [now]);
   await initSearchIndex(db);

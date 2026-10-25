@@ -81,6 +81,17 @@ export const getDraft = async (): Promise<EditorDraft | null> => {
 export const saveDraft = (draft: EditorDraft) => AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
 export const clearDraft = () => AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
 
+// One scratchpad per profile, in its database (so encrypted with a locked profile). Not a note: it stays out
+// of the list, search, Tasks and exports until filed as a note.
+export const getScratchpad = async (): Promise<string> =>
+  (await db.getFirstAsync<{ content: string }>('SELECT content FROM scratchpad WHERE id = 1'))?.content ?? '';
+
+export const saveScratchpad = (content: string) =>
+  db.runAsync(
+    'INSERT INTO scratchpad (id, content, updatedAt) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET content = excluded.content, updatedAt = excluded.updatedAt',
+    [content, new Date().toISOString()]
+  );
+
 export const saveNote = changesNotes(async (note: Omit<Note, 'id' | 'isPinned' | 'isArchived'>): Promise<number> => {
   const now = new Date().toISOString();
   const result = await db.runAsync(
