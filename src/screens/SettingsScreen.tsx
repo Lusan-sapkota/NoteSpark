@@ -1,8 +1,9 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AppState, Linking, StyleSheet, View, ScrollView } from 'react-native';
+import { AppState, Linking, Pressable, StyleSheet, View, ScrollView } from 'react-native';
+import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, Icon, IconButton, List, SegmentedButtons, Switch, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { Button, Dialog, Icon, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
 import { addProfile, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, setProfilePin, setUsesBiometrics, switchProfile, unlockWithBiometrics, usesBiometrics, canUseBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
@@ -23,6 +24,53 @@ const profileTimeLeft = (deletedAt: string) => {
   if (days <= 0) return 'Erased the next time the app opens';
   if (days === 1) return 'Erased tomorrow';
   return `Erased in ${days} days`;
+};
+
+// One choice in the PIN dialog's "Unlock with" pair. Selected: tonal fill, primary outline and a check badge, so
+// it isn't shown by color alone. Springs a little on press (not under reduce motion).
+const LockOption: React.FC<{ icon: string; label: string; caption: string; selected: boolean; unavailable?: boolean; onPress: () => void }> = ({
+  icon,
+  label,
+  caption,
+  selected,
+  unavailable = false,
+  onPress,
+}) => {
+  const { theme } = useTheme();
+  const reduceMotion = useReducedMotion();
+  const scale = useSharedValue(1);
+  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
+  const press = (to: number) => {
+    if (!reduceMotion) scale.value = withSpring(to, { damping: 15, stiffness: 300 });
+  };
+  const color = selected ? theme.colors.onSecondaryContainer : unavailable ? theme.colors.onSurfaceVariant : theme.colors.onSurface;
+  return (
+    <Animated.View style={[styles.lockOption, pressStyle]}>
+      <Pressable
+        onPress={onPress}
+        onPressIn={() => press(0.96)}
+        onPressOut={() => press(1)}
+        accessibilityRole="radio"
+        accessibilityState={{ checked: selected }}
+        accessibilityLabel={`${label}. ${caption}`}
+        style={[
+          styles.lockOptionInner,
+          selected
+            ? { backgroundColor: theme.colors.secondaryContainer, borderColor: theme.colors.primary, borderWidth: 2 }
+            : { backgroundColor: theme.colors.surfaceContainerHighest, borderColor: theme.colors.outlineVariant, borderWidth: 1 },
+        ]}
+      >
+        {selected && (
+          <View style={styles.lockCheck}>
+            <Icon source="check-circle" size={20} color={theme.colors.primary} />
+          </View>
+        )}
+        <Icon source={icon} size={28} color={selected ? theme.colors.primary : color} />
+        <Text variant="titleSmall" style={{ color }}>{label}</Text>
+        <Text variant="bodySmall" style={{ color: selected ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant }}>{caption}</Text>
+      </Pressable>
+    </Animated.View>
+  );
 };
 
 const SettingsScreen: React.FC = () => {
@@ -606,46 +654,30 @@ const SettingsScreen: React.FC = () => {
               />
             )}
             {pinDialog?.mode === 'manage' && (
-              // A tonal card: the whole card toggles. Without a fingerprint on the phone it explains that and links
-              // to the phone's security settings instead of showing a switch that can't be used.
-              <View style={[styles.fingerprintCard, { backgroundColor: theme.colors.surfaceContainerHighest }]}>
-                {fingerprintReady ? (
-                  <TouchableRipple
-                    onPress={() => setPinDialog(d => d && { ...d, fingerprint: !d.fingerprint })}
-                    accessibilityRole="switch"
-                    accessibilityState={{ checked: pinDialog.fingerprint }}
-                    accessibilityLabel="Also unlock with fingerprint"
-                    style={styles.fingerprintPress}
-                  >
-                    <View style={styles.fingerprintRow}>
-                      <Icon source="fingerprint" size={24} color={pinDialog.fingerprint ? theme.colors.primary : theme.colors.onSurfaceVariant} />
-                      <View style={styles.fingerprintText}>
-                        <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>Also unlock with fingerprint</Text>
-                        <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>The PIN still works, and is needed to change it.</Text>
-                      </View>
-                      <Switch
-                        value={pinDialog.fingerprint}
-                        onValueChange={fingerprint => setPinDialog(d => d && { ...d, fingerprint })}
-                        importantForAccessibility="no-hide-descendants"
-                      />
-                    </View>
-                  </TouchableRipple>
-                ) : (
-                  <View style={[styles.fingerprintPress, styles.fingerprintRow, styles.fingerprintTop]}>
-                    <Icon source="fingerprint-off" size={24} color={theme.colors.onSurfaceVariant} />
-                    <View style={styles.fingerprintText}>
-                      <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>Fingerprint unlock</Text>
-                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Add a fingerprint in your phone's settings to use it here.</Text>
-                      <Button
-                        compact
-                        onPress={() => Linking.sendIntent('android.settings.SECURITY_SETTINGS').catch(() => Linking.openSettings())}
-                        style={styles.fingerprintAction}
-                      >
-                        Open settings
-                      </Button>
-                    </View>
-                  </View>
-                )}
+              <View style={styles.lockChoice}>
+                <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>Unlock with</Text>
+                <View style={styles.lockOptions} accessibilityRole="radiogroup">
+                  <LockOption
+                    icon="dialpad"
+                    label="PIN only"
+                    caption="Type the four digits"
+                    selected={!pinDialog.fingerprint || !fingerprintReady}
+                    onPress={() => setPinDialog(d => d && { ...d, fingerprint: false })}
+                  />
+                  {/* Without a fingerprint on the phone this tile opens the phone's security settings instead. */}
+                  <LockOption
+                    icon={fingerprintReady ? 'fingerprint' : 'fingerprint-off'}
+                    label="PIN + fingerprint"
+                    caption={fingerprintReady ? 'Touch to open; the PIN still works' : 'Set up a fingerprint first'}
+                    selected={pinDialog.fingerprint && fingerprintReady}
+                    unavailable={!fingerprintReady}
+                    onPress={() =>
+                      fingerprintReady
+                        ? setPinDialog(d => d && { ...d, fingerprint: true })
+                        : Linking.sendIntent('android.settings.SECURITY_SETTINGS').catch(() => Linking.openSettings())
+                    }
+                  />
+                </View>
               </View>
             )}
             {pinDialog && isProtected(pinDialog.profile) && pinDialog.profile.id !== activeId && (
@@ -693,35 +725,28 @@ const styles = StyleSheet.create({
   dialogInput: {
     marginTop: space.md,
   },
-  // Tonal card inside the dialog, 12dp corners like other controls.
-  fingerprintCard: {
+  lockChoice: {
     marginTop: space.lg,
-    borderRadius: shape.control,
-    overflow: 'hidden',
+    gap: space.sm,
   },
-  fingerprintPress: {
-    paddingVertical: space.md,
-    paddingLeft: space.lg,
-    paddingRight: space.sm,
-    minHeight: 64,
-  },
-  fingerprintRow: {
+  lockOptions: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.lg,
+    gap: space.sm,
   },
-  // With the "Open settings" button under the text, the icon sits beside the title.
-  fingerprintTop: {
-    alignItems: 'flex-start',
-  },
-  fingerprintText: {
+  lockOption: {
     flex: 1,
-    gap: 2,
   },
-  fingerprintAction: {
-    alignSelf: 'flex-start',
-    marginLeft: -space.md,
-    marginTop: space.xs,
+  // Square-ish tiles; rows grow with large text instead of clipping.
+  lockOptionInner: {
+    minHeight: 112,
+    borderRadius: shape.control,
+    padding: space.md,
+    gap: space.xs,
+  },
+  lockCheck: {
+    position: 'absolute',
+    top: space.sm,
+    right: space.sm,
   },
   forgotPin: {
     alignSelf: 'flex-start',
