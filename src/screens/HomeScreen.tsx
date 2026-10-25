@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
-import { ActivityIndicator, AnimatedFAB, Appbar, Button, Chip, Searchbar, Snackbar, Text } from 'react-native-paper';
+import { ActivityIndicator, AnimatedFAB, Appbar, Button, Chip, Dialog, List, Portal, Searchbar, Snackbar, Text } from 'react-native-paper';
 import Menu from '../components/Menu';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -44,7 +44,7 @@ const HomeScreen: React.FC = () => {
   const [snackbar, setSnackbar] = useState('');
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
-  const [profileMenuVisible, setProfileMenuVisible] = useState(false);
+  const [profileDialogVisible, setProfileDialogVisible] = useState(false);
   const lastOffset = useRef(0);
 
   const loadNotes = async () => {
@@ -73,7 +73,7 @@ const HomeScreen: React.FC = () => {
   }, [navigation]);
 
   const handleSwitchProfile = async (profile: Profile) => {
-    setProfileMenuVisible(false);
+    setProfileDialogVisible(false);
     if (profile.id === activeProfile?.id) return;
     try {
       await switchProfile(profile.id);
@@ -267,32 +267,11 @@ const HomeScreen: React.FC = () => {
         title={profiles.length > 1 && activeProfile ? activeProfile.name : 'NoteSpark'}
         rightActions={
           <>
-            <Menu
-              visible={profileMenuVisible}
-              onDismiss={() => setProfileMenuVisible(false)}
-              anchor={
-                <Appbar.Action
-                  icon="account-circle-outline"
-                  accessibilityLabel={`Switch profile, current profile ${activeProfile?.name ?? ''}`}
-                  onPress={() => setProfileMenuVisible(true)}
-                />
-              }
-            >
-              {profiles.map(p => (
-                <Menu.Item
-                  key={p.id}
-                  title={p.name}
-                  leadingIcon="account-outline"
-                  trailingIcon={p.id === activeProfile?.id ? 'check' : undefined}
-                  onPress={() => handleSwitchProfile(p)}
-                />
-              ))}
-              <Menu.Item
-                title="Manage profiles"
-                leadingIcon="account-cog-outline"
-                onPress={() => { setProfileMenuVisible(false); navigation.navigate('Settings'); }}
-              />
-            </Menu>
+            <Appbar.Action
+              icon="account-circle-outline"
+              accessibilityLabel={`Switch profile, current profile ${activeProfile?.name ?? ''}`}
+              onPress={() => setProfileDialogVisible(true)}
+            />
             <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel="Tasks" onPress={() => navigation.navigate('Tasks')} />
             <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
           </>
@@ -413,6 +392,34 @@ const HomeScreen: React.FC = () => {
         style={[styles.fab, isDarkMode && { shadowColor: theme.colors.primary }]}
       />
 
+      <Portal>
+        <Dialog visible={profileDialogVisible} onDismiss={() => setProfileDialogVisible(false)}>
+          <Dialog.Title>Switch profile</Dialog.Title>
+          <Dialog.ScrollArea style={styles.profileList}>
+            <ScrollView>
+              {profiles.map(p => {
+                const current = p.id === activeProfile?.id;
+                return (
+                  <List.Item
+                    key={p.id}
+                    title={p.name}
+                    description={current ? 'Current profile' : undefined}
+                    left={props => <List.Icon {...props} icon={current ? 'account-check' : 'account-outline'} />}
+                    onPress={() => handleSwitchProfile(p)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ checked: current }}
+                  />
+                );
+              })}
+            </ScrollView>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => { setProfileDialogVisible(false); navigation.navigate('Settings'); }}>Manage profiles</Button>
+            <Button onPress={() => setProfileDialogVisible(false)}>Cancel</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
+
       <Snackbar
         visible={!!snackbar}
         onDismiss={() => setSnackbar('')}
@@ -477,6 +484,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: space.lg,
     bottom: space.lg,
+  },
+  profileList: {
+    maxHeight: 320,
+    paddingHorizontal: 0,
   },
   snackbar: {
     bottom: 80,
