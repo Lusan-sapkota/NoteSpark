@@ -6,6 +6,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { Button, PaperProvider, Portal, Text } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
+import { getShareTarget } from './src/storage/notes';
 import { eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, getDefaultProfile, syncProfileEncryption, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
 import { ActivityIndicator, AppState, BackHandler, Linking, View, StyleSheet } from 'react-native';
@@ -115,12 +116,17 @@ const AppContent = () => {
   useEffect(() => {
     if (!hasShareIntent || !navReady || !appNavigation.isReady()) return;
     const text = (shareIntent.text ?? '').trim();
-    if (text) {
-      const title = shareIntent.meta?.title?.trim() || text.split('\n')[0].slice(0, 60);
-      // push, not navigate: an editor that's already open keeps what's being typed.
-      appNavigation.dispatch(StackActions.push('Editor', { title, text }));
-    }
+    const pageTitle = shareIntent.meta?.title?.trim();
     resetShareIntent();
+    if (!text) return;
+    // push, not navigate: a screen that's already open keeps what's being typed.
+    getShareTarget().then(target =>
+      appNavigation.dispatch(
+        target === 'scratchpad'
+          ? StackActions.push('Scratchpad', { append: pageTitle && !text.startsWith(pageTitle) ? `${pageTitle}\n${text}` : text })
+          : StackActions.push('Editor', { title: pageTitle || text.split('\n')[0].slice(0, 60), text })
+      )
+    );
   }, [hasShareIntent, navReady, shareIntent]);
 
   // Widget taps (notespark://new, notespark://note/<profileId>/<id>); expo-share-intent handles its own dataUrl links.

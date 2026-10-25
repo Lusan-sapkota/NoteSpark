@@ -2,7 +2,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { AppState, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Appbar, Text } from 'react-native-paper';
 import { RootStackParamList } from '../types';
@@ -19,6 +19,7 @@ type ScratchpadNavigationProp = NativeStackNavigationProp<RootStackParamList, 'S
 // The profile's scratchpad: saved as you type, filed into notes (all of it, or the selection) or cleared.
 const ScratchpadScreen: React.FC = () => {
   const navigation = useNavigation<ScratchpadNavigationProp>();
+  const route = useRoute<RouteProp<RootStackParamList, 'Scratchpad'>>();
   const { theme } = useTheme();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
@@ -32,16 +33,6 @@ const ScratchpadScreen: React.FC = () => {
   const saved = useRef('');
   const latest = useRef('');
   latest.current = text;
-
-  useEffect(() => {
-    getScratchpad()
-      .then(content => {
-        saved.current = content;
-        setText(content);
-        setLoaded(true);
-      })
-      .catch(() => alert("Couldn't open the scratchpad", 'Go back and try again.'));
-  }, []);
 
   const flush = useCallback(() => {
     const content = latest.current;
@@ -67,6 +58,27 @@ const ScratchpadScreen: React.FC = () => {
       flush();
     };
   }, [flush]);
+
+  // Reads the pad each time the screen shows (it may have changed under it, e.g. a task ticked on Tasks) and adds
+  // shared text; saves when another screen covers it.
+  const append = route.params?.append;
+  useFocusEffect(
+    useCallback(() => {
+      getScratchpad()
+        .then(content => {
+          saved.current = content;
+          if (append) {
+            setText(content.trimEnd() ? `${content.trimEnd()}\n\n${append}` : append);
+            navigation.setParams({ append: undefined });
+          } else {
+            setText(content);
+          }
+          setLoaded(true);
+        })
+        .catch(() => alert("Couldn't open the scratchpad", 'Go back and try again.'));
+      return flush;
+    }, [append, flush])
+  );
 
   useEffect(() => {
     if (!pendingSelection) return;

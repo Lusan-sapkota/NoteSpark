@@ -32,6 +32,6 @@ export type RootStackParamList = {
   About: undefined;
   Privacy: undefined;
   Tasks: undefined;
-  Scratchpad: undefined;
+  Scratchpad: { append?: string } | undefined; // append: shared text to add at the end
   Bin: undefined;
 };

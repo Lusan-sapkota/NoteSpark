@@ -4,7 +4,7 @@ import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, Icon, IconButton, List, RadioButton, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
-import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
+import { deleteAllNotesForever, getShareTarget, moveAllNotesToBin, restoreBatch, setShareTarget, ShareTarget } from '../storage/notes';
 import { isRediscoverOn, setRediscoverOn } from '../utils/rediscover';
 import { formatHour, getReminderHour, REMINDER_HOURS, setReminderHour } from '../utils/taskReminders';
 import { AUTO_LOCK_MINUTES, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
@@ -47,6 +47,7 @@ const SettingsScreen: React.FC = () => {
   const [reminderHour, setReminderHourState] = useState(9);
   const [autoLock, setAutoLock] = useState(1);
   const [rediscover, setRediscover] = useState(true);
+  const [shareTarget, setShareTargetState] = useState<ShareTarget>('scratchpad');
   // A pick-one dialog (reminder time, auto-lock); kept after closing so it doesn't change while fading.
   const [choice, setChoice] = useState<{ title: string; options: { label: string; value: number }[]; value: number; onPick: (value: number) => void; open: boolean } | null>(null);
   // Kept after closing so the text doesn't change while the dialog fades out.
@@ -70,6 +71,7 @@ const SettingsScreen: React.FC = () => {
     setReminderHourState(await getReminderHour());
     setAutoLock(await getAutoLockMinutes());
     setRediscover(await isRediscoverOn());
+    setShareTargetState(await getShareTarget());
   }, []);
 
   const lockLabel = (minutes: number) => (minutes === 0 ? 'Right away' : `After ${minutes} minute${minutes === 1 ? '' : 's'}`);
@@ -81,6 +83,19 @@ const SettingsScreen: React.FC = () => {
       onPick: hour => {
         setReminderHourState(hour);
         setReminderHour(hour).catch(() => alert("Couldn't update reminders", 'Try again. If it keeps failing, restart the app.'));
+      },
+      open: true,
+    });
+  const shareTargets: ShareTarget[] = ['scratchpad', 'note'];
+  const shareLabel = (target: ShareTarget) => (target === 'scratchpad' ? 'Add to scratchpad' : 'Open a new note');
+  const pickShareTarget = () =>
+    setChoice({
+      title: 'Text shared to NoteSpark',
+      options: shareTargets.map((t, i) => ({ label: shareLabel(t), value: i })),
+      value: shareTargets.indexOf(shareTarget),
+      onPick: i => {
+        setShareTargetState(shareTargets[i]);
+        setShareTarget(shareTargets[i]).catch(() => {});
       },
       open: true,
     });
@@ -499,12 +514,21 @@ const SettingsScreen: React.FC = () => {
 
           {sectionTitle('Your notes')}
           <GroupedRow
+            title="Text shared to NoteSpark"
+            description={shareLabel(shareTarget)}
+            icon="share-variant-outline"
+            right={chevron}
+            onPress={pickShareTarget}
+            isFirst
+            isLast={false}
+          />
+          <GroupedRow
             title="Import and export"
             description="Back up your notes or restore a backup"
             icon="swap-vertical"
             right={chevron}
             onPress={() => navigation.navigate('ImportExport')}
-            isFirst
+            isFirst={false}
             isLast={false}
           />
           <GroupedRow

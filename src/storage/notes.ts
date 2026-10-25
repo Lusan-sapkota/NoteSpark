@@ -94,6 +94,12 @@ export const saveScratchpad = changesNotes(async (content: string): Promise<void
   );
 });
 
+// Where text shared to NoteSpark goes: the scratchpad (default) or a new note.
+export type ShareTarget = 'scratchpad' | 'note';
+export const getShareTarget = async (): Promise<ShareTarget> =>
+  (await AsyncStorage.getItem('shareTarget').catch(() => null)) === 'note' ? 'note' : 'scratchpad';
+export const setShareTarget = (target: ShareTarget) => AsyncStorage.setItem('shareTarget', target);
+
 // The scratchpad's tasks are listed (and ticked) on Tasks under this id; note ids start at 1.
 export const SCRATCHPAD_ID = 0;
 export const scratchpadAsNote = (content: string, updatedAt: string): Note => ({
