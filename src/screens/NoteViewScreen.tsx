@@ -6,7 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, Appbar, Button, Dialog, Divider, FAB, Icon, List, Portal, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
-import { getNoteById, getNotes, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
+import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
 import { extractTags } from '../utils/tags';
 import { findNoteByTitle, linksTo, noteLinkPattern } from '../utils/noteLinks';
@@ -97,15 +97,16 @@ const NoteViewScreen: React.FC = () => {
     }
   };
 
-  const reloadNote = async () => {
-    setRefreshing(true);
+  // The spinner only shows for a pull; opening or returning to the note reloads quietly.
+  const reloadNote = async (pulled = false) => {
+    if (pulled) setRefreshing(true);
     if ((route.params as any)?.noteId) {
       try {
         const fetchedNote = await getNoteById((route.params as any).noteId);
         setNote(fetchedNote);
         if (fetchedNote) {
-          const allNotes = await getNotes();
-          setBacklinks(allNotes.filter(n => n.id !== fetchedNote.id && linksTo(n.content, fetchedNote.title)));
+          const linking = await getNotesWithLinks();
+          setBacklinks(linking.filter(n => n.id !== fetchedNote.id && linksTo(n.content, fetchedNote.title)));
           const ids = await relatedNotes(fetchedNote.id);
           const notes = await Promise.all(ids.map(id => getNoteById(id).catch(() => null)));
           setRelated(notes.filter((n): n is Note => !!n));
@@ -354,7 +355,7 @@ const NoteViewScreen: React.FC = () => {
         onScroll={handleScroll}
         scrollEventThrottle={16}
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={reloadNote} tintColor={theme.colors.primary} colors={[theme.colors.primary]} progressBackgroundColor={theme.colors.surfaceContainerHigh} />
+          <RefreshControl refreshing={refreshing} onRefresh={() => reloadNote(true)} tintColor={theme.colors.primary} colors={[theme.colors.primary]} progressBackgroundColor={theme.colors.surfaceContainerHigh} />
         }
       >
         <View style={styles.column}>

@@ -91,7 +91,8 @@ const AppContent = () => {
         await syncProfileEncryption();
         await openDefaultProfile();
         await purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
-        getAllProfilesNoteContents().then(pruneImageCache).catch(() => {});
+        // Reads every profile's notes; waits so it doesn't compete with Home's first load.
+        setTimeout(() => getAllProfilesNoteContents().then(pruneImageCache).catch(() => {}), 10000);
         runAutoBackupIfDue().catch(() => {});
         setDbInitialized(true);
         const onboarded = await AsyncStorage.getItem('onboarded');

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, useDeferredValue } from 'react';
 import { BackHandler, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
@@ -8,7 +8,7 @@ import Menu from '../components/Menu';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import { getNotes, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
+import { getNotes, getNotesVersion, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
 import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
@@ -43,6 +43,8 @@ const HomeScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
+  // The list filters with this deferred copy, so typing stays responsive with many notes.
+  const deferredSearch = useDeferredValue(searchText);
   const [searchType, setSearchType] = useState<'all' | 'title' | 'content' | 'meaning'>('all');
   const [meaningIds, setMeaningIds] = useState<number[] | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
@@ -62,12 +64,18 @@ const HomeScreen: React.FC = () => {
   const selecting = selectedIds.length > 0;
   const clearSelection = () => setSelectedIds([]);
 
-  const loadNotes = async () => {
-    // Only the first load shows the skeleton; reloads on focus keep the current list until the new one arrives.
+  // Profile and note version of the list on screen: coming back to Home reloads only when one of them changed.
+  const loadedKey = useRef('');
+
+  // Only the first load shows the skeleton; reloads keep the current list until the new one arrives.
+  const loadNotes = async (force = false) => {
     try {
       const [list, active] = await Promise.all([getProfiles(), getActiveProfile()]);
       setProfiles(list);
       setActiveProfile(active);
+      const key = `${active.id}:${getNotesVersion()}`;
+      if (!force && key === loadedKey.current) return;
+      loadedKey.current = key;
       const fetchedNotes = await getNotes();
       setNotes(fetchedNotes);
       setLoading(false);
@@ -76,6 +84,7 @@ const HomeScreen: React.FC = () => {
       updateWidgets().catch(error => console.warn('Widget update failed:', error));
     } catch (error) {
       setLoading(false);
+      loadedKey.current = '';
       console.error('Failed to load notes:', error);
       alert("Couldn't load notes", 'Pull down on the list to try again.');
     }
@@ -142,7 +151,7 @@ const HomeScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadNotes();
+    await loadNotes(true);
     setRefreshing(false);
   };
 
@@ -179,12 +188,12 @@ const HomeScreen: React.FC = () => {
     else if (filter === 'markdown' || filter === 'text') {
       filtered = filtered.filter(n => filter === 'markdown' ? n.isMarkdown : !n.isMarkdown);
     }
-    if (searchType === 'meaning' && searchText.trim() && meaningIds) {
+    if (searchType === 'meaning' && deferredSearch.trim() && meaningIds) {
       const byId = new Map(filtered.map(n => [n.id, n]));
       return meaningIds.map(id => byId.get(id)).filter((n): n is Note => !!n);
     }
-    if (searchText.trim()) {
-      const text = searchText.trim().toLowerCase();
+    if (deferredSearch.trim()) {
+      const text = deferredSearch.trim().toLowerCase();
       filtered = filtered.filter(n => {
         if (searchType === 'title') {
           return n.title?.toLowerCase().includes(text);
@@ -205,7 +214,7 @@ const HomeScreen: React.FC = () => {
       }
     });
     return filtered;
-  }, [notes, tagsByNote, searchText, searchType, filter, sortType, meaningIds]);
+  }, [notes, tagsByNote, deferredSearch, searchType, filter, sortType, meaningIds]);
 
   const handleSelect = useCallback((noteId: number) => {
     setSelectedIds(ids => (ids.includes(noteId) ? ids.filter(id => id !== noteId) : [...ids, noteId]));
