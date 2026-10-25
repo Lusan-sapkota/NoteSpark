@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { cancelAnimation, Easing, SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { Button, Dialog, Icon, IconButton, RadioButton, SegmentedButtons, Switch, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { Button, Dialog, Icon, IconButton, RadioButton, SegmentedButtons, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import Menu from '../components/Menu';
 import { RootStackParamList } from '../types';
 import { sendAppNotification } from '../utils/notifications';
@@ -13,6 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { exportNotesAsJson, getNotes, importNotes, ImportMode } from '../storage/notes';
 import { notesFromFile, shareNotesAsZip } from '../utils/exportNotes';
+import M3Switch from '../components/M3Switch';
 import { AutoBackupSettings, BACKUPS_KEPT, folderName, getAutoBackup, pickBackupFolder, runBackup, setAutoBackup } from '../storage/autoBackup';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -603,7 +604,7 @@ const ImportExportScreen: React.FC = () => {
             icon="folder-sync-outline"
             onPress={autoBackup ? () => saveAutoBackup(null) : chooseBackupFolder}
             right={
-              <Switch
+              <M3Switch
                 value={!!autoBackup}
                 onValueChange={on => (on ? chooseBackupFolder() : saveAutoBackup(null))}
                 accessibilityLabel="Back up automatically"
@@ -638,7 +639,7 @@ const ImportExportScreen: React.FC = () => {
                 icon="lock-outline"
                 onPress={() => setIncludeProtected(!autoBackup.includeProtected)}
                 right={
-                  <Switch
+                  <M3Switch
                     value={autoBackup.includeProtected}
                     onValueChange={setIncludeProtected}
                     accessibilityLabel="Include protected profiles"

@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, Icon, IconButton, List, RadioButton, SegmentedButtons, Switch, Text, TextInput } from 'react-native-paper';
+import { Button, Dialog, Icon, IconButton, List, RadioButton, SegmentedButtons, Text, TextInput } from 'react-native-paper';
+import M3Switch from '../components/M3Switch';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, getShareTarget, moveAllNotesToBin, restoreBatch, setShareTarget, ShareTarget } from '../storage/notes';
 import { isRediscoverOn, setRediscoverOn } from '../utils/rediscover';
@@ -77,7 +78,7 @@ const SettingsScreen: React.FC = () => {
   const lockLabel = (minutes: number) => (minutes === 0 ? 'Right away' : `After ${minutes} minute${minutes === 1 ? '' : 's'}`);
   const pickReminderHour = () =>
     setChoice({
-      title: 'Reminder time',
+      title: 'Task reminders',
       options: REMINDER_HOURS.map(h => ({ label: formatHour(h), value: h })),
       value: reminderHour,
       onPick: hour => {
@@ -386,23 +387,41 @@ const SettingsScreen: React.FC = () => {
               { value: 'system', label: 'System', icon: 'theme-light-dark' },
             ]}
           />
-          <View style={styles.afterSegmented}>
-            <GroupedRow
-              title="Rediscover on Home"
-              description="One older note a day at the top of your list"
-              icon="history"
-              right={
-                <Switch
-                  value={rediscover}
-                  onValueChange={on => { setRediscover(on); setRediscoverOn(on).catch(() => {}); }}
-                  accessibilityLabel="Rediscover on Home"
-                />
-              }
-              onPress={() => { setRediscover(!rediscover); setRediscoverOn(!rediscover).catch(() => {}); }}
-              isFirst
-              isLast
-            />
-          </View>
+
+          {sectionTitle('Notes and tasks')}
+          <GroupedRow
+            title="Rediscover on Home"
+            description="One older note a day at the top of your list"
+            icon="history"
+            right={
+              <M3Switch
+                value={rediscover}
+                onValueChange={on => { setRediscover(on); setRediscoverOn(on).catch(() => {}); }}
+                accessibilityLabel="Rediscover on Home"
+              />
+            }
+            onPress={() => { setRediscover(!rediscover); setRediscoverOn(!rediscover).catch(() => {}); }}
+            isFirst
+            isLast={false}
+          />
+          <GroupedRow
+            title="Text shared to NoteSpark"
+            description={shareLabel(shareTarget)}
+            icon="share-variant-outline"
+            right={chevron}
+            onPress={pickShareTarget}
+            isFirst={false}
+            isLast={false}
+          />
+          <GroupedRow
+            title="Task reminders"
+            description={`${formatHour(reminderHour)} on the day a task is due`}
+            icon="bell-outline"
+            right={chevron}
+            onPress={pickReminderHour}
+            isFirst={false}
+            isLast
+          />
 
           {sectionTitle('Profiles')}
           {profiles.map((p, i) => {
@@ -501,34 +520,14 @@ const SettingsScreen: React.FC = () => {
             />
           ))}
 
-          {sectionTitle('Tasks')}
-          <GroupedRow
-            title="Reminder time"
-            description={`${formatHour(reminderHour)} on the day a task is due`}
-            icon="bell-outline"
-            right={chevron}
-            onPress={pickReminderHour}
-            isFirst
-            isLast
-          />
-
-          {sectionTitle('Your notes')}
-          <GroupedRow
-            title="Text shared to NoteSpark"
-            description={shareLabel(shareTarget)}
-            icon="share-variant-outline"
-            right={chevron}
-            onPress={pickShareTarget}
-            isFirst
-            isLast={false}
-          />
+          {sectionTitle('Backup and storage')}
           <GroupedRow
             title="Import and export"
             description="Back up your notes or restore a backup"
             icon="swap-vertical"
             right={chevron}
             onPress={() => navigation.navigate('ImportExport')}
-            isFirst={false}
+            isFirst
             isLast={false}
           />
           <GroupedRow
@@ -667,9 +666,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: readingWidth,
     alignSelf: 'center',
-  },
-  afterSegmented: {
-    marginTop: space.md,
   },
   choiceList: {
     paddingHorizontal: 0,
