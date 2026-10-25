@@ -15,7 +15,11 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content }) => {
   const alert = useAlert();
 
   // Replace <br> tags with newlines so markdown treats them as line breaks
-  const processedContent = content.replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n');
+  const processedContent = content
+    .replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n')
+    // Task list items: show a box instead of the literal "[ ]" / "[x]".
+    .replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\[ \]/gm, '$1☐')
+    .replace(/^(\s*(?:[-*+]|\d+[.)])\s+)\[[xX]\]/gm, '$1☑');
 
   const f = theme.fonts;
   const heading = (font: typeof f.noteH1) => ({

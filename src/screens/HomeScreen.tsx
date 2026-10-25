@@ -214,7 +214,10 @@ const HomeScreen: React.FC = () => {
       <Header elevated={elevated}
         title="NoteSpark"
         rightActions={
-          <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
+          <>
+            <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel="Tasks" onPress={() => navigation.navigate('Tasks')} />
+            <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
+          </>
         }
       />
 

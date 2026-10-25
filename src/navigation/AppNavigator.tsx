@@ -10,6 +10,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import ImportExportScreen from '../screens/ImportExportScreen';
 import AboutScreen from '../screens/AboutScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
+import TasksScreen from '../screens/TasksScreen';
 import { useTheme } from '../theme/ThemeContext';
 import { navDarkTheme, navLightTheme } from '../theme/theme';
 
@@ -72,6 +73,11 @@ const AppNavigator: React.FC = () => {
           options={{
             headerShown: false,
           }}
+        />
+        <Stack.Screen
+          name="Tasks"
+          component={TasksScreen}
+          options={{ headerShown: false }}
         />
       </Stack.Navigator>
     </NavigationContainer>

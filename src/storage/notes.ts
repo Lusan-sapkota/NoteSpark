@@ -1,6 +1,7 @@
 // All note reads and writes. database.ts only opens the database and runs migrations.
 import { db } from './database';
 import { Note } from '../types';
+import { setTaskDone, Task } from '../utils/tasks';
 
 export const getNotes = async (): Promise<Note[]> => {
   const rows = await db.getAllAsync('SELECT * FROM notes ORDER BY updatedAt DESC');
@@ -36,12 +37,12 @@ export const getNoteById = async (id: number): Promise<Note | null> => {
 
 export const saveNote = async (note: Omit<Note, 'id' | 'isPinned'>): Promise<number> => {
   const now = new Date().toISOString();
-  const result: any = await db.runAsync(
+  const result = await db.runAsync(
     `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)`,
     [note.title, note.content, note.isMarkdown ? 1 : 0, now, now]
   );
-  if (result.insertId) {
-    return result.insertId;
+  if (result.lastInsertRowId) {
+    return result.lastInsertRowId;
   } else {
     throw new Error('Failed to insert note');
   }
@@ -49,11 +50,11 @@ export const saveNote = async (note: Omit<Note, 'id' | 'isPinned'>): Promise<num
 
 export const updateNote = async (note: Pick<Note, 'id' | 'title' | 'content' | 'isMarkdown'>): Promise<void> => {
   const now = new Date().toISOString();
-  const result: any = await db.runAsync(
+  const result = await db.runAsync(
     `UPDATE notes SET title = ?, content = ?, isMarkdown = ?, updatedAt = ? WHERE id = ?`,
     [note.title, note.content, note.isMarkdown ? 1 : 0, now, note.id]
   );
-  if (result.rowsAffected > 0) {
+  if (result.changes > 0) {
     return;
   } else {
     throw new Error('Note not found or no changes made');
@@ -61,11 +62,11 @@ export const updateNote = async (note: Pick<Note, 'id' | 'title' | 'content' | '
 };
 
 export const deleteNote = async (id: number): Promise<void> => {
-  const result: any = await db.runAsync(
+  const result = await db.runAsync(
     'DELETE FROM notes WHERE id = ?',
     [id]
   );
-  if (result.rowsAffected > 0) {
+  if (result.changes > 0) {
     return;
   } else {
     throw new Error('Note not found');
@@ -75,6 +76,15 @@ export const deleteNote = async (id: number): Promise<void> => {
 // Pinning isn't an edit, so updatedAt stays as it is.
 export const setNotePinned = async (id: number, pinned: boolean): Promise<void> => {
   await db.runAsync('UPDATE notes SET isPinned = ? WHERE id = ?', [pinned ? 1 : 0, id]);
+};
+
+// Ticks or unticks one checkbox in its note. Returns false if the note or that line changed since it was read.
+export const setTaskDoneInNote = async (task: Task, done: boolean): Promise<boolean> => {
+  const note = await getNoteById(task.noteId);
+  const content = note && setTaskDone(note.content, task, done);
+  if (!note || content == null) return false;
+  await updateNote({ ...note, content });
+  return true;
 };
 
 export const clearAllNotes = async (): Promise<void> => {

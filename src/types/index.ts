@@ -16,4 +16,5 @@ export type RootStackParamList = {
   ImportExport: undefined;
   About: undefined;
   Privacy: undefined;
+  Tasks: undefined;
 };
