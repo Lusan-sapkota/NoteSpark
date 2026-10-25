@@ -25,7 +25,8 @@ export type RootStackParamList = {
   // title / text: prefill for a new note (from a [[link]], or text shared from another app).
   Editor: { noteId?: string; title?: string; text?: string } | undefined;
   NoteView: { noteId: string } | undefined;
-  Settings: undefined;
+  Settings: { message?: string } | undefined; // message: snackbar after the profile form closes
+  ProfileLock: { profileId?: string } | undefined; // no id: new profile
   ImportExport: undefined;
   About: undefined;
   Privacy: undefined;

@@ -1,16 +1,15 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import { AppState, Linking, Pressable, StyleSheet, View, ScrollView } from 'react-native';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withSpring } from 'react-native-reanimated';
-import { useFocusEffect, useNavigation } from '@react-navigation/native';
+import { StyleSheet, View, ScrollView } from 'react-native';
+import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, Icon, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
-import { addProfile, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, setProfilePin, setUsesBiometrics, switchProfile, unlockWithBiometrics, usesBiometrics, canUseBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
+import { deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { BIN_DAYS } from '../storage/database';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
-import KeyboardSafePortal, { useDialogBodyMaxHeight } from '../components/KeyboardSafePortal';
+import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Menu from '../components/Menu';
 import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
@@ -27,92 +26,9 @@ const profileTimeLeft = (deletedAt: string) => {
   return `Erased in ${days} days`;
 };
 
-type LockMode = 'none' | 'pin' | 'fingerprint';
-
-const lockHelp: Record<LockMode, string> = {
-  none: 'Anyone using your phone can open this profile.',
-  pin: 'Asks for a four-digit PIN. Its notes are encrypted on your phone.',
-  fingerprint: 'Opens with your fingerprint or the PIN. Its notes are encrypted on your phone.',
-};
-
-// One tile of the lock picker. Selected: tonal fill, primary outline and a check badge, so it isn't shown by
-// color alone. A 2dp border in both states, so selecting never changes the size. Springs a little on press
-// (not under reduce motion).
-const LockOption: React.FC<{ icon: string; label: string; selected: boolean; muted?: boolean; onPress: () => void }> = ({
-  icon,
-  label,
-  selected,
-  muted = false,
-  onPress,
-}) => {
-  const { theme } = useTheme();
-  const reduceMotion = useReducedMotion();
-  const scale = useSharedValue(1);
-  const pressStyle = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
-  const press = (to: number) => {
-    if (!reduceMotion) scale.value = withSpring(to, { damping: 15, stiffness: 300 });
-  };
-  const color = selected ? theme.colors.onSecondaryContainer : muted ? theme.colors.onSurfaceVariant : theme.colors.onSurface;
-  return (
-    <Animated.View style={[styles.lockOption, pressStyle]}>
-      <Pressable
-        onPress={onPress}
-        onPressIn={() => press(0.95)}
-        onPressOut={() => press(1)}
-        accessibilityRole="radio"
-        accessibilityState={{ checked: selected }}
-        accessibilityLabel={label}
-        style={[
-          styles.lockOptionInner,
-          selected
-            ? { backgroundColor: theme.colors.secondaryContainer, borderColor: theme.colors.primary }
-            : { backgroundColor: theme.colors.surfaceContainerHighest, borderColor: theme.colors.surfaceContainerHighest },
-        ]}
-      >
-        {selected && (
-          <View style={styles.lockCheck}>
-            <Icon source="check-circle" size={16} color={theme.colors.primary} />
-          </View>
-        )}
-        <Icon source={icon} size={24} color={selected ? theme.colors.primary : color} />
-        <Text variant="labelLarge" style={[styles.lockLabel, { color }]} maxFontSizeMultiplier={1.5}>{label}</Text>
-      </Pressable>
-    </Animated.View>
-  );
-};
-
-// "Lock": No lock, PIN, or Fingerprint (with the PIN as backup), plus one line about the choice. Without a
-// fingerprint on the phone, the Fingerprint tile opens the phone's security settings instead.
-const LockPicker: React.FC<{ value: LockMode; onChange: (mode: LockMode) => void; fingerprintReady: boolean }> = ({ value, onChange, fingerprintReady }) => {
-  const { theme } = useTheme();
-  return (
-    <View style={styles.lockChoice}>
-      <Text variant="labelLarge" style={{ color: theme.colors.onSurfaceVariant }}>Lock</Text>
-      <View style={styles.lockOptions} accessibilityRole="radiogroup">
-        <LockOption icon="lock-open-variant-outline" label="No lock" selected={value === 'none'} onPress={() => onChange('none')} />
-        <LockOption icon="dialpad" label="PIN" selected={value === 'pin'} onPress={() => onChange('pin')} />
-        <LockOption
-          icon={fingerprintReady ? 'fingerprint' : 'fingerprint-off'}
-          label="Fingerprint"
-          selected={value === 'fingerprint'}
-          muted={!fingerprintReady}
-          onPress={() =>
-            fingerprintReady
-              ? onChange('fingerprint')
-              : Linking.sendIntent('android.settings.SECURITY_SETTINGS').catch(() => Linking.openSettings())
-          }
-        />
-      </View>
-      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-        {lockHelp[value]}
-        {!fingerprintReady && ' To use a fingerprint, add one in your phone\'s settings first.'}
-      </Text>
-    </View>
-  );
-};
-
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
+  const route = useRoute<RouteProp<RootStackParamList, 'Settings'>>();
   const { theme, themeType, setThemeType } = useTheme();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
@@ -126,25 +42,10 @@ const SettingsScreen: React.FC = () => {
   const [protectedProfileIds, setProtectedProfileIds] = useState<string[]>([]);
   const [fingerprintProfileIds, setFingerprintProfileIds] = useState<string[]>([]);
   const [menuFor, setMenuFor] = useState<string | null>(null);
-  const dialogBodyMax = useDialogBodyMaxHeight();
-  // Kept after closing so the text doesn't change while the dialog fades out. `lock`: Add profile's lock picker.
-  const [nameDialog, setNameDialog] = useState<{ editing: Profile | null; name: string; pin: string; pinConfirmation: string; lock: LockMode; open: boolean } | null>(null);
-  // `lock`: the Profile lock picker (manage mode).
-  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; pinConfirmation: string; currentPin: string; lock: LockMode; mode: 'unlock' | 'manage' | 'makeDefault' | 'delete'; open: boolean } | null>(null);
-  const [fingerprintReady, setFingerprintReady] = useState(false);
-  const checkFingerprint = () => canUseBiometrics().then(setFingerprintReady).catch(() => setFingerprintReady(false));
-  const openPinDialog = async (profile: Profile, mode: 'unlock' | 'manage' | 'makeDefault' | 'delete') => {
-    let lock: LockMode = 'pin';
-    if (mode === 'manage') {
-      await checkFingerprint();
-      if (isProtected(profile) && (await usesBiometrics(profile.id).catch(() => false))) lock = 'fingerprint';
-    }
-    setPinDialog({ profile, pin: '', pinConfirmation: '', currentPin: '', lock, mode, open: true });
-  };
-  const openAddDialog = async () => {
-    await checkFingerprint();
-    setNameDialog({ editing: null, name: '', pin: '', pinConfirmation: '', lock: 'none', open: true });
-  };
+  // Kept after closing so the text doesn't change while the dialog fades out.
+  const [nameDialog, setNameDialog] = useState<{ profile: Profile; name: string; open: boolean } | null>(null);
+  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; mode: 'unlock' | 'makeDefault' | 'delete'; open: boolean } | null>(null);
+  const openPinDialog = (profile: Profile, mode: 'unlock' | 'makeDefault' | 'delete') => setPinDialog({ profile, pin: '', mode, open: true });
   const closeNameDialog = () => setNameDialog(d => d && { ...d, open: false });
   const closePinDialog = () => setPinDialog(d => d && { ...d, open: false });
 
@@ -163,32 +64,26 @@ const SettingsScreen: React.FC = () => {
 
   useFocusEffect(useCallback(() => { loadProfiles().catch(() => {}); }, [loadProfiles]));
 
-  // Back from the phone's settings (after "Open settings" in the PIN dialog): check for a fingerprint again.
+  // The profile form reports what it did when it closes.
+  const message = route.params?.message;
   useEffect(() => {
-    const sub = AppState.addEventListener('change', state => {
-      if (state === 'active') checkFingerprint();
-    });
-    return () => sub.remove();
-  }, []);
+    if (!message) return;
+    setSnackbar(message);
+    navigation.setParams({ message: undefined });
+  }, [message]);
 
   const activeName = profiles.find(p => p.id === activeId)?.name ?? '';
 
-  const handleSaveName = async () => {
+  const handleRename = async () => {
     if (!nameDialog) return;
     const name = nameDialog.name.trim();
     if (!name) return;
     try {
-      if (nameDialog.editing) await renameProfile(nameDialog.editing.id, name);
-      else {
-        const { lock, pin, pinConfirmation } = nameDialog;
-        if (lock !== 'none' && (pin !== pinConfirmation || !/^\d{4}$/.test(pin))) return;
-        const profile = await addProfile(name, lock === 'none' ? undefined : pin);
-        if (lock === 'fingerprint' && fingerprintReady) await setUsesBiometrics(profile.id, true);
-      }
+      await renameProfile(nameDialog.profile.id, name);
       closeNameDialog();
       await loadProfiles();
     } catch (error) {
-      alert(nameDialog.editing ? "Couldn't rename the profile" : "Couldn't add the profile", 'Try again. If it keeps failing, restart the app.');
+      alert("Couldn't rename the profile", 'Try again. If it keeps failing, restart the app.');
     }
   };
 
@@ -225,54 +120,6 @@ const SettingsScreen: React.FC = () => {
   };
 
   const isProtected = (profile: Profile) => protectedProfileIds.includes(profile.id);
-
-  // Changing or removing a PIN needs the current one.
-  const checkCurrentPin = async (profile: Profile, currentPin: string) => {
-    if (await verifyProfilePin(profile.id, currentPin)) return true;
-    alert('Incorrect PIN', await wrongPinMessage(profile.id));
-    return false;
-  };
-
-  // Profile lock: a protected profile needs its current PIN for any change; the new PIN is optional when keeping a
-  // lock. "No lock" removes the PIN (and with it encryption), after asking.
-  const handleSaveLock = async () => {
-    if (!pinDialog || pinDialog.mode !== 'manage') return;
-    const { profile, pin, pinConfirmation, currentPin, lock } = pinDialog;
-    const locked = isProtected(profile);
-    const newPinOk = pin.length === 4 && pin === pinConfirmation;
-    if (lock !== 'none' && (locked ? !!(pin || pinConfirmation) && !newPinOk : !newPinOk)) return;
-    if (!locked && lock === 'none') return;
-    try {
-      if (locked && !(await checkCurrentPin(profile, currentPin))) return;
-      if (lock === 'none') {
-        alert('Remove the lock?', `${profile.name} will open without a PIN, and its notes won't be encrypted any more.`, [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove lock',
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                await setProfilePin(profile.id, null, currentPin);
-                closePinDialog();
-                await loadProfiles();
-                setSnackbar(`Lock removed from ${profile.name}`);
-              } catch (error) {
-                alert("Couldn't remove the lock", 'Try again. If it keeps failing, restart the app.');
-              }
-            },
-          },
-        ]);
-        return;
-      }
-      if (pin) await setProfilePin(profile.id, pin, currentPin);
-      await setUsesBiometrics(profile.id, lock === 'fingerprint' && fingerprintReady);
-      closePinDialog();
-      await loadProfiles();
-      setSnackbar(`Lock saved for ${profile.name}`);
-    } catch (error) {
-      alert("Couldn't save the lock", 'Try again. If it keeps failing, restart the app.');
-    }
-  };
 
   // A PIN can't be recovered, so a forgotten one means erasing the profile. Never offered for the open profile.
   const handleForgotPin = (profile: Profile) => {
@@ -438,22 +285,16 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  const digits = (value: string) => value.replace(/\D/g, '').slice(0, 4);
-  const changingPin = pinDialog?.mode === 'manage' && isProtected(pinDialog.profile);
   const pinName = pinDialog?.profile.name ?? '';
   const { pinTitle, pinMessage, pinAction } = {
     unlock: { pinTitle: 'Enter profile PIN', pinMessage: `Enter the four-digit PIN for ${pinName}.`, pinAction: 'Unlock' },
-    makeDefault: { pinTitle: 'Enter PIN to make default', pinMessage: `Enter the four-digit PIN for ${pinName} to make it the default profile.`, pinAction: 'Make default' },
+    makeDefault: { pinTitle: 'Enter PIN to make default', pinMessage: `Enter the four-digit PIN for ${pinName} to open it at start.`, pinAction: 'Open at start' },
     delete: { pinTitle: 'Enter PIN to delete', pinMessage: `Enter the four-digit PIN for ${pinName} to delete it.`, pinAction: 'Delete profile' },
-    manage: changingPin
-      ? { pinTitle: 'Profile lock', pinMessage: `Enter the current PIN for ${pinName} to change how it locks.`, pinAction: 'Save' }
-      : { pinTitle: 'Profile lock', pinMessage: `Choose how ${pinName} locks.`, pinAction: 'Save' },
   }[pinDialog?.mode ?? 'unlock'];
   const submitPin = () => {
     if (!pinDialog) return;
     const { profile, pin, mode } = pinDialog;
-    if (mode === 'manage') handleSaveLock();
-    else if (mode === 'makeDefault') handleMakeDefault(profile, pin);
+    if (mode === 'makeDefault') handleMakeDefault(profile, pin);
     else if (mode === 'delete') handleDeleteProfile(profile, pin);
     else handleSwitch(profile, pin);
   };
@@ -488,59 +329,52 @@ const SettingsScreen: React.FC = () => {
           {profiles.map((p, i) => {
             const current = p.id === activeId;
             const isDefault = p.id === defaultId;
-            const lockLabel = fingerprintProfileIds.includes(p.id) ? { icon: 'fingerprint', text: 'Fingerprint' } : isProtected(p) ? { icon: 'lock-outline', text: 'PIN' } : null;
-            // Small status labels instead of a sentence; a profile with none of them is a one-line row.
-            const labels = [
-              current && { icon: 'check', text: 'Current', highlight: true },
-              isDefault && { icon: 'star-outline', text: 'Opens at start', highlight: false },
-              lockLabel && { ...lockLabel, highlight: false },
-            ].filter(Boolean) as { icon: string; text: string; highlight: boolean }[];
+            const lockIcon = fingerprintProfileIds.includes(p.id) ? 'fingerprint' : isProtected(p) ? 'lock-outline' : null;
+            const status = current ? (isDefault ? 'Open now, and opens at start' : 'Open now') : isDefault ? 'Opens at start, tap to switch' : 'Tap to switch';
             return (
               <GroupedRow
                 key={p.id}
                 title={p.name}
-                description={labels.length ? (
-                  <View style={styles.labels}>
-                    {labels.map(l => (
-                      <View key={l.text} style={[styles.label, { backgroundColor: l.highlight ? theme.colors.secondaryContainer : theme.colors.surfaceContainerHighest }]}>
-                        <Icon source={l.icon} size={14} color={l.highlight ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant} />
-                        <Text variant="labelMedium" maxFontSizeMultiplier={1.5} style={{ color: l.highlight ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant }}>
-                          {l.text}
-                        </Text>
-                      </View>
-                    ))}
+                description={status}
+                left={
+                  <View style={[styles.avatar, { backgroundColor: current ? theme.colors.secondaryContainer : theme.colors.surfaceContainerHighest }]}>
+                    <Text variant="titleMedium" style={{ color: current ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant }}>
+                      {p.name.trim().charAt(0).toUpperCase() || '?'}
+                    </Text>
                   </View>
-                ) : undefined}
-                icon={current ? 'account-check' : 'account-outline'}
+                }
                 onPress={current ? undefined : () => handleSwitch(p)}
                 right={
-                  <Menu
-                    visible={menuFor === p.id}
-                    onDismiss={() => setMenuFor(null)}
-                    anchor={<IconButton icon="dots-vertical" accessibilityLabel={`Options for ${p.name}`} onPress={() => setMenuFor(p.id)} />}
-                  >
-                    {!current && (
-                      <Menu.Item leadingIcon="swap-horizontal" title="Switch to this profile" onPress={() => { setMenuFor(null); handleSwitch(p); }} />
+                  <View style={styles.rowActions}>
+                    {lockIcon && (
+                      <View accessible accessibilityLabel={lockIcon === 'fingerprint' ? 'Locked with fingerprint and PIN' : 'Locked with a PIN'}>
+                        <Icon source={lockIcon} size={18} color={theme.colors.onSurfaceVariant} />
+                      </View>
                     )}
-                    <Menu.Item
-                      leadingIcon="pencil-outline"
-                      title="Rename"
-                      onPress={() => { setMenuFor(null); setNameDialog({ editing: p, name: p.name, pin: '', pinConfirmation: '', lock: 'none', open: true }); }}
-                    />
-                    <Menu.Item leadingIcon="lock-outline" title="Profile lock" onPress={() => { setMenuFor(null); openPinDialog(p, 'manage'); }} />
-                    {!isDefault && (
-                      <Menu.Item leadingIcon="star-outline" title="Open at start" onPress={() => { setMenuFor(null); confirmMakeDefault(p); }} />
-                    )}
-                    {/* The open and default profiles can't be deleted. */}
-                    {!current && !isDefault && (
-                      <Menu.Item
-                        leadingIcon="delete-outline"
-                        title="Delete profile"
-                        titleStyle={{ color: theme.colors.error }}
-                        onPress={() => { setMenuFor(null); handleDeleteProfile(p); }}
-                      />
-                    )}
-                  </Menu>
+                    <Menu
+                      visible={menuFor === p.id}
+                      onDismiss={() => setMenuFor(null)}
+                      anchor={<IconButton icon="dots-vertical" accessibilityLabel={`Options for ${p.name}`} onPress={() => setMenuFor(p.id)} />}
+                    >
+                      {!current && (
+                        <Menu.Item leadingIcon="swap-horizontal" title="Switch to this profile" onPress={() => { setMenuFor(null); handleSwitch(p); }} />
+                      )}
+                      <Menu.Item leadingIcon="pencil-outline" title="Rename" onPress={() => { setMenuFor(null); setNameDialog({ profile: p, name: p.name, open: true }); }} />
+                      <Menu.Item leadingIcon="lock-outline" title="Lock" onPress={() => { setMenuFor(null); navigation.navigate('ProfileLock', { profileId: p.id }); }} />
+                      {!isDefault && (
+                        <Menu.Item leadingIcon="star-outline" title="Open at start" onPress={() => { setMenuFor(null); confirmMakeDefault(p); }} />
+                      )}
+                      {/* The open and default profiles can't be deleted. */}
+                      {!current && !isDefault && (
+                        <Menu.Item
+                          leadingIcon="delete-outline"
+                          title="Delete profile"
+                          titleStyle={{ color: theme.colors.error }}
+                          onPress={() => { setMenuFor(null); handleDeleteProfile(p); }}
+                        />
+                      )}
+                    </Menu>
+                  </View>
                 }
                 isFirst={i === 0}
                 isLast={false}
@@ -549,9 +383,12 @@ const SettingsScreen: React.FC = () => {
           })}
           <GroupedRow
             title="Add profile"
-            description="A separate set of notes, for work or school"
-            icon="account-plus-outline"
-            onPress={openAddDialog}
+            left={
+              <View style={[styles.avatar, { borderWidth: 1, borderColor: theme.colors.outlineVariant }]}>
+                <Icon source="plus" size={22} color={theme.colors.onSurfaceVariant} />
+              </View>
+            }
+            onPress={() => navigation.navigate('ProfileLock')}
             isFirst={false}
             isLast
           />
@@ -645,136 +482,45 @@ const SettingsScreen: React.FC = () => {
 
       <KeyboardSafePortal>
         <Dialog visible={!!nameDialog?.open} onDismiss={closeNameDialog}>
-          <Dialog.Title>{nameDialog?.editing ? 'Rename profile' : 'Add profile'}</Dialog.Title>
+          <Dialog.Title>Rename profile</Dialog.Title>
           <Dialog.Content>
-            {/* Scrolls inside the space above the keyboard, so the title and buttons stay on screen. */}
-            <ScrollView style={{ maxHeight: dialogBodyMax }} keyboardShouldPersistTaps="handled">
-              <TextInput
-                mode="outlined"
-                label="Profile name"
-                value={nameDialog?.name ?? ''}
-                onChangeText={name => setNameDialog(d => d && { ...d, name })}
-                autoFocus
-                onSubmitEditing={handleSaveName}
-              />
-              {nameDialog && !nameDialog.editing && (
-                <>
-                  <LockPicker value={nameDialog.lock} onChange={lock => setNameDialog(d => d && { ...d, lock })} fingerprintReady={fingerprintReady} />
-                  {nameDialog.lock !== 'none' && (
-                    <>
-                      <TextInput
-                        mode="outlined"
-                        label="Four-digit PIN"
-                        value={nameDialog.pin}
-                        onChangeText={pin => setNameDialog(d => d && { ...d, pin: digits(pin) })}
-                        keyboardType="number-pad"
-                        secureTextEntry
-                        style={styles.dialogInput}
-                      />
-                      <TextInput
-                        mode="outlined"
-                        label="Confirm PIN"
-                        value={nameDialog.pinConfirmation}
-                        onChangeText={pinConfirmation => setNameDialog(d => d && { ...d, pinConfirmation: digits(pinConfirmation) })}
-                        keyboardType="number-pad"
-                        secureTextEntry
-                        onSubmitEditing={handleSaveName}
-                        style={styles.dialogInput}
-                      />
-                    </>
-                  )}
-                </>
-              )}
-            </ScrollView>
+            <TextInput
+              mode="outlined"
+              label="Profile name"
+              value={nameDialog?.name ?? ''}
+              onChangeText={name => setNameDialog(d => d && { ...d, name })}
+              autoFocus
+              maxLength={40}
+              onSubmitEditing={handleRename}
+            />
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={closeNameDialog}>Cancel</Button>
-            <Button
-              onPress={handleSaveName}
-              disabled={!nameDialog?.name.trim() || (!nameDialog.editing && nameDialog.lock !== 'none' && (nameDialog.pin.length !== 4 || nameDialog.pin !== nameDialog.pinConfirmation))}
-            >
-              {nameDialog?.editing ? 'Rename' : 'Add profile'}
-            </Button>
+            <Button onPress={handleRename} disabled={!nameDialog?.name.trim()}>Rename</Button>
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={!!pinDialog?.open} onDismiss={closePinDialog}>
           <Dialog.Title>{pinTitle}</Dialog.Title>
           <Dialog.Content>
-            <ScrollView style={{ maxHeight: dialogBodyMax }} keyboardShouldPersistTaps="handled">
-              <Text variant="bodyMedium">{pinMessage}</Text>
-              {pinDialog?.mode === 'manage' ? (
-                <>
-                  {changingPin && (
-                    <TextInput
-                      mode="outlined"
-                      label="Current PIN"
-                      value={pinDialog.currentPin}
-                      onChangeText={currentPin => setPinDialog(d => d && { ...d, currentPin: digits(currentPin) })}
-                      keyboardType="number-pad"
-                      secureTextEntry
-                      autoFocus
-                      style={styles.dialogInput}
-                    />
-                  )}
-                  <LockPicker value={pinDialog.lock} onChange={lock => setPinDialog(d => d && { ...d, lock })} fingerprintReady={fingerprintReady} />
-                  {pinDialog.lock !== 'none' && (
-                    <>
-                      <TextInput
-                        mode="outlined"
-                        label={changingPin ? 'New PIN (optional)' : 'Four-digit PIN'}
-                        value={pinDialog.pin}
-                        onChangeText={pin => setPinDialog(d => d && { ...d, pin: digits(pin) })}
-                        keyboardType="number-pad"
-                        secureTextEntry
-                        style={styles.dialogInput}
-                      />
-                      <TextInput
-                        mode="outlined"
-                        label={changingPin ? 'Confirm new PIN' : 'Confirm PIN'}
-                        value={pinDialog.pinConfirmation}
-                        onChangeText={pinConfirmation => setPinDialog(d => d && { ...d, pinConfirmation: digits(pinConfirmation) })}
-                        keyboardType="number-pad"
-                        secureTextEntry
-                        onSubmitEditing={handleSaveLock}
-                        style={styles.dialogInput}
-                      />
-                    </>
-                  )}
-                </>
-              ) : (
-                <TextInput
-                  mode="outlined"
-                  label="PIN"
-                  value={pinDialog?.pin ?? ''}
-                  onChangeText={pin => setPinDialog(d => d && { ...d, pin: digits(pin) })}
-                  keyboardType="number-pad"
-                  secureTextEntry
-                  autoFocus
-                  onSubmitEditing={submitPin}
-                  style={styles.dialogInput}
-                />
-              )}
-              {pinDialog && isProtected(pinDialog.profile) && pinDialog.profile.id !== activeId && (
-                <Button onPress={() => handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>Forgot PIN?</Button>
-              )}
-            </ScrollView>
+            <Text variant="bodyMedium">{pinMessage}</Text>
+            <TextInput
+              mode="outlined"
+              label="PIN"
+              value={pinDialog?.pin ?? ''}
+              onChangeText={pin => setPinDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
+              keyboardType="number-pad"
+              secureTextEntry
+              autoFocus
+              onSubmitEditing={submitPin}
+              style={styles.dialogInput}
+            />
+            {pinDialog && pinDialog.profile.id !== activeId && (
+              <Button onPress={() => handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>Forgot PIN?</Button>
+            )}
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={closePinDialog}>Cancel</Button>
-            <Button
-              onPress={submitPin}
-              disabled={
-                !pinDialog ||
-                (pinDialog.mode !== 'manage'
-                  ? pinDialog.pin.length !== 4
-                  : changingPin
-                  ? pinDialog.currentPin.length !== 4 ||
-                    (pinDialog.lock !== 'none' && !!(pinDialog.pin || pinDialog.pinConfirmation) && (pinDialog.pin.length !== 4 || pinDialog.pin !== pinDialog.pinConfirmation))
-                  : pinDialog.lock === 'none' || pinDialog.pin.length !== 4 || pinDialog.pin !== pinDialog.pinConfirmation)
-              }
-            >
-              {pinAction}
-            </Button>
+            <Button onPress={submitPin} disabled={pinDialog?.pin.length !== 4}>{pinAction}</Button>
           </Dialog.Actions>
         </Dialog>
       </KeyboardSafePortal>
@@ -799,54 +545,16 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  labels: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: space.xs,
-    marginTop: space.xs,
-  },
-  // Status label on a profile row: icon and text, 8dp corners like the labels on notes.
-  label: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: space.xs,
-    borderRadius: shape.small,
-    paddingHorizontal: space.sm,
-    paddingVertical: 2,
-  },
-  dialogInput: {
-    marginTop: space.md,
-  },
-  lockChoice: {
-    marginTop: space.lg,
-    gap: space.sm,
-  },
-  lockLabel: {
-    textAlign: 'center',
-  },
-  lockOptions: {
-    flexDirection: 'row',
-    gap: space.sm,
-  },
-  lockOption: {
-    flex: 1,
-  },
-  // Fills the tile, so all tiles are as tall as the tallest; they grow with large text instead of clipping.
-  lockOptionInner: {
-    flex: 1,
-    borderWidth: 2,
-    minHeight: 80,
-    borderRadius: shape.control,
-    paddingHorizontal: space.xs,
-    paddingVertical: space.md,
-    gap: space.xs,
+  // Initial of the profile name; the open profile is tonal, the rest neutral.
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lockCheck: {
-    position: 'absolute',
-    top: space.xs,
-    right: space.xs,
+  dialogInput: {
+    marginTop: space.md,
   },
   forgotPin: {
     alignSelf: 'flex-start',

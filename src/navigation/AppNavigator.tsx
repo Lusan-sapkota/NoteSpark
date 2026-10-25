@@ -68,6 +68,11 @@ const AppNavigator: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
           }}
         />
         <Stack.Screen
+          name="ProfileLock"
+          component={require('../screens/ProfileLockScreen').default}
+          options={{ headerShown: false, animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
           name="ImportExport"
           component={ImportExportScreen}
           options={{

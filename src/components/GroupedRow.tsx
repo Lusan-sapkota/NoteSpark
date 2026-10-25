@@ -6,8 +6,9 @@ import { groupCorners } from '../theme/theme';
 
 interface GroupedRowProps {
   title: string;
-  description?: React.ReactNode;
+  description?: string;
   icon?: string;
+  left?: React.ReactNode; // replaces the icon, e.g. a profile's avatar
   right?: React.ReactNode;
   onPress?: () => void;
   disabled?: boolean;
@@ -17,7 +18,7 @@ interface GroupedRowProps {
 }
 
 // One row of an M3 segmented list: rows share a tonal group with large outer and small inner corners.
-const GroupedRow: React.FC<GroupedRowProps> = ({ title, description, icon, right, onPress, disabled, danger, isFirst, isLast }) => {
+const GroupedRow: React.FC<GroupedRowProps> = ({ title, description, icon, left, right, onPress, disabled, danger, isFirst, isLast }) => {
   const { theme } = useTheme();
   const color = danger ? theme.colors.error : theme.colors.onSurfaceVariant;
   return (
@@ -35,7 +36,7 @@ const GroupedRow: React.FC<GroupedRowProps> = ({ title, description, icon, right
         titleNumberOfLines={2}
         descriptionNumberOfLines={3}
         titleStyle={danger && { color: theme.colors.error }}
-        left={icon ? props => <List.Icon {...props} icon={icon} color={color} /> : undefined}
+        left={left ? props => <View style={[props.style, styles.left]}>{left}</View> : icon ? props => <List.Icon {...props} icon={icon} color={color} /> : undefined}
         right={right ? () => right : undefined}
         onPress={onPress}
         disabled={disabled}
@@ -51,6 +52,9 @@ const styles = StyleSheet.create({
   },
   gap: {
     marginBottom: 2,
+  },
+  left: {
+    justifyContent: 'center',
   },
 });
 
