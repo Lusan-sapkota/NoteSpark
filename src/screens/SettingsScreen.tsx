@@ -11,7 +11,7 @@ import GroupedRow from '../components/GroupedRow';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { readingWidth, space } from '../theme/theme';
+import { controlTheme, readingWidth, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
@@ -121,7 +121,7 @@ const SettingsScreen: React.FC = () => {
       <ScrollView contentContainerStyle={styles.scrollContent} onScroll={onScroll} scrollEventThrottle={16}>
         <View style={styles.column}>
           {sectionTitle('Appearance')}
-          <SegmentedButtons
+          <SegmentedButtons theme={controlTheme}
             value={themeType}
             onValueChange={value => setThemeType(value as 'light' | 'dark' | 'system')}
             buttons={[

@@ -160,16 +160,20 @@ const fonts = {
 
 export const NoteText = customText<NoteVariant>();
 
-// Corner radii. Controls and small labels are pills; surfaces are rounded rectangles; FABs (the bold element) keep M3's 16.
+// Corner radii. Controls and small labels share one radius; surfaces are larger; FABs (the bold element) keep M3's 16.
 export const shape = {
   extraSmall: 4, // inline code
-  small: 8, // images, code blocks, pressed task rows
+  small: 8, // chips and small labels (same look as `control` at their height), images, code blocks
   segment: 4, // inner corners of a list group
   group: 20, // outer corners of a list group
   fab: 16, // Paper's AnimatedFAB hardcodes this
   extraLarge: 28, // dialogs, sheets, tiles
-  full: 999, // search bar, buttons, chips, labels
+  control: 12, // search bar, buttons, segmented buttons
+  full: 999, // progress bars
 };
+
+// For Paper Button and SegmentedButtons, whose corners are 5 × theme.roundness.
+export const controlTheme = { roundness: shape.control / 5 };
 
 // Segmented list: large outer corners on the group, small inner corners between rows.
 export const groupCorners = (isFirst: boolean, isLast: boolean) => ({

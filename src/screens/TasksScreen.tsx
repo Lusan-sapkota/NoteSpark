@@ -11,7 +11,7 @@ import { dueLabel, extractTasks, Task, today as getToday } from '../utils/tasks'
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { groupCorners, readingWidth, space } from '../theme/theme';
+import { controlTheme, groupCorners, readingWidth, space } from '../theme/theme';
 
 type TasksScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Tasks'>;
 
@@ -169,7 +169,7 @@ const TasksScreen: React.FC = () => {
         contentContainerStyle={styles.listContent}
         style={styles.column}
         ListHeaderComponent={
-          <SegmentedButtons
+          <SegmentedButtons theme={controlTheme}
             value={sortBy}
             onValueChange={v => setSortBy(v as 'due' | 'note')}
             style={styles.sort}

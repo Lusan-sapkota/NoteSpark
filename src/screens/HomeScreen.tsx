@@ -283,7 +283,7 @@ const HomeScreen: React.FC = () => {
           placeholder={searchType === 'meaning' ? 'Search by meaning' : 'Search notes'}
           value={searchText}
           onChangeText={setSearchText}
-          style={{ backgroundColor: theme.colors.surfaceContainerHigh }}
+          style={{ backgroundColor: theme.colors.surfaceContainerHigh, borderRadius: shape.control }}
           inputStyle={styles.searchInput}
           right={() => (
             <Menu
@@ -453,7 +453,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   chipShape: {
-    borderRadius: shape.full,
+    borderRadius: shape.small,
   },
   chipText: {
     flex: 1,

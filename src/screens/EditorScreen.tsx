@@ -24,7 +24,7 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { readingWidth, space } from '../theme/theme';
+import { controlTheme, readingWidth, space } from '../theme/theme';
 
 type EditorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Editor'>;
 type EditorScreenRouteProp = RouteProp<RootStackParamList, 'Editor'>;
@@ -196,7 +196,7 @@ const EditorScreen: React.FC = () => {
           showBackButton
           onBackPress={() => navigation.goBack()}
           rightActions={
-            <Button mode="contained" onPress={handleSave} loading={saving} disabled={saving} style={styles.save}>
+            <Button mode="contained" onPress={handleSave} theme={controlTheme} loading={saving} disabled={saving} style={styles.save}>
               Save
             </Button>
           }
@@ -213,7 +213,7 @@ const EditorScreen: React.FC = () => {
         >
           <View style={styles.column}>
             <View style={styles.modeRow}>
-              <SegmentedButtons
+              <SegmentedButtons theme={controlTheme}
                 value={isMarkdown ? 'markdown' : 'text'}
                 onValueChange={value => setIsMarkdown(value === 'markdown')}
                 buttons={[

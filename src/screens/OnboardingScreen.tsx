@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInRight } from 'react-native-reanimated';
 import { Button, Text } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
-import { readingWidth, space } from '../theme/theme';
+import { controlTheme, readingWidth, space } from '../theme/theme';
 
 const LOGO = require('../../assets/icon.png');
 
@@ -71,7 +71,7 @@ const OnboardingScreen = ({ onFinish }: { onFinish: () => void }) => {
               />
             ))}
           </View>
-          <Button mode="contained" onPress={handleNext} disabled={finished}>
+          <Button mode="contained" onPress={handleNext} theme={controlTheme} disabled={finished}>
             {isLast ? 'Start writing' : 'Next'}
           </Button>
         </View>

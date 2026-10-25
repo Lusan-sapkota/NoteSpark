@@ -17,7 +17,7 @@ import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { lightTheme, readingWidth, shape, space } from '../theme/theme';
+import { controlTheme, lightTheme, readingWidth, shape, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // M3 Expressive wavy progress indicator (indeterminate): a sine wave drawn from short rotated
@@ -592,6 +592,7 @@ const ImportExportScreen: React.FC = () => {
                   />
                   <Button
                     mode="contained"
+                    theme={controlTheme}
                     onPress={() => { closeImportDialog(); handleImport(); }}
                     disabled={!importData.trim()}
                   >
@@ -600,7 +601,7 @@ const ImportExportScreen: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <Button mode="contained" icon="file-upload-outline" onPress={() => { closeImportDialog(); handleFileImport(); }}>
+                  <Button mode="contained" icon="file-upload-outline" theme={controlTheme} onPress={() => { closeImportDialog(); handleFileImport(); }}>
                     Choose backup file
                   </Button>
                   <Button mode="text" icon="content-paste" onPress={() => setPasteOpen(true)}>
