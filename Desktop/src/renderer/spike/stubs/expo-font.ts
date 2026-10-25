@@ -11,3 +11,5 @@ export const loadAsync = async (fonts: string | Record<string, string>) => {
     loaded.add(name);
   }));
 };
+// Only used by getImageSource, which the desktop never calls; declared so the bundler doesn't warn.
+export const renderToImageAsync = undefined;
