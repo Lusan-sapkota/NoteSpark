@@ -5,7 +5,7 @@ import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navig
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, Appbar, Divider, FAB, Icon, ProgressBar, Snackbar, Text } from 'react-native-paper';
 import Menu from '../components/Menu';
-import { getNoteById, deleteNote, setNotePinned, updateNote } from '../storage/notes';
+import { getNoteById, moveNoteToBin, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -111,24 +111,14 @@ const NoteViewScreen: React.FC = () => {
     }, [(route.params as any)?.noteId])
   );
 
-  const handleDelete = () => {
-    alert('Delete note?', `"${note!.title}" will be deleted from this device. This can't be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await deleteNote(note!.id);
-            setTimeout(() => {
-              navigation.goBack();
-            }, 120);
-          } catch (error) {
-            alert("Couldn't delete the note", 'Try again. If it keeps failing, restart the app.');
-          }
-        },
-      },
-    ]);
+  // No confirmation here: the note goes to the bin, and Home offers Undo.
+  const handleDelete = async () => {
+    try {
+      await moveNoteToBin(note!.id);
+      navigation.popTo('Home', { binnedNoteId: note!.id });
+    } catch (error) {
+      alert("Couldn't move the note to the bin", 'Try again. If it keeps failing, restart the app.');
+    }
   };
 
   // Ticks on screen at once, then saves; puts it back if saving fails.
@@ -268,7 +258,7 @@ const NoteViewScreen: React.FC = () => {
               )}
               <Menu.Item
                 leadingIcon="delete-outline"
-                title="Delete note"
+                title="Move to bin"
                 titleStyle={{ color: theme.colors.error }}
                 onPress={() => { setMenuVisible(false); handleDelete(); }}
               />

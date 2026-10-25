@@ -137,7 +137,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
               />
               <Menu.Item
                 leadingIcon="delete-outline"
-                title="Delete note"
+                title="Move to bin"
                 titleStyle={{ color: theme.colors.error }}
                 onPress={() => { setMenuVisible(false); onDelete(note.id); }}
               />

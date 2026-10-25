@@ -6,10 +6,11 @@ export interface Note {
   isPinned: boolean;
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string | null; // set while the note is in the bin
 }
 
 export type RootStackParamList = {
-  Home: undefined;
+  Home: { binnedNoteId?: number } | undefined; // set by the note page after moving a note to the bin
   Editor: { noteId?: string } | undefined;
   NoteView: { noteId: string } | undefined;
   Settings: undefined;
@@ -17,4 +18,5 @@ export type RootStackParamList = {
   About: undefined;
   Privacy: undefined;
   Tasks: undefined;
+  Bin: undefined;
 };

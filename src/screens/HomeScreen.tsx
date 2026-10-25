@@ -4,10 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { ActivityIndicator, AnimatedFAB, Appbar, Button, Chip, Dialog, List, Portal, Searchbar, Snackbar, Text } from 'react-native-paper';
 import Menu from '../components/Menu';
-import { useNavigation } from '@react-navigation/native';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import { getNotes, deleteNote, setNotePinned } from '../storage/notes';
+import { getNotes, moveNoteToBin, restoreNote, setNotePinned } from '../storage/notes';
 import { getActiveProfile, getProfiles, Profile, switchProfile } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
@@ -42,6 +42,8 @@ const HomeScreen: React.FC = () => {
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [fabExtended, setFabExtended] = useState(true);
   const [snackbar, setSnackbar] = useState('');
+  const [undoNoteId, setUndoNoteId] = useState<number | null>(null);
+  const route = useRoute<RouteProp<RootStackParamList, 'Home'>>();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [profileDialogVisible, setProfileDialogVisible] = useState(false);
@@ -147,24 +149,47 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('NoteView', { noteId: noteId.toString() });
   }, [navigation]);
 
+  const showBinned = (noteId: number) => {
+    setUndoNoteId(noteId);
+    setSnackbar('Note moved to bin');
+  };
+
+  // The note page bins without asking and comes back here, so Undo is offered here.
+  const binnedNoteId = route.params?.binnedNoteId;
+  useEffect(() => {
+    if (binnedNoteId === undefined) return;
+    showBinned(binnedNoteId);
+    navigation.setParams({ binnedNoteId: undefined });
+  }, [binnedNoteId]);
+
+  const handleUndoBin = async () => {
+    if (undoNoteId === null) return;
+    try {
+      await restoreNote(undoNoteId);
+      await loadNotes();
+    } catch (error) {
+      alert("Couldn't restore the note", 'Open Bin in Settings to restore it.');
+    }
+  };
+
   const handleDeleteNote = useCallback((noteId: number) => {
     const title = notes.find(n => n.id === noteId)?.title || 'This note';
     alert(
-      'Delete note?',
-      `"${title}" will be deleted from this device. This can't be undone.`,
+      'Move to bin?',
+      `"${title}" will stay in the bin for 30 days. You can restore it from Bin in Settings.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete',
+          text: 'Move to bin',
           style: 'destructive',
           onPress: async () => {
             try {
-              await deleteNote(noteId);
+              await moveNoteToBin(noteId);
               await loadNotes();
-              setSnackbar('Note deleted');
+              showBinned(noteId);
             } catch (error) {
-              console.error('Failed to delete note:', error);
-              alert("Couldn't delete the note", 'Try again. If it keeps failing, restart the app.');
+              console.error('Failed to move note to bin:', error);
+              alert("Couldn't move the note to the bin", 'Try again. If it keeps failing, restart the app.');
             }
           },
         },
@@ -422,9 +447,10 @@ const HomeScreen: React.FC = () => {
 
       <Snackbar
         visible={!!snackbar}
-        onDismiss={() => setSnackbar('')}
-        duration={3000}
+        onDismiss={() => { setSnackbar(''); setUndoNoteId(null); }}
+        duration={4000}
         wrapperStyle={styles.snackbar}
+        action={undoNoteId !== null ? { label: 'Undo', onPress: handleUndoBin } : undefined}
       >
         {snackbar}
       </Snackbar>

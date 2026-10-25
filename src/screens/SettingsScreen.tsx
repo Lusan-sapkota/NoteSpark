@@ -4,7 +4,7 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
-import { clearAllNotes } from '../storage/notes';
+import { moveAllNotesToBin } from '../storage/notes';
 import { addProfile, deleteProfile, getActiveProfile, getProfiles, Profile, renameProfile, switchProfile } from '../storage/profiles';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
@@ -85,19 +85,19 @@ const SettingsScreen: React.FC = () => {
 
   const handleDeleteAll = () => {
     alert(
-      'Delete all notes?',
-      `Every note in the ${activeName} profile will be deleted. This can't be undone. Export your notes first if you want a backup.`,
+      'Move all notes to bin?',
+      `Every note in the ${activeName} profile moves to the bin. You can restore them from Bin for 30 days.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Delete all notes',
+          text: 'Move all to bin',
           style: 'destructive',
           onPress: async () => {
             try {
-              await clearAllNotes();
-              alert('All notes deleted');
+              await moveAllNotesToBin();
+              alert('All notes moved to bin', 'Restore them from Bin within 30 days.');
             } catch (error) {
-              alert("Couldn't delete your notes", 'Try again. If it keeps failing, restart the app.');
+              alert("Couldn't move your notes to the bin", 'Try again. If it keeps failing, restart the app.');
             }
           },
         },
@@ -179,9 +179,18 @@ const SettingsScreen: React.FC = () => {
             isLast={false}
           />
           <GroupedRow
-            title="Delete all notes"
-            description={`Removes every note in ${activeName}`}
-            icon="delete-outline"
+            title="Bin"
+            description="Restore deleted notes for 30 days"
+            icon="delete-restore"
+            right={chevron}
+            onPress={() => navigation.navigate('Bin')}
+            isFirst={false}
+            isLast={false}
+          />
+          <GroupedRow
+            title="Move all notes to bin"
+            description={`Every note in ${activeName}`}
+            icon="delete-sweep-outline"
             danger
             onPress={handleDeleteAll}
             isFirst={false}

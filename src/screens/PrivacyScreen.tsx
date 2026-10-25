@@ -42,7 +42,7 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
   {
     heading: 'Your control over your data',
     bullets: [
-      'Delete a note from its menu, or delete every note in Settings, under Delete all notes.',
+      'Move a note to the bin from its menu, or every note from Settings. Notes in the bin are erased for good 30 days later, or straight away if you delete them forever or empty the bin in Settings, under Bin.',
       'Export a copy of your notes at any time in Settings, under Import and export.',
       "Uninstalling NoteSpark deletes all of its data from your device. The developer has no copy, so deleted notes can't be recovered unless you exported them.",
     ],

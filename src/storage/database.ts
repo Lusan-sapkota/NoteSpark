@@ -17,6 +17,9 @@ export const openProfileDatabase = async (profileId: string): Promise<void> => {
   await previous.closeAsync().catch(() => {});
 };
 
+// Notes in the bin are erased this many days after deletion, when the database next opens.
+export const BIN_DAYS = 30;
+
 // Creates the notes table and upgrades older installs. Each ALTER fails harmlessly when the column exists.
 export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => {
   await db.execAsync(
@@ -33,7 +36,11 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   await db.execAsync('ALTER TABLE notes ADD COLUMN createdAt TEXT').catch(() => {});
   await db.execAsync('ALTER TABLE notes ADD COLUMN updatedAt TEXT').catch(() => {});
   await db.execAsync('ALTER TABLE notes ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0').catch(() => {});
+  await db.execAsync('ALTER TABLE notes ADD COLUMN deletedAt TEXT').catch(() => {});
   const now = new Date().toISOString();
+  await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', [
+    new Date(Date.now() - BIN_DAYS * 86400000).toISOString(),
+  ]);
   await db.runAsync("UPDATE notes SET createdAt = ? WHERE createdAt IS NULL OR createdAt = ''", [now]);
   await db.runAsync("UPDATE notes SET updatedAt = ? WHERE updatedAt IS NULL OR updatedAt = ''", [now]);
   await initSearchIndex(db);

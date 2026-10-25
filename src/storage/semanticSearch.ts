@@ -62,12 +62,12 @@ export const syncSearchIndex = (): Promise<void> => {
   syncing ??= (async () => {
     const conn = db;
     await conn.execAsync(
-      `DELETE FROM note_vectors WHERE rowid NOT IN (SELECT id FROM notes);
-       DELETE FROM note_vector_state WHERE noteId NOT IN (SELECT id FROM notes);`
+      `DELETE FROM note_vectors WHERE rowid NOT IN (SELECT id FROM notes WHERE deletedAt IS NULL);
+       DELETE FROM note_vector_state WHERE noteId NOT IN (SELECT id FROM notes WHERE deletedAt IS NULL);`
     );
     const stale = await conn.getAllAsync<{ id: number; title: string; content: string; updatedAt: string }>(
       `SELECT n.id, n.title, n.content, n.updatedAt FROM notes n
-       LEFT JOIN note_vector_state s ON s.noteId = n.id WHERE s.updatedAt IS NOT n.updatedAt`
+       LEFT JOIN note_vector_state s ON s.noteId = n.id WHERE n.deletedAt IS NULL AND s.updatedAt IS NOT n.updatedAt`
     );
     if (!stale.length) return;
     const embed = await getEmbedder();

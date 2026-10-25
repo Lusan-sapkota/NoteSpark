@@ -4,7 +4,7 @@ import { Note } from '../types';
 import { TaskLine, toggleTaskLine } from '../utils/tasks';
 
 export const getNotes = async (): Promise<Note[]> => {
-  const rows = await db.getAllAsync('SELECT * FROM notes ORDER BY updatedAt DESC');
+  const rows = await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY updatedAt DESC');
   return rows.map((item: any) => ({
     ...item,
     isMarkdown: Boolean(item.isMarkdown),
@@ -14,7 +14,7 @@ export const getNotes = async (): Promise<Note[]> => {
 
 export const getNoteById = async (id: number): Promise<Note | null> => {
   try {
-    const items = await db.getAllAsync('SELECT * FROM notes WHERE id = ?', [id]);
+    const items = await db.getAllAsync('SELECT * FROM notes WHERE id = ? AND deletedAt IS NULL', [id]);
     if (items && items.length > 0) {
       const item = items[0] as any;
       return {
@@ -61,6 +61,24 @@ export const updateNote = async (note: Pick<Note, 'id' | 'title' | 'content' | '
   }
 };
 
+export const moveNoteToBin = async (id: number): Promise<void> => {
+  await db.runAsync('UPDATE notes SET deletedAt = ? WHERE id = ?', [new Date().toISOString(), id]);
+};
+
+export const restoreNote = async (id: number): Promise<void> => {
+  await db.runAsync('UPDATE notes SET deletedAt = NULL WHERE id = ?', [id]);
+};
+
+export const getBinNotes = async (): Promise<Note[]> => {
+  const rows = await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC');
+  return rows.map((item: any) => ({ ...item, isMarkdown: Boolean(item.isMarkdown), isPinned: Boolean(item.isPinned) }));
+};
+
+export const emptyBin = async (): Promise<void> => {
+  await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL');
+};
+
+// Erases the note for good; the app moves notes to the bin first.
 export const deleteNote = async (id: number): Promise<void> => {
   const result = await db.runAsync(
     'DELETE FROM notes WHERE id = ?',
@@ -86,8 +104,8 @@ export const toggleTaskInNote = async (noteId: number, task: Pick<TaskLine, 'lin
   return result.raw;
 };
 
-export const clearAllNotes = async (): Promise<void> => {
-  await db.runAsync('DELETE FROM notes');
+export const moveAllNotesToBin = async (): Promise<void> => {
+  await db.runAsync('UPDATE notes SET deletedAt = ? WHERE deletedAt IS NULL', [new Date().toISOString()]);
 };
 
 export const exportNotesAsJson = async (): Promise<string> => {
@@ -119,7 +137,7 @@ export const importNotes = async (notes: any[], mode: ImportMode): Promise<{ imp
     }
     const seen = new Set<string>();
     if (mode === 'merge') {
-      const existing = await txn.getAllAsync<{ title: string; content: string }>('SELECT title, content FROM notes');
+      const existing = await txn.getAllAsync<{ title: string; content: string }>('SELECT title, content FROM notes WHERE deletedAt IS NULL');
       existing.forEach(note => seen.add(noteKey(note)));
     }
     for (const note of valid) {
