@@ -15,6 +15,10 @@ interface NoteItemProps {
   isPinned: boolean;
   onPinToggle: (noteId: number) => void;
   onArchiveToggle: (noteId: number) => void;
+  // Selecting: long-press starts it; while it's on, a tap selects instead of opening.
+  onSelect: (noteId: number) => void;
+  selecting?: boolean;
+  selected?: boolean;
   isFirst: boolean;
   isLast: boolean;
   showCreated?: boolean;
@@ -59,6 +63,9 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   isPinned,
   onPinToggle,
   onArchiveToggle,
+  onSelect,
+  selecting = false,
+  selected = false,
   isFirst,
   isLast,
   showCreated = false,
@@ -68,22 +75,26 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   const preview = useMemo(() => toPreview(note.content), [note.content]);
   const title = note.title || 'Untitled note';
   const date = relativeDate(showCreated ? note.createdAt : note.updatedAt);
-  const onColor = isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
-  const onColorVariant = isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant;
+  const onColor = selected ? theme.colors.onSecondaryContainer : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
+  const onColorVariant = selected ? theme.colors.onSecondaryContainer : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant;
+  const background = selected ? theme.colors.secondaryContainer : isPinned ? theme.colors.primaryContainer : theme.colors.surfaceContainerLow;
 
   return (
     <View
       style={[
         styles.container,
         groupCorners(isFirst, isLast),
-        { backgroundColor: isPinned ? theme.colors.primaryContainer : theme.colors.surfaceContainerLow },
+        { backgroundColor: background },
         isLast ? styles.groupGap : styles.gap,
       ]}
     >
       <TouchableRipple
-        onPress={() => onPress(note.id)}
-        accessibilityRole="button"
+        onPress={() => (selecting ? onSelect(note.id) : onPress(note.id))}
+        onLongPress={() => onSelect(note.id)}
+        accessibilityRole={selecting ? 'checkbox' : 'button'}
+        accessibilityState={selecting ? { checked: selected } : undefined}
         accessibilityLabel={isPinned ? `${title}, pinned` : title}
+        accessibilityHint={selecting ? undefined : 'Long press to select'}
         style={styles.row}
       >
         <View>
@@ -110,45 +121,54 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
             <Text variant="bodySmall" style={[styles.date, { color: onColorVariant }]}>
               {showCreated ? 'Created' : 'Edited'} {date}
             </Text>
-            <IconButton
-              icon={isPinned ? 'pin' : 'pin-outline'}
-              iconColor={onColorVariant}
-              size={20}
-              onPress={() => onPinToggle(note.id)}
-              accessibilityLabel={isPinned ? `Unpin ${title}` : `Pin ${title}`}
-              style={styles.action}
-            />
-            <Menu
-              visible={menuVisible}
-              onDismiss={() => setMenuVisible(false)}
-              anchor={
+            {selecting ? (
+              // A check, not just the color, shows what's selected. The row itself is the touch target.
+              <View style={styles.action}>
+                <Icon source={selected ? 'check-circle' : 'checkbox-blank-circle-outline'} size={24} color={onColorVariant} />
+              </View>
+            ) : (
+              <>
                 <IconButton
-                  icon="dots-vertical"
+                  icon={isPinned ? 'pin' : 'pin-outline'}
                   iconColor={onColorVariant}
                   size={20}
-                  onPress={() => setMenuVisible(true)}
-                  accessibilityLabel={`More options for ${title}`}
+                  onPress={() => onPinToggle(note.id)}
+                  accessibilityLabel={isPinned ? `Unpin ${title}` : `Pin ${title}`}
                   style={styles.action}
                 />
-              }
-            >
-              <Menu.Item
-                leadingIcon="pencil-outline"
-                title="Edit note"
-                onPress={() => { setMenuVisible(false); onEdit(note.id); }}
-              />
-              <Menu.Item
-                leadingIcon={note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
-                title={note.isArchived ? 'Unarchive' : 'Archive'}
-                onPress={() => { setMenuVisible(false); onArchiveToggle(note.id); }}
-              />
-              <Menu.Item
-                leadingIcon="delete-outline"
-                title="Move to bin"
-                titleStyle={{ color: theme.colors.error }}
-                onPress={() => { setMenuVisible(false); onDelete(note.id); }}
-              />
-            </Menu>
+                <Menu
+                  visible={menuVisible}
+                  onDismiss={() => setMenuVisible(false)}
+                  anchor={
+                    <IconButton
+                      icon="dots-vertical"
+                      iconColor={onColorVariant}
+                      size={20}
+                      onPress={() => setMenuVisible(true)}
+                      accessibilityLabel={`More options for ${title}`}
+                      style={styles.action}
+                    />
+                  }
+                >
+                  <Menu.Item
+                    leadingIcon="pencil-outline"
+                    title="Edit note"
+                    onPress={() => { setMenuVisible(false); onEdit(note.id); }}
+                  />
+                  <Menu.Item
+                    leadingIcon={note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
+                    title={note.isArchived ? 'Unarchive' : 'Archive'}
+                    onPress={() => { setMenuVisible(false); onArchiveToggle(note.id); }}
+                  />
+                  <Menu.Item
+                    leadingIcon="delete-outline"
+                    title="Move to bin"
+                    titleStyle={{ color: theme.colors.error }}
+                    onPress={() => { setMenuVisible(false); onDelete(note.id); }}
+                  />
+                </Menu>
+              </>
+            )}
           </View>
         </View>
       </TouchableRipple>
@@ -200,6 +220,8 @@ const styles = StyleSheet.create({
     margin: 0,
     width: 48,
     height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });
 

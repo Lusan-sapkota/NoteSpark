@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { BackHandler, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { AnimatedFAB, Appbar, Button, Chip, Dialog, List, Portal, Searchbar, Text, TextInput } from 'react-native-paper';
@@ -13,6 +13,7 @@ import { getActiveProfile, getProfiles, Profile, switchProfile, verifyProfilePin
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
 import { extractTags } from '../utils/tags';
+import { shareNotesAsJson } from '../utils/exportNotes';
 import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
 import { useAlert } from '../components/DialogProvider';
@@ -55,6 +56,9 @@ const HomeScreen: React.FC = () => {
   const [profileDialogVisible, setProfileDialogVisible] = useState(false);
   const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; open: boolean } | null>(null);
   const lastOffset = useRef(0);
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const selecting = selectedIds.length > 0;
+  const clearSelection = () => setSelectedIds([]);
 
   const loadNotes = async () => {
     // Only the first load shows the skeleton; reloads on focus keep the current list until the new one arrives.
@@ -172,6 +176,102 @@ const HomeScreen: React.FC = () => {
     return filtered;
   }, [notes, tagsByNote, searchText, searchType, filter, sortType, meaningIds]);
 
+  const handleSelect = useCallback((noteId: number) => {
+    setSelectedIds(ids => (ids.includes(noteId) ? ids.filter(id => id !== noteId) : [...ids, noteId]));
+  }, []);
+
+  // Back leaves selection first; a new filter or search starts over.
+  useEffect(() => {
+    if (!selecting) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      clearSelection();
+      return true;
+    });
+    return () => sub.remove();
+  }, [selecting]);
+  useEffect(clearSelection, [filter, searchText, searchType]);
+
+  const selectedNotes = notes.filter(n => selectedIds.includes(n.id));
+  const countLabel = (n: number) => (n === 1 ? '1 note' : `${n} notes`);
+
+  // Runs `change` on every selected note, then offers Undo that runs `revert` on each.
+  const changeSelected = async (
+    change: (note: Note) => Promise<void>,
+    revert: (note: Note) => Promise<void>,
+    done: string,
+    failed: string,
+  ) => {
+    const targets = selectedNotes;
+    try {
+      for (const note of targets) await change(note);
+      clearSelection();
+      setUndo(() => async () => {
+        try {
+          for (const note of targets) await revert(note);
+        } catch (error) {
+          alert("Couldn't undo", 'Some notes may have changed. Check them and try again.');
+        }
+        await loadNotes();
+      });
+      setSnackbar(done);
+    } catch (error) {
+      alert(failed, 'Some notes may have changed. Try again.');
+    }
+    await loadNotes();
+  };
+
+  const handlePinSelected = () => {
+    const pin = selectedNotes.some(n => !n.isPinned);
+    changeSelected(
+      n => setNotePinned(n.id, pin),
+      n => setNotePinned(n.id, n.isPinned),
+      `${countLabel(selectedNotes.length)} ${pin ? 'pinned' : 'unpinned'}`,
+      pin ? "Couldn't pin the notes" : "Couldn't unpin the notes",
+    );
+  };
+
+  const handleArchiveSelected = () => {
+    const archive = filter !== 'archived';
+    changeSelected(
+      n => setNoteArchived(n.id, archive),
+      async n => {
+        await setNoteArchived(n.id, n.isArchived);
+        if (n.isPinned) await setNotePinned(n.id, true);
+      },
+      `${countLabel(selectedNotes.length)} ${archive ? 'archived' : 'unarchived'}`,
+      archive ? "Couldn't archive the notes" : "Couldn't unarchive the notes",
+    );
+  };
+
+  const handleBinSelected = () => {
+    alert(
+      `Move ${countLabel(selectedNotes.length)} to bin?`,
+      'They stay in the bin for 30 days. You can restore them from Bin in Settings.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Move to bin',
+          style: 'destructive',
+          onPress: () => changeSelected(
+            n => moveNoteToBin(n.id),
+            n => restoreNote(n.id),
+            `${countLabel(selectedNotes.length)} moved to bin`,
+            "Couldn't move the notes to the bin",
+          ),
+        },
+      ]
+    );
+  };
+
+  const handleExportSelected = async () => {
+    try {
+      await shareNotesAsJson(selectedNotes);
+      clearSelection();
+    } catch (error) {
+      alert("Couldn't export the notes", 'Try again. If it keeps failing, use Import and export in Settings.');
+    }
+  };
+
   const handleNotePress = useCallback((noteId: number) => {
     navigation.navigate('NoteView', { noteId: noteId.toString() });
   }, [navigation]);
@@ -287,13 +387,16 @@ const HomeScreen: React.FC = () => {
           isPinned={isPinned}
           onPinToggle={handlePinToggle}
           onArchiveToggle={handleArchiveToggle}
+          onSelect={handleSelect}
+          selecting={selecting}
+          selected={selectedIds.includes(item.id)}
           isFirst={!prev || prev.isPinned !== isPinned}
           isLast={!next || next.isPinned !== isPinned}
           showCreated={sortType === 'created'}
         />
       );
     },
-    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, filteredNotes, sortType]
+    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleSelect, selecting, selectedIds, filteredNotes, sortType]
   );
 
   const handleCreateNote = () => {
@@ -358,20 +461,40 @@ const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-      <Header elevated={elevated}
-        title={profiles.length > 1 && activeProfile ? activeProfile.name : 'NoteSpark'}
-        rightActions={
-          <>
-            <Appbar.Action
-              icon="account-circle-outline"
-              accessibilityLabel={`Switch profile, current profile ${activeProfile?.name ?? ''}`}
-              onPress={() => setProfileDialogVisible(true)}
-            />
-            <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel="Tasks" onPress={() => navigation.navigate('Tasks')} />
-            <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
-          </>
-        }
-      />
+      {selecting ? (
+        // Contextual top bar while notes are selected.
+        <Appbar.Header mode="small" elevated>
+          <Appbar.Action icon="close" accessibilityLabel="Cancel selection" onPress={clearSelection} />
+          <Appbar.Content title={`${selectedIds.length} selected`} />
+          <Appbar.Action
+            icon={selectedNotes.some(n => !n.isPinned) ? 'pin-outline' : 'pin-off-outline'}
+            accessibilityLabel={selectedNotes.some(n => !n.isPinned) ? 'Pin selected notes' : 'Unpin selected notes'}
+            onPress={handlePinSelected}
+          />
+          <Appbar.Action
+            icon={filter === 'archived' ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
+            accessibilityLabel={filter === 'archived' ? 'Unarchive selected notes' : 'Archive selected notes'}
+            onPress={handleArchiveSelected}
+          />
+          <Appbar.Action icon="export-variant" accessibilityLabel="Export selected notes" onPress={handleExportSelected} />
+          <Appbar.Action icon="delete-outline" accessibilityLabel="Move selected notes to bin" onPress={handleBinSelected} />
+        </Appbar.Header>
+      ) : (
+        <Header elevated={elevated}
+          title={profiles.length > 1 && activeProfile ? activeProfile.name : 'NoteSpark'}
+          rightActions={
+            <>
+              <Appbar.Action
+                icon="account-circle-outline"
+                accessibilityLabel={`Switch profile, current profile ${activeProfile?.name ?? ''}`}
+                onPress={() => setProfileDialogVisible(true)}
+              />
+              <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel="Tasks" onPress={() => navigation.navigate('Tasks')} />
+              <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
+            </>
+          }
+        />
+      )}
 
       <View style={[styles.controls, { backgroundColor: elevated ? theme.colors.elevation.level2 : theme.colors.background }]}>
         <Searchbar
@@ -491,16 +614,18 @@ const HomeScreen: React.FC = () => {
         />
       )}
 
-      <AnimatedFAB
-        icon="star-four-points"
-        label="New note"
-        extended={fabExtended}
-        onPress={handleCreateNote}
-        animateFrom="right"
-        accessibilityLabel="New note"
-        // The firefly: a soft primary glow under the FAB in dark mode (Android 9+ tints elevation shadows).
-        style={[styles.fab, isDarkMode && { shadowColor: theme.colors.primary }]}
-      />
+      {!selecting && (
+        <AnimatedFAB
+          icon="star-four-points"
+          label="New note"
+          extended={fabExtended}
+          onPress={handleCreateNote}
+          animateFrom="right"
+          accessibilityLabel="New note"
+          // The firefly: a soft primary glow under the FAB in dark mode (Android 9+ tints elevation shadows).
+          style={[styles.fab, isDarkMode && { shadowColor: theme.colors.primary }]}
+        />
+      )}
 
       <Portal>
         <Dialog visible={profileDialogVisible} onDismiss={() => setProfileDialogVisible(false)}>
