@@ -23,7 +23,7 @@ const slides = [
   },
 ];
 
-const OnboardingScreen = ({ onFinish, onProfileSetup }: { onFinish: () => void; onProfileSetup: (name: string, pin?: string) => void }) => {
+const OnboardingScreen = ({ onFinish, onProfileSetup }: { onFinish: () => void; onProfileSetup: (name: string, pin?: string) => Promise<void> }) => {
   const [finished, setFinished] = useState(false);
   const { theme } = useTheme();
   const [step, setStep] = useState(0);
@@ -31,6 +31,7 @@ const OnboardingScreen = ({ onFinish, onProfileSetup }: { onFinish: () => void; 
   const [name, setName] = useState('Personal');
   const [pin, setPin] = useState('');
   const [pinConfirmation, setPinConfirmation] = useState('');
+  const [saving, setSaving] = useState(false);
   const isLast = step === slides.length - 1;
 
   const finish = () => {
@@ -46,6 +47,16 @@ const OnboardingScreen = ({ onFinish, onProfileSetup }: { onFinish: () => void; 
   const handleNext = () => {
     if (isLast) setSetup(true);
     else setStep(step + 1);
+  };
+
+  const saveProfile = async (withPin: boolean) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await onProfileSetup(name.trim() || 'Personal', withPin ? pin : undefined);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -66,8 +77,8 @@ const OnboardingScreen = ({ onFinish, onProfileSetup }: { onFinish: () => void; 
             <TextInput mode="outlined" label="Four-digit PIN (optional)" value={pin} onChangeText={value => setPin(value.replace(/\D/g, '').slice(0, 4))} keyboardType="number-pad" secureTextEntry style={styles.setupInput} />
             <TextInput mode="outlined" label="Confirm PIN" value={pinConfirmation} onChangeText={value => setPinConfirmation(value.replace(/\D/g, '').slice(0, 4))} keyboardType="number-pad" secureTextEntry style={styles.setupInput} />
             <View style={styles.setupActions}>
-              <Button mode="text" onPress={() => onProfileSetup(name.trim() || 'Personal')} disabled={!!pin || !!pinConfirmation}>Skip PIN</Button>
-              <Button mode="contained" onPress={() => onProfileSetup(name.trim() || 'Personal', pin)} disabled={!name.trim() || pin.length !== 4 || pin !== pinConfirmation}>Save profile</Button>
+              <Button mode="text" onPress={() => saveProfile(false)} disabled={saving || !!pin || !!pinConfirmation}>Skip PIN</Button>
+              <Button mode="contained" onPress={() => saveProfile(true)} disabled={saving || !name.trim() || pin.length !== 4 || pin !== pinConfirmation}>Save profile</Button>
             </View>
           </>
         ) : (

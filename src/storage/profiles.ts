@@ -94,7 +94,11 @@ export const renameProfile = async (id: string, name: string): Promise<void> => 
 };
 
 export const deleteProfile = async (id: string): Promise<void> => {
-  await saveProfiles((await getProfiles()).filter(p => p.id !== id));
+  const remaining = (await getProfiles()).filter(p => p.id !== id);
+  await saveProfiles(remaining);
+  if ((await AsyncStorage.getItem(defaultProfileKey)) === id && remaining.length) {
+    await AsyncStorage.setItem(defaultProfileKey, remaining[0].id);
+  }
   const pins = await getProfilePins();
   delete pins[id];
   await AsyncStorage.setItem(profilePinsKey, JSON.stringify(pins));
