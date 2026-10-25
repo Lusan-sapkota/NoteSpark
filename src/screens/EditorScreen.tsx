@@ -9,14 +9,16 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
 }
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, TextInput, ScrollView } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, IconButton, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
+import { Button, Dialog, IconButton, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { getNoteById, getNotes, saveNote, updateNote } from '../storage/notes';
 import { sendAppNotification } from '../utils/notifications';
+import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
@@ -26,6 +28,9 @@ import { readingWidth, space } from '../theme/theme';
 
 type EditorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Editor'>;
 type EditorScreenRouteProp = RouteProp<RootStackParamList, 'Editor'>;
+
+// IconButton (48) plus toolbar padding; used to keep the cursor clear of the toolbar.
+const TOOLBAR_HEIGHT = 56;
 
 const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
@@ -52,6 +57,7 @@ const EditorScreen: React.FC = () => {
   const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
   const [pendingSelection, setPendingSelection] = useState<{ start: number; end: number } | null>(null);
   const bodyRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const insets = useSafeAreaInsets();
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -196,12 +202,14 @@ const EditorScreen: React.FC = () => {
           }
         />
 
-        <ScrollView
+        {/* Scrolls the cursor above the keyboard and the toolbar without resizing anything. */}
+        <KeyboardAwareScrollView
           style={styles.flex}
           contentContainerStyle={styles.scrollContent}
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
+          bottomOffset={TOOLBAR_HEIGHT + space.lg}
         >
           <View style={styles.column}>
             <View style={styles.modeRow}>
@@ -265,9 +273,11 @@ const EditorScreen: React.FC = () => {
               />
             )}
           </View>
-        </ScrollView>
+        </KeyboardAwareScrollView>
 
+        {/* Rides on top of the keyboard via a transform; opened offset cancels the bottom inset it already sits on. */}
         {!showPreview && (
+          <KeyboardStickyView offset={{ opened: insets.bottom }}>
           <View style={[styles.toolbar, { backgroundColor: theme.colors.surfaceContainer }]}>
             <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.toolbarContent}>
               {isMarkdown && (
@@ -288,9 +298,10 @@ const EditorScreen: React.FC = () => {
               />
             </ScrollView>
           </View>
+          </KeyboardStickyView>
         )}
 
-        <Portal>
+        <KeyboardSafePortal>
           <Dialog visible={showLinkDialog} onDismiss={() => setShowLinkDialog(false)}>
             <Dialog.Title>Add link</Dialog.Title>
             <Dialog.Content style={styles.dialogContent}>
@@ -311,7 +322,7 @@ const EditorScreen: React.FC = () => {
               <Button onPress={handleInsertLink} disabled={!linkUrl.trim()}>Add link</Button>
             </Dialog.Actions>
           </Dialog>
-        </Portal>
+        </KeyboardSafePortal>
       </SafeAreaView>
     </View>
   );

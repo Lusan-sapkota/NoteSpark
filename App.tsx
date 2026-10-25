@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
-import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Animated, { useAnimatedStyle } from 'react-native-reanimated';
-import { KeyboardProvider, useReanimatedKeyboardAnimation } from 'react-native-keyboard-controller';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
@@ -21,15 +20,6 @@ import { pruneImageCache } from './src/utils/imageCache';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
-  // Android is always edge-to-edge (SDK 58), so the window no longer shrinks for the keyboard.
-  // Pad the whole app, portals and dialogs included, by the keyboard height instead (from
-  // react-native-keyboard-controller; its height runs 0 to -keyboardHeight). Screens already pad the
-  // bottom inset, so that part is subtracted.
-  const keyboard = useReanimatedKeyboardAnimation();
-  const insets = useSafeAreaInsets();
-  const keyboardPadding = useAnimatedStyle(() => ({
-    paddingBottom: Math.max(0, -keyboard.height.value - insets.bottom),
-  }));
   const navigationRef = React.useRef<any>(null);
   const [dbInitialized, setDbInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
@@ -77,7 +67,7 @@ const AppContent = () => {
   const ready = dbInitialized && showOnboarding !== null && (fontsLoaded || !!fontError);
 
   return (
-    <Animated.View style={[styles.root, { backgroundColor: theme.colors.background }, keyboardPadding]}>
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <PaperProvider theme={theme}>
         <StatusBar style={isDarkMode ? 'light' : 'dark'} />
         <DialogProvider>
@@ -92,13 +82,15 @@ const AppContent = () => {
           )}
         </DialogProvider>
       </PaperProvider>
-    </Animated.View>
+    </View>
   );
 };
 
 export default function App() {
   return (
     <SafeAreaProvider>
+      {/* Keyboard avoidance is per screen (KeyboardAwareScrollView, KeyboardStickyView, KeyboardAvoidingView).
+          Padding the whole app while the keyboard animates made the editor body lose focus. */}
       <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
         <ThemeProvider>
           <AppContent />

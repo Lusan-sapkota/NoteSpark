@@ -4,13 +4,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { cancelAnimation, Easing, SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { Button, Dialog, Icon, IconButton, Menu, Portal, RadioButton, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { Button, Dialog, Icon, IconButton, Menu, RadioButton, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { sendAppNotification } from '../utils/notifications';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { exportNotesAsJson, getNotes, importNotes, ImportMode } from '../storage/notes';
+import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useAlert } from '../components/DialogProvider';
@@ -543,7 +544,7 @@ const ImportExportScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      <Portal>
+      <KeyboardSafePortal>
         <Dialog visible={importDialogVisible} onDismiss={closeImportDialog}>
           <Dialog.Title>Import notes</Dialog.Title>
           <Dialog.ScrollArea style={styles.dialogScroll}>
@@ -585,7 +586,7 @@ const ImportExportScreen: React.FC = () => {
                     value={importData}
                     onChangeText={setImportData}
                     multiline
-                    numberOfLines={5}
+                    numberOfLines={4}
                     style={styles.pasteInput}
                   />
                   <Button
@@ -612,7 +613,7 @@ const ImportExportScreen: React.FC = () => {
             <Button onPress={closeImportDialog}>Cancel</Button>
           </Dialog.Actions>
         </Dialog>
-      </Portal>
+      </KeyboardSafePortal>
     </SafeAreaView>
   );
 };
@@ -712,7 +713,7 @@ const styles = StyleSheet.create({
     borderRadius: shape.small,
   },
   pasteInput: {
-    minHeight: 120,
+    minHeight: 96,
   },
 });
 
