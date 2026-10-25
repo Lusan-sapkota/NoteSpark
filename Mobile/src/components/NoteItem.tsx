@@ -2,7 +2,7 @@ import React, { memo, useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Icon, IconButton, Text, TouchableRipple } from 'react-native-paper';
 import Menu from './Menu';
-import { markTaskBoxes } from '../utils/tasks';
+import { markTaskBoxes } from '@notespark/core';
 import { Note } from '../types';
 import { useTheme } from '../theme/ThemeContext';
 import { groupCorners, shape, space } from '../theme/theme';

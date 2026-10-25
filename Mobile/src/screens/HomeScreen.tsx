@@ -12,7 +12,7 @@ import { clearDraft, getDraft, getNotes, getNotesVersion, moveNoteToBin, restore
 import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
-import { extractTags } from '../utils/tags';
+import { extractTags } from '@notespark/core';
 import { shareNotesAsJson, shareNotesAsZip } from '../utils/exportNotes';
 import { syncTaskReminders } from '../utils/taskReminders';
 import { updateWidgets } from '../widget/widgets';

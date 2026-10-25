@@ -3,7 +3,7 @@ import * as SQLite from 'expo-sqlite';
 import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
 import { db, isDatabaseReady, withDatabaseLock } from './database';
-import { createTokenizer, meanPoolNormalize } from '../utils/textEmbedding';
+import { createTokenizer, meanPoolNormalize } from '@notespark/core';
 
 const DIMS = 384;
 // ponytail: cut-off picked from a few test sentences; tune with real notes.

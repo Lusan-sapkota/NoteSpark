@@ -8,7 +8,7 @@ import { Appbar, IconButton, List, SegmentedButtons, Text } from 'react-native-p
 import Snackbar from '../components/Snackbar';
 import { RootStackParamList } from '../types';
 import { getNotes, getScratchpadNote, restoreTaskLine, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
-import { dueLabel, extractTasks, formatDue, repeatLabel, Task, today as getToday } from '../utils/tasks';
+import { dueLabel, extractTasks, formatDue, repeatLabel, Task, today as getToday } from '@notespark/core';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';

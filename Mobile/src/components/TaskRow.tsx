@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
 import { shape, space } from '../theme/theme';
-import { dueLabel, Repeat, repeatLabel, today } from '../utils/tasks';
+import { dueLabel, Repeat, repeatLabel, today } from '@notespark/core';
 
 interface TaskRowProps {
   done: boolean;

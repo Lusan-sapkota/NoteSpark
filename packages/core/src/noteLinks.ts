@@ -1,4 +1,4 @@
-import { Note } from '../types';
+import { Note } from './types';
 
 // [[Note title]] links between notes. Titles match ignoring case and surrounding spaces; a title containing
 // [ ] or a line break can't be linked.

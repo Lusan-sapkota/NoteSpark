@@ -3,7 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { deleteAsync, StorageAccessFramework as SAF, writeAsStringAsync } from 'expo-file-system/legacy';
 import { getProfiles, hasProfilePin, readProfileNotes } from './profiles';
-import { notesToJson } from '../utils/exportNotes';
+import { notesToJson } from '@notespark/core';
 
 export interface AutoBackupSettings {
   folderUri: string;

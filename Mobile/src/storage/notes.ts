@@ -2,8 +2,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './database';
 import { Note, NoteVersion } from '../types';
-import { TaskLine, toggleTaskLine } from '../utils/tasks';
-import { renameLinks } from '../utils/noteLinks';
+import { TaskLine, toggleTaskLine } from '@notespark/core';
+import { renameLinks } from '@notespark/core';
 
 // Bumped after every write finishes, so screens can skip reloading when nothing changed. After, not before:
 // a reload in between would read the old rows and then believe it was up to date.

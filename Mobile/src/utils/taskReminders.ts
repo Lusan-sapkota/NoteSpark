@@ -2,7 +2,7 @@
 // Scheduled on the phone (no push); recomputed from the notes whenever Home loads.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Notifications } from './notifications';
-import { extractTasks } from './tasks';
+import { extractTasks } from '@notespark/core';
 import { getProfiles, hasProfilePin, readProfileNotes } from '../storage/profiles';
 import { Note } from '../types';
 

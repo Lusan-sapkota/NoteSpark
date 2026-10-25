@@ -6,8 +6,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
 import NoteImages from './NoteImages';
 import TaskRow from './TaskRow';
-import { findTaskLines, mapTaskLines, splitDue } from '../utils/tasks';
-import { noteLinkPattern } from '../utils/noteLinks';
+import { findTaskLines, mapTaskLines, splitDue } from '@notespark/core';
+import { noteLinkPattern } from '@notespark/core';
 
 const firstText = (node: ASTNode): string => (node.children?.length ? firstText(node.children[0]) : node.content ?? '');
 

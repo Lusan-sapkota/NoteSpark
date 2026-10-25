@@ -1,23 +1,4 @@
-export interface Note {
-  id: number;
-  title: string;
-  content: string;
-  isMarkdown: boolean;
-  isPinned: boolean;
-  isArchived: boolean; // hidden from Home (except the Archived filter) and Tasks, still exported
-  createdAt: string;
-  updatedAt: string;
-  deletedAt?: string | null; // set while the note is in the bin
-}
-
-export interface NoteVersion {
-  id: number;
-  noteId: number;
-  title: string;
-  content: string;
-  isMarkdown: boolean;
-  savedAt: string; // when this version was replaced
-}
+export type { Note, NoteVersion } from '@notespark/core';
 
 export type RootStackParamList = {
   // binnedNoteId: set by the note page after moving a note to the bin; tag: a tag tapped on the note page.

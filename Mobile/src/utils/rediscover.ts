@@ -1,8 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Note } from '../types';
 import { relatedNotes } from '../storage/semanticSearch';
-import { linksTo } from './noteLinks';
-import { today } from './tasks';
+import { linksTo } from '@notespark/core';
+import { today } from '@notespark/core';
 
 // "Rediscover" on Home: one older note a day, so notes don't only get written. On unless switched off in Settings;
 // "Hide for today" hides it until tomorrow.

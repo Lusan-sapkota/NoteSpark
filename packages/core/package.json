@@ -1,0 +1,8 @@
+{
+  "name": "@notespark/core",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Pure NoteSpark code shared by the phone, desktop and hub: no Expo, React Native or Node imports.",
+  "main": "src/index.ts",
+  "types": "src/index.ts"
+}

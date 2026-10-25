@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Appbar, Text } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { getScratchpad, saveNote, saveScratchpad } from '../storage/notes';
-import { continueList, titleFromText } from '../utils/noteText';
+import { continueList, titleFromText } from '@notespark/core';
 import Header, { useHeaderElevation } from '../components/Header';
 import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
