@@ -1,8 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
-// The only bridge into the renderer: the notes list (read-only, spike) and the light / dark / system preference.
+// The only bridge into the renderer: one call into the backend. The main process decides which channels exist.
 contextBridge.exposeInMainWorld('notespark', {
-  listNotes: (): Promise<unknown[]> => ipcRenderer.invoke('notes:list'),
-  getTheme: (): Promise<string> => ipcRenderer.invoke('theme:get'),
-  setTheme: (mode: 'light' | 'dark' | 'system'): Promise<void> => ipcRenderer.invoke('theme:set', mode),
+  invoke: (channel: string, args?: unknown): Promise<unknown> => ipcRenderer.invoke('backend', channel, args),
+  refreshTray: (): Promise<void> => ipcRenderer.invoke('tray:refresh'),
 });

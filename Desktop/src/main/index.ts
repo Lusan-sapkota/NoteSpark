@@ -1,5 +1,7 @@
 import { join } from 'node:path';
-import { app, BrowserWindow, Menu, nativeImage, nativeTheme, session, Tray, ipcMain } from 'electron';
+import { app, BrowserWindow, clipboard, Menu, nativeImage, nativeTheme, session, Tray, ipcMain } from 'electron';
+import { invoke } from './backend';
+import { startWebView, stopWebView, webViewStatus } from './web';
 
 // Strictly offline: no updater, crash reporter, analytics or remote content.
 // The renderer may load only the app's own files (and the Vite dev server in development).
@@ -61,27 +63,31 @@ else {
     ses.setPermissionRequestHandler((_wc, _permission, done) => done(false));
     ses.webRequest.onBeforeRequest((details, done) => done({ cancel: !isAppUrl(details.url) && !details.url.startsWith('ws://localhost') }));
 
-    // Read-only list for the UI spike. The native SQLite module loads only when the list is first asked for.
-    ipcMain.handle('notes:list', async () => {
-      const { default: Database } = await import('better-sqlite3-multiple-ciphers');
-      const db = new Database(process.env.NOTESPARK_DB ?? join(app.getPath('userData'), 'notes.db'), { readonly: true, fileMustExist: true });
-      try {
-        const rows = db.prepare('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY isPinned DESC, updatedAt DESC').all() as Record<string, unknown>[];
-        return rows.map(r => ({ ...r, isMarkdown: !!r.isMarkdown, isPinned: !!r.isPinned, isArchived: !!r.isArchived }));
-      } finally { db.close(); }
-    });
-    ipcMain.handle('theme:get', () => nativeTheme.themeSource);
-    ipcMain.handle('theme:set', (_e, mode: unknown) => {
-      if (mode === 'light' || mode === 'dark' || mode === 'system') nativeTheme.themeSource = mode;
+    ipcMain.handle('backend', (e, channel: unknown, args: unknown) => {
+      if (!e.senderFrame || !isAppUrl(e.senderFrame.url) || typeof channel !== 'string') throw new Error('Blocked');
+      return invoke(channel, args, 'ipc');
     });
 
     tray = new Tray(icon.resize({ width: 22, height: 22 }));
     tray.setToolTip('NoteSpark');
-    tray.setContextMenu(Menu.buildFromTemplate([
-      { label: 'Open NoteSpark', click: showWindow },
-      { label: 'Quit', click: () => app.quit() },
-    ]));
+    const refreshTray = () => {
+      const web = webViewStatus();
+      tray?.setContextMenu(Menu.buildFromTemplate([
+        { label: 'Open NoteSpark', click: showWindow },
+        { type: 'separator' },
+        web.on
+          ? { label: 'Stop web view', click: () => stopWebView().then(refreshTray) }
+          : { label: 'Start web view', click: () => startWebView(invoke).then(refreshTray, () => {}) },
+        // The link carries the one-time token, so it is copied, never shown in the menu.
+        ...(web.on ? [{ label: 'Copy web view link', click: () => clipboard.writeText(webViewStatus().links.at(-1) ?? '') }] : []),
+        { type: 'separator' },
+        { label: 'Quit', click: () => app.quit() },
+      ]));
+    };
+    refreshTray();
     tray.on('click', showWindow);
+    app.on('before-quit', () => { void stopWebView(); });
+    ipcMain.handle('tray:refresh', refreshTray);
     Menu.setApplicationMenu(null);
     createWindow();
   });

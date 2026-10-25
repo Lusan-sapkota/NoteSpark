@@ -1,0 +1,21 @@
+// One way to reach the backend, whichever shell the page runs in: Electron's preload bridge in the desktop
+// window, or fetch() against the web view's server in a browser.
+declare global {
+  interface Window { notespark?: { invoke(channel: string, args?: unknown): Promise<unknown>; refreshTray(): Promise<void> } }
+}
+
+export const isDesktop = !!window.notespark;
+
+export const invoke = async <T = unknown>(channel: string, args?: unknown): Promise<T> => {
+  if (window.notespark) return (await window.notespark.invoke(channel, args)) as T;
+  const res = await fetch('/api/invoke', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channel, args }),
+  });
+  const body = await res.json().catch(() => ({ error: `${res.status}` }));
+  if (!res.ok) throw new Error(body.error ?? `${res.status}`);
+  return body.result as T;
+};
+
+export type WebStatus = { on: boolean; port: number; links: string[] };

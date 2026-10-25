@@ -6,3 +6,4 @@ export * from './noteLinks';
 export * from './noteText';
 export * from './textEmbedding';
 export * from './noteFiles';
+export * from './network';
