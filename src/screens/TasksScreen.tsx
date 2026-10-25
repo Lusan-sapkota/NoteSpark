@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -56,17 +56,24 @@ const TasksScreen: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sortBy, setSortBy] = useState<'due' | 'note'>('due');
   const [lastDone, setLastDone] = useState<Task | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const notes = await getNotes();
       setTasks(notes.flatMap(extractTasks));
     } catch {
-      alert("Couldn't load tasks", 'Go back and open Tasks again.');
+      alert("Couldn't load tasks", 'Pull down on the list to try again.');
     }
   }, [alert]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   const today = getToday();
   const rows = useMemo(() => buildRows(tasks, sortBy, today), [tasks, sortBy, today]);
@@ -167,6 +174,14 @@ const TasksScreen: React.FC = () => {
         itemLayoutAnimation={LinearTransition.springify()}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.colors.primary]}
+            progressBackgroundColor={theme.colors.surfaceContainerHigh}
+          />
+        }
         contentContainerStyle={styles.listContent}
         style={styles.column}
         ListHeaderComponent={

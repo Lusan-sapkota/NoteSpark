@@ -1,5 +1,5 @@
 import React, { useCallback, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -31,16 +31,23 @@ const BinScreen: React.FC = () => {
   const alert = useAlert();
   const [notes, setNotes] = useState<Note[]>([]);
   const [snackbar, setSnackbar] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       setNotes(await getBinNotes());
     } catch {
-      alert("Couldn't load the bin", 'Go back and open Bin again.');
+      alert("Couldn't load the bin", 'Pull down on the list to try again.');
     }
   }, [alert]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await load();
+    setRefreshing(false);
+  };
 
   const handleRestore = async (note: Note) => {
     try {
@@ -107,6 +114,14 @@ const BinScreen: React.FC = () => {
         itemLayoutAnimation={LinearTransition.springify()}
         onScroll={onScroll}
         scrollEventThrottle={16}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={handleRefresh}
+            colors={[theme.colors.primary]}
+            progressBackgroundColor={theme.colors.surfaceContainerHigh}
+          />
+        }
         style={styles.column}
         contentContainerStyle={styles.listContent}
         ListHeaderComponent={
