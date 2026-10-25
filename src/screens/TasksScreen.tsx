@@ -61,7 +61,7 @@ const TasksScreen: React.FC = () => {
   const load = useCallback(async () => {
     try {
       const notes = await getNotes();
-      setTasks(notes.flatMap(extractTasks));
+      setTasks(notes.filter(n => !n.isArchived).flatMap(extractTasks));
     } catch {
       alert("Couldn't load tasks", 'Pull down on the list to try again.');
     }

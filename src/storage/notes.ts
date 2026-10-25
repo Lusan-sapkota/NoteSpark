@@ -3,13 +3,17 @@ import { db } from './database';
 import { Note } from '../types';
 import { TaskLine, toggleTaskLine } from '../utils/tasks';
 
+const toNote = (item: any): Note => ({
+  ...item,
+  isMarkdown: Boolean(item.isMarkdown),
+  isPinned: Boolean(item.isPinned),
+  isArchived: Boolean(item.isArchived),
+});
+
+// Every note not in the bin, archived ones included; screens filter archived notes themselves.
 export const getNotes = async (): Promise<Note[]> => {
   const rows = await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY updatedAt DESC');
-  return rows.map((item: any) => ({
-    ...item,
-    isMarkdown: Boolean(item.isMarkdown),
-    isPinned: Boolean(item.isPinned)
-  }));
+  return rows.map(toNote);
 };
 
 export const getNoteById = async (id: number): Promise<Note | null> => {
@@ -23,6 +27,7 @@ export const getNoteById = async (id: number): Promise<Note | null> => {
         content: item.content,
         isMarkdown: Boolean(item.isMarkdown),
         isPinned: Boolean(item.isPinned),
+        isArchived: Boolean(item.isArchived),
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       };
@@ -35,7 +40,7 @@ export const getNoteById = async (id: number): Promise<Note | null> => {
   }
 };
 
-export const saveNote = async (note: Omit<Note, 'id' | 'isPinned'>): Promise<number> => {
+export const saveNote = async (note: Omit<Note, 'id' | 'isPinned' | 'isArchived'>): Promise<number> => {
   const now = new Date().toISOString();
   const result = await db.runAsync(
     `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)`,
@@ -71,7 +76,7 @@ export const restoreNote = async (id: number): Promise<void> => {
 
 export const getBinNotes = async (): Promise<Note[]> => {
   const rows = await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NOT NULL ORDER BY deletedAt DESC');
-  return rows.map((item: any) => ({ ...item, isMarkdown: Boolean(item.isMarkdown), isPinned: Boolean(item.isPinned) }));
+  return rows.map(toNote);
 };
 
 export const emptyBin = async (): Promise<void> => {
@@ -94,6 +99,14 @@ export const deleteNote = async (id: number): Promise<void> => {
 // Pinning isn't an edit, so updatedAt stays as it is.
 export const setNotePinned = async (id: number, pinned: boolean): Promise<void> => {
   await db.runAsync('UPDATE notes SET isPinned = ? WHERE id = ?', [pinned ? 1 : 0, id]);
+};
+
+// Archiving unpins the note (like Keep), so the archive has no pinned group. Not an edit: updatedAt stays.
+export const setNoteArchived = async (id: number, archived: boolean): Promise<void> => {
+  await db.runAsync(
+    `UPDATE notes SET isArchived = ?, isPinned = CASE WHEN ? THEN 0 ELSE isPinned END WHERE id = ?`,
+    [archived ? 1 : 0, archived ? 1 : 0, id]
+  );
 };
 
 export const toggleTaskInNote = async (noteId: number, task: Pick<TaskLine, 'line' | 'raw'>): Promise<string | null> => {
@@ -159,14 +172,15 @@ export const importNotes = async (notes: any[], mode: ImportMode): Promise<{ imp
         seen.add(key);
       }
       await txn.runAsync(
-        `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned) VALUES (?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived) VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           note.title,
           note.content,
           note.isMarkdown ? 1 : 0,
           note.createdAt || new Date().toISOString(),
           note.updatedAt || new Date().toISOString(),
-          note.isPinned ? 1 : 0 // older backups have no isPinned: unpinned
+          note.isPinned ? 1 : 0, // older backups have no isPinned: unpinned
+          note.isArchived ? 1 : 0,
         ]
       );
       imported++;

@@ -39,6 +39,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   await db.execAsync('ALTER TABLE notes ADD COLUMN updatedAt TEXT').catch(() => {});
   await db.execAsync('ALTER TABLE notes ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0').catch(() => {});
   await db.execAsync('ALTER TABLE notes ADD COLUMN deletedAt TEXT').catch(() => {});
+  await db.execAsync('ALTER TABLE notes ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0').catch(() => {});
   const now = new Date().toISOString();
   await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', [
     new Date(Date.now() - BIN_DAYS * 86400000).toISOString(),

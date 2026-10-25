@@ -6,7 +6,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, Appbar, Divider, FAB, Icon, ProgressBar, Text } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
-import { getNoteById, moveNoteToBin, setNotePinned, updateNote } from '../storage/notes';
+import { getNoteById, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -150,6 +150,18 @@ const NoteViewScreen: React.FC = () => {
     }
   };
 
+  // Archiving also unpins (see setNoteArchived); the page stays open.
+  const handleArchiveToggle = async () => {
+    if (!note) return;
+    try {
+      await setNoteArchived(note.id, !note.isArchived);
+      setNote({ ...note, isArchived: !note.isArchived, isPinned: note.isArchived && note.isPinned });
+      setSnackbar(note.isArchived ? 'Note unarchived' : 'Note archived');
+    } catch (error) {
+      alert(note.isArchived ? "Couldn't unarchive the note" : "Couldn't archive the note", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
   const handleEdit = () => {
     navigation.navigate('Editor', { noteId: note!.id });
   };
@@ -258,6 +270,11 @@ const NoteViewScreen: React.FC = () => {
                 />
               )}
               <Menu.Item
+                leadingIcon={note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
+                title={note.isArchived ? 'Unarchive' : 'Archive'}
+                onPress={() => { setMenuVisible(false); handleArchiveToggle(); }}
+              />
+              <Menu.Item
                 leadingIcon="delete-outline"
                 title="Move to bin"
                 titleStyle={{ color: theme.colors.error }}
@@ -285,6 +302,7 @@ const NoteViewScreen: React.FC = () => {
           <View style={styles.infoRow}>
             {note.isMarkdown ? infoLabel('language-markdown', 'Markdown') : infoLabel('text', 'Text')}
             {infoLabel('pencil-outline', `Edited ${formatDate(note.updatedAt)}`)}
+            {note.isArchived && infoLabel('archive-outline', 'Archived')}
           </View>
           {taskLines.length > 0 && (
             <View style={styles.progress}>

@@ -14,6 +14,7 @@ interface NoteItemProps {
   onEdit: (noteId: number) => void;
   isPinned: boolean;
   onPinToggle: (noteId: number) => void;
+  onArchiveToggle: (noteId: number) => void;
   isFirst: boolean;
   isLast: boolean;
   showCreated?: boolean;
@@ -57,6 +58,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   onEdit,
   isPinned,
   onPinToggle,
+  onArchiveToggle,
   isFirst,
   isLast,
   showCreated = false,
@@ -134,6 +136,11 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                 leadingIcon="pencil-outline"
                 title="Edit note"
                 onPress={() => { setMenuVisible(false); onEdit(note.id); }}
+              />
+              <Menu.Item
+                leadingIcon={note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
+                title={note.isArchived ? 'Unarchive' : 'Archive'}
+                onPress={() => { setMenuVisible(false); onArchiveToggle(note.id); }}
               />
               <Menu.Item
                 leadingIcon="delete-outline"

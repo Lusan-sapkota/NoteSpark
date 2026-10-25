@@ -4,6 +4,7 @@ export interface Note {
   content: string;
   isMarkdown: boolean;
   isPinned: boolean;
+  isArchived: boolean; // hidden from Home (except the Archived filter) and Tasks, still exported
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null; // set while the note is in the bin

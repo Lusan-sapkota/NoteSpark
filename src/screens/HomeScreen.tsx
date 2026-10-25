@@ -8,7 +8,7 @@ import Menu from '../components/Menu';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import { getNotes, moveNoteToBin, restoreNote, setNotePinned } from '../storage/notes';
+import { getNotes, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
 import { getActiveProfile, getProfiles, Profile, switchProfile, verifyProfilePin } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
@@ -25,7 +25,10 @@ const typeFilters = [
   { value: 'pinned', label: 'Pinned' },
   { value: 'markdown', label: 'Markdown' },
   { value: 'text', label: 'Text' },
+  { value: 'archived', label: 'Archived' },
 ] as const;
+
+type Filter = typeof typeFilters[number]['value'];
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -38,12 +41,13 @@ const HomeScreen: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   const [searchType, setSearchType] = useState<'all' | 'title' | 'content' | 'meaning'>('all');
   const [meaningIds, setMeaningIds] = useState<number[] | null>(null);
-  const [filter, setFilter] = useState<'all' | 'pinned' | 'markdown' | 'text'>('all');
+  const [filter, setFilter] = useState<Filter>('all');
   const [sortType, setSortType] = useState<'edited' | 'created'>('edited');
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [fabExtended, setFabExtended] = useState(true);
   const [snackbar, setSnackbar] = useState('');
-  const [undoNoteId, setUndoNoteId] = useState<number | null>(null);
+  // What the snackbar's Undo does, if it has one.
+  const [undo, setUndo] = useState<(() => Promise<void>) | null>(null);
   const route = useRoute<RouteProp<RootStackParamList, 'Home'>>();
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
@@ -124,9 +128,10 @@ const HomeScreen: React.FC = () => {
   }, [searchText, searchType, notes]);
 
   const filteredNotes = useMemo(() => {
-    let filtered = notes;
+    // Archived notes only show under the Archived filter.
+    let filtered = notes.filter(n => (filter === 'archived') === n.isArchived);
     if (filter === 'pinned') filtered = filtered.filter(n => n.isPinned);
-    else if (filter !== 'all') {
+    else if (filter === 'markdown' || filter === 'text') {
       filtered = filtered.filter(n => filter === 'markdown' ? n.isMarkdown : !n.isMarkdown);
     }
     if (searchType === 'meaning' && searchText.trim() && meaningIds) {
@@ -162,7 +167,14 @@ const HomeScreen: React.FC = () => {
   }, [navigation]);
 
   const showBinned = (noteId: number) => {
-    setUndoNoteId(noteId);
+    setUndo(() => async () => {
+      try {
+        await restoreNote(noteId);
+        await loadNotes();
+      } catch (error) {
+        alert("Couldn't restore the note", 'Open Bin in Settings to restore it.');
+      }
+    });
     setSnackbar('Note moved to bin');
   };
 
@@ -173,16 +185,6 @@ const HomeScreen: React.FC = () => {
     showBinned(binnedNoteId);
     navigation.setParams({ binnedNoteId: undefined });
   }, [binnedNoteId]);
-
-  const handleUndoBin = async () => {
-    if (undoNoteId === null) return;
-    try {
-      await restoreNote(undoNoteId);
-      await loadNotes();
-    } catch (error) {
-      alert("Couldn't restore the note", 'Open Bin in Settings to restore it.');
-    }
-  };
 
   const handleDeleteNote = useCallback((noteId: number) => {
     const title = notes.find(n => n.id === noteId)?.title || 'This note';
@@ -228,6 +230,30 @@ const HomeScreen: React.FC = () => {
     }
   }, [notes, alert]);
 
+  const handleArchiveToggle = useCallback(async (noteId: number) => {
+    const note = notes.find(n => n.id === noteId);
+    if (!note) return;
+    const archive = async (archived: boolean) => {
+      await setNoteArchived(noteId, archived);
+      await loadNotes();
+    };
+    try {
+      await archive(!note.isArchived);
+      setUndo(() => async () => {
+        try {
+          await archive(note.isArchived);
+          if (note.isPinned) await setNotePinned(noteId, true);
+          await loadNotes();
+        } catch (error) {
+          alert("Couldn't undo", 'Try again from the note menu.');
+        }
+      });
+      setSnackbar(note.isArchived ? 'Note unarchived' : 'Note archived');
+    } catch (error) {
+      alert(note.isArchived ? "Couldn't unarchive the note" : "Couldn't archive the note", 'Try again. If it keeps failing, restart the app.');
+    }
+  }, [notes, alert]);
+
   const renderNoteItem = useCallback(
     ({ item, index }: { item: Note; index: number }) => {
       const isPinned = item.isPinned;
@@ -241,13 +267,14 @@ const HomeScreen: React.FC = () => {
           onEdit={handleEditNote}
           isPinned={isPinned}
           onPinToggle={handlePinToggle}
+          onArchiveToggle={handleArchiveToggle}
           isFirst={!prev || prev.isPinned !== isPinned}
           isLast={!next || next.isPinned !== isPinned}
           showCreated={sortType === 'created'}
         />
       );
     },
-    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, filteredNotes, sortType]
+    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, filteredNotes, sortType]
   );
 
   const handleCreateNote = () => {
@@ -272,11 +299,15 @@ const HomeScreen: React.FC = () => {
           <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
             {searchText.trim()
               ? `No notes match "${searchText.trim()}"`
-              : filter === 'pinned' ? 'No pinned notes' : 'No notes of this type'}
+              : filter === 'pinned' ? 'No pinned notes' : filter === 'archived' ? 'No archived notes' : 'No notes of this type'}
           </Text>
           <Text variant="bodyMedium" style={[styles.emptyBody, { color: theme.colors.onSurfaceVariant }]}>
-            {!searchText.trim() && filter === 'pinned'
+            {searchText.trim()
+              ? 'Try another word or filter.'
+              : filter === 'pinned'
               ? 'Tap the pin on a note to keep it at the top and find it here.'
+              : filter === 'archived'
+              ? "Choose Archive in a note's menu to hide it from your list without deleting it."
               : 'Try another word or filter.'}
           </Text>
           <Button
@@ -370,10 +401,10 @@ const HomeScreen: React.FC = () => {
             </Menu>
           )}
         />
-        <View style={styles.chips}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipRow}>
           {typeFilters.map(f => (
-            <View key={f.value} style={styles.chip}>
-              {/* Selected is filled with no outline; a check mark doesn't fit at a quarter of the row. */}
+            <View key={f.value}>
+              {/* Selected is filled with no outline and no check mark, so chips don't change width. */}
               <Chip
                 mode={filter === f.value ? 'flat' : 'outlined'}
                 selected={filter === f.value}
@@ -393,7 +424,7 @@ const HomeScreen: React.FC = () => {
               </Chip>
             </View>
           ))}
-        </View>
+        </ScrollView>
       </View>
 
       {loading ? (
@@ -495,10 +526,10 @@ const HomeScreen: React.FC = () => {
 
       <Snackbar
         visible={!!snackbar}
-        onDismiss={() => { setSnackbar(''); setUndoNoteId(null); }}
+        onDismiss={() => { setSnackbar(''); setUndo(null); }}
         duration={4000}
         wrapperStyle={styles.snackbar}
-        action={undoNoteId !== null ? { label: 'Undo', onPress: handleUndoBin } : undefined}
+        action={undo ? { label: 'Undo', onPress: undo } : undefined}
       >
         {snackbar}
       </Snackbar>
@@ -518,22 +549,20 @@ const styles = StyleSheet.create({
   searchInput: {
     minHeight: 0,
   },
-  chips: {
-    flexDirection: 'row',
-    gap: space.sm,
+  // Scrolls sideways; bleeds to the screen edges so chips don't look cut off at the padding.
+  chipRow: {
+    marginHorizontal: -space.lg,
   },
-  // Equal widths across the row.
-  chip: {
-    flex: 1,
+  chips: {
+    gap: space.sm,
+    paddingHorizontal: space.lg,
   },
   chipShape: {
     borderRadius: shape.small,
   },
   chipText: {
-    flex: 1,
-    textAlign: 'center',
-    marginLeft: space.sm,
-    marginRight: space.sm,
+    marginLeft: space.md,
+    marginRight: space.md,
   },
   skeletonCard: {
     marginHorizontal: space.lg,
