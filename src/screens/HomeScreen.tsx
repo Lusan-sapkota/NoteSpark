@@ -7,6 +7,7 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
 import { getNotes, deleteNote, setNotePinned } from '../storage/notes';
+import { getActiveProfile, getProfiles, Profile, switchProfile } from '../storage/profiles';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
@@ -37,11 +38,17 @@ const HomeScreen: React.FC = () => {
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [fabExtended, setFabExtended] = useState(true);
   const [snackbar, setSnackbar] = useState('');
+  const [profiles, setProfiles] = useState<Profile[]>([]);
+  const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
+  const [profileMenuVisible, setProfileMenuVisible] = useState(false);
   const lastOffset = useRef(0);
 
   const loadNotes = async () => {
     try {
       setLoading(true);
+      const [list, active] = await Promise.all([getProfiles(), getActiveProfile()]);
+      setProfiles(list);
+      setActiveProfile(active);
       const fetchedNotes = await getNotes();
       setNotes(fetchedNotes);
       setLoading(false);
@@ -59,6 +66,20 @@ const HomeScreen: React.FC = () => {
     });
     return unsubscribe;
   }, [navigation]);
+
+  const handleSwitchProfile = async (profile: Profile) => {
+    setProfileMenuVisible(false);
+    if (profile.id === activeProfile?.id) return;
+    try {
+      await switchProfile(profile.id);
+      setSearchText('');
+      await loadNotes();
+      setSnackbar(`Switched to ${profile.name}`);
+    } catch (error) {
+      console.error('Failed to switch profile:', error);
+      alert("Couldn't switch profile", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -212,9 +233,35 @@ const HomeScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header elevated={elevated}
-        title="NoteSpark"
+        title={profiles.length > 1 && activeProfile ? activeProfile.name : 'NoteSpark'}
         rightActions={
           <>
+            <Menu
+              visible={profileMenuVisible}
+              onDismiss={() => setProfileMenuVisible(false)}
+              anchor={
+                <Appbar.Action
+                  icon="account-circle-outline"
+                  accessibilityLabel={`Switch profile, current profile ${activeProfile?.name ?? ''}`}
+                  onPress={() => setProfileMenuVisible(true)}
+                />
+              }
+            >
+              {profiles.map(p => (
+                <Menu.Item
+                  key={p.id}
+                  title={p.name}
+                  leadingIcon="account-outline"
+                  trailingIcon={p.id === activeProfile?.id ? 'check' : undefined}
+                  onPress={() => handleSwitchProfile(p)}
+                />
+              ))}
+              <Menu.Item
+                title="Manage profiles"
+                leadingIcon="account-cog-outline"
+                onPress={() => { setProfileMenuVisible(false); navigation.navigate('Settings'); }}
+              />
+            </Menu>
             <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel="Tasks" onPress={() => navigation.navigate('Tasks')} />
             <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
           </>

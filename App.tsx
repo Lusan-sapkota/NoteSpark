@@ -6,8 +6,7 @@ import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { PaperProvider } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
-import { initDatabase } from './src/storage/database';
-import { getNotes } from './src/storage/notes';
+import { getActiveProfile, getAllProfilesNoteContents, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
 import { ActivityIndicator, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -29,8 +28,8 @@ const AppContent = () => {
     const setupApp = async () => {
       try {
         await setupNotificationWorker();
-        await initDatabase();
-        getNotes().then(notes => pruneImageCache(notes.map(n => String(n.content ?? '')))).catch(() => {});
+        await switchProfile((await getActiveProfile()).id);
+        getAllProfilesNoteContents().then(pruneImageCache).catch(() => {});
         setDbInitialized(true);
         const onboarded = await AsyncStorage.getItem('onboarded');
         setShowOnboarding(onboarded !== 'true');

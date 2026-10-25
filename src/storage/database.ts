@@ -1,9 +1,25 @@
 import * as SQLite from 'expo-sqlite';
 
-export const db = SQLite.openDatabaseSync('notespark.db');
+// Each profile has its own database file; the first profile keeps the original one.
+export const dbName = (profileId: string) => (profileId === 'default' ? 'notespark.db' : `notespark-${profileId}.db`);
+
+// The active profile's database. A live binding: importers see the new one after openProfileDatabase.
+export let db = SQLite.openDatabaseSync(dbName('default'));
+let openName = dbName('default');
+
+export const openProfileDatabase = async (profileId: string): Promise<void> => {
+  const name = dbName(profileId);
+  const next = name === openName ? db : SQLite.openDatabaseSync(name);
+  await initDatabase(next);
+  if (next === db) return;
+  const previous = db;
+  db = next;
+  openName = name;
+  await previous.closeAsync().catch(() => {});
+};
 
 // Creates the notes table and upgrades older installs. Each ALTER fails harmlessly when the column exists.
-export const initDatabase = async (): Promise<void> => {
+export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => {
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS notes (
       id INTEGER PRIMARY KEY AUTOINCREMENT,

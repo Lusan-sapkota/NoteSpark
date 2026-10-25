@@ -8,16 +8,16 @@ import { useTheme } from '../theme/ThemeContext';
 import { readingWidth, space } from '../theme/theme';
 
 const CONTACT_EMAIL = 'contact@lusansapkota.com.np';
-const EFFECTIVE_DATE = 'October 24, 2026';
+const EFFECTIVE_DATE = 'October 25, 2026';
 
 // Keep this in step with what the app actually does; update EFFECTIVE_DATE on every change.
 const sections: { heading: string; intro?: string; bullets?: string[]; outro?: string }[] = [
   {
     heading: 'What NoteSpark stores',
     bullets: [
-      'Your notes: the title, text, format, whether they are pinned, and the dates they were created and edited. They are kept in a database on your device.',
+      'Your notes: the title, text, format, whether they are pinned, and the dates they were created and edited. They are kept in a database on your device, one for each profile.',
       "Images you add to a note aren't copied or uploaded. The note keeps a link to the image file on your device.",
-      "Your theme choice, whether you've finished the welcome screens, and a list of your last 20 imports and exports. These are also kept on your device.",
+      "Your profile names, which profile is open, your theme choice, whether you've finished the welcome screens, and a list of your last 20 imports and exports. These are also kept on your device.",
     ],
     outro: 'None of this is sent to the developer or anyone else.',
   },
