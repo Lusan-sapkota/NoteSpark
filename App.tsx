@@ -8,7 +8,7 @@ import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { eraseForgottenProfile, getDefaultProfile, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
 import { setupNotificationWorker } from './src/utils/notifications';
-import { ActivityIndicator, View, StyleSheet, Button } from 'react-native';
+import { ActivityIndicator, AppState, View, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import OnboardingScreen from './src/screens/OnboardingScreen';
 import { sendAppNotification } from './src/utils/notifications';
@@ -17,6 +17,7 @@ import { fontFiles } from './src/theme/theme';
 import { DialogProvider } from './src/components/DialogProvider';
 import { pruneImageCache } from './src/utils/imageCache';
 import ProfileUnlockScreen from './src/screens/ProfileUnlockScreen';
+import { runAutoBackupIfDue } from './src/storage/autoBackup';
 
 const AppContent = () => {
   const { theme, isDarkMode } = useTheme();
@@ -44,6 +45,7 @@ const AppContent = () => {
         await openDefaultProfile();
         await purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
         getAllProfilesNoteContents().then(pruneImageCache).catch(() => {});
+        runAutoBackupIfDue().catch(() => {});
         setDbInitialized(true);
         const onboarded = await AsyncStorage.getItem('onboarded');
         setShowOnboarding(onboarded !== 'true');
@@ -52,6 +54,11 @@ const AppContent = () => {
       }
     };
     setupApp();
+    // A due automatic backup also runs when the app comes back to the front.
+    const sub = AppState.addEventListener('change', state => {
+      if (state === 'active') runAutoBackupIfDue().catch(() => {});
+    });
+    return () => sub.remove();
   }, []);
 
   const handleFinishOnboarding = async () => {

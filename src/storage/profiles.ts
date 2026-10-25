@@ -2,6 +2,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Crypto from 'expo-crypto';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
+import { toNote } from './notes';
+import { Note } from '../types';
 import { BIN_DAYS, dbName, initDatabase, isProfileDatabaseOpen, openProfileDatabase } from './database';
 
 export interface Profile {
@@ -157,6 +159,16 @@ export const eraseForgottenProfile = async (id: string): Promise<Profile> => {
   if ((await getActiveProfile()).id === id) await AsyncStorage.setItem('activeProfile', next.id);
   await deleteProfileForever(id);
   return next;
+};
+
+// Notes not in the bin from any profile's database, without switching to it (automatic backups).
+export const readProfileNotes = async (id: string): Promise<Note[]> => {
+  const db = await SQLite.openDatabaseAsync(dbName(id));
+  try {
+    return (await db.getAllAsync('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY updatedAt DESC')).map(toNote);
+  } finally {
+    await db.closeAsync();
+  }
 };
 
 // Throws if any profile can't be read, so pruning is skipped instead of deleting images still in use.

@@ -3,7 +3,7 @@ import { db } from './database';
 import { Note, NoteVersion } from '../types';
 import { TaskLine, toggleTaskLine } from '../utils/tasks';
 
-const toNote = (item: any): Note => ({
+export const toNote = (item: any): Note => ({
   ...item,
   isMarkdown: Boolean(item.isMarkdown),
   isPinned: Boolean(item.isPinned),

@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { cancelAnimation, Easing, SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { Button, Dialog, Icon, IconButton, RadioButton, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { Button, Dialog, Icon, IconButton, RadioButton, SegmentedButtons, Switch, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import Menu from '../components/Menu';
 import { RootStackParamList } from '../types';
 import { sendAppNotification } from '../utils/notifications';
@@ -13,6 +13,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { exportNotesAsJson, getNotes, importNotes, ImportMode } from '../storage/notes';
 import { shareNotesAsZip } from '../utils/exportNotes';
+import { AutoBackupSettings, BACKUPS_KEPT, folderName, getAutoBackup, pickBackupFolder, runBackup, setAutoBackup } from '../storage/autoBackup';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
@@ -87,6 +88,9 @@ const ImportExportScreen: React.FC = () => {
   const [importDialogVisible, setImportDialogVisible] = useState(false);
   const [importMode, setImportMode] = useState<ImportMode>('merge');
   const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
+  const [autoBackup, setAutoBackupState] = useState<AutoBackupSettings | null>(null);
+  const [backingUp, setBackingUp] = useState(false);
+  const formatDate = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
   const handleExportHistoryPDF = async () => {
     alert(
       'Export history as PDF?',
@@ -125,6 +129,7 @@ const ImportExportScreen: React.FC = () => {
 
   const loadHistory = async () => {
     getNotes().then(notes => setNoteCount(notes.length)).catch(() => {});
+    getAutoBackup().then(setAutoBackupState).catch(() => {});
     try {
       const raw = await AsyncStorage.getItem('notesHistory');
       console.log('Loaded notesHistory:', raw);
@@ -197,6 +202,60 @@ const ImportExportScreen: React.FC = () => {
       alert("Couldn't export as Markdown", 'Try again. If it keeps failing, restart the app.');
     }
   };
+
+  const saveAutoBackup = async (settings: AutoBackupSettings | null) => {
+    await setAutoBackup(settings);
+    setAutoBackupState(settings);
+  };
+
+  // Backs up now and records the result like an automatic run.
+  const backUpNow = async (settings: AutoBackupSettings) => {
+    setBackingUp(true);
+    try {
+      await runBackup(settings);
+      await saveAutoBackup({ ...settings, lastRun: new Date().toISOString(), lastError: undefined });
+    } catch (error) {
+      await saveAutoBackup({ ...settings, lastError: error instanceof Error ? error.message : String(error) });
+      alert("Couldn't back up to the folder", 'Choose the folder again, or pick another one, then try again.');
+    } finally {
+      setBackingUp(false);
+    }
+  };
+
+  const chooseBackupFolder = async () => {
+    try {
+      const folderUri = await pickBackupFolder();
+      if (!folderUri) return;
+      await backUpNow({ frequency: 'weekly', includeProtected: false, ...autoBackup, folderUri, lastError: undefined });
+    } catch (error) {
+      alert("Couldn't open the folder picker", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
+  // Protected profiles are only backed up after the person agrees their backup files are readable.
+  const setIncludeProtected = (include: boolean) => {
+    if (!autoBackup) return;
+    if (!include) {
+      saveAutoBackup({ ...autoBackup, includeProtected: false });
+      return;
+    }
+    alert(
+      'Back up protected profiles too?',
+      "Backup files are ordinary files. Anyone who can open the backup folder can read every note in them, without the profile's PIN.",
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Include them', onPress: () => saveAutoBackup({ ...autoBackup, includeProtected: true }) },
+      ]
+    );
+  };
+
+  const backupStatus = !autoBackup
+    ? ''
+    : autoBackup.lastError
+    ? "The last backup didn't finish. Choose the folder again or tap to try now."
+    : autoBackup.lastRun
+    ? `Last backup ${formatDate(autoBackup.lastRun)}`
+    : 'No backup yet';
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -425,7 +484,6 @@ const ImportExportScreen: React.FC = () => {
     const count = typeof h.count === 'number' ? h.count : 0;
     return count > 0 ? `${kind}ed ${count} notes` : `${kind} didn't finish`;
   };
-  const formatDate = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
   const lastBackup = history.find(h => h.type === 'export' && typeof h.count === 'number' && h.count > 0);
 
   const importing = isImporting || fileImporting;
@@ -522,6 +580,77 @@ const ImportExportScreen: React.FC = () => {
               isLast
             />
           </View>
+
+          <Text variant="titleSmall" accessibilityRole="header" style={[styles.sectionTitle, { color: theme.colors.primary }]}>
+            Automatic backups
+          </Text>
+          <GroupedRow
+            title="Back up automatically"
+            description={autoBackup
+              ? `To ${folderName(autoBackup.folderUri)}. Keeps the last ${BACKUPS_KEPT} of each profile.`
+              : `Save a backup to a folder you choose, every day or week. Keeps the last ${BACKUPS_KEPT}.`}
+            icon="folder-sync-outline"
+            onPress={autoBackup ? () => saveAutoBackup(null) : chooseBackupFolder}
+            right={
+              <Switch
+                value={!!autoBackup}
+                onValueChange={on => (on ? chooseBackupFolder() : saveAutoBackup(null))}
+                accessibilityLabel="Back up automatically"
+              />
+            }
+            isFirst
+            isLast={!autoBackup}
+          />
+          {autoBackup && (
+            <>
+              <GroupedRow
+                title="Back up now"
+                description={backingUp ? 'Backing up' : backupStatus}
+                icon={autoBackup.lastError ? 'alert-circle-outline' : 'backup-restore'}
+                danger={!!autoBackup.lastError}
+                onPress={() => backUpNow(autoBackup)}
+                disabled={backingUp}
+                isFirst={false}
+                isLast={false}
+              />
+              <GroupedRow
+                title="Backup folder"
+                description={folderName(autoBackup.folderUri)}
+                icon="folder-outline"
+                onPress={chooseBackupFolder}
+                isFirst={false}
+                isLast={false}
+              />
+              <GroupedRow
+                title="Include protected profiles"
+                description="Off: profiles with a PIN aren't backed up automatically"
+                icon="lock-outline"
+                onPress={() => setIncludeProtected(!autoBackup.includeProtected)}
+                right={
+                  <Switch
+                    value={autoBackup.includeProtected}
+                    onValueChange={setIncludeProtected}
+                    accessibilityLabel="Include protected profiles"
+                  />
+                }
+                isFirst={false}
+                isLast
+              />
+              <SegmentedButtons
+                theme={controlTheme}
+                value={autoBackup.frequency}
+                onValueChange={value => saveAutoBackup({ ...autoBackup, frequency: value as 'daily' | 'weekly' })}
+                style={styles.frequency}
+                buttons={[
+                  { value: 'daily', label: 'Every day', icon: 'calendar-today' },
+                  { value: 'weekly', label: 'Every week', icon: 'calendar-week' },
+                ]}
+              />
+              <Text variant="bodySmall" style={[styles.backupHelp, { color: theme.colors.onSurfaceVariant }]}>
+                Backups run when you open NoteSpark and one is due. Restore one with Restore above.
+              </Text>
+            </>
+          )}
 
           <View style={styles.historyHeader}>
             <Text variant="titleSmall" accessibilityRole="header" style={[styles.historyTitle, { color: theme.colors.primary }]}>History</Text>
@@ -707,6 +836,18 @@ const styles = StyleSheet.create({
   },
   rows: {
     marginTop: space.md,
+  },
+  sectionTitle: {
+    marginTop: space.xl,
+    marginBottom: space.sm,
+    marginLeft: space.xs,
+  },
+  frequency: {
+    marginTop: space.md,
+  },
+  backupHelp: {
+    marginTop: space.sm,
+    marginLeft: space.xs,
   },
   historyHeader: {
     flexDirection: 'row',
