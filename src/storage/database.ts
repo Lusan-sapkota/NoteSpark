@@ -62,6 +62,10 @@ const commitKey = async (id: string, key: string | null) => {
   await SecureStore.deleteItemAsync(pendingKeyName(id));
 };
 
+export const getProfileKey = (id: string) => SecureStore.getItemAsync(keyName(id));
+
+export const restoreProfileKey = (id: string, key: string) => commitKey(id, key);
+
 export const forgetProfileKey = (id: string) => commitKey(id, null);
 
 // Reading anything fails with "file is not a database" when the key is wrong.

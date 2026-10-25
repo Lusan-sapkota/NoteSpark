@@ -5,7 +5,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
 import { toNote } from './notes';
 import { Note } from '../types';
-import { BIN_DAYS, dbName, deleteProfileDatabase, forgetProfileKey, initDatabase, isProfileDatabaseOpen, openProfileConnection, openProfileDatabase, setProfileEncryption, withDatabaseLock } from './database';
+import { BIN_DAYS, dbName, deleteProfileDatabase, forgetProfileKey, getProfileKey, initDatabase, isProfileDatabaseOpen, isProfileEncrypted, openProfileConnection, openProfileDatabase, restoreProfileKey, setProfileEncryption, withDatabaseLock } from './database';
 
 export interface Profile {
   id: string;
@@ -35,13 +35,44 @@ const updateProfile = async (id: string, change: Partial<Profile>) =>
   saveProfiles((await getStoredProfiles()).map(p => (p.id === id ? { ...p, ...change } : p)));
 
 // PINs are stored as "salt:sha256(salt + pin)" in SecureStore, one key per profile.
+// A copy with the SQLCipher key XOR-wrapped by sha256(salt + ":key:" + pin) is kept in AsyncStorage so
+// locked profiles survive an Android backup or phone transfer (which excludes SecureStore) and unlock once
+// the person enters their PIN on the new phone.
 const pinKey = (id: string) => `profilePin_${id}`;
+const pinBackupsKey = 'profilePinBackups';
+type PinBackup = { stored: string; wrappedKey?: string };
+
 const hashPin = (salt: string, pin: string) => Crypto.digestStringAsync(Crypto.CryptoDigestAlgorithm.SHA256, salt + pin);
+const xorHex = (a: string, b: string) =>
+  Array.from({ length: a.length }, (_, i) => (parseInt(a[i], 16) ^ parseInt(b[i], 16)).toString(16)).join('');
+
+const getPinBackups = async (): Promise<Record<string, PinBackup>> =>
+  JSON.parse((await AsyncStorage.getItem(pinBackupsKey)) ?? '{}');
+
+const savePinBackup = async (id: string, entry: PinBackup | null) => {
+  const backups = await getPinBackups();
+  if (entry) backups[id] = entry;
+  else delete backups[id];
+  await AsyncStorage.setItem(pinBackupsKey, JSON.stringify(backups));
+};
+
+const wrapProfileKey = async (id: string, pin: string, stored: string) => {
+  const key = await getProfileKey(id);
+  const [salt] = stored.split(':');
+  const wrappedKey = key && key.length === 64 ? xorHex(key, await hashPin(`${salt}:key:`, pin)) : undefined;
+  await savePinBackup(id, { stored, wrappedKey });
+};
 
 const storePin = async (id: string, pin: string | null): Promise<void> => {
-  if (pin === null) return SecureStore.deleteItemAsync(pinKey(id));
+  if (pin === null) {
+    await SecureStore.deleteItemAsync(pinKey(id));
+    await savePinBackup(id, null);
+    return;
+  }
   const salt = Array.from(Crypto.getRandomBytes(16), b => b.toString(16).padStart(2, '0')).join('');
-  await SecureStore.setItemAsync(pinKey(id), `${salt}:${await hashPin(salt, pin)}`);
+  const stored = `${salt}:${await hashPin(salt, pin)}`;
+  await SecureStore.setItemAsync(pinKey(id), stored);
+  await wrapProfileKey(id, pin, stored);
 };
 
 // Earlier builds kept plain PINs in AsyncStorage under profilePins; move them over once.
@@ -59,7 +90,7 @@ const migratePins = () =>
 
 const getStoredPin = async (id: string): Promise<string | null> => {
   await migratePins();
-  return SecureStore.getItemAsync(pinKey(id));
+  return (await SecureStore.getItemAsync(pinKey(id))) ?? (await getPinBackups())[id]?.stored ?? null;
 };
 
 export const getActiveProfile = async (): Promise<Profile> => {
@@ -113,6 +144,14 @@ export const verifyProfilePin = async (id: string, pin: string): Promise<boolean
   const [salt, hash] = stored.split(':');
   if ((await hashPin(salt, pin)) === hash) {
     await saveAttempt(id, null);
+    await SecureStore.setItemAsync(pinKey(id), stored);
+    const backup = (await getPinBackups())[id];
+    if (!(await isProfileEncrypted(id)) && backup?.wrappedKey?.length === 64) {
+      const unwrapped = xorHex(backup.wrappedKey, await hashPin(`${salt}:key:`, pin));
+      await restoreProfileKey(id, unwrapped);
+    } else if (!backup?.wrappedKey) {
+      await wrapProfileKey(id, pin, stored);
+    }
     return true;
   }
   const failures = ((await getAttempts())[id]?.failures ?? 0) + 1;
@@ -141,6 +180,8 @@ let biometricGrant: { id: string; until: number } | null = null;
 
 export const unlockWithBiometrics = async (profile: Profile): Promise<boolean> => {
   if (!(await usesBiometrics(profile.id)) || !(await canUseBiometrics())) return false;
+  // After a phone transfer, SecureStore is empty until the PIN is entered once to unwrap the key.
+  if (!(await isProfileEncrypted(profile.id)) && (await getPinBackups())[profile.id]?.wrappedKey) return false;
   const result = await LocalAuthentication.authenticateAsync({
     promptMessage: `Open ${profile.name}`,
     cancelLabel: 'Use PIN',
@@ -179,15 +220,21 @@ export const addProfile = async (name: string, pin?: string): Promise<Profile> =
   }
   if (pin) {
     await storePin(profile.id, pin);
-    await encryptAsLocked(profile.id);
+    await encryptAsLocked(profile.id, pin);
   }
   return profile;
 };
 
 // Notes are encrypted while a profile has a PIN. A failed conversion is retried at the next start.
-const encryptAsLocked = async (id: string) => {
+const encryptAsLocked = async (id: string, pin?: string) => {
   try {
+    // Restored from backup with a wrapped key: already encrypted on disk, waiting for the first PIN unlock.
+    if (!(await isProfileEncrypted(id)) && (await getPinBackups())[id]?.wrappedKey) return;
     await setProfileEncryption(id, await hasProfilePin(id));
+    if (pin) {
+      const stored = await getStoredPin(id);
+      if (stored) await wrapProfileKey(id, pin, stored);
+    }
   } catch (error) {
     console.warn('Profile encryption change failed:', error);
   }
@@ -204,7 +251,7 @@ export const setProfilePin = async (id: string, pin: string | null, currentPin =
   if (!(await verifyProfilePin(id, currentPin))) throw new Error('Invalid profile PIN');
   await storePin(id, pin);
   if (pin === null) await setUsesBiometrics(id, false);
-  await encryptAsLocked(id);
+  await encryptAsLocked(id, pin ?? undefined);
 };
 
 export const renameProfile = (id: string, name: string): Promise<void> => updateProfile(id, { name });

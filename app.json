@@ -63,9 +63,15 @@
         "./plugins/withAppCategory",
         "productivity"
       ],
+      "./plugins/withAndroidBackup",
       "expo-asset",
       "onnxruntime-react-native",
-      "expo-secure-store",
+      [
+        "expo-secure-store",
+        {
+          "configureAndroidBackup": false
+        }
+      ],
       "expo-share-intent",
       [
         "react-native-android-widget",
