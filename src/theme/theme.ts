@@ -160,15 +160,15 @@ const fonts = {
 
 export const NoteText = customText<NoteVariant>();
 
-// Corner radii by hierarchy (M3 shape roles). See docs/prompts/material-redesign.md Phase 0.
+// Corner radii. Controls and small labels are pills; surfaces are rounded rectangles; FABs (the bold element) keep M3's 16.
 export const shape = {
   extraSmall: 4, // inline code
-  small: 8, // chips, images, code blocks
+  small: 8, // images, code blocks, pressed task rows
   segment: 4, // inner corners of a list group
   group: 20, // outer corners of a list group
-  fab: 16,
-  extraLarge: 28, // dialogs, sheets
-  full: 999, // search bar, buttons
+  fab: 16, // Paper's AnimatedFAB hardcodes this
+  extraLarge: 28, // dialogs, sheets, tiles
+  full: 999, // search bar, buttons, chips, labels
 };
 
 // Segmented list: large outer corners on the group, small inner corners between rows.

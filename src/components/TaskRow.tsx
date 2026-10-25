@@ -78,7 +78,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     alignSelf: 'flex-start',
     gap: space.xs,
-    borderRadius: shape.small,
+    borderRadius: shape.full,
     paddingHorizontal: space.sm,
     paddingVertical: 2,
     marginTop: space.xs,

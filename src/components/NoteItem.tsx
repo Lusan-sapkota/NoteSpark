@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   label: {
-    borderRadius: shape.small,
+    borderRadius: shape.full,
     paddingHorizontal: space.sm,
     paddingVertical: 2,
     marginRight: space.sm,

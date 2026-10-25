@@ -15,7 +15,7 @@ import Header, { useHeaderElevation } from '../components/Header';
 import NoteItem from '../components/NoteItem';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { space } from '../theme/theme';
+import { shape, space } from '../theme/theme';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
@@ -344,7 +344,7 @@ const HomeScreen: React.FC = () => {
                 showSelectedOverlay={false}
                 onPress={() => setFilter(f.value)}
                 accessibilityState={{ selected: filter === f.value }}
-                style={filter === f.value && { backgroundColor: theme.colors.secondaryContainer }}
+                style={[styles.chipShape, filter === f.value && { backgroundColor: theme.colors.secondaryContainer }]}
                 textStyle={[
                   theme.fonts.labelMedium,
                   styles.chipText,
@@ -451,6 +451,9 @@ const styles = StyleSheet.create({
   // Equal widths across the row.
   chip: {
     flex: 1,
+  },
+  chipShape: {
+    borderRadius: shape.full,
   },
   chipText: {
     flex: 1,
