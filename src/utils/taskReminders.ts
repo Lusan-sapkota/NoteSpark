@@ -1,11 +1,25 @@
-// Reminders for tasks with a due date: one notification per profile and day, at REMIND_HOUR on the due date.
+// Reminders for tasks with a due date: one notification per profile and day, at the chosen hour on the due date.
 // Scheduled on the phone (no push); recomputed from the notes whenever Home loads.
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Notifications } from './notifications';
 import { extractTasks } from './tasks';
 import { getProfiles, hasProfilePin, readProfileNotes } from '../storage/profiles';
 import { Note } from '../types';
 
-export const REMIND_HOUR = 9;
+const HOUR_KEY = 'reminderHour';
+export const REMINDER_HOURS = [7, 8, 9, 12, 17, 20];
+
+export const getReminderHour = async (): Promise<number> => {
+  const hour = Number(await AsyncStorage.getItem(HOUR_KEY).catch(() => null));
+  return REMINDER_HOURS.includes(hour) ? hour : 9;
+};
+
+export const setReminderHour = async (hour: number): Promise<void> => {
+  await AsyncStorage.setItem(HOUR_KEY, String(hour));
+  await syncTaskReminders();
+};
+
+export const formatHour = (hour: number) => new Date(2000, 0, 1, hour).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const DAYS_AHEAD = 30; // keeps well under Android's limit on scheduled alarms
 const ID_PREFIX = 'task-';
 
@@ -26,17 +40,17 @@ interface ProfileTasks {
 const list = (texts: string[]) =>
   texts.length <= 3 ? texts.join(', ') : `${texts.slice(0, 3).join(', ')} and ${texts.length - 3} more`;
 
-export const buildReminders = (profiles: ProfileTasks[], now = new Date()): Reminder[] => {
+export const buildReminders = (profiles: ProfileTasks[], hour = 9, now = new Date()): Reminder[] => {
   const latest = now.getTime() + DAYS_AHEAD * 86400000;
   const reminders: Reminder[] = [];
   for (const profile of profiles) {
     const byDay = new Map<string, string[]>();
     profile.notes
       .filter(n => !n.isArchived)
-      .flatMap(extractTasks)
+      .flatMap(n => extractTasks(n))
       .forEach(t => t.due && byDay.set(t.due, [...(byDay.get(t.due) ?? []), t.text]));
     for (const [due, texts] of byDay) {
-      const date = new Date(`${due}T${String(REMIND_HOUR).padStart(2, '0')}:00`);
+      const date = new Date(`${due}T${String(hour).padStart(2, '0')}:00`);
       if (isNaN(date.getTime()) || date.getTime() <= now.getTime() || date.getTime() > latest) continue;
       const where = profiles.length > 1 ? ` in ${profile.name}` : '';
       reminders.push({
@@ -70,7 +84,7 @@ export const syncTaskReminders = async (): Promise<void> => {
       })
     )
   ).filter((p): p is ProfileTasks => p !== null);
-  const reminders = buildReminders(profiles);
+  const reminders = buildReminders(profiles, await getReminderHour());
   const key = JSON.stringify(reminders.map(r => [r.id, r.date.getTime(), r.title, r.body]));
   if (key === lastScheduled) return;
   for (const request of await Notifications.getAllScheduledNotificationsAsync()) {

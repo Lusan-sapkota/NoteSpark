@@ -231,6 +231,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
                 key={node.key}
                 done={marker === DONE}
                 due={tasks[index] && splitDue(tasks[index].text).due}
+                every={tasks[index] && splitDue(tasks[index].text).every}
                 onPress={onToggleTask && (() => onToggleTask(index))}
               >
                 {children}

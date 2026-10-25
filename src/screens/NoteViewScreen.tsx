@@ -7,7 +7,7 @@ import { ActivityIndicator, Appbar, Button, Dialog, Divider, FAB, Icon, List, Po
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
-import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
+import { findTaskLines, formatDue, splitDue, toggleTaskLine } from '../utils/tasks';
 import { extractTags } from '../utils/tags';
 import { findNoteByTitle, linksTo, noteLinkPattern } from '../utils/noteLinks';
 import { shareNoteAsMarkdown } from '../utils/exportNotes';
@@ -144,6 +144,7 @@ const NoteViewScreen: React.FC = () => {
     setNote(updated);
     try {
       await updateNote(updated, { keepVersion: false });
+      if (result.next) setSnackbar(`Next due ${formatDue(result.next)}`);
     } catch (error) {
       setNote(note);
       alert("Couldn't update the task", 'Try again. If it keeps failing, restart the app.');
@@ -224,9 +225,9 @@ const NoteViewScreen: React.FC = () => {
       const taskIndex = tasks.findIndex(t => t.line === lineIdx);
       if (taskIndex >= 0) {
         const task = tasks[taskIndex];
-        const { text, due } = splitDue(task.text);
+        const { text, due, every } = splitDue(task.text);
         return (
-          <TaskRow key={`line-${lineIdx}`} done={task.done} due={due} onPress={() => handleToggleTask(taskIndex)}>
+          <TaskRow key={`line-${lineIdx}`} done={task.done} due={due} every={every} onPress={() => handleToggleTask(taskIndex)}>
             <NoteText
               variant="noteBody"
               style={{ color: theme.colors.onSurface, textDecorationLine: task.done ? 'line-through' : 'none' }}

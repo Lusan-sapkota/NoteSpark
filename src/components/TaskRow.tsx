@@ -3,17 +3,18 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
 import { shape, space } from '../theme/theme';
-import { dueLabel, today } from '../utils/tasks';
+import { dueLabel, Repeat, repeatLabel, today } from '../utils/tasks';
 
 interface TaskRowProps {
   done: boolean;
   due?: string;
+  every?: Repeat;
   onPress?: () => void;
   children: React.ReactNode;
 }
 
 // A checkbox line in a note. The whole row ticks it.
-const TaskRow: React.FC<TaskRowProps> = ({ done, due, onPress, children }) => {
+const TaskRow: React.FC<TaskRowProps> = ({ done, due, every, onPress, children }) => {
   const { theme } = useTheme();
   const overdue = !done && !!due && due < today();
   return (
@@ -33,15 +34,15 @@ const TaskRow: React.FC<TaskRowProps> = ({ done, due, onPress, children }) => {
       </View>
       <View style={[styles.content, done && styles.done]}>
         {children}
-        {!!due && (
+        {(!!due || !!every) && (
           <View style={[styles.due, { backgroundColor: overdue ? theme.colors.errorContainer : theme.colors.surfaceContainerHigh }]}>
-            <Icon source="calendar-blank-outline" size={14} color={overdue ? theme.colors.onErrorContainer : theme.colors.onSurfaceVariant} />
+            <Icon source={every ? 'calendar-sync-outline' : 'calendar-blank-outline'} size={14} color={overdue ? theme.colors.onErrorContainer : theme.colors.onSurfaceVariant} />
             <Text
               variant="labelMedium"
               maxFontSizeMultiplier={1.5}
               style={{ color: overdue ? theme.colors.onErrorContainer : theme.colors.onSurfaceVariant }}
             >
-              {done ? dueLabel(due).replace('Overdue, due', 'Due') : dueLabel(due)}
+              {[due && (done ? dueLabel(due).replace('Overdue, due', 'Due') : dueLabel(due)), every && repeatLabel(every)].filter(Boolean).join(', ')}
             </Text>
           </View>
         )}

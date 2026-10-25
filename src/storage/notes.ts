@@ -193,12 +193,23 @@ export const setNoteArchived = changesNotes(async (id: number, archived: boolean
   );
 });
 
-export const toggleTaskInNote = async (noteId: number, task: Pick<TaskLine, 'line' | 'raw'>): Promise<string | null> => {
+// The line as written now, and the next due date if the task repeats; null if the line changed meanwhile.
+export const toggleTaskInNote = async (noteId: number, task: Pick<TaskLine, 'line' | 'raw'>): Promise<{ raw: string; next?: string } | null> => {
   const note = await getNoteById(noteId);
   const result = note && toggleTaskLine(note.content, task);
   if (!note || !result) return null;
   await updateNote({ ...note, content: result.content }, { keepVersion: false });
-  return result.raw;
+  return { raw: result.raw, next: result.next };
+};
+
+// Undo for a tick: puts the line back as it was, if it's still as the tick left it.
+export const restoreTaskLine = async (noteId: number, line: number, current: string, previous: string): Promise<boolean> => {
+  const note = await getNoteById(noteId);
+  const lines = note?.content.split('\n');
+  if (!note || !lines || lines[line] !== current) return false;
+  lines[line] = previous;
+  await updateNote({ ...note, content: lines.join('\n') }, { keepVersion: false });
+  return true;
 };
 
 // Returns the deletion time, which marks this batch for restoreBatch.

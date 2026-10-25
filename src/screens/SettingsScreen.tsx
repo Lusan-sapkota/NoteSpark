@@ -2,10 +2,11 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { StyleSheet, View, ScrollView } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Dialog, Icon, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
+import { Button, Dialog, Icon, IconButton, List, RadioButton, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
-import { deleteProfileForever, eraseForgottenProfile, getActiveProfile, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
+import { formatHour, getReminderHour, REMINDER_HOURS, setReminderHour } from '../utils/taskReminders';
+import { AUTO_LOCK_MINUTES, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { BIN_DAYS } from '../storage/database';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
@@ -42,6 +43,10 @@ const SettingsScreen: React.FC = () => {
   const [protectedProfileIds, setProtectedProfileIds] = useState<string[]>([]);
   const [fingerprintProfileIds, setFingerprintProfileIds] = useState<string[]>([]);
   const [menuFor, setMenuFor] = useState<string | null>(null);
+  const [reminderHour, setReminderHourState] = useState(9);
+  const [autoLock, setAutoLock] = useState(1);
+  // A pick-one dialog (reminder time, auto-lock); kept after closing so it doesn't change while fading.
+  const [choice, setChoice] = useState<{ title: string; options: { label: string; value: number }[]; value: number; onPick: (value: number) => void; open: boolean } | null>(null);
   // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ profile: Profile; name: string; open: boolean } | null>(null);
   const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; mode: 'unlock' | 'makeDefault' | 'delete'; open: boolean } | null>(null);
@@ -60,7 +65,33 @@ const SettingsScreen: React.FC = () => {
       (await Promise.all(list.map(async profile => ((await test(profile.id)) ? profile.id : null)))).filter((id): id is string => id !== null);
     setProtectedProfileIds(await idsWhere(hasProfilePin));
     setFingerprintProfileIds(await idsWhere(usesBiometrics));
+    setReminderHourState(await getReminderHour());
+    setAutoLock(await getAutoLockMinutes());
   }, []);
+
+  const lockLabel = (minutes: number) => (minutes === 0 ? 'Right away' : `After ${minutes} minute${minutes === 1 ? '' : 's'}`);
+  const pickReminderHour = () =>
+    setChoice({
+      title: 'Reminder time',
+      options: REMINDER_HOURS.map(h => ({ label: formatHour(h), value: h })),
+      value: reminderHour,
+      onPick: hour => {
+        setReminderHourState(hour);
+        setReminderHour(hour).catch(() => alert("Couldn't update reminders", 'Try again. If it keeps failing, restart the app.'));
+      },
+      open: true,
+    });
+  const pickAutoLock = () =>
+    setChoice({
+      title: 'Lock again when away',
+      options: AUTO_LOCK_MINUTES.map(m => ({ label: lockLabel(m), value: m })),
+      value: autoLock,
+      onPick: minutes => {
+        setAutoLock(minutes);
+        setAutoLockMinutes(minutes).catch(() => {});
+      },
+      open: true,
+    });
 
   useFocusEffect(useCallback(() => { loadProfiles().catch(() => {}); }, [loadProfiles]));
 
@@ -403,8 +434,19 @@ const SettingsScreen: React.FC = () => {
             }
             onPress={() => navigation.navigate('ProfileLock')}
             isFirst={false}
-            isLast
+            isLast={protectedProfileIds.length === 0}
           />
+          {protectedProfileIds.length > 0 && (
+            <GroupedRow
+              title="Lock again when away"
+              description={`${lockLabel(autoLock)} in the background, ask for the PIN`}
+              icon="lock-clock"
+              right={chevron}
+              onPress={pickAutoLock}
+              isFirst={false}
+              isLast
+            />
+          )}
 
           {binnedProfiles.length > 0 && sectionTitle('Deleted profiles')}
           {binnedProfiles.map((p, i) => (
@@ -423,6 +465,17 @@ const SettingsScreen: React.FC = () => {
               isLast={i === binnedProfiles.length - 1}
             />
           ))}
+
+          {sectionTitle('Tasks')}
+          <GroupedRow
+            title="Reminder time"
+            description={`${formatHour(reminderHour)} on the day a task is due`}
+            icon="bell-outline"
+            right={chevron}
+            onPress={pickReminderHour}
+            isFirst
+            isLast
+          />
 
           {sectionTitle('Your notes')}
           <GroupedRow
@@ -512,6 +565,23 @@ const SettingsScreen: React.FC = () => {
             <Button onPress={handleRename} disabled={!nameDialog?.name.trim()}>Rename</Button>
           </Dialog.Actions>
         </Dialog>
+        <Dialog visible={!!choice?.open} onDismiss={() => setChoice(c => c && { ...c, open: false })}>
+          <Dialog.Title>{choice?.title}</Dialog.Title>
+          <Dialog.ScrollArea style={styles.choiceList}>
+            <RadioButton.Group
+              value={String(choice?.value)}
+              onValueChange={value => {
+                choice?.onPick(Number(value));
+                setChoice(c => c && { ...c, value: Number(value), open: false });
+              }}
+            >
+              {choice?.options.map(o => <RadioButton.Item key={o.value} label={o.label} value={String(o.value)} />)}
+            </RadioButton.Group>
+          </Dialog.ScrollArea>
+          <Dialog.Actions>
+            <Button onPress={() => setChoice(c => c && { ...c, open: false })}>Cancel</Button>
+          </Dialog.Actions>
+        </Dialog>
         <Dialog visible={!!pinDialog?.open} onDismiss={closePinDialog}>
           <Dialog.Title>{pinTitle}</Dialog.Title>
           <Dialog.Content>
@@ -553,6 +623,9 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: readingWidth,
     alignSelf: 'center',
+  },
+  choiceList: {
+    paddingHorizontal: 0,
   },
   rowActions: {
     flexDirection: 'row',

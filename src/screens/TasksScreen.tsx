@@ -4,11 +4,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
+import { Appbar, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import { RootStackParamList } from '../types';
-import { getNotes, toggleTaskInNote } from '../storage/notes';
-import { dueLabel, extractTasks, Task, today as getToday } from '../utils/tasks';
+import { getNotes, restoreTaskLine, toggleTaskInNote } from '../storage/notes';
+import { dueLabel, extractTasks, formatDue, repeatLabel, Task, today as getToday } from '../utils/tasks';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -21,7 +21,9 @@ type Row =
   | { kind: 'task'; key: string; task: Task; isFirst: boolean; isLast: boolean };
 
 // Flat list of section headers and task rows, so the list keeps its spring layout animation.
-const buildRows = (tasks: Task[], sortBy: 'due' | 'note', today: string): Row[] => {
+// Done tasks (when shown) get their own section by due date, and follow the open ones by note.
+const buildRows = (all: Task[], sortBy: 'due' | 'note', today: string): Row[] => {
+  const tasks = sortBy === 'due' ? all.filter(t => !t.done) : all;
   const rows: Row[] = [];
   const addSection = (header: Omit<Extract<Row, { kind: 'header' }>, 'kind'>, items: Task[]) => {
     if (!items.length) return;
@@ -36,10 +38,11 @@ const buildRows = (tasks: Task[], sortBy: 'due' | 'note', today: string): Row[] 
     addSection({ key: 'today', title: 'Today' }, byDue.filter(t => t.due === today));
     addSection({ key: 'upcoming', title: 'Upcoming' }, byDue.filter(t => t.due && t.due > today));
     addSection({ key: 'none', title: 'No due date' }, byDue.filter(t => !t.due));
+    addSection({ key: 'done', title: 'Done' }, all.filter(t => t.done));
   } else {
     const notes = new Map<number, Task[]>();
     [...tasks]
-      .sort((a, b) => b.noteUpdatedAt.localeCompare(a.noteUpdatedAt) || a.noteId - b.noteId || a.line - b.line)
+      .sort((a, b) => b.noteUpdatedAt.localeCompare(a.noteUpdatedAt) || a.noteId - b.noteId || Number(a.done) - Number(b.done) || a.line - b.line)
       .forEach(t => notes.set(t.noteId, [...(notes.get(t.noteId) ?? []), t]));
     notes.forEach((items, noteId) =>
       addSection({ key: `note:${noteId}`, title: items[0].noteTitle || 'Untitled note', noteId }, items)
@@ -55,17 +58,19 @@ const TasksScreen: React.FC = () => {
   const alert = useAlert();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sortBy, setSortBy] = useState<'due' | 'note'>('due');
-  const [lastDone, setLastDone] = useState<Task | null>(null);
+  const [showDone, setShowDone] = useState(false);
+  // The last tick, for Undo: the task as it was, the line as the tick left it, and a repeating task's next date.
+  const [lastDone, setLastDone] = useState<{ task: Task; raw: string; next?: string } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
     try {
       const notes = await getNotes();
-      setTasks(notes.filter(n => !n.isArchived).flatMap(extractTasks));
+      setTasks(notes.filter(n => !n.isArchived).flatMap(n => extractTasks(n, { done: showDone })));
     } catch {
       alert("Couldn't load tasks", 'Pull down on the list to try again.');
     }
-  }, [alert]);
+  }, [alert, showDone]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -78,17 +83,30 @@ const TasksScreen: React.FC = () => {
   const today = getToday();
   const rows = useMemo(() => buildRows(tasks, sortBy, today), [tasks, sortBy, today]);
 
-  // Ticking keeps the ticked line in lastDone, so Undo can clear it again.
-  const toggle = async (task: Task, undo = false) => {
+  const toggle = async (task: Task) => {
     try {
-      const raw = await toggleTaskInNote(task.noteId, task);
-      if (raw == null) {
+      const result = await toggleTaskInNote(task.noteId, task);
+      if (!result) {
         alert('This task changed', 'Its note was edited. The list has been refreshed.');
       } else {
-        setLastDone(undo ? null : { ...task, raw });
+        setLastDone(task.done ? null : { task, ...result });
       }
     } catch {
       alert("Couldn't update the task", 'Try again. If it keeps failing, restart the app.');
+    }
+    load();
+  };
+
+  const undoLastDone = async () => {
+    if (!lastDone) return;
+    const { task, raw } = lastDone;
+    setLastDone(null);
+    try {
+      if (!(await restoreTaskLine(task.noteId, task.line, raw, task.raw))) {
+        alert("Couldn't undo", 'The note was edited since. Open it to change the task.');
+      }
+    } catch {
+      alert("Couldn't undo", 'Try again. If it keeps failing, restart the app.');
     }
     load();
   };
@@ -113,7 +131,10 @@ const TasksScreen: React.FC = () => {
       );
     }
     const { task } = item;
-    const overdue = !!task.due && task.due < today;
+    const overdue = !task.done && !!task.due && task.due < today;
+    const dueText = [task.due && (overdue || !task.done ? dueLabel(task.due, today) : `Due ${formatDue(task.due)}`), task.every && repeatLabel(task.every)]
+      .filter(Boolean)
+      .join(', ');
     return (
       <View
         style={[
@@ -126,7 +147,7 @@ const TasksScreen: React.FC = () => {
           title={task.text}
           titleNumberOfLines={4}
           description={
-            sortBy === 'note' && !task.due
+            sortBy === 'note' && !dueText
               ? undefined
               : () => (
                   <View>
@@ -135,15 +156,16 @@ const TasksScreen: React.FC = () => {
                         {task.noteTitle || 'Untitled note'}
                       </Text>
                     )}
-                    {task.due && (
+                    {!!dueText && (
                       <Text variant="bodySmall" style={{ color: overdue ? theme.colors.error : theme.colors.onSurfaceVariant }}>
-                        {dueLabel(task.due, today)}
+                        {dueText}
                       </Text>
                     )}
                   </View>
                 )
           }
-          left={props => <List.Icon {...props} icon="checkbox-blank-outline" color={theme.colors.onSurfaceVariant} />}
+          titleStyle={task.done && styles.doneTitle}
+          left={props => <List.Icon {...props} icon={task.done ? 'checkbox-marked' : 'checkbox-blank-outline'} color={theme.colors.onSurfaceVariant} />}
           right={
             sortBy === 'due'
               ? () => (
@@ -157,8 +179,8 @@ const TasksScreen: React.FC = () => {
           }
           onPress={() => toggle(task)}
           accessibilityRole="checkbox"
-          accessibilityState={{ checked: false }}
-          accessibilityHint="Marks the task done in its note"
+          accessibilityState={{ checked: task.done }}
+          accessibilityHint={task.done ? 'Marks the task not done in its note' : 'Marks the task done in its note'}
         />
       </View>
     );
@@ -166,7 +188,20 @@ const TasksScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-      <Header elevated={elevated} title="Tasks" showBackButton onBackPress={() => navigation.goBack()} />
+      <Header
+        elevated={elevated}
+        title="Tasks"
+        showBackButton
+        onBackPress={() => navigation.goBack()}
+        rightActions={
+          <Appbar.Action
+            icon={showDone ? 'checkbox-marked-outline' : 'checkbox-blank-off-outline'}
+            selected={showDone}
+            onPress={() => setShowDone(v => !v)}
+            accessibilityLabel={showDone ? 'Hide done tasks' : 'Show done tasks'}
+          />
+        }
+      />
       <Animated.FlatList
         data={rows}
         keyExtractor={r => r.key}
@@ -197,7 +232,7 @@ const TasksScreen: React.FC = () => {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>No open tasks</Text>
+            <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{showDone ? 'No tasks yet' : 'No open tasks'}</Text>
             <Text variant="bodyMedium" style={[styles.emptyBody, { color: theme.colors.onSurfaceVariant }]}>
               Start a line in any note with "- [ ] " to add a task. Add "due:2026-11-01" to give it a due date.
             </Text>
@@ -208,9 +243,9 @@ const TasksScreen: React.FC = () => {
         visible={!!lastDone}
         onDismiss={() => setLastDone(null)}
         duration={4000}
-        action={{ label: 'Undo', onPress: () => lastDone && toggle(lastDone, true) }}
+        action={{ label: 'Undo', onPress: undoLastDone }}
       >
-        Task done
+        {lastDone?.next ? `Next due ${formatDue(lastDone.next)}` : 'Task done'}
       </Snackbar>
     </SafeAreaView>
   );
@@ -245,6 +280,9 @@ const styles = StyleSheet.create({
   },
   gap: {
     marginBottom: 2,
+  },
+  doneTitle: {
+    textDecorationLine: 'line-through',
   },
   empty: {
     paddingHorizontal: space.xs,
