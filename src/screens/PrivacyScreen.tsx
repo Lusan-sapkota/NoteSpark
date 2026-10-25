@@ -30,6 +30,7 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
     bullets: [
       "If you add an image from a web address to a note, it's downloaded from that website the first time you view the note, then kept on your phone so it shows offline, even if the website removes it. A saved copy is deleted once no note uses it and it hasn't been viewed for 30 days.",
       'When you export or share notes, the file goes only where you choose in the share sheet.',
+      "Android's own backup: if backup is turned on in your phone's settings, Android may copy NoteSpark's data, including your notes, to your Google account, so it can be restored on a new phone. This is a feature of Android that you control in your phone's settings; NoteSpark doesn't send anything itself.",
     ],
   },
   {
@@ -46,7 +47,7 @@ const sections: { heading: string; intro?: string; bullets?: string[]; outro?: s
     bullets: [
       'Move a note to the bin from its menu, or every note from Settings. Notes in the bin are erased for good 30 days later, or straight away if you delete them forever or empty the bin in Settings, under Bin.',
       'Export a copy of your notes at any time in Settings, under Import and export.',
-      "Uninstalling NoteSpark deletes all of its data from your device. The developer has no copy, so deleted notes can't be recovered unless you exported them.",
+      "Uninstalling NoteSpark deletes all of its data from your device. The developer has no copy, so deleted notes can't be recovered unless you exported them or Android's backup restores them.",
     ],
   },
   {
