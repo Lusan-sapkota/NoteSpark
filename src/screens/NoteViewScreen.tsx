@@ -1,9 +1,10 @@
 import React, { useState, useCallback } from 'react';
-import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking } from 'react-native';
+import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Appbar, FAB, ProgressBar, Snackbar, Text } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Divider, FAB, Icon, ProgressBar, Snackbar, Text } from 'react-native-paper';
+import Menu from '../components/Menu';
 import { getNoteById, deleteNote, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
 import { Note } from '../types';
@@ -64,6 +65,15 @@ const NoteViewScreen: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
   const [snackbar, setSnackbar] = useState('');
+  const [menuVisible, setMenuVisible] = useState(false);
+  // The top bar shows the title only once the big title has scrolled under it.
+  const [titleBottom, setTitleBottom] = useState(0);
+  const [titleInBar, setTitleInBar] = useState(false);
+
+  const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    onScroll(e);
+    setTitleInBar(e.nativeEvent.contentOffset.y > titleBottom);
+  };
 
   const handleCopyAll = () => {
     if (note) {
@@ -211,25 +221,71 @@ const NoteViewScreen: React.FC = () => {
   const taskLines = findTaskLines(content);
   const doneCount = taskLines.filter(t => t.done).length;
 
+  const infoLabel = (icon: string, label: string) => (
+    <View style={[styles.info, { backgroundColor: theme.colors.surfaceContainerHigh }]}>
+      <Icon source={icon} size={16} color={theme.colors.onSurfaceVariant} />
+      <Text variant="labelMedium" maxFontSizeMultiplier={1.5} style={{ color: theme.colors.onSurfaceVariant }}>
+        {label}
+      </Text>
+    </View>
+  );
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right']}>
-      <Header elevated={elevated} title={note.title} showBackButton onBackPress={goBack} />
+      <Header
+        elevated={elevated}
+        title={titleInBar ? note.title : ''}
+        showBackButton
+        onBackPress={goBack}
+        rightActions={
+          <>
+            <Appbar.Action
+              icon={note.isPinned ? 'pin' : 'pin-outline'}
+              onPress={handlePinToggle}
+              accessibilityLabel={note.isPinned ? 'Unpin note' : 'Pin note'}
+            />
+            <Appbar.Action icon="content-copy" onPress={handleCopyAll} accessibilityLabel="Copy note text" />
+            <Menu
+              visible={menuVisible}
+              onDismiss={() => setMenuVisible(false)}
+              anchor={<Appbar.Action icon="dots-vertical" onPress={() => setMenuVisible(true)} accessibilityLabel="More options" />}
+            >
+              {!!note.isMarkdown && (
+                <Menu.Item
+                  leadingIcon={showRaw ? 'language-markdown' : 'format-text'}
+                  title={showRaw ? 'Show formatted text' : 'Show plain text'}
+                  onPress={() => { setMenuVisible(false); setShowRaw(v => !v); }}
+                />
+              )}
+              <Menu.Item
+                leadingIcon="delete-outline"
+                title="Delete note"
+                titleStyle={{ color: theme.colors.error }}
+                onPress={() => { setMenuVisible(false); handleDelete(); }}
+              />
+            </Menu>
+          </>
+        }
+      />
       <ScrollView
         style={styles.container}
-        contentContainerStyle={styles.scrollContent}
-        onScroll={onScroll}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 96 + insets.bottom }]}
+        onScroll={handleScroll}
         scrollEventThrottle={16}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={reloadNote} tintColor={theme.colors.primary} colors={[theme.colors.primary]} />
         }
       >
         <View style={styles.column}>
-          <NoteText variant="noteTitle" style={{ color: theme.colors.onSurface }} selectable>
-            {note.title}
-          </NoteText>
-          <Text variant="bodySmall" style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}>
-            Edited {formatDate(note.updatedAt)}
-          </Text>
+          <View onLayout={e => setTitleBottom(e.nativeEvent.layout.y + e.nativeEvent.layout.height)}>
+            <NoteText variant="noteTitle" style={{ color: theme.colors.onSurface }} selectable>
+              {note.title}
+            </NoteText>
+          </View>
+          <View style={styles.infoRow}>
+            {note.isMarkdown ? infoLabel('language-markdown', 'Markdown') : infoLabel('text', 'Text')}
+            {infoLabel('pencil-outline', `Edited ${formatDate(note.updatedAt)}`)}
+          </View>
           {taskLines.length > 0 && (
             <View style={styles.progress}>
               <ProgressBar
@@ -242,8 +298,9 @@ const NoteViewScreen: React.FC = () => {
               </Text>
             </View>
           )}
+          <Divider style={styles.divider} />
 
-          <View style={styles.body}>
+          <View>
             {note.isMarkdown ? (
               showRaw ? (
                 <NoteText variant="noteBody" style={{ color: theme.colors.onSurface }} selectable selectionColor={theme.colors.primary}>
@@ -260,24 +317,13 @@ const NoteViewScreen: React.FC = () => {
         </View>
       </ScrollView>
 
-      <Appbar style={{ backgroundColor: theme.colors.surfaceContainer }} safeAreaInsets={{ bottom: insets.bottom }}>
-        <Appbar.Action icon="content-copy" onPress={handleCopyAll} accessibilityLabel="Copy note text" />
-        {!!note.isMarkdown && (
-          <Appbar.Action
-            icon={showRaw ? 'language-markdown' : 'format-text'}
-            onPress={() => setShowRaw(v => !v)}
-            accessibilityLabel={showRaw ? 'Show formatted text' : 'Show plain text'}
-          />
-        )}
-        <Appbar.Action icon="delete-outline" onPress={handleDelete} accessibilityLabel="Delete note" />
-        <Appbar.Action
-          icon={note.isPinned ? 'pin' : 'pin-outline'}
-          onPress={handlePinToggle}
-          accessibilityLabel={note.isPinned ? 'Unpin note' : 'Pin note'}
-        />
-        <View style={styles.container} />
-        <FAB icon="pencil-outline" label="Edit" mode="flat" onPress={handleEdit} accessibilityLabel="Edit note" style={styles.fab} />
-      </Appbar>
+      <FAB
+        icon="pencil-outline"
+        label="Edit"
+        onPress={handleEdit}
+        accessibilityLabel="Edit note"
+        style={[styles.fab, { bottom: space.lg + insets.bottom }]}
+      />
 
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={2000} wrapperStyle={{ bottom: 80 + insets.bottom }}>
         {snackbar}
@@ -305,8 +351,19 @@ const styles = StyleSheet.create({
     maxWidth: readingWidth,
     alignSelf: 'center',
   },
-  meta: {
-    marginTop: space.sm,
+  infoRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    marginTop: space.md,
+  },
+  info: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.xs,
+    borderRadius: shape.small,
+    paddingHorizontal: space.sm,
+    paddingVertical: space.xs,
   },
   progress: {
     flexDirection: 'row',
@@ -319,11 +376,12 @@ const styles = StyleSheet.create({
     height: 4,
     borderRadius: shape.full,
   },
-  body: {
-    marginTop: space.xl,
+  divider: {
+    marginVertical: space.lg,
   },
   fab: {
-    marginRight: space.sm,
+    position: 'absolute',
+    right: space.lg,
   },
 });
 
