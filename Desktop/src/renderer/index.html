@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self' data:; connect-src 'self'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NoteSpark</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header><h1>NoteSpark</h1><div id="modes" role="group" aria-label="Theme"></div></header>
+    <main>
+      <p class="meta">Desktop foundations</p>
+      <h2 class="note-title">A note, set in Literata</h2>
+      <p class="note-body">Closing the window keeps NoteSpark in the tray. This page only shows the Firefly theme: colors from the shared tokens, Literata for note text and Figtree for the interface.</p>
+      <div class="chips"><span class="chip">tag</span><button id="new">New note</button></div>
+      <div id="swatches"></div>
+    </main>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

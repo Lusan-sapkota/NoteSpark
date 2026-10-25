@@ -1,0 +1,23 @@
+@font-face { font-family: Figtree; font-weight: 400; src: url('../../../Mobile/assets/fonts/Figtree-Regular.ttf'); }
+@font-face { font-family: Figtree; font-weight: 500; src: url('../../../Mobile/assets/fonts/Figtree-Medium.ttf'); }
+@font-face { font-family: Figtree; font-weight: 600; src: url('../../../Mobile/assets/fonts/Figtree-SemiBold.ttf'); }
+@font-face { font-family: Literata; font-weight: 400; src: url('../../../Mobile/assets/fonts/Literata-Regular.ttf'); }
+@font-face { font-family: Literata; font-weight: 400; font-style: italic; src: url('../../../Mobile/assets/fonts/Literata-Italic.ttf'); }
+@font-face { font-family: Literata; font-weight: 600; src: url('../../../Mobile/assets/fonts/Literata-SemiBold.ttf'); }
+
+/* Colors come from the shared Firefly tokens (main.ts sets the --md-* variables). */
+body { margin: 0; background: var(--md-background); color: var(--md-onBackground); font: 400 16px/24px Figtree, sans-serif; }
+header { display: flex; align-items: center; justify-content: space-between; padding: 8px 16px; min-height: 56px; background: var(--md-surfaceContainer); }
+h1 { font: 600 22px/28px Figtree; margin: 0; }
+main { max-width: 680px; padding: 24px 16px; }
+.meta { font-size: 12px; line-height: 16px; color: var(--md-onSurfaceVariant); margin: 0 0 8px; }
+.note-title { font: 600 26px/34px Literata, serif; margin: 0 0 12px; }
+.note-body { font: 400 17px/28px Literata, serif; margin: 0 0 24px; }
+.chips { display: flex; gap: 12px; align-items: center; margin-bottom: 24px; }
+.chip { font: 500 12px/16px Figtree; padding: 6px 12px; border-radius: 8px; background: var(--md-tertiaryContainer); color: var(--md-onTertiaryContainer); }
+button { font: 500 14px/20px Figtree; min-height: 40px; padding: 0 20px; border: 0; border-radius: 12px; cursor: pointer; background: var(--md-primary); color: var(--md-onPrimary); }
+#modes button { background: transparent; color: var(--md-onSurfaceVariant); min-height: 36px; padding: 0 12px; }
+#modes button[aria-pressed='true'] { background: var(--md-secondaryContainer); color: var(--md-onSecondaryContainer); }
+button:focus-visible { outline: 2px solid var(--md-primary); outline-offset: 2px; }
+#swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+#swatches div { padding: 8px; border-radius: 8px; font-size: 12px; line-height: 16px; background: var(--bg); color: var(--fg); border: 1px solid var(--md-outlineVariant); }

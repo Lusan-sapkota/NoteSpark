@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2023",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2023", "DOM"],
+    "types": ["vite/client"],
+    "noEmit": true,
+    "skipLibCheck": true,
+    "paths": { "@notespark/core": ["../packages/core/src/index.ts"] }
+  },
+  "include": ["src", "electron.vite.config.ts", "../packages/core/src"]
+}
