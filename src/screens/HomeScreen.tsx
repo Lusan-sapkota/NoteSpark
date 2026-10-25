@@ -635,7 +635,7 @@ const HomeScreen: React.FC = () => {
       {selecting ? (
         <Appbar.Header mode="small" elevated>
           <Appbar.Action icon="close" accessibilityLabel="Cancel selection" onPress={clearSelection} />
-          <Appbar.Content title={`${selectedIds.length} selected`} />
+          <Appbar.Content title={String(selectedIds.length)} accessibilityLabel={`${selectedIds.length} selected`} />
           <Appbar.Action
             icon={selectedNotes.some(n => !n.isPinned) ? 'pin-outline' : 'pin-off-outline'}
             accessibilityLabel={selectedNotes.some(n => !n.isPinned) ? 'Pin selected notes' : 'Unpin selected notes'}
