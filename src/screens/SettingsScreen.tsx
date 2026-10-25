@@ -5,7 +5,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, moveAllNotesToBin, restoreBatch } from '../storage/notes';
-import { addProfile, deleteProfile, getActiveProfile, getProfiles, Profile, renameProfile, switchProfile, verifyProfilePin } from '../storage/profiles';
+import { addProfile, deleteProfile, getActiveProfile, getProfiles, hasProfilePin, Profile, renameProfile, setProfilePin, switchProfile, verifyProfilePin } from '../storage/profiles';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
@@ -27,9 +27,10 @@ const SettingsScreen: React.FC = () => {
   const [snackbar, setSnackbar] = useState('');
   const [undoBatch, setUndoBatch] = useState<string | null>(null);
   const [activeId, setActiveId] = useState('');
+  const [protectedProfileIds, setProtectedProfileIds] = useState<string[]>([]);
   // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ editing: Profile | null; name: string; pin: string; pinConfirmation: string; open: boolean } | null>(null);
-  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; open: boolean } | null>(null);
+  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; pinConfirmation: string; mode: 'unlock' | 'manage'; open: boolean } | null>(null);
   const closeNameDialog = () => setNameDialog(d => d && { ...d, open: false });
   const closePinDialog = () => setPinDialog(d => d && { ...d, open: false });
 
@@ -37,6 +38,7 @@ const SettingsScreen: React.FC = () => {
     const [list, active] = await Promise.all([getProfiles(), getActiveProfile()]);
     setProfiles(list);
     setActiveId(active.id);
+    setProtectedProfileIds((await Promise.all(list.map(async profile => (await hasProfilePin(profile.id)) ? profile.id : null))).filter((id): id is string => id !== null));
   }, []);
 
   useFocusEffect(useCallback(() => { loadProfiles().catch(() => {}); }, [loadProfiles]));
@@ -50,8 +52,8 @@ const SettingsScreen: React.FC = () => {
     try {
       if (nameDialog.editing) await renameProfile(nameDialog.editing.id, name);
       else {
-        if (!nameDialog.pin || nameDialog.pin !== nameDialog.pinConfirmation || !/^\d{4}$/.test(nameDialog.pin)) return;
-        await addProfile(name, nameDialog.pin);
+        if ((nameDialog.pin || nameDialog.pinConfirmation) && (nameDialog.pin !== nameDialog.pinConfirmation || !/^\d{4}$/.test(nameDialog.pin))) return;
+        await addProfile(name, nameDialog.pin || undefined);
       }
       closeNameDialog();
       await loadProfiles();
@@ -60,11 +62,54 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
+  const openPinManager = (profile: Profile) => {
+    setPinDialog({ profile, pin: '', pinConfirmation: '', mode: 'manage', open: true });
+  };
+
+  const handleSavePin = async () => {
+    if (!pinDialog || pinDialog.mode !== 'manage') return;
+    if (pinDialog.pin.length !== 4 || pinDialog.pin !== pinDialog.pinConfirmation) return;
+    try {
+      await setProfilePin(pinDialog.profile.id, pinDialog.pin);
+      closePinDialog();
+      await loadProfiles();
+      setSnackbar(`PIN set for ${pinDialog.profile.name}`);
+    } catch (error) {
+      alert("Couldn't save the PIN", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
+  const handleResetPin = () => {
+    if (!pinDialog || pinDialog.mode !== 'manage') return;
+    const profile = pinDialog.profile;
+    alert(
+      'Reset profile PIN?',
+      `${profile.name} will no longer require a PIN when you switch to it.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Reset PIN',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await setProfilePin(profile.id, null);
+              closePinDialog();
+              await loadProfiles();
+              setSnackbar(`PIN reset for ${profile.name}`);
+            } catch (error) {
+              alert("Couldn't reset the PIN", 'Try again. If it keeps failing, restart the app.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleSwitch = async (profile: Profile, pin?: string) => {
     if (profile.id === activeId) return;
     try {
       if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
-        setPinDialog({ profile, pin: '', open: true });
+        setPinDialog({ profile, pin: '', pinConfirmation: '', mode: 'unlock', open: true });
         return;
       }
       const enteredPin = pin ?? '';
@@ -197,6 +242,11 @@ const SettingsScreen: React.FC = () => {
                     accessibilityLabel={`Rename ${p.name}`}
                     onPress={() => setNameDialog({ editing: p, name: p.name, pin: '', pinConfirmation: '', open: true })}
                   />
+                  <IconButton
+                    icon={protectedProfileIds.includes(p.id) ? 'lock-outline' : 'lock-open-outline'}
+                    accessibilityLabel={protectedProfileIds.includes(p.id) ? `Change or reset PIN for ${p.name}` : `Set PIN for ${p.name}`}
+                    onPress={() => openPinManager(p)}
+                  />
                   {p.id !== activeId && (
                     <IconButton
                       icon="delete-outline"
@@ -304,7 +354,7 @@ const SettingsScreen: React.FC = () => {
               <>
                 <TextInput
                   mode="outlined"
-                  label="Four-digit PIN"
+                  label="Four-digit PIN (optional)"
                   value={nameDialog?.pin ?? ''}
                   onChangeText={pin => setNameDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
                   keyboardType="number-pad"
@@ -326,15 +376,19 @@ const SettingsScreen: React.FC = () => {
           </Dialog.Content>
           <Dialog.Actions>
             <Button onPress={closeNameDialog}>Cancel</Button>
-            <Button onPress={handleSaveName} disabled={!nameDialog?.name.trim() || (!nameDialog?.editing && ((nameDialog?.pin.length ?? 0) !== 4 || nameDialog?.pin !== nameDialog?.pinConfirmation))}>
+            <Button onPress={handleSaveName} disabled={!nameDialog?.name.trim() || (!nameDialog?.editing && (!!nameDialog?.pin || !!nameDialog?.pinConfirmation) && ((nameDialog.pin?.length ?? 0) !== 4 || nameDialog.pin !== nameDialog.pinConfirmation))}>
               {nameDialog?.editing ? 'Rename' : 'Add profile'}
             </Button>
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={!!pinDialog?.open} onDismiss={closePinDialog}>
-          <Dialog.Title>Enter profile PIN</Dialog.Title>
+          <Dialog.Title>{pinDialog?.mode === 'manage' ? (protectedProfileIds.includes(pinDialog.profile.id) ? 'Change profile PIN' : 'Set profile PIN') : 'Enter profile PIN'}</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">Enter the four-digit PIN for {pinDialog?.profile.name}.</Text>
+            <Text variant="bodyMedium">
+              {pinDialog?.mode === 'manage'
+                ? 'A PIN is optional. Leave this dialog open to set or change it.'
+                : `Enter the four-digit PIN for ${pinDialog?.profile.name}.`}
+            </Text>
             <TextInput
               mode="outlined"
               label="PIN"
@@ -343,13 +397,28 @@ const SettingsScreen: React.FC = () => {
               keyboardType="number-pad"
               secureTextEntry
               autoFocus
-              onSubmitEditing={() => pinDialog && handleSwitch(pinDialog.profile, pinDialog.pin)}
+              onSubmitEditing={() => pinDialog && (pinDialog.mode === 'manage' ? handleSavePin() : handleSwitch(pinDialog.profile, pinDialog.pin))}
               style={styles.dialogInput}
             />
+            {pinDialog?.mode === 'manage' && (
+              <TextInput
+                mode="outlined"
+                label="Confirm PIN"
+                value={pinDialog.pinConfirmation}
+                onChangeText={pinConfirmation => setPinDialog(d => d && { ...d, pinConfirmation: pinConfirmation.replace(/\D/g, '').slice(0, 4) })}
+                keyboardType="number-pad"
+                secureTextEntry
+                onSubmitEditing={handleSavePin}
+                style={styles.dialogInput}
+              />
+            )}
           </Dialog.Content>
           <Dialog.Actions>
+            {pinDialog?.mode === 'manage' && protectedProfileIds.includes(pinDialog.profile.id) && <Button onPress={handleResetPin} textColor={theme.colors.error}>Reset PIN</Button>}
             <Button onPress={closePinDialog}>Cancel</Button>
-            <Button onPress={() => pinDialog && handleSwitch(pinDialog.profile, pinDialog.pin)} disabled={pinDialog?.pin.length !== 4}>Unlock</Button>
+            {pinDialog?.mode === 'manage'
+              ? <Button onPress={handleSavePin} disabled={pinDialog.pin.length !== 4 || pinDialog.pin !== pinDialog.pinConfirmation}>Save PIN</Button>
+              : <Button onPress={() => pinDialog && handleSwitch(pinDialog.profile, pinDialog.pin)} disabled={pinDialog?.pin.length !== 4}>Unlock</Button>}
           </Dialog.Actions>
         </Dialog>
       </KeyboardSafePortal>
