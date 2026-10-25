@@ -8,7 +8,7 @@ import Menu from '../components/Menu';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types';
-import { getNotes, getNotesVersion, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
+import { clearDraft, getDraft, getNotes, getNotesVersion, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
 import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
@@ -90,6 +90,19 @@ const HomeScreen: React.FC = () => {
       alert("Couldn't load notes", 'Pull down on the list to try again.');
     }
   };
+
+  // Text left unsaved when the app was last closed (see getDraft): offer it back once per start.
+  useEffect(() => {
+    (async () => {
+      const [draft, active] = await Promise.all([getDraft(), getActiveProfile()]);
+      if (!draft || draft.profileId !== active.id) return;
+      const name = draft.title.trim() || 'a new note';
+      alert('Keep your unsaved changes?', `NoteSpark closed before your changes to ${draft.title.trim() ? `"${name}"` : name} were saved.`, [
+        { text: 'Discard', style: 'destructive', onPress: () => clearDraft() },
+        { text: 'Open', onPress: () => navigation.navigate('Editor', { noteId: draft.noteId, draft: true }) },
+      ], { cancelable: false });
+    })().catch(() => {});
+  }, []);
 
   useEffect(() => {
     loadNotes();

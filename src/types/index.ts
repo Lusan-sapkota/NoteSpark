@@ -23,7 +23,8 @@ export type RootStackParamList = {
   // binnedNoteId: set by the note page after moving a note to the bin; tag: a tag tapped on the note page.
   Home: { binnedNoteId?: number; tag?: string } | undefined;
   // title / text: prefill for a new note (from a [[link]], or text shared from another app).
-  Editor: { noteId?: string; title?: string; text?: string } | undefined;
+  // draft: reopen the unsaved text kept by the editor (see getDraft).
+  Editor: { noteId?: string; title?: string; text?: string; draft?: boolean } | undefined;
   NoteView: { noteId: string } | undefined;
   Settings: { message?: string } | undefined; // message: snackbar after the profile form closes
   ProfileLock: { profileId?: string } | undefined; // no id: new profile

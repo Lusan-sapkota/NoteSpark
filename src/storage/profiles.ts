@@ -386,7 +386,9 @@ export const getAllProfilesNoteContents = async (): Promise<string[]> => {
       const db = await openProfileConnection(profile.id, { useNewConnection: true });
       try {
         const rows = await db.getAllAsync<{ content: string }>('SELECT content FROM notes');
-        rows.forEach(r => contents.push(String(r.content ?? '')));
+        // Versions can be restored, so their images count as used too (older databases may lack the table).
+        const versions = await db.getAllAsync<{ content: string }>('SELECT content FROM note_versions').catch(() => []);
+        [...rows, ...versions].forEach(r => contents.push(String(r.content ?? '')));
       } finally {
         await db.closeAsync();
       }

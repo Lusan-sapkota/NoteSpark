@@ -12,11 +12,14 @@ import { StyleSheet, View, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import * as ImagePicker from 'expo-image-picker';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, usePreventRemove, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, IconButton, List, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import { Note, RootStackParamList } from '../types';
-import { getNoteById, getNotes, saveNote, updateNote } from '../storage/notes';
+import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, saveNote, updateNote } from '../storage/notes';
+import { getActiveProfile } from '../storage/profiles';
+import { keepDeviceImage } from '../utils/imageCache';
+import { addDays, setLineDue } from '../utils/tasks';
 import { sendAppNotification } from '../utils/notifications';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -35,6 +38,30 @@ const TOOLBAR_HEIGHT = 56;
 const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
+// A note saved without a title is named after its first line of text.
+const titleFromText = (text: string) =>
+  (text.split('\n').map(line => line.replace(/!?\[[^\]]*\]\([^)]*\)|\[Image: [^\]]*\]|^\s*(?:#+|>|[-*+]|\d+[.)])?\s*(?:\[[ xX]\]\s*)?/g, '').trim()).find(Boolean) ?? '').slice(0, 60);
+
+// Enter on a list line starts the next item ("- ", "- [ ] ", "2. "); Enter on an empty item ends the list.
+// Null when the change wasn't one typed line break.
+export const continueList = (prev: string, next: string, cursor: number): { text: string; cursor: number } | null => {
+  if (next.length !== prev.length + 1) return null;
+  let end = 0;
+  while (end < prev.length && prev[end] === next[end]) end++;
+  if (next[end] !== '\n' || next.slice(end + 1) !== prev.slice(end)) return null;
+  // A break typed beside other breaks could be at any of them: the cursor's if it's there, else the first.
+  let start = end;
+  while (start > 0 && prev[start - 1] === '\n') start--;
+  const at = cursor >= start && cursor <= end ? cursor : start;
+  const lineStart = at === 0 ? 0 : prev.lastIndexOf('\n', at - 1) + 1;
+  const m = /^(\s*)(?:([-*+])( \[[ xX]\])?|(\d+)([.)])) (.*)$/.exec(prev.slice(lineStart, at));
+  if (!m) return null;
+  const [, indent, bullet, box, num, delim, rest] = m;
+  if (!rest.trim()) return { text: prev.slice(0, lineStart) + prev.slice(at), cursor: lineStart };
+  const marker = `${indent}${bullet ? `${bullet}${box ? ' [ ]' : ''}` : `${Number(num) + 1}${delim}`} `;
+  return { text: `${prev.slice(0, at)}\n${marker}${prev.slice(at)}`, cursor: at + 1 + marker.length };
+};
+
 const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
   const route = useRoute<EditorScreenRouteProp>();
@@ -43,7 +70,7 @@ const EditorScreen: React.FC = () => {
   const alert = useAlert();
   const [saving, setSaving] = useState(false);
 
-  const { noteId, title: titleParam, text: textParam } = route.params ?? {};
+  const { noteId, title: titleParam, text: textParam, draft: fromDraft } = route.params ?? {};
 
   const [title, setTitle] = useState<string>('');
   const [content, setContent] = useState<string>('');
@@ -67,28 +94,44 @@ const EditorScreen: React.FC = () => {
   const committed = useRef('');
   // "Link a note" picker: inserts [[Title]] at the cursor.
   const [notePicker, setNotePicker] = useState<{ query: string; notes: Note[] } | null>(null);
+  const [showDueDialog, setShowDueDialog] = useState(false);
+  // The note as last loaded or saved; anything different is unsaved and kept as a draft.
+  const [saved, setSaved] = useState({ title: '', content: '', isMarkdown: false });
+  const [loaded, setLoaded] = useState(false);
+  // Only the editor that wrote (or reopened) the draft clears it; another editor opening mustn't erase it.
+  const ownsDraft = useRef(!!fromDraft);
+  const isDirty = loaded && (title !== saved.title || content !== saved.content || isMarkdown !== saved.isMarkdown);
+
+  // Shows `text` as the starting point; a reopened draft goes on top of it, still unsaved.
+  const showLoaded = async (start: { title: string; content: string; isMarkdown: boolean }) => {
+    setSaved(start);
+    const draft = fromDraft ? await getDraft() : null;
+    const shown = draft && draft.noteId === noteId ? draft : start;
+    setTitle(shown.title);
+    setContent(shown.content);
+    setIsMarkdown(shown.isMarkdown);
+    committed.current = shown.content;
+    setUndoStack({ past: [], future: [] });
+    setLoaded(true);
+  };
 
   useEffect(() => {
     if (!noteId) {
       setIsEditing(false);
-      setTitle(titleParam ?? '');
-      setContent(textParam ?? '');
-      committed.current = textParam ?? '';
-      setIsMarkdown(false);
       setCreatedAt(null);
       setUpdatedAt(null);
+      showLoaded({ title: '', content: '', isMarkdown: false }).then(() => {
+        // Prefilled text (a [[link]] or a share) counts as unsaved.
+        if (titleParam) setTitle(titleParam);
+        if (textParam) setContent(textParam);
+      });
       return;
     }
     const loadNote = async () => {
       try {
         const note = await getNoteById(Number(noteId));
         if (note) {
-          setTitle(typeof note.title === 'string' ? note.title : String(note.title));
-          const loaded = Array.isArray(note.content) ? note.content.join('\n') : typeof note.content === 'string' ? note.content : String(note.content);
-          setContent(loaded);
-          committed.current = loaded;
-          setUndoStack({ past: [], future: [] });
-          setIsMarkdown(!!note.isMarkdown);
+          await showLoaded({ title: String(note.title), content: String(note.content), isMarkdown: !!note.isMarkdown });
           setIsEditing(true);
           setCreatedAt(note.createdAt);
           setUpdatedAt(note.updatedAt);
@@ -103,25 +146,54 @@ const EditorScreen: React.FC = () => {
     loadNote();
   }, [noteId, titleParam, textParam]);
 
-  const handleSave = async () => {
-    if (saving) return;
-    if (!title.trim()) {
-      alert('Add a title', 'Notes need a title before you can save them.');
+  // Keeps unsaved text as a draft a second after typing stops; Home offers it back after a restart.
+  useEffect(() => {
+    if (!loaded) return;
+    if (!isDirty) {
+      if (ownsDraft.current) clearDraft();
       return;
     }
+    const timer = setTimeout(async () => {
+      const profile = await getActiveProfile().catch(() => null);
+      ownsDraft.current = true;
+      if (profile) saveDraft({ profileId: profile.id, noteId, title, content, isMarkdown });
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, [loaded, isDirty, title, content, isMarkdown]);
+
+  // Back with unsaved changes asks first.
+  usePreventRemove(isDirty && !saving, ({ data }) => {
+    alert('Save your changes?', "This note has changes that aren't saved yet.", [
+      { text: 'Keep editing', style: 'cancel' },
+      { text: 'Discard', style: 'destructive', onPress: () => { clearDraft(); setSaved({ title, content, isMarkdown }); setTimeout(() => navigation.dispatch(data.action), 0); } },
+      { text: 'Save', onPress: () => handleSave(() => navigation.dispatch(data.action)) },
+    ]);
+  });
+
+  // `then` replaces going back (used when leaving was asked for another way).
+  const handleSave = async (then?: () => void) => {
+    if (saving) return;
+    // An empty new note has nothing to save.
+    if (!isEditing && !title.trim() && !content.trim()) {
+      setSaved({ title, content, isMarkdown });
+      setTimeout(() => (then ? then() : navigation.goBack()), 0);
+      return;
+    }
+    // No title: the first line of text, or else the date and time.
+    const noteTitle = title.trim() ? title : titleFromText(content) || formatDate(new Date().toISOString());
     setSaving(true);
     try {
       if (isEditing && noteId) {
         await updateNote({
           id: Number(noteId),
-          title,
+          title: noteTitle,
           content,
           isMarkdown
         });
       } else {
         const now = new Date().toISOString();
         await saveNote({
-          title,
+          title: noteTitle,
           content,
           isMarkdown,
           createdAt: now,
@@ -134,9 +206,12 @@ const EditorScreen: React.FC = () => {
           }
         } catch (e) {}
       }
+      clearDraft();
+      setTitle(noteTitle);
+      setSaved({ title: noteTitle, content, isMarkdown });
       setTimeout(() => {
         setSaving(false);
-        navigation.goBack();
+        then ? then() : navigation.goBack();
       }, 120);
     } catch (error) {
       setSaving(false);
@@ -213,14 +288,34 @@ const EditorScreen: React.FC = () => {
     setPendingSelection({ start: end, end });
   };
 
+  // Sets the due date of the line the cursor is on (making it a task); null removes it.
+  const setDue = (due: string | null) => {
+    setShowDueDialog(false);
+    const lineStart = content.lastIndexOf('\n', selection.start - 1) + 1;
+    const lineEnd = content.indexOf('\n', selection.start) < 0 ? content.length : content.indexOf('\n', selection.start);
+    const line = setLineDue(content.slice(lineStart, lineEnd), due);
+    setContent(content.slice(0, lineStart) + line + content.slice(lineEnd));
+    setPendingSelection({ start: lineStart + line.length, end: lineStart + line.length });
+  };
+
+  const handleChangeText = (text: string) => {
+    const list = continueList(convertImagesToLinks(content, isMarkdown), text, selection.start);
+    setContent(list ? list.text : text);
+    if (list) setPendingSelection({ start: list.cursor, end: list.cursor });
+  };
+
   const handleAddImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.7,
     });
     if (!result.canceled && result.assets?.[0]?.uri) {
-      const uri = result.assets[0].uri;
-      insert(isMarkdown ? `![Image](${uri})` : `[Image: ${uri}]`);
+      try {
+        const uri = await keepDeviceImage(result.assets[0].uri);
+        insert(isMarkdown ? `![Image](${uri})` : `[Image: ${uri}]`);
+      } catch {
+        alert("Couldn't add the image", 'Your phone may be low on storage. Free some space and try again.');
+      }
     }
   };
 
@@ -257,7 +352,7 @@ const EditorScreen: React.FC = () => {
           showBackButton
           onBackPress={() => navigation.goBack()}
           rightActions={
-            <Button mode="contained" onPress={handleSave} theme={controlTheme} loading={saving} disabled={saving} style={styles.save}>
+            <Button mode="contained" onPress={() => handleSave()} theme={controlTheme} loading={saving} disabled={saving} style={styles.save}>
               Save
             </Button>
           }
@@ -320,7 +415,7 @@ const EditorScreen: React.FC = () => {
                 ref={bodyRef}
                 style={[styles.contentInput, theme.fonts.noteBody, { color: theme.colors.onSurface }]}
                 value={convertImagesToLinks(content, isMarkdown)}
-                onChangeText={setContent}
+                onChangeText={handleChangeText}
                 multiline
                 textAlignVertical="top"
                 selectionColor={theme.colors.primary}
@@ -352,6 +447,8 @@ const EditorScreen: React.FC = () => {
                   <IconButton icon="link-variant" onPress={() => setShowLinkDialog(true)} accessibilityLabel="Add link" />
                 </>
               )}
+              <IconButton icon="checkbox-marked-outline" onPress={() => prefixLines('- [ ] ')} accessibilityLabel="Task" />
+              <IconButton icon="calendar-outline" onPress={() => setShowDueDialog(true)} accessibilityLabel="Due date" />
               <IconButton icon="note-multiple-outline" onPress={openNotePicker} accessibilityLabel="Link a note" />
               <IconButton icon="image-outline" onPress={handleAddImage} accessibilityLabel="Add image" />
               <IconButton
@@ -384,6 +481,23 @@ const EditorScreen: React.FC = () => {
             <Dialog.Actions>
               <Button onPress={() => setShowLinkDialog(false)}>Cancel</Button>
               <Button onPress={handleInsertLink} disabled={!linkUrl.trim()}>Add link</Button>
+            </Dialog.Actions>
+          </Dialog>
+          <Dialog visible={showDueDialog} onDismiss={() => setShowDueDialog(false)}>
+            <Dialog.Title>Due date</Dialog.Title>
+            <Dialog.Content>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
+                For the task on the cursor's line. You can also type a date like due:{addDays(3)}.
+              </Text>
+            </Dialog.Content>
+            <Dialog.ScrollArea style={styles.dueList}>
+              <List.Item title="Today" left={props => <List.Icon {...props} icon="calendar-today" />} onPress={() => setDue(addDays(0))} />
+              <List.Item title="Tomorrow" left={props => <List.Icon {...props} icon="calendar-arrow-right" />} onPress={() => setDue(addDays(1))} />
+              <List.Item title="Next week" left={props => <List.Icon {...props} icon="calendar-week" />} onPress={() => setDue(addDays(7))} />
+              <List.Item title="No due date" left={props => <List.Icon {...props} icon="calendar-remove-outline" />} onPress={() => setDue(null)} />
+            </Dialog.ScrollArea>
+            <Dialog.Actions>
+              <Button onPress={() => setShowDueDialog(false)}>Cancel</Button>
             </Dialog.Actions>
           </Dialog>
           <Dialog visible={!!notePicker} onDismiss={() => setNotePicker(null)}>
@@ -469,6 +583,9 @@ const styles = StyleSheet.create({
   },
   dialogContent: {
     gap: space.md,
+  },
+  dueList: {
+    paddingHorizontal: 0,
   },
 });
 

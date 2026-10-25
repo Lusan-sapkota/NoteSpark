@@ -1,4 +1,5 @@
 // All note reads and writes. database.ts only opens the database and runs migrations.
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './database';
 import { Note, NoteVersion } from '../types';
 import { TaskLine, toggleTaskLine } from '../utils/tasks';
@@ -58,6 +59,26 @@ export const getNoteById = async (id: number): Promise<Note | null> => {
     throw error;
   }
 };
+
+// The editor keeps unsaved text here while typing, so it survives the app being closed in the background.
+export interface EditorDraft {
+  profileId: string;
+  noteId?: string; // none for a new note
+  title: string;
+  content: string;
+  isMarkdown: boolean;
+}
+const DRAFT_KEY = 'editorDraft';
+
+export const getDraft = async (): Promise<EditorDraft | null> => {
+  try {
+    return JSON.parse((await AsyncStorage.getItem(DRAFT_KEY)) ?? 'null');
+  } catch {
+    return null;
+  }
+};
+export const saveDraft = (draft: EditorDraft) => AsyncStorage.setItem(DRAFT_KEY, JSON.stringify(draft)).catch(() => {});
+export const clearDraft = () => AsyncStorage.removeItem(DRAFT_KEY).catch(() => {});
 
 export const saveNote = changesNotes(async (note: Omit<Note, 'id' | 'isPinned' | 'isArchived'>): Promise<number> => {
   const now = new Date().toISOString();

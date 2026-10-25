@@ -94,10 +94,33 @@ const getCachedImage = (url: string): Promise<Result> => {
 const forgetCachedImage = (url: string) =>
   FileSystem.deleteAsync(CACHE_DIR + fileNameFor(url), { idempotent: true }).catch(() => {});
 
+// Images picked from the phone are copied here: the picker's own copy sits in the OS cache, which Android may clear.
+const DEVICE_DIR = `${FileSystem.documentDirectory}note-images/`;
+
+export const keepDeviceImage = async (uri: string): Promise<string> => {
+  await FileSystem.makeDirectoryAsync(DEVICE_DIR, { intermediates: true }).catch(() => {});
+  const ext = uri.match(/\.(png|jpe?g|gif|webp|heic)$/i)?.[1]?.toLowerCase() ?? 'jpg';
+  const path = `${DEVICE_DIR}${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}.${ext}`;
+  await FileSystem.copyAsync({ from: uri, to: path });
+  return path;
+};
+
+// Removes copied phone images no note or version mentions. A week's grace keeps images in unsaved drafts.
+const pruneDeviceImages = async (allText: string) => {
+  for (const name of await FileSystem.readDirectoryAsync(DEVICE_DIR).catch(() => [] as string[])) {
+    if (allText.includes(name)) continue;
+    const info = await FileSystem.getInfoAsync(DEVICE_DIR + name);
+    if (info.exists && Date.now() - info.modificationTime * 1000 > 7 * DAY_MS) {
+      await FileSystem.deleteAsync(DEVICE_DIR + name, { idempotent: true });
+    }
+  }
+};
+
 // Called once at app start with every note's text. Keeps any image a note still uses; removes the rest
 // once unviewed for 30 days, plus leftover partial downloads.
 export const pruneImageCache = async (noteContents: string[]) => {
   try {
+    await pruneDeviceImages(noteContents.join('\n'));
     const used = new Set<string>();
     for (const content of noteContents) {
       for (const m of content.matchAll(/!\[[^\]]*\]\(([^)\s]+)[^)]*\)|\[Image: ([^\]]+)\]/g)) {

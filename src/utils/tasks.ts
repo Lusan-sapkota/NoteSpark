@@ -29,9 +29,13 @@ export const splitDue = (text: string): { text: string; due?: string } => {
 };
 
 const pad = (n: number) => String(n).padStart(2, '0');
-export const today = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+export const today = () => dayKey(new Date());
+// YYYY-MM-DD `days` after `from` (a YYYY-MM-DD, default today).
+export const addDays = (days: number, from = today()) => {
+  const d = new Date(`${from}T00:00`);
+  d.setDate(d.getDate() + days);
+  return dayKey(d);
 };
 
 export const formatDue = (due: string) => {
@@ -67,7 +71,14 @@ export const extractTasks = (note: Note): Task[] =>
       ...splitDue(t.text),
     }));
 
-export const toggleTaskLine = (content: string, task: Pick<TaskLine, 'line' | 'raw'>): { content: string; raw: string } | null => {
+// Sets (or with null, removes) a line's due date, turning the line into a task first if it isn't one.
+export const setLineDue = (line: string, due: string | null): string => {
+  const base = line.replace(new RegExp(`\\s*${dueDate.source}`), '').trimEnd();
+  const task = taskLine.test(`${base} `) ? base : base.replace(/^(\s*)(?:[-*+]\s+)?/, '$1- [ ] ').trimEnd();
+  return due ? `${task} due:${due}` : task;
+};
+
+export const toggleTaskLine =(content: string, task: Pick<TaskLine, 'line' | 'raw'>): { content: string; raw: string } | null => {
   const lines = content.split('\n');
   if (lines[task.line] !== task.raw || !taskLine.test(task.raw)) return null;
   const raw = task.raw.replace(taskLine, (_, lead, box, rest) => `${lead}[${box === ' ' ? 'x' : ' '}]${rest}`);
