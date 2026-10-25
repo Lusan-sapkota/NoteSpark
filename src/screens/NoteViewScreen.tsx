@@ -3,12 +3,13 @@ import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking } from
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Appbar, FAB, Snackbar, Text } from 'react-native-paper';
-import { getNoteById, deleteNote, updateNote } from '../storage/notes';
-import { findTaskLines, toggleTaskLine } from '../utils/tasks';
+import { ActivityIndicator, Appbar, FAB, ProgressBar, Snackbar, Text } from 'react-native-paper';
+import { getNoteById, deleteNote, setNotePinned, updateNote } from '../storage/notes';
+import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
 import { Note } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import TaskRow from '../components/TaskRow';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -30,10 +31,16 @@ const getPlainText = (markdown: string) =>
     .replace(/\n{2,}/g, '\n') // extra newlines
     .trim();
 
+// "today, 12:49 PM", "yesterday, …", "Oct 25, 12:49 PM", with the year only when it isn't this year.
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return '';
-  return date.toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(date).setHours(0, 0, 0, 0)) / 86400000);
+  if (days === 0) return `today, ${time}`;
+  if (days === 1) return `yesterday, ${time}`;
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  return `${date.toLocaleDateString([], { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) })}, ${time}`;
 };
 
 const linkRegex = /(https?:\/\/[^\s)]+|www\.[^\s)]+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}\b)/g;
@@ -121,13 +128,41 @@ const NoteViewScreen: React.FC = () => {
     }
   };
 
+  const handlePinToggle = async () => {
+    if (!note) return;
+    setNote({ ...note, isPinned: !note.isPinned });
+    try {
+      await setNotePinned(note.id, !note.isPinned);
+      setSnackbar(note.isPinned ? 'Note unpinned' : 'Note pinned');
+    } catch (error) {
+      setNote(note);
+      alert("Couldn't pin the note", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
   const handleEdit = () => {
     navigation.navigate('Editor', { noteId: note!.id });
   };
 
-  // Plain notes: render each line, turning URLs into links that ask before opening.
-  const renderPlainText = (content: string) =>
-    content.replace(/\[Image: ([^\]]+)\]/g, '').split(/\r?\n/).map((line, lineIdx) => {
+  // Plain notes: render each line, turning URLs into links that ask before opening. Task lines become checkboxes.
+  const renderPlainText = (content: string) => {
+    const tasks = findTaskLines(content);
+    return content.replace(/\[Image: ([^\]]+)\]/g, '').split(/\r?\n/).map((line, lineIdx) => {
+      const taskIndex = tasks.findIndex(t => t.line === lineIdx);
+      if (taskIndex >= 0) {
+        const task = tasks[taskIndex];
+        const { text, due } = splitDue(task.text);
+        return (
+          <TaskRow key={`line-${lineIdx}`} done={task.done} due={due} onPress={() => handleToggleTask(taskIndex)}>
+            <NoteText
+              variant="noteBody"
+              style={{ color: theme.colors.onSurface, textDecorationLine: task.done ? 'line-through' : 'none' }}
+            >
+              {text}
+            </NoteText>
+          </TaskRow>
+        );
+      }
       const parts: React.ReactNode[] = [];
       let lastIndex = 0;
       for (const match of line.matchAll(linkRegex)) {
@@ -157,6 +192,7 @@ const NoteViewScreen: React.FC = () => {
         </NoteText>
       );
     });
+  };
 
   const goBack = () => navigation.goBack();
 
@@ -172,6 +208,8 @@ const NoteViewScreen: React.FC = () => {
   }
 
   const content = String(note.content ?? '');
+  const taskLines = findTaskLines(content);
+  const doneCount = taskLines.filter(t => t.done).length;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right']}>
@@ -189,21 +227,21 @@ const NoteViewScreen: React.FC = () => {
           <NoteText variant="noteTitle" style={{ color: theme.colors.onSurface }} selectable>
             {note.title}
           </NoteText>
-          <View style={styles.meta}>
-            {!!note.isMarkdown && (
-              <View style={[styles.label, { backgroundColor: theme.colors.tertiaryContainer }]}>
-                <Text variant="labelSmall" maxFontSizeMultiplier={1.5} style={{ color: theme.colors.onTertiaryContainer }}>
-                  Markdown
-                </Text>
-              </View>
-            )}
-            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              Created {formatDate(note.createdAt)}
-            </Text>
-          </View>
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+          <Text variant="bodySmall" style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}>
             Edited {formatDate(note.updatedAt)}
           </Text>
+          {taskLines.length > 0 && (
+            <View style={styles.progress}>
+              <ProgressBar
+                progress={doneCount / taskLines.length}
+                color={theme.colors.secondary}
+                style={[styles.progressBar, { backgroundColor: theme.colors.surfaceContainerHighest }]}
+              />
+              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                {doneCount} of {taskLines.length} done
+              </Text>
+            </View>
+          )}
 
           <View style={styles.body}>
             {note.isMarkdown ? (
@@ -232,6 +270,11 @@ const NoteViewScreen: React.FC = () => {
           />
         )}
         <Appbar.Action icon="delete-outline" onPress={handleDelete} accessibilityLabel="Delete note" />
+        <Appbar.Action
+          icon={note.isPinned ? 'pin' : 'pin-outline'}
+          onPress={handlePinToggle}
+          accessibilityLabel={note.isPinned ? 'Unpin note' : 'Pin note'}
+        />
         <View style={styles.container} />
         <FAB icon="pencil-outline" label="Edit" mode="flat" onPress={handleEdit} accessibilityLabel="Edit note" style={styles.fab} />
       </Appbar>
@@ -263,16 +306,18 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: space.sm,
     marginTop: space.sm,
   },
-  label: {
-    borderRadius: shape.small,
-    paddingHorizontal: space.sm,
-    paddingVertical: 2,
+  progress: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: space.md,
+    marginTop: space.md,
+  },
+  progressBar: {
+    width: 96,
+    height: 4,
+    borderRadius: shape.full,
   },
   body: {
     marginTop: space.xl,

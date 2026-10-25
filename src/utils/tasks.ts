@@ -22,6 +22,27 @@ const taskLine = /^(\s*(?:[-*+]|\d+[.)])\s+)\[( |x|X)\](\s+[^\n]*)$/;
 const dueDate = /(?:due:|📅\s*)(\d{4}-\d{2}-\d{2})/;
 const fence = /^\s*(```|~~~)/;
 
+// The task text without its due date, and the date (YYYY-MM-DD).
+export const splitDue = (text: string): { text: string; due?: string } => {
+  const due = dueDate.exec(text)?.[1];
+  return { text: due ? text.replace(dueDate, '').replace(/\s{2,}/g, ' ').trim() || text : text, due };
+};
+
+const pad = (n: number) => String(n).padStart(2, '0');
+export const today = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+};
+
+export const formatDue = (due: string) => {
+  const date = new Date(`${due}T00:00`);
+  const sameYear = date.getFullYear() === new Date().getFullYear();
+  return date.toLocaleDateString([], { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) });
+};
+
+export const dueLabel = (due: string, now = today()) =>
+  due < now ? `Overdue, due ${formatDue(due)}` : due === now ? 'Due today' : `Due ${formatDue(due)}`;
+
 export const findTaskLines = (content: string): TaskLine[] => {
   const tasks: TaskLine[] = [];
   let inFence = false;
@@ -43,8 +64,7 @@ export const extractTasks = (note: Note): Task[] =>
       noteUpdatedAt: note.updatedAt,
       line: t.line,
       raw: t.raw,
-      text: t.text.replace(dueDate, '').trim() || t.text,
-      due: dueDate.exec(t.text)?.[1],
+      ...splitDue(t.text),
     }));
 
 export const toggleTaskLine = (content: string, task: Pick<TaskLine, 'line' | 'raw'>): { content: string; raw: string } | null => {
@@ -55,10 +75,14 @@ export const toggleTaskLine = (content: string, task: Pick<TaskLine, 'line' | 'r
   return { content: lines.join('\n'), raw };
 };
 
-export const markTaskBoxes = (content: string): string => {
+// Rewrites each task line for display; `lead` is its indent and list marker. Line count is unchanged.
+export const mapTaskLines = (content: string, fn: (task: TaskLine, lead: string) => string): string => {
   const lines = content.split('\n');
   findTaskLines(content).forEach(t => {
-    lines[t.line] = t.raw.replace(taskLine, (_, lead, box, rest) => `${lead}${box === ' ' ? '☐' : '☑'}${rest}`);
+    lines[t.line] = fn(t, taskLine.exec(t.raw)![1]);
   });
   return lines.join('\n');
 };
+
+export const markTaskBoxes = (content: string): string =>
+  mapTaskLines(content, (t, lead) => `${lead}${t.done ? '☑' : '☐'} ${splitDue(t.text).text}`);

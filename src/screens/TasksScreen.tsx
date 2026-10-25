@@ -7,7 +7,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { IconButton, List, SegmentedButtons, Snackbar, Text } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { getNotes, toggleTaskInNote } from '../storage/notes';
-import { extractTasks, Task } from '../utils/tasks';
+import { dueLabel, extractTasks, Task, today as getToday } from '../utils/tasks';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -15,14 +15,38 @@ import { groupCorners, readingWidth, space } from '../theme/theme';
 
 type TasksScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Tasks'>;
 
-const pad = (n: number) => String(n).padStart(2, '0');
-const today = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-};
-const formatDue = (due: string) => new Date(`${due}T00:00`).toLocaleDateString([], { dateStyle: 'medium' });
+type Row =
+  | { kind: 'header'; key: string; title: string; noteId?: number; tone?: 'error' }
+  | { kind: 'task'; key: string; task: Task; isFirst: boolean; isLast: boolean };
 
-// Every open checkbox from every note. Ticking one writes "[x]" back into its note.
+// Flat list of section headers and task rows, so the list keeps its spring layout animation.
+const buildRows = (tasks: Task[], sortBy: 'due' | 'note', today: string): Row[] => {
+  const rows: Row[] = [];
+  const addSection = (header: Omit<Extract<Row, { kind: 'header' }>, 'kind'>, items: Task[]) => {
+    if (!items.length) return;
+    rows.push({ kind: 'header', ...header });
+    items.forEach((task, i) =>
+      rows.push({ kind: 'task', key: `${task.noteId}:${task.line}`, task, isFirst: i === 0, isLast: i === items.length - 1 })
+    );
+  };
+  if (sortBy === 'due') {
+    const byDue = [...tasks].sort((a, b) => (a.due ?? '').localeCompare(b.due ?? '') || a.noteId - b.noteId || a.line - b.line);
+    addSection({ key: 'overdue', title: 'Overdue', tone: 'error' }, byDue.filter(t => t.due && t.due < today));
+    addSection({ key: 'today', title: 'Today' }, byDue.filter(t => t.due === today));
+    addSection({ key: 'upcoming', title: 'Upcoming' }, byDue.filter(t => t.due && t.due > today));
+    addSection({ key: 'none', title: 'No due date' }, byDue.filter(t => !t.due));
+  } else {
+    const notes = new Map<number, Task[]>();
+    [...tasks]
+      .sort((a, b) => b.noteUpdatedAt.localeCompare(a.noteUpdatedAt) || a.noteId - b.noteId || a.line - b.line)
+      .forEach(t => notes.set(t.noteId, [...(notes.get(t.noteId) ?? []), t]));
+    notes.forEach((items, noteId) =>
+      addSection({ key: `note:${noteId}`, title: items[0].noteTitle || 'Untitled note', noteId }, items)
+    );
+  }
+  return rows;
+};
+
 const TasksScreen: React.FC = () => {
   const navigation = useNavigation<TasksScreenNavigationProp>();
   const { theme } = useTheme();
@@ -43,18 +67,8 @@ const TasksScreen: React.FC = () => {
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
-  const sorted = useMemo(() => {
-    const byNote = (a: Task, b: Task) =>
-      b.noteUpdatedAt.localeCompare(a.noteUpdatedAt) || a.noteId - b.noteId || a.line - b.line;
-    return [...tasks].sort((a, b) => {
-      if (sortBy === 'due' && a.due !== b.due) {
-        if (!a.due) return 1;
-        if (!b.due) return -1;
-        return a.due.localeCompare(b.due);
-      }
-      return byNote(a, b);
-    });
-  }, [tasks, sortBy]);
+  const today = getToday();
+  const rows = useMemo(() => buildRows(tasks, sortBy, today), [tasks, sortBy, today]);
 
   // Ticking keeps the ticked line in lastDone, so Undo can clear it again.
   const toggle = async (task: Task, undo = false) => {
@@ -71,42 +85,69 @@ const TasksScreen: React.FC = () => {
     load();
   };
 
-  const todayStr = today();
+  const openNote = (noteId: number) => navigation.navigate('NoteView', { noteId: String(noteId) });
 
-  const renderItem = ({ item, index }: { item: Task; index: number }) => {
-    const overdue = !!item.due && item.due < todayStr;
+  const renderItem = ({ item }: { item: Row }) => {
+    if (item.kind === 'header') {
+      return (
+        <View style={styles.sectionHeader}>
+          <Text
+            variant="titleSmall"
+            numberOfLines={2}
+            style={[styles.sectionTitle, { color: item.tone === 'error' ? theme.colors.error : theme.colors.primary }]}
+          >
+            {item.title}
+          </Text>
+          {item.noteId !== undefined && (
+            <IconButton icon="open-in-new" accessibilityLabel={`Open note ${item.title}`} onPress={() => openNote(item.noteId!)} />
+          )}
+        </View>
+      );
+    }
+    const { task } = item;
+    const overdue = !!task.due && task.due < today;
     return (
       <View
         style={[
-          groupCorners(index === 0, index === sorted.length - 1),
+          groupCorners(item.isFirst, item.isLast),
           { backgroundColor: theme.colors.surfaceContainerLow },
-          index < sorted.length - 1 && styles.gap,
+          !item.isLast && styles.gap,
         ]}
       >
         <List.Item
-          title={item.text}
+          title={task.text}
           titleNumberOfLines={4}
-          description={() => (
-            <View>
-              <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
-                {item.noteTitle || 'Untitled note'}
-              </Text>
-              {item.due && (
-                <Text variant="bodySmall" style={{ color: overdue ? theme.colors.error : theme.colors.onSurfaceVariant }}>
-                  {overdue ? `Overdue, due ${formatDue(item.due)}` : `Due ${formatDue(item.due)}`}
-                </Text>
-              )}
-            </View>
-          )}
+          description={
+            sortBy === 'note' && !task.due
+              ? undefined
+              : () => (
+                  <View>
+                    {sortBy === 'due' && (
+                      <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
+                        {task.noteTitle || 'Untitled note'}
+                      </Text>
+                    )}
+                    {task.due && (
+                      <Text variant="bodySmall" style={{ color: overdue ? theme.colors.error : theme.colors.onSurfaceVariant }}>
+                        {dueLabel(task.due, today)}
+                      </Text>
+                    )}
+                  </View>
+                )
+          }
           left={props => <List.Icon {...props} icon="checkbox-blank-outline" color={theme.colors.onSurfaceVariant} />}
-          right={() => (
-            <IconButton
-              icon="open-in-new"
-              accessibilityLabel={`Open note ${item.noteTitle}`}
-              onPress={() => navigation.navigate('NoteView', { noteId: String(item.noteId) })}
-            />
-          )}
-          onPress={() => toggle(item)}
+          right={
+            sortBy === 'due'
+              ? () => (
+                  <IconButton
+                    icon="open-in-new"
+                    accessibilityLabel={`Open note ${task.noteTitle}`}
+                    onPress={() => openNote(task.noteId)}
+                  />
+                )
+              : undefined
+          }
+          onPress={() => toggle(task)}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: false }}
           accessibilityHint="Marks the task done in its note"
@@ -119,8 +160,8 @@ const TasksScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header elevated={elevated} title="Tasks" showBackButton onBackPress={() => navigation.goBack()} />
       <Animated.FlatList
-        data={sorted}
-        keyExtractor={t => `${t.noteId}:${t.line}`}
+        data={rows}
+        keyExtractor={r => r.key}
         renderItem={renderItem}
         itemLayoutAnimation={LinearTransition.springify()}
         onScroll={onScroll}
@@ -175,7 +216,16 @@ const styles = StyleSheet.create({
   },
   sort: {
     marginTop: space.xs,
-    marginBottom: space.lg,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: 48,
+    marginTop: space.md,
+  },
+  sectionTitle: {
+    flex: 1,
+    marginLeft: space.xs,
   },
   gap: {
     marginBottom: 2,

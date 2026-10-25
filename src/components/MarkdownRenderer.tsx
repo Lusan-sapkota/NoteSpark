@@ -1,17 +1,23 @@
 import React from 'react';
-import { Pressable, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
 import Markdown, { ASTNode, renderRules } from 'react-native-markdown-display';
 import { useAlert } from './DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
 import NoteImages from './NoteImages';
-import { markTaskBoxes } from '../utils/tasks';
+import TaskRow from './TaskRow';
+import { findTaskLines, mapTaskLines, splitDue } from '../utils/tasks';
 
 const firstText = (node: ASTNode): string => (node.children?.length ? firstText(node.children[0]) : node.content ?? '');
 
+// Invisible markers on task lines: they find task items while rendering and are stripped from the text.
+const OPEN = '\u2063';
+const DONE = '\u2064';
+const markers = /[\u2063\u2064]/g;
+
 interface MarkdownRendererProps {
   content: string;
-  // Called with the task's position among the note's checkboxes (findTaskLines order). Without it, boxes are display-only.
+  // Gets the task's index in findTaskLines order. Without it, boxes are display-only.
   onToggleTask?: (index: number) => void;
 }
 
@@ -20,12 +26,14 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
   const alert = useAlert();
 
   // Replace <br> tags with newlines so markdown treats them as line breaks
-  // Task boxes first, while line numbers still match the note.
-  const processedContent = markTaskBoxes(content).replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n');
+  const tasks = findTaskLines(content);
+  // Task markers first, while line numbers still match the note.
+  const processedContent = mapTaskLines(content, (t, lead) => `${lead}${t.done ? DONE : OPEN}${splitDue(t.text).text}`)
+    .replace(/<br\s*\/?>(?![^<]*<br)/gi, '\n');
 
-  // Rules run in document order, so task items are numbered as they render; body renders last and resets the count.
-  // ponytail: a task line markdown-it doesn't render as a list item (e.g. inside an indented code block) shifts later
-  // numbers; the write then fails its line check rather than ticking the wrong box.
+  // Rules run in document order and body renders last, so task items are numbered as they render.
+  // ponytail: a task line that doesn't render as a list item (indented code block) shifts later numbers; the write
+  // then fails its line check instead of ticking the wrong box.
   let taskIndex = 0;
 
   const f = theme.fonts;
@@ -195,27 +203,24 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
             taskIndex = 0;
             return renderRules.body!(node, children, parent, styles);
           },
-          // Task items: the box replaces the bullet, and the whole row ticks it when onToggleTask is set.
+          text: (node, children, parent, styles, inheritedStyles = {}) => (
+            <Text key={node.key} style={[inheritedStyles, styles.text, node.content.startsWith(DONE) && { textDecorationLine: 'line-through' as const }]}>
+              {node.content.replace(markers, '')}
+            </Text>
+          ),
           list_item: (node, children, parent, styles, inheritedStyles) => {
-            const box = firstText(node)[0];
-            if (box !== '☐' && box !== '☑') return renderRules.list_item!(node, children, parent, styles, inheritedStyles);
+            const marker = firstText(node)[0];
+            if (marker !== OPEN && marker !== DONE) return renderRules.list_item!(node, children, parent, styles, inheritedStyles);
             const index = taskIndex++;
-            const item = <View style={styles._VIEW_SAFE_bullet_list_content}>{children}</View>;
-            if (!onToggleTask) return <View key={node.key} style={styles._VIEW_SAFE_list_item}>{item}</View>;
             return (
-              <Pressable
+              <TaskRow
                 key={node.key}
-                onPress={() => onToggleTask(index)}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: box === '☑' }}
-                style={({ pressed }) => [
-                  styles._VIEW_SAFE_list_item,
-                  { minHeight: 48, alignItems: 'center', borderRadius: shape.small },
-                  pressed && { backgroundColor: theme.colors.surfaceContainerHigh },
-                ]}
+                done={marker === DONE}
+                due={tasks[index] && splitDue(tasks[index].text).due}
+                onPress={onToggleTask && (() => onToggleTask(index))}
               >
-                {item}
-              </Pressable>
+                {children}
+              </TaskRow>
             );
           },
         }}
