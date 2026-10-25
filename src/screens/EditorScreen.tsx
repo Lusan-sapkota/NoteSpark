@@ -61,6 +61,10 @@ const EditorScreen: React.FC = () => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
+  // Undo and redo for the note text. A step is recorded when typing pauses for 600 ms; typing not yet recorded
+  // is undone as one step. `committed` is the text at the last recorded step.
+  const [undoStack, setUndoStack] = useState<{ past: string[]; future: string[] }>({ past: [], future: [] });
+  const committed = useRef('');
   // "Link a note" picker: inserts [[Title]] at the cursor.
   const [notePicker, setNotePicker] = useState<{ query: string; notes: Note[] } | null>(null);
 
@@ -79,7 +83,10 @@ const EditorScreen: React.FC = () => {
         const note = await getNoteById(Number(noteId));
         if (note) {
           setTitle(typeof note.title === 'string' ? note.title : String(note.title));
-          setContent(Array.isArray(note.content) ? note.content.join('\n') : typeof note.content === 'string' ? note.content : String(note.content));
+          const loaded = Array.isArray(note.content) ? note.content.join('\n') : typeof note.content === 'string' ? note.content : String(note.content);
+          setContent(loaded);
+          committed.current = loaded;
+          setUndoStack({ past: [], future: [] });
           setIsMarkdown(!!note.isMarkdown);
           setIsEditing(true);
           setCreatedAt(note.createdAt);
@@ -144,6 +151,44 @@ const EditorScreen: React.FC = () => {
     setSelection(pendingSelection);
     setPendingSelection(null);
   }, [content, pendingSelection]);
+
+  useEffect(() => {
+    if (content === committed.current) return;
+    const timer = setTimeout(() => {
+      const previous = committed.current;
+      committed.current = content;
+      setUndoStack(stack => ({ past: [...stack.past, previous].slice(-100), future: [] }));
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [content]);
+
+  // Swaps in an undone or redone text and puts the cursor at the end of what changed.
+  const showText = (text: string) => {
+    let same = 0;
+    while (same < content.length && same < text.length && content[content.length - 1 - same] === text[text.length - 1 - same]) same++;
+    committed.current = text;
+    setContent(text);
+    setPendingSelection({ start: text.length - same, end: text.length - same });
+  };
+
+  const hasUnrecorded = content !== committed.current;
+  const canUndo = hasUnrecorded || undoStack.past.length > 0;
+  const canRedo = !hasUnrecorded && undoStack.future.length > 0;
+
+  const handleUndo = () => {
+    const past = [...undoStack.past];
+    const target = hasUnrecorded ? committed.current : past.pop();
+    if (target === undefined) return;
+    setUndoStack({ past, future: [content, ...undoStack.future] });
+    showText(target);
+  };
+
+  const handleRedo = () => {
+    if (!canRedo) return;
+    const [target, ...future] = undoStack.future;
+    setUndoStack({ past: [...undoStack.past, content], future });
+    showText(target);
+  };
 
   // Replace the selection with `text`, then select [selStart, selEnd] within the inserted text.
   const insert = (text: string, selStart = text.length, selEnd = selStart) => {
@@ -295,6 +340,8 @@ const EditorScreen: React.FC = () => {
           <KeyboardStickyView offset={{ opened: insets.bottom }}>
           <View style={[styles.toolbar, { backgroundColor: theme.colors.surfaceContainer }]}>
             <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.toolbarContent}>
+              <IconButton icon="undo" disabled={!canUndo} onPress={handleUndo} accessibilityLabel="Undo" />
+              <IconButton icon="redo" disabled={!canRedo} onPress={handleRedo} accessibilityLabel="Redo" />
               {isMarkdown && (
                 <>
                   <IconButton icon="format-bold" onPress={() => wrapSelection('**')} accessibilityLabel="Bold" />

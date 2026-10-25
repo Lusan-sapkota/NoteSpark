@@ -10,6 +10,15 @@ export interface Note {
   deletedAt?: string | null; // set while the note is in the bin
 }
 
+export interface NoteVersion {
+  id: number;
+  noteId: number;
+  title: string;
+  content: string;
+  isMarkdown: boolean;
+  savedAt: string; // when this version was replaced
+}
+
 export type RootStackParamList = {
   // binnedNoteId: set by the note page after moving a note to the bin; tag: a tag tapped on the note page.
   Home: { binnedNoteId?: number; tag?: string } | undefined;

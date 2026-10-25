@@ -3,14 +3,14 @@ import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking, Nativ
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Appbar, Divider, FAB, Icon, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Button, Dialog, Divider, FAB, Icon, List, Portal, ProgressBar, Text, TouchableRipple } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
-import { getNoteById, getNotes, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
+import { getNoteById, getNotes, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, splitDue, toggleTaskLine } from '../utils/tasks';
 import { extractTags } from '../utils/tags';
 import { findNoteByTitle, linksTo, noteLinkPattern } from '../utils/noteLinks';
-import { Note } from '../types';
+import { Note, NoteVersion } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import TaskRow from '../components/TaskRow';
@@ -76,6 +76,8 @@ const NoteViewScreen: React.FC = () => {
   const [menuVisible, setMenuVisible] = useState(false);
   const [related, setRelated] = useState<Note[]>([]);
   const [backlinks, setBacklinks] = useState<Note[]>([]);
+  // Version history dialog: the list, or one version being read.
+  const [history, setHistory] = useState<{ versions: NoteVersion[]; viewing: NoteVersion | null } | null>(null);
   // The top bar shows the title only once the big title has scrolled under it.
   const [titleBottom, setTitleBottom] = useState(0);
   const [titleInBar, setTitleInBar] = useState(false);
@@ -138,7 +140,7 @@ const NoteViewScreen: React.FC = () => {
     const updated = { ...note, content: result.content, updatedAt: new Date().toISOString() };
     setNote(updated);
     try {
-      await updateNote(updated);
+      await updateNote(updated, { keepVersion: false });
     } catch (error) {
       setNote(note);
       alert("Couldn't update the task", 'Try again. If it keeps failing, restart the app.');
@@ -183,6 +185,28 @@ const NoteViewScreen: React.FC = () => {
       ]);
     } catch (error) {
       alert("Couldn't open the linked note", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
+  const openHistory = async () => {
+    if (!note) return;
+    try {
+      setHistory({ versions: await getNoteVersions(note.id), viewing: null });
+    } catch (error) {
+      alert("Couldn't load the version history", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
+  // The current text becomes a version too, so restoring can be undone from the same list.
+  const restoreVersion = async (version: NoteVersion) => {
+    if (!note) return;
+    try {
+      await updateNote({ id: note.id, title: version.title, content: version.content, isMarkdown: version.isMarkdown });
+      setHistory(null);
+      await reloadNote();
+      setSnackbar('Version restored');
+    } catch (error) {
+      alert("Couldn't restore the version", 'Try again. If it keeps failing, restart the app.');
     }
   };
 
@@ -294,6 +318,11 @@ const NoteViewScreen: React.FC = () => {
                   onPress={() => { setMenuVisible(false); setShowRaw(v => !v); }}
                 />
               )}
+              <Menu.Item
+                leadingIcon="history"
+                title="Version history"
+                onPress={() => { setMenuVisible(false); openHistory(); }}
+              />
               <Menu.Item
                 leadingIcon={note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
                 title={note.isArchived ? 'Unarchive' : 'Archive'}
@@ -417,6 +446,54 @@ const NoteViewScreen: React.FC = () => {
         style={[styles.fab, { bottom: space.lg + insets.bottom }]}
       />
 
+      <Portal>
+        <Dialog visible={!!history} onDismiss={() => setHistory(null)}>
+          <Dialog.Title>{history?.viewing ? history.viewing.title || 'Untitled note' : 'Version history'}</Dialog.Title>
+          {history?.viewing ? (
+            <>
+              <Dialog.ScrollArea style={styles.historyArea}>
+                <ScrollView contentContainerStyle={styles.historyText}>
+                  <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                    Saved until {formatDate(history.viewing.savedAt)}
+                  </Text>
+                  <NoteText variant="noteBody" style={{ color: theme.colors.onSurface }} selectable>
+                    {history.viewing.content || ' '}
+                  </NoteText>
+                </ScrollView>
+              </Dialog.ScrollArea>
+              <Dialog.Actions>
+                <Button onPress={() => setHistory(h => h && { ...h, viewing: null })}>Back</Button>
+                <Button onPress={() => history.viewing && restoreVersion(history.viewing)}>Restore</Button>
+              </Dialog.Actions>
+            </>
+          ) : (
+            <>
+              <Dialog.ScrollArea style={styles.historyArea}>
+                <ScrollView>
+                  {history?.versions.length ? history.versions.map(v => (
+                    <List.Item
+                      key={v.id}
+                      title={`Before ${formatDate(v.savedAt)}`}
+                      description={toPreview(v.content) || v.title}
+                      descriptionNumberOfLines={2}
+                      left={props => <List.Icon {...props} icon="history" />}
+                      onPress={() => setHistory(h => h && { ...h, viewing: v })}
+                    />
+                  )) : (
+                    <Text variant="bodyMedium" style={[styles.historyText, { color: theme.colors.onSurfaceVariant }]}>
+                      No earlier versions yet. Each time you save changes, the version before is kept here (the last 20).
+                    </Text>
+                  )}
+                </ScrollView>
+              </Dialog.ScrollArea>
+              <Dialog.Actions>
+                <Button onPress={() => setHistory(null)}>Close</Button>
+              </Dialog.Actions>
+            </>
+          )}
+        </Dialog>
+      </Portal>
+
       <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={2000} wrapperStyle={{ bottom: 80 + insets.bottom }}>
         {snackbar}
       </Snackbar>
@@ -427,6 +504,15 @@ const NoteViewScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  historyArea: {
+    maxHeight: 420,
+    paddingHorizontal: 0,
+  },
+  historyText: {
+    paddingHorizontal: space.xl,
+    paddingVertical: space.md,
+    gap: space.sm,
   },
   loading: {
     flex: 1,

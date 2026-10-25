@@ -44,6 +44,19 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', [
     new Date(Date.now() - BIN_DAYS * 86400000).toISOString(),
   ]);
+  // Earlier versions of each note, newest kept (see saveVersion in notes.ts). Rows of erased notes go here.
+  await db.execAsync(
+    `CREATE TABLE IF NOT EXISTS note_versions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      noteId INTEGER NOT NULL,
+      title TEXT NOT NULL,
+      content TEXT NOT NULL,
+      isMarkdown INTEGER NOT NULL,
+      savedAt TEXT NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS note_versions_note ON note_versions (noteId, savedAt);`
+  );
+  await db.runAsync('DELETE FROM note_versions WHERE noteId NOT IN (SELECT id FROM notes)');
   await db.runAsync("UPDATE notes SET createdAt = ? WHERE createdAt IS NULL OR createdAt = ''", [now]);
   await db.runAsync("UPDATE notes SET updatedAt = ? WHERE updatedAt IS NULL OR updatedAt = ''", [now]);
   await initSearchIndex(db);

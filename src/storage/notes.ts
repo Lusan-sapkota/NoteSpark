@@ -1,6 +1,6 @@
 // All note reads and writes. database.ts only opens the database and runs migrations.
 import { db } from './database';
-import { Note } from '../types';
+import { Note, NoteVersion } from '../types';
 import { TaskLine, toggleTaskLine } from '../utils/tasks';
 
 const toNote = (item: any): Note => ({
@@ -53,8 +53,37 @@ export const saveNote = async (note: Omit<Note, 'id' | 'isPinned' | 'isArchived'
   }
 };
 
-export const updateNote = async (note: Pick<Note, 'id' | 'title' | 'content' | 'isMarkdown'>): Promise<void> => {
+const VERSIONS_KEPT = 20;
+
+// Keeps the stored note as a version before it's overwritten, if the text changes. Oldest beyond VERSIONS_KEPT go.
+const saveVersion = async (note: Pick<Note, 'id' | 'title' | 'content' | 'isMarkdown'>, now: string) => {
+  const old = await db.getFirstAsync<{ title: string; content: string; isMarkdown: number }>(
+    'SELECT title, content, isMarkdown FROM notes WHERE id = ?', [note.id]
+  );
+  if (!old || (old.title === note.title && old.content === note.content && !!old.isMarkdown === note.isMarkdown)) return;
+  await db.runAsync(
+    'INSERT INTO note_versions (noteId, title, content, isMarkdown, savedAt) VALUES (?, ?, ?, ?, ?)',
+    [note.id, old.title, old.content, old.isMarkdown, now]
+  );
+  await db.runAsync(
+    `DELETE FROM note_versions WHERE noteId = ? AND id NOT IN
+      (SELECT id FROM note_versions WHERE noteId = ? ORDER BY savedAt DESC, id DESC LIMIT ?)`,
+    [note.id, note.id, VERSIONS_KEPT]
+  );
+};
+
+export const getNoteVersions = async (noteId: number): Promise<NoteVersion[]> => {
+  const rows = await db.getAllAsync<any>('SELECT * FROM note_versions WHERE noteId = ? ORDER BY savedAt DESC, id DESC', [noteId]);
+  return rows.map(r => ({ ...r, isMarkdown: Boolean(r.isMarkdown) }));
+};
+
+// `keepVersion: false` for small automatic edits (ticking a task) that shouldn't fill the history.
+export const updateNote = async (
+  note: Pick<Note, 'id' | 'title' | 'content' | 'isMarkdown'>,
+  { keepVersion = true } = {},
+): Promise<void> => {
   const now = new Date().toISOString();
+  if (keepVersion) await saveVersion(note, now);
   const result = await db.runAsync(
     `UPDATE notes SET title = ?, content = ?, isMarkdown = ?, updatedAt = ? WHERE id = ?`,
     [note.title, note.content, note.isMarkdown ? 1 : 0, now, note.id]
@@ -113,7 +142,7 @@ export const toggleTaskInNote = async (noteId: number, task: Pick<TaskLine, 'lin
   const note = await getNoteById(noteId);
   const result = note && toggleTaskLine(note.content, task);
   if (!note || !result) return null;
-  await updateNote({ ...note, content: result.content });
+  await updateNote({ ...note, content: result.content }, { keepVersion: false });
   return result.raw;
 };
 
