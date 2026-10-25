@@ -450,15 +450,17 @@ const ImportExportScreen: React.FC = () => {
     confirmIfReplacing(async () => {
       try {
         setFileImporting(true);
-        // Any type: Android often labels .md files as unknown, so the file name decides.
-        const result = await DocumentPicker.getDocumentAsync({ type: '*/*', multiple: true });
+        // Any type: Android often labels .md files as unknown, so the file name decides. Not copied to the cache:
+        // the files are read once from their content:// address (Expo Go can't read the picker's cache copies).
+        const result = await DocumentPicker.getDocumentAsync({ type: '*/*', multiple: true, copyToCacheDirectory: false });
         if (result.canceled || !result.assets?.length) return;
         const parsed: any[] = [];
         const unreadable: string[] = [];
         for (const asset of result.assets) {
           try {
             parsed.push(...(await notesFromFile(asset.uri, asset.name)));
-          } catch {
+          } catch (error) {
+            console.warn(`Couldn't read ${asset.name}:`, error);
             unreadable.push(asset.name);
           }
         }

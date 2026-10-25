@@ -86,16 +86,28 @@ const isNoteFile = (name: string) => /\.(md|markdown|txt)$/i.test(name) && !/(^|
 
 // Notes from one picked file: a NoteSpark .json backup, a .md or .txt note, or a .zip of those.
 // Throws when the file is none of these.
+// The picker's content:// addresses open with the File class; the legacy API is the fallback for file:// paths.
+const readFile = async (uri: string, as: 'text' | 'bytes'): Promise<string | Uint8Array> => {
+  try {
+    const file = new File(uri);
+    return as === 'text' ? await file.text() : await file.bytes();
+  } catch {
+    const encoding = as === 'text' ? FileSystem.EncodingType.UTF8 : FileSystem.EncodingType.Base64;
+    const data = await FileSystem.readAsStringAsync(uri, { encoding });
+    return as === 'text' ? data : Uint8Array.from(atob(data), c => c.charCodeAt(0));
+  }
+};
+
 export const notesFromFile = async (uri: string, name: string): Promise<any[]> => {
-  const file = new File(uri);
+  const text = async () => (await readFile(uri, 'text')) as string;
   if (/\.json$/i.test(name)) {
-    const parsed = JSON.parse(await file.text());
+    const parsed = JSON.parse(await text());
     if (!Array.isArray(parsed)) throw new Error('Not a NoteSpark backup');
     return parsed;
   }
-  if (isNoteFile(name)) return [markdownToNote(name, await file.text())];
+  if (isNoteFile(name)) return [markdownToNote(name, await text())];
   if (/\.zip$/i.test(name)) {
-    const entries = unzipSync(await file.bytes(), { filter: f => isNoteFile(f.name) });
+    const entries = unzipSync((await readFile(uri, 'bytes')) as Uint8Array, { filter: f => isNoteFile(f.name) });
     return Object.entries(entries).map(([path, data]) => markdownToNote(path, strFromU8(data)));
   }
   throw new Error('Unsupported file');
