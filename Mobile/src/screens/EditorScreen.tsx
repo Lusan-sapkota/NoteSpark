@@ -153,13 +153,10 @@ const EditorScreen: React.FC = () => {
     return () => clearTimeout(timer);
   }, [loaded, isDirty, title, content, isMarkdown]);
 
-  // Back with unsaved changes asks first.
+  // Leaving with unsaved changes saves them: people go back without pressing Save, and asking each time got in the way.
+  // An empty new note is dropped by handleSave. If saving fails the editor stays open with the text.
   usePreventRemove(isDirty && !saving, ({ data }) => {
-    alert('Save your changes?', "This note has changes that aren't saved yet.", [
-      { text: 'Keep editing', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: () => { clearDraft(); setSaved({ title, content, isMarkdown }); setTimeout(() => navigation.dispatch(data.action), 0); } },
-      { text: 'Save', onPress: () => handleSave(() => navigation.dispatch(data.action)) },
-    ]);
+    handleSave(() => navigation.dispatch(data.action));
   });
 
   // `then` replaces going back (used when leaving was asked for another way).
