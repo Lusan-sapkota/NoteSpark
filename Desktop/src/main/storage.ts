@@ -107,12 +107,24 @@ export const retryOpen = async () => {
   if (phase === 'unreadable') await openDefault();
 };
 
+// Home asks for an index update every time it opens. Waiting a little means the search model's process is not started
+// during the first seconds of use, and several asks become one. 0 runs it at once (tests).
+const SYNC_DELAY_MS = Number(process.env.NOTESPARK_SYNC_DELAY_MS ?? 15_000);
+let syncTimer: NodeJS.Timeout | undefined;
+
 export const callStorage = async ({ module, fn, args }: { module: string; fn: string; args?: unknown[] }, from: 'ipc' | 'http') => {
   if (desktopOnly.has(module) && from !== 'ipc') throw new Error(`Unknown storage call: ${module}.${fn}`);
   const exported = Object.hasOwn(modules, module) ? modules[module] : undefined;
   const target = exported && Object.hasOwn(exported, fn) ? exported[fn] : undefined;
   if (typeof target !== 'function') throw new Error(`Unknown storage call: ${module}.${fn}`);
   await start();
+  if (module === 'semanticSearch' && fn === 'syncSearchIndex' && phase === 'ready' && SYNC_DELAY_MS > 0) {
+    clearTimeout(syncTimer);
+    // Only while the window is open: nobody is searching otherwise, and the next time Home opens it asks again.
+    syncTimer = setTimeout(() => { if (phase === 'ready' && BrowserWindow.getAllWindows().length > 0) semanticSearch.syncSearchIndex().catch(() => {}); }, SYNC_DELAY_MS);
+    syncTimer.unref();
+    return;
+  }
   if (phase !== 'ready' && !(module === 'profiles' && whileLocked.has(fn))) throw new Error(phase === 'unreadable' ? 'PROFILE_UNREADABLE' : 'PROFILE_LOCKED');
   if (from === 'http' && module === 'profiles' && !webProfiles.has(fn)) throw new Error('Profiles are managed in the desktop window');
   return target(...(Array.isArray(args) ? args : []));

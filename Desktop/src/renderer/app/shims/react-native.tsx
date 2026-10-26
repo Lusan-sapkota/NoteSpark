@@ -1,7 +1,7 @@
 // react-native for the desktop renderer: react-native-web, plus the bits of the native API it lacks that the phone's
 // screens call.
 import React from 'react';
-import { TextInput as WebTextInput } from 'react-native-web';
+import { FlatList as WebFlatList, TextInput as WebTextInput } from 'react-native-web';
 
 export * from 'react-native-web';
 
@@ -23,3 +23,9 @@ export const BackHandler = {
   removeEventListener: () => {},
   exitApp: () => {},
 };
+
+// react-native-web's list keeps 21 screens of rows alive by default (about 1,250 DOM nodes on Home). A computer has a
+// fast scroll wheel but plenty of CPU: 5 screens (two above, two below) keeps memory and layout work small.
+export const FlatList = React.forwardRef<any, any>((props, ref) => (
+  <WebFlatList windowSize={5} initialNumToRender={10} maxToRenderPerBatch={10} updateCellsBatchingPeriod={40} {...props} ref={ref} />
+));

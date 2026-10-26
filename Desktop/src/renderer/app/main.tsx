@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Image, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Banner, Button, IconButton, PaperProvider, Text, Tooltip } from 'react-native-paper';
+import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Banner, Button, Icon, IconButton, PaperProvider, Text, Tooltip as PaperTooltip, TooltipProps } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { invoke, isDesktop, WebStatus } from './bridge';
 import logo from './round.png';
@@ -9,7 +9,7 @@ import { Navigator, useCurrentNavigation } from './nav';
 import { setMeaningSearchAvailable } from './overrides/storage/semanticSearch';
 // The phone's real screens, theme and shared components, imported straight from Mobile/.
 import { ThemeProvider, useTheme } from '../../../../Mobile/src/theme/ThemeContext';
-import { readingWidth, space } from '../../../../Mobile/src/theme/theme';
+import { readingWidth, shape, space } from '../../../../Mobile/src/theme/theme';
 import { DialogProvider, useAlert } from '../../../../Mobile/src/components/DialogProvider';
 import HomeScreen from '../../../../Mobile/src/screens/HomeScreen';
 import NoteViewScreen from '../../../../Mobile/src/screens/NoteViewScreen';
@@ -51,39 +51,74 @@ const destinations = [
 const goTo = (nav: { reset(state: { routes: { name: string }[] }): void }, name: string) =>
   nav.reset({ routes: name === 'Home' ? [{ name }] : [{ name: 'Home' }, { name }] });
 
-// A slim bar above every screen: the round logo (the screens below carry their own titles) and, in the desktop window
-// only, the web view switch.
+// Paper draws tooltips in the inverse colors (a light bubble on a dark screen). This one sits on the app's own surfaces,
+// like the phone's snackbar: a raised surface with the normal text color, in light and dark.
+const Tooltip = (props: TooltipProps) => {
+  const { theme } = useTheme();
+  return <PaperTooltip {...props} theme={{ colors: { onSurface: theme.colors.surfaceContainerHighest, surface: theme.colors.onSurface } }} />;
+};
+
+// How much room the window's own buttons (minimise, maximise, close) take at each end of the header. The header is the
+// title bar, so it leaves that room free; in a browser (the web view) there are no such buttons and the room is 0.
+const useWindowButtons = () => {
+  const [room, setRoom] = useState({ left: 0, right: 0 });
+  useEffect(() => {
+    const overlay = (navigator as any).windowControlsOverlay;
+    if (!overlay?.visible) return;
+    const measure = () => {
+      const area = overlay.getTitlebarAreaRect();
+      setRoom({ left: Math.round(area.x), right: Math.max(0, Math.round(window.innerWidth - area.x - area.width)) });
+    };
+    measure();
+    overlay.addEventListener('geometrychange', measure);
+    window.addEventListener('resize', measure);
+    return () => { overlay.removeEventListener('geometrychange', measure); window.removeEventListener('resize', measure); };
+  }, []);
+  return room;
+};
+
+// The header: logo, the places, and (desktop window only) the web view switch, on one row that is also the window's
+// title bar (drag it to move the window). The current place sits in a tonal pill with a filled icon; every place has a tooltip. Screens keep their own title row below, on the same background, so the two read as one header.
 const TopBar = () => {
   const { theme } = useTheme();
   const here = useCurrentNavigation();
+  const room = useWindowButtons();
   const [web, setWeb] = useState<WebStatus | null>(null);
   useEffect(() => { if (isDesktop) invoke<WebStatus>('web:status').then(setWeb).catch(() => {}); }, []);
   const toggle = () =>
     invoke<WebStatus>(web?.on ? 'web:stop' : 'web:start').then(w => { setWeb(w); window.notespark?.refreshTray(); }, e => console.error(e));
-  const nav = { size: 24, style: { margin: 0 } } as const;
+  const tip = { enterTouchDelay: 250, leaveTouchDelay: 150 };
+  const quiet = theme.colors.onSurfaceVariant;
   return (
     <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 56, paddingHorizontal: space.lg, gap: space.xs, backgroundColor: theme.colors.background, borderBottomWidth: 1, borderBottomColor: theme.colors.outlineVariant }}>
-        <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 32, height: 32 }} />
+      <View dataSet={{ drag: '' }} style={{ height: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg + room.left, paddingRight: space.sm + room.right, backgroundColor: theme.colors.background }}>
+        <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 32, height: 32, marginRight: space.lg }} />
+        <View dataSet={{ nodrag: '' }} style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
+          {here && destinations.map(d => {
+            const active = d.covers.includes(here.route.name);
+            // Material's navigation indicator: a 56 by 32 pill behind the icon marks where you are, so the row never
+            // shifts as you move; the name is in the tooltip, and in the title row of the screen below.
+            return (
+              <Tooltip key={d.name} title={d.label} {...tip}>
+                <Pressable accessibilityRole="button" accessibilityLabel={d.label} accessibilityState={{ selected: active }} aria-current={active ? "page" : undefined} hitSlop={{ top: 4, bottom: 4 }} onPress={() => goTo(here.nav, d.name)}
+                  style={{ width: 56, height: 40, alignItems: 'center', justifyContent: 'center' }}>
+                  <View style={{ width: 56, height: 32, borderRadius: shape.full, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? theme.colors.secondaryContainer : 'transparent' }}>
+                    <Icon source={active ? d.icon : d.outline} size={24} color={active ? theme.colors.onSecondaryContainer : quiet} />
+                  </View>
+                </Pressable>
+              </Tooltip>
+            );
+          })}
+        </View>
         <View style={{ flex: 1 }} />
-        {/* The same places as the phone's header. The current one is a tonal pill with a filled icon. */}
-        {here && destinations.map(d => {
-          const active = d.covers.includes(here.route.name);
-          return (
-            <Tooltip key={d.name} title={d.label} enterTouchDelay={250} leaveTouchDelay={150}>
-              <IconButton {...nav} icon={active ? d.icon : d.outline} mode={active ? 'contained-tonal' : undefined} selected={active}
-                iconColor={active ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant} containerColor={active ? theme.colors.secondaryContainer : undefined}
-                accessibilityLabel={d.label} onPress={() => goTo(here.nav, d.name)} />
-            </Tooltip>
-          );
-        })}
-        {here && isDesktop && <View style={{ width: 1, height: 24, backgroundColor: theme.colors.outlineVariant, marginHorizontal: space.sm }} />}
         {isDesktop && (
-          <Tooltip title={web?.on ? 'Stop web view' : 'Start web view'} enterTouchDelay={250} leaveTouchDelay={150}>
-            <IconButton {...nav} icon={web?.on ? 'web-off' : 'web'} mode={web?.on ? 'contained' : undefined} selected={!!web?.on}
-              iconColor={web?.on ? theme.colors.onPrimary : theme.colors.onSurfaceVariant} containerColor={web?.on ? theme.colors.primary : undefined}
-              accessibilityLabel={web?.on ? 'Stop web view' : 'Start web view'} onPress={toggle} />
-          </Tooltip>
+          <View dataSet={{ nodrag: '' }}>
+            <Tooltip title={web?.on ? 'Stop web view' : 'Start web view'} {...tip}>
+              <IconButton icon={web?.on ? 'web-off' : 'web'} size={22} mode={web?.on ? 'contained' : undefined} selected={!!web?.on}
+                iconColor={web?.on ? theme.colors.onPrimary : quiet} containerColor={web?.on ? theme.colors.primary : undefined}
+                accessibilityLabel={web?.on ? 'Stop web view' : 'Start web view'} onPress={toggle} style={{ margin: 0, width: 40, height: 40 }} />
+            </Tooltip>
+          </View>
         )}
       </View>
       {web?.on && (
@@ -121,7 +156,18 @@ const UnreadableProfile = ({ profileName, onRetry, onErase }: { profileName: str
 type LockState = { phase: 'starting' | 'ready' | 'locked' | 'unreadable'; profile: { id: string; name: string } | null };
 
 const Shell = () => {
-  const { theme, themeType } = useTheme();
+  const { theme, themeType, setThemeType } = useTheme();
+  const here = useCurrentNavigation();
+  // Actions from the application menu (open a place, change the appearance). Listening starts once the screens are there.
+  const menuHandler = useRef<(action: any) => void>(() => {});
+  menuHandler.current = action => {
+    if (action.type === 'go') here?.nav.reset({ routes: (action.routes as string[]).map(name => ({ name })) });
+    else if (action.type === 'theme') setThemeType(action.mode);
+  };
+  const listening = useRef(false);
+  useEffect(() => {
+    if (here && !listening.current && window.notespark?.onMenu) { listening.current = true; window.notespark.onMenu(action => menuHandler.current(action)); }
+  }, [here]);
   const [lock, setLock] = useState<LockState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<boolean | null>(null);

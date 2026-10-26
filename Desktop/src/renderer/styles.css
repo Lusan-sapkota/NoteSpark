@@ -14,3 +14,7 @@ body { overflow: hidden; }
 /* On the web Paper wraps ProgressBar in a width:100% box, so a bar with its own width (the task count on a note)
    took the whole row and squeezed the label beside it. */
 [role="progressbar"] { width: auto !important; height: auto !important; }
+
+/* The header is the window's title bar: dragging it moves the window, and what is inside it still clicks. */
+[data-drag] { -webkit-app-region: drag; }
+[data-nodrag] { -webkit-app-region: no-drag; }

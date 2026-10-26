@@ -10,7 +10,7 @@ const app = (path: string) => resolve(__dirname, 'src/renderer/app', path);
 const mobileSrc = resolve(__dirname, '../Mobile/src');
 // Phone modules that can't run in a browser are swapped, by file, for the versions in src/renderer/app/overrides.
 const overrides: Record<string, string> = Object.fromEntries(
-  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'screens/PrivacyScreen'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
+  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'components/Menu', 'screens/PrivacyScreen'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
 );
 
 // The phone's storage code runs in the main process; its Expo imports resolve to the shims in src/main/shims.
@@ -50,6 +50,8 @@ export default defineConfig({
   },
   preload: { resolve: { alias } },
   renderer: {
+    // Smaller code to parse and keep in memory; no source maps shipped.
+    build: { minify: !process.env.NOMINIFY, sourcemap: false },
     plugins: [
       react(),
       {
@@ -84,6 +86,8 @@ export default defineConfig({
           const RESTORED_DESKTOP = "If NoteSpark's folder was moved or restored from a backup, a protected profile's key may be missing: it is kept in your system's keyring, not in the folder.";
           if (id.endsWith('Mobile/src/screens/HomeScreen.tsx')) {
             replaceAll(RESTORED, RESTORED_DESKTOP);
+            // The desktop header already carries the app's name and logo; this row names the place.
+            replace(": 'NoteSpark'}", ": 'Notes'}");
             // Scratchpad, Tasks and Settings live in the desktop top bar, so Home's header keeps only the profile button.
             for (const label of ['Scratchpad', 'Tasks', 'Settings']) {
               const start = code.indexOf(`<Appbar.Action icon="`, code.indexOf('accessibilityLabel="' + label + '" onPress=') - 80);

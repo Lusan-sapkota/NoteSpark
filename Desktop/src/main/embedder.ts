@@ -1,11 +1,11 @@
 // The phone's search code asks for an "embed" function; on desktop it is answered by a helper process that loads the
-// model on demand and exits after IDLE_MS without work. Starting it takes about a tenth of a second.
+// model on demand and exits after IDLE_MS (ten seconds) without work. Starting it takes about a tenth of a second.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { utilityProcess, UtilityProcess } from 'electron';
 import { Asset } from './shims/expo-asset';
 
-const IDLE_MS = Number(process.env.NOTESPARK_EMBED_IDLE_MS) || 60_000;
+const IDLE_MS = Number(process.env.NOTESPARK_EMBED_IDLE_MS) || 10_000;
 type Pending = { resolve(v: Float32Array): void; reject(e: Error): void };
 
 let child: UtilityProcess | null = null;

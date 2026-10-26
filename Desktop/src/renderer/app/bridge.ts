@@ -1,7 +1,7 @@
 // One way to reach the backend, whichever shell the page runs in: Electron's preload bridge in the desktop
 // window, or fetch() against the web view's server in a browser.
 declare global {
-  interface Window { notespark?: { invoke(channel: string, args?: unknown): Promise<unknown>; refreshTray(): Promise<void>; onLockChanged(callback: () => void): void } }
+  interface Window { notespark?: { invoke(channel: string, args?: unknown): Promise<unknown>; refreshTray(): Promise<void>; onLockChanged(callback: () => void): void; onMenu(callback: (action: unknown) => void): void } }
 }
 
 export const isDesktop = !!window.notespark;

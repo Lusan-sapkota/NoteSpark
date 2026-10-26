@@ -69,7 +69,8 @@
           "all-MiniLM-L6-v2-vocab.txt"
         ]
       }
-    ]
+    ],
+    "compression": "maximum"
   },
   "dependencies": {
     "@expo/vector-icons": "15.1.1",
