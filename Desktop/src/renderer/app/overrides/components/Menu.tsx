@@ -3,7 +3,7 @@
 // them scrolled the list, which mounted more rows, which scrolled again, a loop that cost a third of a core at idle.
 // Here Paper's Menu is only mounted once the menu has been opened for the first time (a closed menu is just its anchor,
 // which is also much cheaper per row).
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 import { Menu as PaperMenu, MenuProps } from 'react-native-paper';
 

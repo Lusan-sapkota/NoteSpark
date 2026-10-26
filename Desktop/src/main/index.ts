@@ -79,7 +79,7 @@ const createWindow = () => {
   // The auto-lock counts time while the window is out of sight or out of focus.
   win.on('focus', () => setWindowFocused(true));
   for (const event of ['blur', 'hide', 'minimize', 'closed'] as const) win.on(event as 'blur', () => setWindowFocused(false));
-  // Closing destroys the renderer; the main process stays in the tray.
+  // Closing destroys the renderer; quitIfIdle decides whether the app goes with it.
   win.on('closed', () => { window = null; windowReady = false; void quitIfIdle(); });
   win.webContents.on('will-navigate', (e, url) => { if (!isAppUrl(url)) e.preventDefault(); });
   // A link the person clicks opens in their own browser (the same as the phone); the app itself never loads it.
@@ -97,15 +97,15 @@ const showWindow = () => {
   else { if (window.isMinimized()) window.restore(); window.show(); window.focus(); }
 };
 
-// Software rendering in the main process: no separate GPU process, which would stay alive in the tray
-// (about 125 MB less RAM there). ponytail: revisit if the web UI scrolls badly on low-end CPUs.
+// Software rendering in the main process: no separate GPU process (about 125 MB less RAM).
+// ponytail: revisit if the web UI scrolls badly on low-end CPUs.
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('in-process-gpu');
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', showWindow);
-  app.on('window-all-closed', () => {}); // stay in the tray
+  app.on('window-all-closed', () => {}); // quitIfIdle (on each window's close) decides; the default quit would ignore the tray and the web view
   app.on('web-contents-created', (_e, contents) => {
     contents.on('will-attach-webview', e => e.preventDefault());
   });

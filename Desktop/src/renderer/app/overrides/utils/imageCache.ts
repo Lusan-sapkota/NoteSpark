@@ -1,6 +1,6 @@
 // Same shape as the phone's Mobile/src/utils/imageCache.ts. Web pictures load straight from their address (the phone
 // keeps a copy for offline use); pictures that point at files on the phone fail and show the "gone" state.
-// ponytail: no on-disk cache yet; revisit with the editor in phase 3.
+// ponytail: no on-disk cache; web pictures are not loaded at all (the page's security policy blocks them).
 import { useCallback, useState } from 'react';
 
 export const isWebImage = (uri: string) => /^https?:\/\//i.test(uri);

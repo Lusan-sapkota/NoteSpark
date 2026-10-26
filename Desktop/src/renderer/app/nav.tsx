@@ -1,7 +1,7 @@
 // A small stack navigator with the parts of @react-navigation/native that the phone's screens call.
 // Only the top screen is mounted, so a screen reloads when you come back to it.
-// ponytail: no back/forward animation and no state kept under the top screen; a wide-window shell comes in phase 4.
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+// ponytail: no back/forward animation and no state kept under the top screen (scroll position and the like start over).
+import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 type Route = { key: string; name: string; params?: any };
 type Listener = () => void;
@@ -60,7 +60,7 @@ export const useFocusEffect = (effect: () => void | (() => void)) => {
   useEffect(() => ref.current(), []);
 };
 
-export const Navigator: React.FC<{ initial: string; screens: Record<string, React.ComponentType<any>>; frame?: (content: React.ReactNode, nav: Nav, route: Route) => React.ReactNode }> = ({ initial, screens, frame }) => {
+export const Navigator: React.FC<{ initial: string; screens: Record<string, React.ComponentType<any>> }> = ({ initial, screens }) => {
   const [stack, setStack] = useState<Route[]>(() => [route(initial)]);
   const top = stack[stack.length - 1];
   const listeners = useRef(new Map<string, Set<Listener>>());
@@ -107,7 +107,7 @@ export const Navigator: React.FC<{ initial: string; screens: Record<string, Reac
   useEffect(() => { publish({ nav, route: top }); }, [nav, top]);
   useEffect(() => () => publish(null), []);
   const content = Screen ? <Screen key={top.key} /> : null;
-  return <NavContext.Provider value={{ nav, route: top, guard }}>{frame ? frame(content, nav, top) : content}</NavContext.Provider>;
+  return <NavContext.Provider value={{ nav, route: top, guard }}>{content}</NavContext.Provider>;
 };
 
 // Pieces of the real package that the phone's code imports but the five screens never use.

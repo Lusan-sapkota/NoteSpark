@@ -51,7 +51,7 @@ export default defineConfig({
   preload: { resolve: { alias } },
   renderer: {
     // Smaller code to parse and keep in memory; no source maps shipped.
-    build: { minify: !process.env.NOMINIFY, sourcemap: false },
+    build: { minify: true, sourcemap: false },
     plugins: [
       react(),
       {
