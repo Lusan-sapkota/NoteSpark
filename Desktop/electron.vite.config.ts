@@ -152,15 +152,27 @@ export default defineConfig({
         },
       },
       {
-        // The phone's icon buttons have an accessibility label and no tooltip (there is no hover on a phone). On the desktop
-        // each one gets a tooltip with that label as its text.
+        // The phone's icon buttons (app bar actions and IconButtons, the editor toolbar among them) have an accessibility label and
+        // no tooltip (there is no hover on a phone). On the desktop each one gets a tooltip with that label as its text.
         name: 'desktop-tooltips',
         enforce: 'pre', // after desktop-copy, which looks for the unwrapped buttons
         transform: (code, id) => {
-          if (!id.includes('/Mobile/src/') || !/\.tsx$/.test(id) || !code.includes('<Appbar.')) return null;
+          if (!id.includes('/Mobile/src/') || !/\.tsx$/.test(id) || !/<(Appbar\.|IconButton)/.test(code)) return null;
           let count = 0;
-          const wrapped = code.replace(/<Appbar\.(?:Action|BackAction)\b((?:(?!\/>)[\s\S])*?)accessibilityLabel=("[^"]*"|\{(?:[^{}]|\{[^{}]*\})*\})((?:(?!\/>)[\s\S])*?)\/>/g, (all, _a, label) => { count++; return `<Tip title=${label}>${all}</Tip>`; });
+          const wrapped = code.replace(/<(?:Appbar\.(?:Action|BackAction)|IconButton)\b((?:(?!\/>)[\s\S])*?)accessibilityLabel=("[^"]*"|\{(?:[^{}]|\{[^{}]*\})*\})((?:(?!\/>)[\s\S])*?)\/>/g, (all, _a, label) => { count++; return `<Tip title=${label}>${all}</Tip>`; });
           return count ? `import Tip from '${resolve(__dirname, 'src/renderer/app/Tip.tsx')}';\n${wrapped}` : null;
+        },
+      },
+      {
+        // On a phone a dialog or a snackbar fills the width; on a wide window a confirmation as wide as the window looks wrong.
+        // Dialogs get 560 points, centred; snackbars 560, at the left edge like Material's. (A tag that sets its own style keeps it.)
+        name: 'desktop-dialog-width',
+        enforce: 'pre',
+        transform: (code, id) => {
+          if (!id.includes('/Mobile/src/') || !/\.tsx$/.test(id) || !/<(Dialog|Snackbar)[\s>]/.test(code)) return null;
+          return code
+            .replace(/<Dialog(\s)/g, "<Dialog style={{ width: '100%', maxWidth: 560, alignSelf: 'center' }}$1")
+            .replace(/<Snackbar(\s)/g, '<Snackbar style={{ maxWidth: 560 }}$1');
         },
       },
       {
