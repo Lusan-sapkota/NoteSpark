@@ -51,6 +51,8 @@ export default defineConfig({
   },
   preload: { resolve: { alias } },
   renderer: {
+    // The phone's screens and pictures live in ../Mobile; the dev server refuses files outside this folder by default.
+    server: { fs: { allow: [resolve(__dirname, '..')] } },
     // Smaller code to parse and keep in memory; no source maps shipped.
     build: { minify: true, sourcemap: false },
     plugins: [
