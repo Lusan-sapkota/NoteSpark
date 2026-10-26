@@ -36,9 +36,10 @@ const deliver = (action: MenuAction) => {
 let tray: Tray | null = null;
 let refreshMenuFn: (() => void) | null = null;
 
-// Closing the window ends the app unless something still needs it: the web view is serving, or the person chose
-// "Keep running in the tray". A running Electron app with no window still costs about 200 MB, so idle means gone.
-const keepsRunning = async () => webViewStatus().on || (await AsyncStorage.getItem('keepInTray')) === 'true';
+// Closing the window leaves the app in the tray (sync and the web view need it running) until the person chooses Quit
+// there; unticking "Keep running in the tray" makes closing quit instead. About 175 MB while it sits in the tray.
+const keepInTray = async () => (await AsyncStorage.getItem('keepInTray')) !== 'false';
+const keepsRunning = async () => webViewStatus().on || (await keepInTray());
 const quitIfIdle = async () => {
   if (BrowserWindow.getAllWindows().length === 0 && !(await keepsRunning())) app.quit();
 };
@@ -133,7 +134,7 @@ else {
     const refreshTray = async () => {
       refreshMenuFn?.();
       const web = webViewStatus();
-      const keep = (await AsyncStorage.getItem('keepInTray')) === 'true';
+      const keep = await keepInTray();
       tray?.setContextMenu(Menu.buildFromTemplate([
         { label: 'Open NoteSpark', click: showWindow },
         { type: 'separator' },

@@ -56,6 +56,13 @@ export default defineConfig({
     plugins: [
       react(),
       {
+        // The dev server injects an inline script (React refresh), which the strict CSP in index.html would block and leave
+        // the window blank. Only while serving: the built app keeps `script-src 'self'`.
+        name: 'dev-csp',
+        apply: 'serve',
+        transformIndexHtml: html => html.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"),
+      },
+      {
         name: 'phone-module-overrides',
         enforce: 'pre',
         resolveId: (source, importer) => (importer && source.startsWith('.') ? overrides[resolve(dirname(importer), source).replace(/\.tsx?$/, '')] : undefined),
