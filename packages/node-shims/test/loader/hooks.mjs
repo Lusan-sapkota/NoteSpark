@@ -11,6 +11,7 @@ const map = {
   'expo-secure-store': shim('expo-secure-store.ts'),
   'expo-file-system': shim('expo-file-system.ts'),
   'expo-file-system/legacy': shim('expo-file-system-legacy.ts'),
+  'expo-sharing': shim('expo-sharing.ts'),
   '@react-native-async-storage/async-storage': shim('async-storage.ts'),
   'expo-local-authentication': resolve(root, 'packages/node-shims/test/loader/local-authentication.ts'),
   '@notespark/core': resolve(root, 'packages/core/src/index.ts'),

@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { cancelAnimation, Easing, SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { Button, Dialog, Icon, IconButton, RadioButton, SegmentedButtons, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { Button, Checkbox, Dialog, Icon, IconButton, RadioButton, SegmentedButtons, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import Menu from '../components/Menu';
 import { RootStackParamList } from '../types';
 import { sendAppNotification } from '../utils/notifications';
@@ -90,6 +90,7 @@ const ImportExportScreen: React.FC = () => {
   const [historyMenuVisible, setHistoryMenuVisible] = useState(false);
   const [autoBackup, setAutoBackupState] = useState<AutoBackupSettings | null>(null);
   const [backingUp, setBackingUp] = useState(false);
+  const [includeAttachments, setIncludeAttachments] = useState(true);
   const formatDate = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
   const handleExportHistoryPDF = async () => {
     alert(
@@ -196,7 +197,7 @@ const ImportExportScreen: React.FC = () => {
         alert('No notes to export', 'Write a note first, then export it here.');
         return;
       }
-      await shareNotesAsZip(notes);
+      await shareNotesAsZip(notes, { includeAttachments });
       await addHistory({ type: 'export', format: 'markdown', date: new Date().toISOString(), count: notes.length, error: '' });
     } catch (error) {
       alert("Couldn't export as Markdown", 'Try again. If it keeps failing, restart the app.');
@@ -561,7 +562,7 @@ const ImportExportScreen: React.FC = () => {
             {tile({
               icon: 'export-variant',
               title: 'Back up',
-              body: 'Save all notes as a JSON file',
+              body: 'Save all notes as a JSON file (attachments are not included)',
               busyBody: 'Exporting notes',
               busy: isExporting,
               onPress: handleExport,
@@ -587,6 +588,20 @@ const ImportExportScreen: React.FC = () => {
               icon="language-markdown-outline"
               onPress={handleExportMarkdown}
               isFirst
+              isLast={false}
+            />
+            <GroupedRow
+              title="Include attachments"
+              description={includeAttachments ? 'Attached files are included in the zip' : 'Only note text is included in the zip'}
+              icon="paperclip"
+              onPress={() => setIncludeAttachments(v => !v)}
+              right={
+                <Checkbox.Android
+                  status={includeAttachments ? 'checked' : 'unchecked'}
+                  onPress={() => setIncludeAttachments(v => !v)}
+                />
+              }
+              isFirst={false}
               isLast
             />
           </View>

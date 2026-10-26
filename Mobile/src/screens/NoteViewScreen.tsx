@@ -449,7 +449,7 @@ const NoteViewScreen: React.FC = () => {
               )}
               <Menu.Item
                 leadingIcon="export-variant"
-                title={note.isMarkdown ? 'Export as Markdown' : 'Export as text file'}
+                title={note.isMarkdown ? 'Export as Markdown (no attachments)' : 'Export as text file (no attachments)'}
                 onPress={() => {
                   setMenuVisible(false);
                   shareNoteAsMarkdown(note).catch(() => alert("Couldn't export the note", 'Try again. If it keeps failing, restart the app.'));
