@@ -2,9 +2,10 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "allowImportingTsExtensions": true,
     "paths": {
       "@notespark/core": ["../packages/core/src/index.ts"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "../packages/core/src/**/*.ts"]
+  "include": ["**/*.ts", "**/*.tsx", "../packages/core/src/**/*.ts", "../packages/sync/src/**/*.ts"]
 }
