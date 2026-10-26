@@ -1,4 +1,4 @@
-import { nativeTheme } from 'electron';
+import { clipboard, nativeTheme } from 'electron';
 import { startWebView, stopWebView, webViewStatus } from './web';
 
 // One API for both transports: Electron IPC (the window) and HTTP (the web view).
@@ -16,6 +16,8 @@ const handlers: Record<string, Handler> = {
   },
   'web:status': { local: true, run: () => webViewStatus() },
   'web:start': { local: true, run: () => startWebView(invoke) },
+  // The link carries the token, so it goes to the clipboard from here and never passes through the page.
+  'web:copy': { local: true, run: () => { clipboard.writeText(webViewStatus().links.at(-1) ?? ''); } },
   'web:stop': { local: true, run: () => stopWebView() },
 };
 

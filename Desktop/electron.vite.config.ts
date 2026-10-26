@@ -61,7 +61,7 @@ export default defineConfig({
         '@react-native-async-storage/async-storage': app('shims/async-storage.ts'),
       },
       // Mobile/ has its own node_modules; make its files use Desktop's single copy.
-      dedupe: ['react', 'react-dom', 'react-native-paper', '@expo/vector-icons'],
+      dedupe: ['react', 'react-dom', 'react-native-paper', '@expo/vector-icons', 'react-native-markdown-display'],
     },
     define: { global: 'globalThis', __DEV__: 'false', 'process.env.NODE_ENV': '"production"' },
   },

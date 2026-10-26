@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { View } from 'react-native';
-import { ActivityIndicator, Button, PaperProvider, Text } from 'react-native-paper';
+import { Image, View } from 'react-native';
+import { ActivityIndicator, Banner, Button, IconButton, PaperProvider, Text } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { invoke, isDesktop } from './bridge';
+import { invoke, isDesktop, WebStatus } from './bridge';
+import logo from './round.png';
 import { Navigator, useNavigation } from './nav';
 // The phone's real screens, theme and shared components, imported straight from Mobile/.
 import { ThemeProvider, useTheme } from '../../../../Mobile/src/theme/ThemeContext';
@@ -49,6 +50,31 @@ const screens = {
   Privacy: comingLater('Privacy', 'in a later step'),
 };
 
+// A slim bar above every screen: the round logo and name, and (desktop window only) the web view switch.
+const TopBar = () => {
+  const { theme } = useTheme();
+  const [web, setWeb] = useState<WebStatus | null>(null);
+  useEffect(() => { if (isDesktop) invoke<WebStatus>('web:status').then(setWeb); }, []);
+  const toggle = () =>
+    invoke<WebStatus>(web?.on ? 'web:stop' : 'web:start').then(w => { setWeb(w); window.notespark?.refreshTray(); }, e => console.error(e));
+  return (
+    <>
+      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingHorizontal: space.md, backgroundColor: theme.colors.background, borderBottomWidth: 1, borderBottomColor: theme.colors.outlineVariant }}>
+        <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 28, height: 28 }} />
+        <Text variant="titleMedium" style={{ marginLeft: space.sm, flex: 1 }}>NoteSpark</Text>
+        {isDesktop && (
+          <IconButton icon={web?.on ? 'web-off' : 'web'} accessibilityLabel={web?.on ? 'Stop web view' : 'Start web view'} onPress={toggle} />
+        )}
+      </View>
+      {web?.on && (
+        <Banner visible actions={[{ label: 'Copy link', onPress: () => invoke('web:copy') }, { label: 'Stop', onPress: toggle }]}>
+          Web view is on. Open this on a device on your network: {web.links.map(l => l.replace(/\?t=.*/, '')).join('  ')}. Anyone with the link can read and edit your notes.
+        </Banner>
+      )}
+    </>
+  );
+};
+
 const Shell = () => {
   const { theme, themeType } = useTheme();
   const [state, setState] = useState<'loading' | 'ready' | { error: string }>('loading');
@@ -65,8 +91,9 @@ const Shell = () => {
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <PaperProvider theme={theme}>
         <DialogProvider>
+          <TopBar />
           {state === 'ready' ? (
-            <Navigator initial="Home" screens={screens} />
+            <View style={{ flex: 1 }}><Navigator initial="Home" screens={screens} /></View>
           ) : state === 'loading' ? (
             <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" /></View>
           ) : (
