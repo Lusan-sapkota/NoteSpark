@@ -35,7 +35,7 @@ test('adoption: identical notes are joined, different and near-identical ones st
   assert.equal(titles(b.store).filter(t => t.startsWith('Same|')).length, 2, 'one joined, one extra copy kept');
   assert.equal(titles(b.store).filter(t => t.startsWith('Near|')).length, 2);
   assert.equal(titles(b.store).filter(t => t === '|').length, 2, 'empty notes are separate');
-  assert.ok(b.store.note(syncId, uuid(1)), 'b adopted the hub uuid');
+  assert.ok(b.store.peek(syncId, uuid(1)), 'b adopted the hub uuid');
 });
 
 test('declining the plan changes nothing', async () => {
@@ -55,12 +55,12 @@ test('live changes go through the hub to every device, erase and bin included', 
   a.store.edit(syncId, uuid(1), note('One', 'edited on a'));
   b.store.edit(syncId, uuid(9), note('From b'));
   await w.run(1000);
-  for (const d of [a, b, c, { store: w.hubStore }]) assert.equal(d.store.note(syncId, uuid(1))!.content, 'edited on a');
-  assert.equal(c.store.note(syncId, uuid(9))!.title, 'From b');
+  for (const d of [a, b, c, { store: w.hubStore }]) assert.equal(d.store.peek(syncId, uuid(1))!.content, 'edited on a');
+  assert.equal(c.store.peek(syncId, uuid(9))!.title, 'From b');
   c.store.erase(syncId, uuid(1));
   w.hubStore.edit(syncId, uuid(5), note('From hub'));
   await w.run(1000);
-  for (const d of [a, b, c, { store: w.hubStore }]) { assert.equal(d.store.note(syncId, uuid(1)), null); assert.equal(d.store.note(syncId, uuid(5))!.title, 'From hub'); }
+  for (const d of [a, b, c, { store: w.hubStore }]) { assert.equal(d.store.peek(syncId, uuid(1)), null); assert.equal(d.store.peek(syncId, uuid(5))!.title, 'From hub'); }
 });
 
 test('a device that was offline catches up in one exchange, and the 30 second reconcile heals a lost push', async () => {
@@ -82,7 +82,7 @@ test('a device that was offline catches up in one exchange, and the 30 second re
   await w.run(100);
   w.net.faults.drop = 0;
   await w.run(45_000);
-  assert.equal(b.store.note(syncId, uuid(1))!.content, 'lost push');
+  assert.equal(b.store.peek(syncId, uuid(1))!.content, 'lost push');
 });
 
 test('state machine: back-off doubles to 60 s, a dead connection is noticed, 403 and 423 are reported', async () => {
@@ -153,8 +153,8 @@ test('a note over 32 MB stays on its device, is reported, and everything else sy
   a.store.edit(syncId, uuid(2), note('Huge', 'x'.repeat(33 * 1024 * 1024)));
   a.store.edit(syncId, uuid(3), note('Normal'));
   await w.run(70_000);
-  assert.equal(b.store.note(syncId, uuid(3))!.title, 'Normal');
-  assert.equal(b.store.note(syncId, uuid(2))!.content, '', 'the huge note never arrived');
+  assert.equal(b.store.peek(syncId, uuid(3))!.title, 'Normal');
+  assert.equal(b.store.peek(syncId, uuid(2))?.content ?? '', '', 'the huge note never arrived');
   assert.deepEqual(problems[0], { code: 413, doc: uuid(2) });
   assert.equal(a.client!.state, 'live');
 });

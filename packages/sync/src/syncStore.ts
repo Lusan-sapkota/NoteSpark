@@ -1,6 +1,7 @@
 import * as Y from 'yjs';
 import { catalogUuids, isErased } from './catalog.ts';
 import { type NoteState, readNote } from './note.ts';
+import { rebaseText } from './rebase.ts';
 import { type Delta, Replica } from './replica.ts';
 
 export interface ProfileInfo {
@@ -19,6 +20,14 @@ export interface PlainNote {
   isMarkdown: boolean;
 }
 
+export interface FileEdit {
+  base: string | null; // the text the file was written from, so an edit made elsewhere in the meantime is merged
+  title: string;
+  content: string;
+  isPinned: boolean;
+  isArchived: boolean;
+}
+
 // All the sync engine knows about storage; `doc` is 'catalog' or a note uuid.
 export interface SyncStore {
   profiles(): Promise<ProfileInfo[]>;
@@ -34,6 +43,14 @@ export interface SyncStore {
   apply(syncId: string, doc: string, updates: Uint8Array[]): Promise<void>;
   // Changes made here (not by `apply`), once committed.
   subscribe(syncId: string, listener: (doc: string, update: Uint8Array) => void): () => void;
+  // For the Markdown mirror: readable notes, and after every commit (local or applied) the uuids that changed.
+  note(syncId: string, uuid: string): Promise<NoteState | null>;
+  allNotes(syncId: string): Promise<(NoteState & { uuid: string })[]>;
+  onNoteChange(syncId: string, listener: (uuid: string) => void): () => void;
+  // An outside edit, merged into the note (created if `uuid` is null or unknown); returns the uuid.
+  applyFile(syncId: string, uuid: string | null, edit: FileEdit): Promise<string>;
+  // A deleted file means the bin, never an erase.
+  binNote(syncId: string, uuid: string): Promise<void>;
 }
 
 interface Profile {
@@ -57,8 +74,12 @@ export class MemoryStore implements SyncStore {
     if (!p) throw new Error(`unknown profile ${syncId}`);
     return p.replica;
   }
+  private changeListeners = new Map<string, Set<(uuid: string) => void>>();
   private emit(syncId: string, deltas: Delta[]) {
-    for (const d of deltas) this.listeners.get(syncId)?.forEach(l => l(d.doc, d.bytes));
+    for (const d of deltas) {
+      this.listeners.get(syncId)?.forEach(l => l(d.doc, d.bytes));
+      if (d.doc !== 'catalog') this.changeListeners.get(syncId)?.forEach(l => l(d.doc));
+    }
   }
 
   async profiles(): Promise<ProfileInfo[]> {
@@ -91,8 +112,14 @@ export class MemoryStore implements SyncStore {
     return Y.encodeStateAsUpdate(doc === 'catalog' ? r.catalog : r.getDoc(doc), remote);
   }
   async apply(syncId: string, doc: string, updates: Uint8Array[]) {
-    this.profile(syncId).receive(updates.map(bytes => ({ doc, bytes })));
+    const r = this.profile(syncId);
+    const wasErased = doc !== 'catalog' && isErased(r.catalog, doc);
+    r.receive(updates.map(bytes => ({ doc, bytes })));
+    if (doc !== 'catalog' && !wasErased) this.changeListeners.get(syncId)?.forEach(l => l(doc));
+    if (doc === 'catalog') for (const u of catalogUuids(r.catalog)) if (isErased(r.catalog, u) && this.known.get(syncId)?.has(u)) this.changeListeners.get(syncId)?.forEach(l => l(u));
+    this.known.set(syncId, new Set(r.docs.keys()));
   }
+  private known = new Map<string, Set<string>>();
   subscribe(syncId: string, listener: (doc: string, update: Uint8Array) => void) {
     const set = this.listeners.get(syncId) ?? new Set();
     this.listeners.set(syncId, set);
@@ -114,9 +141,33 @@ export class MemoryStore implements SyncStore {
     const r = this.profile(syncId);
     return catalogUuids(r.catalog).filter(u => isErased(r.catalog, u)).sort();
   }
-  note(syncId: string, uuid: string): NoteState | null {
+  peek(syncId: string, uuid: string): NoteState | null {
     const r = this.profile(syncId);
-    return isErased(r.catalog, uuid) ? null : readNote(r.getDoc(uuid));
+    return isErased(r.catalog, uuid) || !r.docs.has(uuid) ? null : readNote(r.getDoc(uuid));
+  }
+  async note(syncId: string, uuid: string) {
+    return this.peek(syncId, uuid);
+  }
+  async allNotes(syncId: string) {
+    return Object.entries(this.profile(syncId).notes()).map(([uuid, n]) => ({ uuid, ...n }));
+  }
+  onNoteChange(syncId: string, listener: (uuid: string) => void) {
+    const set = this.changeListeners.get(syncId) ?? new Set();
+    this.changeListeners.set(syncId, set);
+    set.add(listener);
+    return () => void set.delete(listener);
+  }
+  async applyFile(syncId: string, uuid: string | null, e: FileEdit) {
+    const id = uuid ?? crypto.randomUUID();
+    const now = new Date().toISOString();
+    const cur = await this.note(syncId, id);
+    const content = cur && e.base !== null ? rebaseText(e.base, e.content, cur.content) : e.content;
+    this.edit(syncId, id, { isMarkdown: true, deletedAt: null, createdAt: now, ...cur, title: e.title, content, isPinned: e.isPinned, isArchived: e.isArchived, updatedAt: now });
+    return id;
+  }
+  async binNote(syncId: string, uuid: string) {
+    const cur = await this.note(syncId, uuid);
+    if (cur && !cur.deletedAt) this.edit(syncId, uuid, { ...cur, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
   }
 
   // Restart with a new client id.

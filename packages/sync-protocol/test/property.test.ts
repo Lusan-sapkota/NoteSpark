@@ -51,7 +51,7 @@ const run = async (seed: number) => {
       const have = Object.keys(store.notes(syncId));
       const create = have.length === 0 || r() < 0.2;
       const id = create ? uuid(500_000 + counter++) : pick(have);
-      const cur: NoteState = create ? note(`N${counter}`, '', { createdAt: stampNow }) : store.note(syncId, id)!;
+      const cur: NoteState = create ? note(`N${counter}`, '', { createdAt: stampNow }) : store.peek(syncId, id)!;
       const kind = create ? 'content' : pick(['content', 'content', 'title', 'pin', 'archive', 'bin', 'markdown']);
       const next = { ...cur, updatedAt: stampNow };
       if (kind === 'content') { const i = edge(cur.content, Math.floor(r() * (cur.content.length + 1))); next.content = cur.content.slice(0, i) + word() + cur.content.slice(edge(cur.content, i + Math.floor(r() * 3))); }

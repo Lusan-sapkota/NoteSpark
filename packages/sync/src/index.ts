@@ -5,3 +5,4 @@ export * from './compact.ts';
 export * from './replica.ts';
 export * from './store.ts';
 export * from './syncStore.ts';
+export * from './rebase.ts';

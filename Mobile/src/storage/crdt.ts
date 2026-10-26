@@ -98,6 +98,7 @@ const erase = async (db: DB, uuids: string[], out: Delta[]): Promise<void> => {
   const update = catalogUpdate(await loadUpdates(db, CATALOG), clientId(db), { erased: uuids });
   if (update) await append(db, CATALOG, update, out);
   for (const uuid of uuids) {
+    out.push({ doc: uuid, bytes: new Uint8Array(0) }); // tells onDocsChanged; nothing to send
     await db.runAsync('DELETE FROM crdt_updates WHERE docId = ?', [uuid]);
     await db.runAsync('DELETE FROM crdt_materialized WHERE docId = ?', [uuid]);
     await db.runAsync('DELETE FROM crdt_adopted WHERE docId = ?', [uuid]);
@@ -106,6 +107,20 @@ const erase = async (db: DB, uuids: string[], out: Delta[]): Promise<void> => {
 
 const chains = new WeakMap<DB, Promise<unknown>>();
 const listeners = new WeakMap<DB, Set<(d: Delta) => void>>();
+
+const changeListeners = new WeakMap<DB, Set<(docs: string[]) => void>>();
+const notifyChanged = (db: DB, docs: string[]) => {
+  const notes = [...new Set(docs)].filter(d => d !== CATALOG);
+  if (notes.length) for (const l of changeListeners.get(db) ?? []) l(notes);
+};
+
+// Called after every commit, local or applied, with the notes whose docs changed or were erased.
+export const onDocsChanged = (db: DB, listener: (docs: string[]) => void): (() => void) => {
+  const set = changeListeners.get(db) ?? new Set();
+  changeListeners.set(db, set);
+  set.add(listener);
+  return () => void set.delete(listener);
+};
 
 // Called after each commit with the updates written here.
 export const onLocalUpdate = (db: DB, listener: (d: Delta) => void): (() => void) => {
@@ -129,7 +144,8 @@ export const transact = <T>(db: DB, work: (sync: SyncWrites) => Promise<T>): Pro
     try {
       const result = await work(sync);
       await db.execAsync('COMMIT');
-      for (const l of listeners.get(db) ?? []) for (const d of out) l(d);
+      for (const l of listeners.get(db) ?? []) for (const d of out) if (d.bytes.length) l(d);
+      notifyChanged(db, out.map(d => d.doc));
       return result;
     } catch (error) {
       await db.execAsync('ROLLBACK').catch(() => {});
@@ -216,6 +232,7 @@ export interface Delta {
 // Updates from another device, in one transaction.
 export const applyRemote = async (db: DB, deltas: Delta[]): Promise<void> => {
   if (!(await syncOn(db))) throw new Error('Sync is off for this profile');
+  const changed: string[] = [];
   await transact(db, async () => {
     const touched = new Set<string>();
     for (const { doc, bytes } of deltas) {
@@ -226,6 +243,7 @@ export const applyRemote = async (db: DB, deltas: Delta[]): Promise<void> => {
     for (const uuid of erased) {
       const row = await db.getFirstAsync<{ id: number }>('SELECT id FROM notes WHERE uuid = ?', [uuid]);
       if (row) {
+        changed.push(uuid);
         await db.runAsync('DELETE FROM notes WHERE id = ?', [row.id]);
         await db.runAsync('DELETE FROM note_versions WHERE noteId = ?', [row.id]);
       }
@@ -234,6 +252,7 @@ export const applyRemote = async (db: DB, deltas: Delta[]): Promise<void> => {
     }
     for (const uuid of touched) {
       if (uuid === CATALOG || erased.has(uuid)) continue;
+      changed.push(uuid);
       // First update for an adopted note: the row becomes the doc's next change.
       if (await db.getFirstAsync('SELECT docId FROM crdt_adopted WHERE docId = ?', [uuid])) {
         await db.runAsync('DELETE FROM crdt_adopted WHERE docId = ?', [uuid]);
@@ -242,6 +261,7 @@ export const applyRemote = async (db: DB, deltas: Delta[]): Promise<void> => {
       } else await materialize(db, uuid);
     }
   });
+  notifyChanged(db, changed);
 };
 
 // First link: adopted notes take the hub's uuids, the rest get docs, sync turns on.

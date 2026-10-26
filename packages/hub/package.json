@@ -1,0 +1,14 @@
+{
+  "name": "@notespark/hub",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "NoteSpark's hub, Node only: the Markdown mirror (the transport comes later).",
+  "main": "src/index.ts",
+  "scripts": {
+    "test": "node --import ../node-shims/test/loader/register.mjs --test test/*.test.ts"
+  },
+  "dependencies": {
+    "chokidar": "6.0.0"
+  }
+}
