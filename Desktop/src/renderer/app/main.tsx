@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Image, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { ActivityIndicator, Banner, Button, Icon, IconButton, PaperProvider, Text, Tooltip as PaperTooltip, TooltipProps } from 'react-native-paper';
+import { ActivityIndicator, Button, Icon, IconButton, PaperProvider, Text, Tooltip as PaperTooltip, TooltipProps } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { invoke, isDesktop, WebStatus } from './bridge';
 import logo from './round.png';
@@ -39,18 +39,6 @@ const screens = {
   Privacy: PrivacyScreen,
 };
 
-// The places the phone's header links to, in the same order, plus Notes (Home) since a computer has no back stack to
-// fall back on. They live in the top bar only: nothing else on screen repeats them.
-const destinations = [
-  { name: 'Home', label: 'Notes', icon: 'note-text', outline: 'note-text-outline', covers: ['Home', 'NoteView', 'Editor'] },
-  { name: 'Scratchpad', label: 'Scratchpad', icon: 'notebook-edit', outline: 'notebook-edit-outline', covers: ['Scratchpad'] },
-  { name: 'Tasks', label: 'Tasks', icon: 'checkbox-marked', outline: 'checkbox-marked-outline', covers: ['Tasks'] },
-  { name: 'Settings', label: 'Settings', icon: 'cog', outline: 'cog-outline', covers: ['Settings', 'Bin', 'ImportExport', 'About', 'Privacy', 'ProfileLock'] },
-];
-// Like the phone: a place opens on top of Home, so Back returns to the notes.
-const goTo = (nav: { reset(state: { routes: { name: string }[] }): void }, name: string) =>
-  nav.reset({ routes: name === 'Home' ? [{ name }] : [{ name: 'Home' }, { name }] });
-
 // Paper draws tooltips in the inverse colors (a light bubble on a dark screen). This one sits on the app's own surfaces,
 // like the phone's snackbar: a raised surface with the normal text color, in light and dark.
 const Tooltip = (props: TooltipProps) => {
@@ -77,56 +65,41 @@ const useWindowButtons = () => {
   return room;
 };
 
-// The header: logo and name, the places, and (desktop window only) the web view switch, on one row that is also the
-// window's title bar (drag it to move the window). It sits on a tonal surface so the screen's own title row below reads
-// as the page, not as a second bar. Each place is a labelled pill (icon only in a narrow window); the current one is
-// filled in the secondary container with a solid icon, and its tooltip carries the shortcut.
+// The header: logo and name, and (desktop window only) the web view switch, on one row that is also the window's title
+// bar (drag it to move the window). It sits on a tonal surface so the screen's own title row below reads as the page, not
+// as a second bar. The places (Scratchpad, Tasks, Settings) are buttons in the Notes title row, as on the phone.
 const TopBar = () => {
   const { theme } = useTheme();
-  const here = useCurrentNavigation();
   const room = useWindowButtons();
   const { width } = useWindowDimensions();
   const [web, setWeb] = useState<WebStatus | null>(null);
   useEffect(() => { if (isDesktop) invoke<WebStatus>('web:status').then(setWeb).catch(() => {}); }, []);
+  const [open, setOpen] = useState(false); // the details panel under the chip
   const toggle = () =>
-    invoke<WebStatus>(web?.on ? 'web:stop' : 'web:start').then(w => { setWeb(w); window.notespark?.refreshTray(); }, e => console.error(e));
+    invoke<WebStatus>(web?.on ? 'web:stop' : 'web:start').then(w => { setWeb(w); setOpen(!!w.on); window.notespark?.refreshTray(); }, e => console.error(e));
+  useEffect(() => {
+    const close = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
+    window.addEventListener('keydown', close);
+    return () => window.removeEventListener('keydown', close);
+  }, []);
   const tip = { enterTouchDelay: 250, leaveTouchDelay: 150 };
   const quiet = theme.colors.onSurfaceVariant;
-  const mod = /Mac/.test(navigator.platform) ? '\u2318' : 'Ctrl+';
   const showName = width >= 760;
-  const showLabels = width >= 600;
   return (
-    <>
+    <View style={{ zIndex: 20 }}>
       <View dataSet={{ drag: '' }} style={{ height: 64, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg + room.left, paddingRight: space.sm + room.right, backgroundColor: theme.colors.surfaceContainerLow }}>
         <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 36, height: 36 }} />
         {showName && <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginLeft: space.md }}>NoteSpark</Text>}
-        <View dataSet={{ nodrag: '' }} style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, marginLeft: showName ? space.xl : space.lg }}>
-          {here && destinations.map((d, i) => {
-            const active = d.covers.includes(here.route.name);
-            return (
-              <Tooltip key={d.name} title={`${d.label}  ${mod}${i + 1}`} {...tip}>
-                <Pressable accessibilityRole="button" accessibilityLabel={d.label} accessibilityState={{ selected: active }} aria-current={active ? 'page' : undefined} onPress={() => goTo(here.nav, d.name)}
-                  style={({ hovered, pressed }: any) => ({
-                    height: 40, minWidth: 40, paddingHorizontal: showLabels || active ? space.lg : 0, borderRadius: shape.full,
-                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm,
-                    backgroundColor: active ? theme.colors.secondaryContainer : hovered || pressed ? theme.colors.surfaceContainerHighest : 'transparent',
-                  })}>
-                  <Icon source={active ? d.icon : d.outline} size={20} color={active ? theme.colors.onSecondaryContainer : quiet} />
-                  {(showLabels || active) && <Text variant="labelLarge" style={{ color: active ? theme.colors.onSecondaryContainer : quiet }}>{d.label}</Text>}
-                </Pressable>
-              </Tooltip>
-            );
-          })}
-        </View>
         <View style={{ flex: 1 }} />
         {isDesktop && (
           <View dataSet={{ nodrag: '' }}>
-            <Tooltip title={web?.on ? 'Stop web view' : 'Start web view'} {...tip}>
+            <Tooltip title={web?.on ? (open ? 'Hide web view details' : 'Show web view details') : 'Start web view'} {...tip}>
               {web?.on ? (
-                <Pressable accessibilityRole="button" accessibilityLabel="Stop web view" onPress={toggle}
-                  style={({ hovered }: any) => ({ height: 40, paddingHorizontal: space.lg, borderRadius: shape.full, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: theme.colors.tertiaryContainer, opacity: hovered ? 0.9 : 1 })}>
+                <Pressable accessibilityRole="button" accessibilityLabel="Web view details" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)}
+                  style={({ hovered }: any) => ({ height: 40, paddingLeft: space.lg, paddingRight: space.md, borderRadius: shape.full, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: theme.colors.tertiaryContainer, opacity: hovered ? 0.9 : 1 })}>
                   <Icon source="web" size={20} color={theme.colors.onTertiaryContainer} />
                   <Text variant="labelLarge" style={{ color: theme.colors.onTertiaryContainer }}>Web view on</Text>
+                  <Icon source={open ? 'chevron-up' : 'chevron-down'} size={18} color={theme.colors.onTertiaryContainer} />
                 </Pressable>
               ) : (
                 <IconButton icon="web" size={22} iconColor={quiet} accessibilityLabel="Start web view" onPress={toggle} style={{ margin: 0, width: 40, height: 40 }} />
@@ -135,12 +108,21 @@ const TopBar = () => {
           </View>
         )}
       </View>
-      {web?.on && (
-        <Banner visible actions={[{ label: 'Copy link', onPress: () => invoke('web:copy') }, { label: 'Stop', onPress: toggle }]}>
-          Web view is on. Open this on a device on your network: {web.links.map(l => l.replace(/\?t=.*/, '')).join('  ')}. Anyone with the link can read and edit your notes.
-        </Banner>
+      {web?.on && open && (
+        <View dataSet={{ nodrag: '' }} style={{ position: 'absolute', top: 68, right: space.lg, width: 360, maxWidth: '92%', padding: space.lg, gap: space.md, borderRadius: shape.group, backgroundColor: theme.colors.surfaceContainerHigh }}>
+          <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>Web view is on</Text>
+          <View style={{ gap: space.xs }}>
+            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Open one of these in a browser on your network:</Text>
+            {web.links.map(l => <Text key={l} variant="bodyMedium" selectable style={{ color: theme.colors.onSurface }}>{l.replace(/\?t=.*/, '')}</Text>)}
+          </View>
+          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Anyone with the link can read and edit your notes.</Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm }}>
+            <Button mode="text" onPress={toggle}>Stop web view</Button>
+            <Button mode="contained-tonal" onPress={() => invoke('web:copy')}>Copy link</Button>
+          </View>
+        </View>
       )}
-    </>
+    </View>
   );
 };
 
