@@ -7,3 +7,4 @@ export * from './noteText';
 export * from './textEmbedding';
 export * from './noteFiles';
 export * from './network';
+export * from './reminders';

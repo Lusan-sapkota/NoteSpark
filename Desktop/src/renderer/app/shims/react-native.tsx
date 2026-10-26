@@ -5,6 +5,10 @@ import { FlatList as WebFlatList, TextInput as WebTextInput } from 'react-native
 
 export * from 'react-native-web';
 
+// Some libraries default-import react-native; the dev server (native ES modules) needs the default to exist.
+import * as self from './react-native';
+export default self;
+
 // The editor moves the cursor with ref.setSelection(start, end), which only native TextInput has.
 export const TextInput = React.forwardRef<any, any>((props, ref) => (
   <WebTextInput

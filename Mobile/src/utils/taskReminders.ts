@@ -2,9 +2,8 @@
 // Scheduled on the phone (no push); recomputed from the notes whenever Home loads.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Notifications } from './notifications';
-import { extractTasks } from '@notespark/core';
+import { buildReminders, REMINDER_ID_PREFIX, type ProfileTasks } from '@notespark/core';
 import { getProfiles, hasProfilePin, readProfileNotes } from '../storage/profiles';
-import { Note } from '../types';
 
 const HOUR_KEY = 'reminderHour';
 export const REMINDER_HOURS = [7, 8, 9, 12, 17, 20];
@@ -20,50 +19,6 @@ export const setReminderHour = async (hour: number): Promise<void> => {
 };
 
 export const formatHour = (hour: number) => new Date(2000, 0, 1, hour).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-const DAYS_AHEAD = 30; // keeps well under Android's limit on scheduled alarms
-const ID_PREFIX = 'task-';
-
-export interface Reminder {
-  id: string;
-  date: Date;
-  title: string;
-  body: string;
-}
-
-interface ProfileTasks {
-  id: string;
-  name: string;
-  locked: boolean; // has a PIN: the reminder doesn't show the task text
-  notes: Note[];
-}
-
-const list = (texts: string[]) =>
-  texts.length <= 3 ? texts.join(', ') : `${texts.slice(0, 3).join(', ')} and ${texts.length - 3} more`;
-
-export const buildReminders = (profiles: ProfileTasks[], hour = 9, now = new Date()): Reminder[] => {
-  const latest = now.getTime() + DAYS_AHEAD * 86400000;
-  const reminders: Reminder[] = [];
-  for (const profile of profiles) {
-    const byDay = new Map<string, string[]>();
-    profile.notes
-      .filter(n => !n.isArchived)
-      .flatMap(n => extractTasks(n))
-      .forEach(t => t.due && byDay.set(t.due, [...(byDay.get(t.due) ?? []), t.text]));
-    for (const [due, texts] of byDay) {
-      const date = new Date(`${due}T${String(hour).padStart(2, '0')}:00`);
-      if (isNaN(date.getTime()) || date.getTime() <= now.getTime() || date.getTime() > latest) continue;
-      const where = profiles.length > 1 ? ` in ${profile.name}` : '';
-      reminders.push({
-        id: `${ID_PREFIX}${profile.id}-${due}`,
-        date,
-        title: `${texts.length === 1 ? 'A task is' : `${texts.length} tasks are`} due today${where}`,
-        body: profile.locked ? 'Open NoteSpark to see it.' : list(texts),
-      });
-    }
-  }
-  return reminders;
-};
-
 let lastScheduled = '';
 
 export const syncTaskReminders = async (): Promise<void> => {
@@ -88,7 +43,7 @@ export const syncTaskReminders = async (): Promise<void> => {
   const key = JSON.stringify(reminders.map(r => [r.id, r.date.getTime(), r.title, r.body]));
   if (key === lastScheduled) return;
   for (const request of await Notifications.getAllScheduledNotificationsAsync()) {
-    if (request.identifier.startsWith(ID_PREFIX)) await Notifications.cancelScheduledNotificationAsync(request.identifier);
+    if (request.identifier.startsWith(REMINDER_ID_PREFIX)) await Notifications.cancelScheduledNotificationAsync(request.identifier);
   }
   for (const r of reminders) {
     await Notifications.scheduleNotificationAsync({

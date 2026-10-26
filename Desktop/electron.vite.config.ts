@@ -120,24 +120,18 @@ export default defineConfig({
             replace('Anyone using this phone can open it', 'Anyone using this computer can open it');
             return code;
           }
-          const dropRow = (title: string) => {
-            const start = code.indexOf(`<GroupedRow\n            title="${title}"`);
-            const end = start < 0 ? -1 : code.indexOf('\n          />\n', start);
-            if (end < 0) throw new Error(`desktop-copy: row "${title}" not found in ${id}`);
-            code = code.slice(0, code.lastIndexOf('\n', start) + 1) + code.slice(end + '\n          />\n'.length);
-          };
           if (id.endsWith('Mobile/src/screens/SettingsScreen.tsx')) {
-            // Share-to-NoteSpark and task reminders are phone features; the row above them becomes the last in its group.
+            // Reminders and shared text work on the desktop too (src/main/notify.ts): reminders come from the main process,
+            // shared text is the tray's "Save clipboard text". The desktop's own row ends the group.
             replaceAll(RESTORED, RESTORED_DESKTOP);
             replace('Your notes never leave your phone', 'Your notes never leave this computer');
-            dropRow('Text shared to NoteSpark');
-            dropRow('Task reminders');
-            // The desktop's own row (keep running in the tray) follows the Rediscover row and ends the group.
-            const row = code.indexOf('title="Rediscover on Home"');
+            replace('description={shareLabel(shareTarget)}', 'description={`Save clipboard text from the tray: ${shareLabel(shareTarget).toLowerCase()}`}');
+            const row = code.indexOf('title="Task reminders"');
+            const flag = row < 0 ? -1 : code.indexOf('isLast\n', row);
             const end = row < 0 ? -1 : code.indexOf('\n          />\n', row);
-            if (end < 0) throw new Error(`desktop-copy: Rediscover row not found in ${id}`);
+            if (flag < 0 || end < 0) throw new Error(`desktop-copy: Task reminders row not found in ${id}`);
             const after = end + '\n          />\n'.length;
-            code = `import KeepInTrayRow from '${app('KeepInTrayRow.tsx')}';\n` + code.slice(0, after) + '          <KeepInTrayRow />\n' + code.slice(after);
+            code = `import KeepInTrayRow from '${app('KeepInTrayRow.tsx')}';\n` + code.slice(0, flag) + 'isLast={false}' + code.slice(flag + 'isLast'.length, after) + '          <KeepInTrayRow />\n' + code.slice(after);
             return code;
           }
           if (id.endsWith('Mobile/src/screens/OnboardingScreen.tsx')) {

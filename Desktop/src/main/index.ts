@@ -4,6 +4,7 @@ import { firefly } from '@notespark/core';
 import { serveAsset } from './assets';
 import { setWindowFocused } from './activity';
 import { invoke } from './backend';
+import { saveClipboard, startReminders } from './notify';
 import { buildAppMenu, MenuAction } from './menu';
 import AsyncStorage from './shims/async-storage';
 import { startWebView, stopWebView, webViewStatus } from './web';
@@ -143,6 +144,8 @@ else {
         // The link carries the one-time token, so it is copied, never shown in the menu.
         ...(web.on ? [{ label: 'Copy web view link', click: () => clipboard.writeText(webViewStatus().links.at(-1) ?? '') }] : []),
         { type: 'separator' },
+        { label: 'Save clipboard text', click: () => void saveClipboard((fn, ...args) => invoke('storage', { module: 'notes', fn, args }, 'ipc')) },
+        { type: 'separator' },
         { label: 'Quit', click: () => app.quit() },
       ]));
     };
@@ -170,6 +173,7 @@ else {
     refreshMenu();
     nativeTheme.on('updated', refreshMenu);
     createWindow();
+    startReminders(() => deliver({ type: 'go', routes: ['Home', 'Tasks'] }));
   });
 }
 
