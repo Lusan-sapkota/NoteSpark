@@ -3,10 +3,11 @@
 // writing it in plain text. Reviewed again in phase 4 with the profile screens.
 import { existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
-import { safeStorage } from 'electron';
-import { dataDir } from './paths';
+import { dataDir, electron } from './paths';
 
 const file = () => join(dataDir(), 'secure.json');
+// Outside Electron (tests) there is no keyring: values are kept as they are, only when NOTESPARK_TEST_SECRETS=1.
+const plain = () => !process.versions.electron && process.env.NOTESPARK_TEST_SECRETS === '1';
 const read = (): Record<string, string> => { try { return existsSync(file()) ? JSON.parse(readFileSync(file(), 'utf8')) : {}; } catch { return {}; } };
 const write = (data: Record<string, string>) => {
   mkdirSync(dirname(file()), { recursive: true });
@@ -16,9 +17,12 @@ const write = (data: Record<string, string>) => {
 
 export const getItemAsync = async (key: string) => {
   const value = read()[key];
-  return value === undefined ? null : safeStorage.decryptString(Buffer.from(value, 'base64'));
+  if (value === undefined) return null;
+  return plain() ? value : electron().safeStorage.decryptString(Buffer.from(value, 'base64'));
 };
 export const setItemAsync = async (key: string, value: string) => {
+  if (plain()) return write({ ...read(), [key]: value });
+  const { safeStorage } = electron();
   if (!safeStorage.isEncryptionAvailable()) throw new Error('No system keyring is available to protect the key');
   write({ ...read(), [key]: safeStorage.encryptString(value).toString('base64') });
 };

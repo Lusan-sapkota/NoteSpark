@@ -3,7 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { extname, join, normalize } from 'node:path';
 import { BrowserWindow, session } from 'electron';
-import { dataDir } from './shims/paths';
+import { dataDir } from '@notespark/node-shims/paths';
 
 // What the desktop window (app://notespark/) and the web view (http) both serve: the UI bundle and note pictures.
 const root = join(__dirname, '../renderer');

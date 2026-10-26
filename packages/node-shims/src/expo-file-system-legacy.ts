@@ -2,7 +2,7 @@
 import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { BrowserWindow, dialog } from 'electron';
+import { electron } from './paths';
 
 const path = (uri: string) => (uri.startsWith('file://') ? fileURLToPath(uri) : uri);
 export const getInfoAsync = async (uri: string) => ({ exists: existsSync(path(uri)) });
@@ -14,6 +14,7 @@ export const writeAsStringAsync = async (uri: string, text: string) => writeFile
 // Android's folder picker (SAF) becomes the system folder dialog; a "folder address" is a plain path.
 export const StorageAccessFramework = {
   requestDirectoryPermissionsAsync: async () => {
+    const { BrowserWindow, dialog } = electron();
     const options = { properties: ['openDirectory' as const, 'createDirectory' as const], title: 'Choose a folder for backups' };
     const window = BrowserWindow.getFocusedWindow();
     const result = window ? await dialog.showOpenDialog(window, options) : await dialog.showOpenDialog(options);

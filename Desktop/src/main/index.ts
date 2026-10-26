@@ -6,7 +6,7 @@ import { setWindowFocused } from './activity';
 import { invoke } from './backend';
 import { saveClipboard, startReminders } from './notify';
 import { buildAppMenu, MenuAction } from './menu';
-import AsyncStorage from './shims/async-storage';
+import AsyncStorage from '@notespark/node-shims/async-storage';
 import { startWebView, stopWebView, webViewStatus } from './web';
 
 // Strictly offline: no updater, crash reporter, analytics or remote content.

@@ -1,4 +1,4 @@
-// The phone's own storage code (Mobile/src/storage), running here in the main process on the shims in ./shims.
+// The phone's own storage code (Mobile/src/storage), running here in the main process on the shims in packages/node-shims.
 // The renderer reaches it through the 'storage' channel; nothing is copied, so desktop and phone share the rules.
 import { BrowserWindow } from 'electron';
 import * as autoBackup from '../../../Mobile/src/storage/autoBackup';
@@ -7,7 +7,7 @@ import * as notes from '../../../Mobile/src/storage/notes';
 import * as profiles from '../../../Mobile/src/storage/profiles';
 import * as semanticSearch from '../../../Mobile/src/storage/semanticSearch';
 import { idleMs, watchAway } from './activity';
-import AsyncStorage from './shims/async-storage';
+import AsyncStorage from '@notespark/node-shims/async-storage';
 
 const modules = { notes, profiles, database, autoBackup, semanticSearch } as Record<string, Record<string, unknown>>;
 // Backups write into a folder chosen in a system dialog on this computer, so only the desktop window may change them.

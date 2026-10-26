@@ -5,7 +5,7 @@ import { clipboard, Notification } from 'electron';
 import { buildReminders, REMINDER_ID_PREFIX, type ProfileTasks } from '@notespark/core';
 import * as notes from '../../../Mobile/src/storage/notes';
 import * as profiles from '../../../Mobile/src/storage/profiles';
-import AsyncStorage from './shims/async-storage';
+import AsyncStorage from '@notespark/node-shims/async-storage';
 
 const say = (title: string, body: string, onClick?: () => void) => {
   if (!Notification.isSupported()) return;

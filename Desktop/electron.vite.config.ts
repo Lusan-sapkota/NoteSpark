@@ -15,16 +15,19 @@ const overrides: Record<string, string> = Object.fromEntries(
 
 // The phone's storage code runs in the main process; its Expo imports resolve to the shims in src/main/shims.
 const shim = (name: string) => resolve(__dirname, 'src/main/shims', name);
+// The Expo modules the storage code uses live in ../packages/node-shims (no Electron imports, so tests and Docker share them).
+const nodeShim = (name: string) => resolve(__dirname, '../packages/node-shims/src', name);
 const expoShims = [
-  { find: 'expo-file-system/legacy', replacement: shim('expo-file-system-legacy.ts') },
-  { find: 'expo-sqlite', replacement: shim('expo-sqlite.ts') },
+  { find: '@notespark/node-shims', replacement: resolve(__dirname, '../packages/node-shims/src') },
+  { find: 'expo-file-system/legacy', replacement: nodeShim('expo-file-system-legacy.ts') },
+  { find: 'expo-sqlite', replacement: nodeShim('expo-sqlite.ts') },
   { find: 'expo-asset', replacement: shim('expo-asset.ts') },
   { find: 'react-native', replacement: shim('react-native.ts') },
   { find: 'onnxruntime-react-native', replacement: 'onnxruntime-node' }, // same API, for Node
-  { find: 'expo-crypto', replacement: shim('expo-crypto.ts') },
-  { find: 'expo-secure-store', replacement: shim('expo-secure-store.ts') },
+  { find: 'expo-crypto', replacement: nodeShim('expo-crypto.ts') },
+  { find: 'expo-secure-store', replacement: nodeShim('expo-secure-store.ts') },
   { find: 'expo-local-authentication', replacement: shim('expo-local-authentication.ts') },
-  { find: '@react-native-async-storage/async-storage', replacement: shim('async-storage.ts') },
+  { find: '@react-native-async-storage/async-storage', replacement: nodeShim('async-storage.ts') },
 ];
 
 export default defineConfig({

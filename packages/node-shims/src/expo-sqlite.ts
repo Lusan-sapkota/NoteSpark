@@ -1,9 +1,8 @@
 // Just enough of expo-sqlite for the phone's storage code (Mobile/src/storage), on better-sqlite3-multiple-ciphers.
 // The native module loads on first open, so a tray-only app never pays for it.
 import { mkdirSync, rmSync } from 'node:fs';
-import { createRequire } from 'node:module';
 import { join, sep } from 'node:path';
-import { databaseDir } from './paths';
+import { databaseDir, requireFromHere } from './paths';
 
 type Raw = {
   prepare(sql: string): { all(...p: unknown[]): any[]; get(...p: unknown[]): any; run(...p: unknown[]): { changes: number; lastInsertRowid: number | bigint } };
@@ -41,7 +40,7 @@ const exportAll = (raw: Raw, schema: string) => {
 
 export const defaultDatabaseDirectory = databaseDir();
 // The vector index for search by meaning. Looked up on first use; a packaged app keeps the library outside app.asar.
-const nodeRequire = createRequire(__filename);
+const nodeRequire = requireFromHere;
 export const bundledExtensions: Record<string, { libPath: string; entryPoint: string } | undefined> = {
   get 'sqlite-vec'() {
     try {

@@ -1,0 +1,10 @@
+{
+  "name": "@notespark/node-shims",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "The phone's Expo modules (sqlite, crypto, secure store, files, async storage) on plain Node, for the desktop, Docker and the storage tests. Electron is reached lazily, only inside the desktop.",
+  "scripts": {
+    "test": "node --import ./test/loader/register.mjs --test test/*.test.ts"
+  }
+}

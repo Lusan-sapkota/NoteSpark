@@ -26,3 +26,15 @@ export const readCatalog = (updates: Uint8Array[]) => {
   const all = catalogUuids(doc);
   return { erased: new Set(all.filter(uuid => isErased(doc, uuid))), known: new Set(all) };
 };
+
+// The same, plus the doc's state vector after the change (the phone's row marker).
+export const noteCapture = (updates: Uint8Array[], clientID: number, next: NoteState): { update: Uint8Array | null; stateVector: Uint8Array } => {
+  const doc = docFromUpdates(updates, clientID);
+  const update = writeNote(doc, next);
+  return { update, stateVector: Y.encodeStateVector(doc) };
+};
+
+export const noteWithStateVector = (updates: Uint8Array[]): { note: NoteState; stateVector: Uint8Array } => {
+  const doc = docFromUpdates(updates);
+  return { note: readNote(doc), stateVector: Y.encodeStateVector(doc) };
+};

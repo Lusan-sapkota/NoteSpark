@@ -2,7 +2,7 @@ import * as Crypto from 'expo-crypto';
 import { deleteAsync, getInfoAsync, moveAsync } from 'expo-file-system/legacy';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
-import { UUID_SQL, eraseNotes, initCrdt, reconcileOnce, uuidsWhere } from './crdt';
+import { UUID_SQL, initCrdt, reconcileOnce, transact, uuidsWhere } from './crdt';
 
 export const dbName = (profileId: string) => (profileId === 'default' ? 'notespark.db' : `notespark-${profileId}.db`);
 
@@ -187,9 +187,11 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   await initCrdt(db);
   const now = new Date().toISOString();
   const cutoff = [new Date(Date.now() - BIN_DAYS * 86400000).toISOString()];
-  const purged = await uuidsWhere(db, 'deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
-  await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
-  await eraseNotes(db, purged);
+  await transact(db, async sync => {
+    const purged = await uuidsWhere(db, 'deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
+    await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
+    await sync.erase(purged);
+  });
   // Earlier versions of each note (see saveVersion in notes.ts).
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS note_versions (
