@@ -30,6 +30,17 @@ type Nav = {
   addListener(event: string, cb: Listener): () => void;
 };
 
+// The bar above the screens lives outside the navigator, so the navigator publishes where it is.
+type Current = { nav: Nav; route: Route };
+let current: Current | null = null;
+const watchers = new Set<() => void>();
+const publish = (value: Current | null) => { current = value; watchers.forEach(fn => fn()); };
+export const useCurrentNavigation = () => {
+  const [, tick] = useState(0);
+  useEffect(() => { const fn = () => tick(t => t + 1); watchers.add(fn); return () => { watchers.delete(fn); }; }, []);
+  return current;
+};
+
 const NavContext = createContext<{ nav: Nav; route: Route; guard: React.MutableRefObject<Guard | null> } | null>(null);
 
 export const useNavigation = <T = Nav,>() => useContext(NavContext)!.nav as unknown as T;
@@ -93,6 +104,8 @@ export const Navigator: React.FC<{ initial: string; screens: Record<string, Reac
   }), [stack.length]);
 
   const Screen = screens[top.name];
+  useEffect(() => { publish({ nav, route: top }); }, [nav, top]);
+  useEffect(() => () => publish(null), []);
   const content = Screen ? <Screen key={top.key} /> : null;
   return <NavContext.Provider value={{ nav, route: top, guard }}>{frame ? frame(content, nav, top) : content}</NavContext.Provider>;
 };

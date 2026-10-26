@@ -84,6 +84,13 @@ export default defineConfig({
           const RESTORED_DESKTOP = "If NoteSpark's folder was moved or restored from a backup, a protected profile's key may be missing: it is kept in your system's keyring, not in the folder.";
           if (id.endsWith('Mobile/src/screens/HomeScreen.tsx')) {
             replaceAll(RESTORED, RESTORED_DESKTOP);
+            // Scratchpad, Tasks and Settings live in the desktop top bar, so Home's header keeps only the profile button.
+            for (const label of ['Scratchpad', 'Tasks', 'Settings']) {
+              const start = code.indexOf(`<Appbar.Action icon="`, code.indexOf('accessibilityLabel="' + label + '" onPress=') - 80);
+              const end = code.indexOf('\n', code.indexOf('accessibilityLabel="' + label + '" onPress='));
+              if (!code.includes('accessibilityLabel="' + label + '" onPress=') || start < 0) throw new Error(`desktop-copy: Home header action "${label}" not found in ${id}`);
+              code = code.slice(0, code.lastIndexOf('\n', start) + 1) + code.slice(end + 1);
+            }
             return code;
           }
           if (id.endsWith('Mobile/src/screens/EditorScreen.tsx')) {

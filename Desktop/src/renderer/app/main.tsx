@@ -1,11 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Image, StyleSheet, View, useWindowDimensions } from 'react-native';
-import { ActivityIndicator, Banner, Button, Drawer, IconButton, PaperProvider, Text } from 'react-native-paper';
+import { Image, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Banner, Button, IconButton, PaperProvider, Text, Tooltip } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { invoke, isDesktop, WebStatus } from './bridge';
 import logo from './round.png';
-import { Navigator } from './nav';
+import { Navigator, useCurrentNavigation } from './nav';
 import { setMeaningSearchAvailable } from './overrides/storage/semanticSearch';
 // The phone's real screens, theme and shared components, imported straight from Mobile/.
 import { ThemeProvider, useTheme } from '../../../../Mobile/src/theme/ThemeContext';
@@ -39,64 +39,51 @@ const screens = {
   Privacy: PrivacyScreen,
 };
 
-// Wide windows get a navigation rail beside the screens that are top-level on the phone.
+// The places the phone's header links to, in the same order, plus Notes (Home) since a computer has no back stack to
+// fall back on. They live in the top bar only: nothing else on screen repeats them.
 const destinations = [
-  { name: 'Home', label: 'Notes', icon: 'note-text', outline: 'note-text-outline', covers: ['Home'] },
-  { name: 'Tasks', label: 'Tasks', icon: 'checkbox-marked', outline: 'checkbox-marked-outline', covers: ['Tasks'] },
+  { name: 'Home', label: 'Notes', icon: 'note-text', outline: 'note-text-outline', covers: ['Home', 'NoteView', 'Editor'] },
   { name: 'Scratchpad', label: 'Scratchpad', icon: 'notebook-edit', outline: 'notebook-edit-outline', covers: ['Scratchpad'] },
+  { name: 'Tasks', label: 'Tasks', icon: 'checkbox-marked', outline: 'checkbox-marked-outline', covers: ['Tasks'] },
   { name: 'Settings', label: 'Settings', icon: 'cog', outline: 'cog-outline', covers: ['Settings', 'Bin', 'ImportExport', 'About', 'Privacy', 'ProfileLock'] },
 ];
-const RAIL_MIN_WIDTH = 840;
-
-const Rail = ({ route, nav }: { route: { name: string }; nav: { reset(state: { routes: { name: string }[] }): void } }) => {
-  const { theme } = useTheme();
-  return (
-    <View style={{ width: 80, backgroundColor: theme.colors.background, borderRightWidth: 1, borderRightColor: theme.colors.outlineVariant, paddingTop: space.sm }}>
-      <Drawer.Section showDivider={false}>
-        {destinations.map(d => {
-          const active = d.covers.includes(route.name);
-          return (
-            <Drawer.CollapsedItem
-              key={d.name}
-              label={d.label}
-              focusedIcon={d.icon}
-              unfocusedIcon={d.outline}
-              active={active}
-              onPress={() => nav.reset({ routes: [{ name: d.name }] })}
-              accessibilityLabel={d.label}
-            />
-          );
-        })}
-      </Drawer.Section>
-    </View>
-  );
-};
-
-const frame = (width: number) => (content: React.ReactNode, nav: any, route: { name: string }) =>
-  width >= RAIL_MIN_WIDTH && destinations.some(d => d.covers.includes(route.name)) ? (
-    <View style={{ flex: 1, flexDirection: 'row' }}>
-      <Rail route={route} nav={nav} />
-      <View style={{ flex: 1 }}>{content}</View>
-    </View>
-  ) : (
-    <View style={{ flex: 1 }}>{content}</View>
-  );
+// Like the phone: a place opens on top of Home, so Back returns to the notes.
+const goTo = (nav: { reset(state: { routes: { name: string }[] }): void }, name: string) =>
+  nav.reset({ routes: name === 'Home' ? [{ name }] : [{ name: 'Home' }, { name }] });
 
 // A slim bar above every screen: the round logo (the screens below carry their own titles) and, in the desktop window
 // only, the web view switch.
 const TopBar = () => {
   const { theme } = useTheme();
+  const here = useCurrentNavigation();
   const [web, setWeb] = useState<WebStatus | null>(null);
   useEffect(() => { if (isDesktop) invoke<WebStatus>('web:status').then(setWeb).catch(() => {}); }, []);
   const toggle = () =>
     invoke<WebStatus>(web?.on ? 'web:stop' : 'web:start').then(w => { setWeb(w); window.notespark?.refreshTray(); }, e => console.error(e));
+  const nav = { size: 24, style: { margin: 0 } } as const;
   return (
     <>
-      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingHorizontal: space.md, backgroundColor: theme.colors.background, borderBottomWidth: 1, borderBottomColor: theme.colors.outlineVariant }}>
-        <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 28, height: 28 }} />
+      <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 56, paddingHorizontal: space.lg, gap: space.xs, backgroundColor: theme.colors.background, borderBottomWidth: 1, borderBottomColor: theme.colors.outlineVariant }}>
+        <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 32, height: 32 }} />
         <View style={{ flex: 1 }} />
+        {/* The same places as the phone's header. The current one is a tonal pill with a filled icon. */}
+        {here && destinations.map(d => {
+          const active = d.covers.includes(here.route.name);
+          return (
+            <Tooltip key={d.name} title={d.label} enterTouchDelay={250} leaveTouchDelay={150}>
+              <IconButton {...nav} icon={active ? d.icon : d.outline} mode={active ? 'contained-tonal' : undefined} selected={active}
+                iconColor={active ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant} containerColor={active ? theme.colors.secondaryContainer : undefined}
+                accessibilityLabel={d.label} onPress={() => goTo(here.nav, d.name)} />
+            </Tooltip>
+          );
+        })}
+        {here && isDesktop && <View style={{ width: 1, height: 24, backgroundColor: theme.colors.outlineVariant, marginHorizontal: space.sm }} />}
         {isDesktop && (
-          <IconButton icon={web?.on ? 'web-off' : 'web'} accessibilityLabel={web?.on ? 'Stop web view' : 'Start web view'} onPress={toggle} />
+          <Tooltip title={web?.on ? 'Stop web view' : 'Start web view'} enterTouchDelay={250} leaveTouchDelay={150}>
+            <IconButton {...nav} icon={web?.on ? 'web-off' : 'web'} mode={web?.on ? 'contained' : undefined} selected={!!web?.on}
+              iconColor={web?.on ? theme.colors.onPrimary : theme.colors.onSurfaceVariant} containerColor={web?.on ? theme.colors.primary : undefined}
+              accessibilityLabel={web?.on ? 'Stop web view' : 'Start web view'} onPress={toggle} />
+          </Tooltip>
         )}
       </View>
       {web?.on && (
@@ -135,7 +122,6 @@ type LockState = { phase: 'starting' | 'ready' | 'locked' | 'unreadable'; profil
 
 const Shell = () => {
   const { theme, themeType } = useTheme();
-  const { width } = useWindowDimensions();
   const [lock, setLock] = useState<LockState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<boolean | null>(null);
@@ -195,7 +181,7 @@ const Shell = () => {
   } else {
     body = (
       <>
-        <Navigator initial="Home" screens={screens} frame={frame(width)} />
+        <Navigator initial="Home" screens={screens} />
         {lock.phase === 'locked' && <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.background }]}>{unlockScreen}</View>}
       </>
     );
