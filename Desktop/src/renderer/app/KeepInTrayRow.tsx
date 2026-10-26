@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GroupedRow from '../../../../Mobile/src/components/GroupedRow';
 import M3Switch from '../../../../Mobile/src/components/M3Switch';
+import { useAlert } from '../../../../Mobile/src/components/DialogProvider';
 import { isDesktop } from './bridge';
 
 // Desktop-only Settings rows; the settings channel refuses keys containing pin/key/secret/token/backup, so not "keepInTray".
@@ -13,10 +14,19 @@ const MenuButtonRow = () => {
   useEffect(() => {
     AsyncStorage.getItem('menuButton').then(value => setOn(value !== 'false'), () => {});
   }, []);
-  const change = (next: boolean) => {
+  const alert = useAlert();
+  const save = (next: boolean) => {
     setOn(next);
     AsyncStorage.setItem('menuButton', String(next)).catch(() => {});
     window.dispatchEvent(new Event(MENU_BUTTON_CHANGED));
+  };
+  // Hiding it can leave no way to the menu, so it asks first.
+  const change = (next: boolean) => {
+    if (next) return save(true);
+    alert('Hide the menu button?', "If your desktop doesn't show the menu at the top of the screen, you won't be able to open it from the window. You can turn the button back on in Settings.", [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Hide button', onPress: () => save(false) },
+    ]);
   };
   return (
     <GroupedRow
