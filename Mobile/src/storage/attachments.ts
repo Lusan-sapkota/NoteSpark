@@ -429,6 +429,24 @@ export const clearAttachmentTempDir = async (): Promise<void> => {
   await FileSystem.deleteAsync(tempOpenDir(), { idempotent: true }).catch(() => {});
 };
 
+export const openAttachmentInViewer = async (
+  hash: string,
+  displayName: string,
+  profileId: string = getOpenProfileId()
+): Promise<void> => {
+  const temp = await openAttachmentTemp(hash, displayName, profileId);
+  try {
+    await new File(temp.uri).preview();
+    const timer = setTimeout(() => {
+      temp.cleanup().catch(() => {});
+    }, 60_000);
+    (timer as { unref?: () => void })?.unref?.();
+  } catch (error) {
+    await temp.cleanup();
+    throw error;
+  }
+};
+
 export const listAttachments = async (
   profileId: string = getOpenProfileId()
 ): Promise<{ hash: string; size: number; mtimeMs: number }[]> => {

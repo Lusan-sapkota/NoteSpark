@@ -6,8 +6,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
 import NoteImages from './NoteImages';
 import TaskRow from './TaskRow';
-import { findTaskLines, mapTaskLines, splitDue } from '@notespark/core';
-import { noteLinkPattern } from '@notespark/core';
+import { findTaskLines, mapTaskLines, splitDue, noteLinkPattern } from '@notespark/core';
+import { openAttachmentInViewer } from '../storage/attachments';
 
 const firstText = (node: ASTNode): string => (node.children?.length ? firstText(node.children[0]) : node.content ?? '');
 
@@ -151,6 +151,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
   const renderLink = (props: any) => {
     const { children, href } = props;
     const noteTitle = typeof href === 'string' && href.startsWith(NOTE_LINK) ? decodeURIComponent(href.slice(NOTE_LINK.length)) : null;
+    const attachmentHash = typeof href === 'string' && /^attachment:[0-9a-fA-F]{64}$/.test(href) ? href.slice('attachment:'.length).toLowerCase() : null;
     let url = href;
     let openUrl = url;
     if (!/^https?:\/\//.test(url)) {
@@ -183,6 +184,13 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
         onPress={() => {
           if (noteTitle !== null) {
             onOpenNoteLink?.(noteTitle);
+            return;
+          }
+          if (attachmentHash !== null) {
+            const label = typeof children === 'string' ? children : 'attachment';
+            openAttachmentInViewer(attachmentHash, label).catch(() => {
+              alert('Downloading attachment', 'This file is still syncing from your other device. Try again in a moment.');
+            });
             return;
           }
           alert(

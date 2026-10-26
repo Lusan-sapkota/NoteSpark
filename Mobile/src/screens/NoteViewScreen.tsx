@@ -19,6 +19,7 @@ import TaskRow from '../components/TaskRow';
 import GroupedRow from '../components/GroupedRow';
 import { toPreview } from '../components/NoteItem';
 import { relatedNotes } from '../storage/semanticSearch';
+import NoteAttachments from '../components/NoteAttachments';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -283,7 +284,10 @@ const NoteViewScreen: React.FC = () => {
   // Plain notes: URLs become links that ask before opening; task lines become checkboxes.
   const renderPlainText = (content: string) => {
     const tasks = findTaskLines(content);
-    return content.replace(/\[Image: ([^\]]+)\]/g, '').split(/\r?\n/).map((line, lineIdx) => {
+    return content
+      .replace(/\[Image: ([^\]]+)\]/g, '')
+      .replace(/\[[^\]\r\n]*\]\(attachment:[0-9a-fA-F]{64}\)/g, '')
+      .split(/\r?\n/).map((line, lineIdx) => {
       const taskIndex = tasks.findIndex(t => t.line === lineIdx);
       if (taskIndex >= 0) {
         const task = tasks[taskIndex];
@@ -559,12 +563,17 @@ const NoteViewScreen: React.FC = () => {
                   {getPlainText(content)}
                 </NoteText>
               ) : (
-                <MarkdownRenderer content={content.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '')} onToggleTask={handleToggleTask} onOpenNoteLink={openNoteLink} />
+                <MarkdownRenderer
+                  content={content.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '').replace(/\[[^\]\r\n]*\]\(attachment:[0-9a-fA-F]{64}\)/g, '')}
+                  onToggleTask={handleToggleTask}
+                  onOpenNoteLink={openNoteLink}
+                />
               )
             ) : (
               renderPlainText(content)
             )}
             <NoteImages uris={extractImageUris(content, !note.isMarkdown)} />
+            <NoteAttachments content={content} />
           </View>
 
           {backlinks.length > 0 && (

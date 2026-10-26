@@ -1,5 +1,6 @@
 // The phone's storage code (Mobile/src/storage) running in the main process; the renderer uses the 'storage' channel.
 import { BrowserWindow } from 'electron';
+import * as attachments from '../../../Mobile/src/storage/attachments';
 import * as autoBackup from '../../../Mobile/src/storage/autoBackup';
 import * as database from '../../../Mobile/src/storage/database';
 import * as notes from '../../../Mobile/src/storage/notes';
@@ -8,7 +9,7 @@ import * as semanticSearch from '../../../Mobile/src/storage/semanticSearch';
 import { idleMs, watchAway } from './activity';
 import AsyncStorage from '@notespark/node-shims/async-storage';
 
-const modules = { notes, profiles, database, autoBackup, semanticSearch } as Record<string, Record<string, unknown>>;
+const modules = { notes, profiles, database, autoBackup, semanticSearch, attachments } as Record<string, Record<string, unknown>>;
 // Backups write into a folder chosen in a system dialog on this computer, so only the desktop window may change them.
 const desktopOnly = new Set(['autoBackup']);
 
@@ -49,6 +50,8 @@ const start = () =>
       await profiles.syncProfileEncryption();
       await openDefault();
       await profiles.purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
+      await attachments.clearAttachmentTempDir().catch(() => {});
+      setTimeout(() => attachments.pruneAttachments().catch(() => {}), 10_000).unref?.();
     } catch (error) {
       console.error('Failed to initialize database:', error);
       phase = 'unreadable';

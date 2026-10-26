@@ -39,6 +39,9 @@
       "expo-local-authentication": [
         "./src/main/shims/expo-local-authentication.ts"
       ],
+      "expo-file-system": [
+        "../packages/node-shims/src/expo-file-system.ts"
+      ],
       "expo-file-system/legacy": [
         "../packages/node-shims/src/expo-file-system-legacy.ts"
       ],
@@ -70,7 +73,8 @@
     "../Mobile/src/storage/notes.ts",
     "../Mobile/src/storage/profiles.ts",
     "../Mobile/src/storage/autoBackup.ts",
-    "../Mobile/src/storage/semanticSearch.ts"
+    "../Mobile/src/storage/semanticSearch.ts",
+    "../Mobile/src/storage/attachments.ts"
   ],
   "exclude": [
     "src/renderer/app"

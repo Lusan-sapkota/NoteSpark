@@ -16,6 +16,7 @@ import { sendAppNotification } from './src/utils/notifications';
 import { useFonts } from 'expo-font';
 import { fontFiles, readingWidth, space } from './src/theme/theme';
 import { DialogProvider, useAlert } from './src/components/DialogProvider';
+import { clearAttachmentTempDir, pruneAttachments } from './src/storage/attachments';
 import { pruneImageCache } from './src/utils/imageCache';
 import ProfileUnlockScreen from './src/screens/ProfileUnlockScreen';
 import { runAutoBackupIfDue } from './src/storage/autoBackup';
@@ -210,8 +211,12 @@ const AppContent = () => {
         await syncProfileEncryption();
         await openDefaultProfile();
         await purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
+        await clearAttachmentTempDir().catch(() => {});
         // Reads every profile's notes; waits so it doesn't compete with Home's first load.
-        setTimeout(() => getAllProfilesNoteContents().then(pruneImageCache).catch(() => {}), 10000);
+        setTimeout(() => {
+          getAllProfilesNoteContents().then(pruneImageCache).catch(() => {});
+          pruneAttachments().catch(() => {});
+        }, 10000);
         runAutoBackupIfDue().catch(() => {});
       } catch (error) {
         console.error('Failed to initialize database:', error);

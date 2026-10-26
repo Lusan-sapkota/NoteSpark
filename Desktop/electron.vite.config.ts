@@ -10,7 +10,7 @@ const app = (path: string) => resolve(__dirname, 'src/renderer/app', path);
 const mobileSrc = resolve(__dirname, '../Mobile/src');
 // Phone modules that can't run in a browser are swapped, by file, for the versions in src/renderer/app/overrides.
 const overrides: Record<string, string> = Object.fromEntries(
-  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'components/Menu', 'screens/PrivacyScreen'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
+  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'storage/attachments', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'components/Menu', 'screens/PrivacyScreen'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
 );
 
 // The phone's storage code runs in the main process; its Expo imports resolve to the shims in src/main/shims.
@@ -20,6 +20,7 @@ const nodeShim = (name: string) => resolve(__dirname, '../packages/node-shims/sr
 const expoShims = [
   { find: '@notespark/node-shims', replacement: resolve(__dirname, '../packages/node-shims/src') },
   { find: 'expo-file-system/legacy', replacement: nodeShim('expo-file-system-legacy.ts') },
+  { find: 'expo-file-system', replacement: nodeShim('expo-file-system.ts') },
   { find: 'expo-sqlite', replacement: nodeShim('expo-sqlite.ts') },
   { find: 'expo-asset', replacement: shim('expo-asset.ts') },
   { find: 'react-native', replacement: shim('react-native.ts') },

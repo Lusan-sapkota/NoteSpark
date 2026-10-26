@@ -3,7 +3,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
     return text;
   } else {
     let result = text.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '$1');
-    result = result.replace(/\[[^\]]*\]\(([^)]+)\)/g, '$1');
+    result = result.replace(/\[[^\]]*\]\((?!attachment:[0-9a-fA-F]{64}\))([^)]+)\)/g, '$1');
     return result;
   }
 }
@@ -11,6 +11,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
+import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, usePreventRemove, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +19,13 @@ import { Button, Chip, Dialog, IconButton, List, SegmentedButtons, Text, TextInp
 import { Note, RootStackParamList } from '../types';
 import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, saveNote, updateNote } from '../storage/notes';
 import { getActiveProfile } from '../storage/profiles';
+import {
+  ATTACHMENT_TOO_LARGE_MESSAGE,
+  MAX_ATTACHMENT_BYTES,
+  addAttachment,
+  appendAttachmentLink,
+  removeAttachmentLink,
+} from '../storage/attachments';
 import { keepDeviceImage } from '../utils/imageCache';
 import { addDays, setLineDue } from '@notespark/core';
 import { extractTags } from '@notespark/core';
@@ -26,6 +34,7 @@ import { sendAppNotification } from '../utils/notifications';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
 import MarkdownRenderer from '../components/MarkdownRenderer';
+import NoteAttachments from '../components/NoteAttachments';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -305,6 +314,30 @@ const EditorScreen: React.FC = () => {
     }
   };
 
+  const handleAttachFile = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
+    if (result.canceled || !result.assets?.[0]) return;
+    const asset = result.assets[0];
+    if (typeof asset.size === 'number' && asset.size > MAX_ATTACHMENT_BYTES) {
+      alert("Couldn't attach the file", ATTACHMENT_TOO_LARGE_MESSAGE);
+      return;
+    }
+    try {
+      const added = await addAttachment({ uri: asset.uri, name: asset.name, size: asset.size });
+      setContent(prev => appendAttachmentLink(prev, added.name, added.hash));
+    } catch (error: any) {
+      if (error?.message === ATTACHMENT_TOO_LARGE_MESSAGE) {
+        alert("Couldn't attach the file", ATTACHMENT_TOO_LARGE_MESSAGE);
+      } else {
+        alert("Couldn't attach the file", 'Check your available storage space and try again.');
+      }
+    }
+  };
+
+  const handleRemoveAttachment = (hash: string, occurrence: number) => {
+    setContent(prev => removeAttachmentLink(prev, hash, occurrence));
+  };
+
   const handleInsertLink = () => {
     if (!linkUrl.trim()) return;
     const url = linkUrl.trim();
@@ -412,26 +445,30 @@ const EditorScreen: React.FC = () => {
 
             {showPreview ? (
               <View style={styles.body}>
-                <MarkdownRenderer content={content.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '')} />
+                <MarkdownRenderer content={content.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '').replace(/\[[^\]\r\n]*\]\(attachment:[0-9a-fA-F]{64}\)/g, '')} />
                 <NoteImages uris={extractImageUris(content)} />
+                <NoteAttachments content={content} />
               </View>
             ) : (
-              <TextInput
-                ref={bodyRef}
-                style={[styles.contentInput, theme.fonts.noteBody, { color: theme.colors.onSurface }]}
-                value={convertImagesToLinks(content, isMarkdown)}
-                onChangeText={handleChangeText}
-                multiline
-                textAlignVertical="top"
-                selectionColor={theme.colors.primary}
-                placeholder={isMarkdown ? 'Start writing. Markdown works here.' : 'Start writing'}
-                placeholderTextColor={theme.colors.onSurfaceVariant}
-                autoCorrect
-                autoCapitalize="sentences"
-                onSelectionChange={e => setSelection(e.nativeEvent.selection)}
-                scrollEnabled={false}
-                accessibilityLabel="Note text"
-              />
+              <View style={styles.body}>
+                <TextInput
+                  ref={bodyRef}
+                  style={[styles.contentInput, theme.fonts.noteBody, { color: theme.colors.onSurface }]}
+                  value={convertImagesToLinks(content, isMarkdown)}
+                  onChangeText={handleChangeText}
+                  multiline
+                  textAlignVertical="top"
+                  selectionColor={theme.colors.primary}
+                  placeholder={isMarkdown ? 'Start writing. Markdown works here.' : 'Start writing'}
+                  placeholderTextColor={theme.colors.onSurfaceVariant}
+                  autoCorrect
+                  autoCapitalize="sentences"
+                  onSelectionChange={e => setSelection(e.nativeEvent.selection)}
+                  scrollEnabled={false}
+                  accessibilityLabel="Note text"
+                />
+                <NoteAttachments content={content} onRemove={handleRemoveAttachment} />
+              </View>
             )}
           </View>
         </KeyboardAwareScrollView>
@@ -475,6 +512,7 @@ const EditorScreen: React.FC = () => {
               <IconButton icon="calendar-outline" onPress={() => setShowDueDialog(true)} accessibilityLabel="Due date" />
               <IconButton icon="note-multiple-outline" onPress={openNotePicker} accessibilityLabel="Link a note" />
               <IconButton icon="image-outline" onPress={handleAddImage} accessibilityLabel="Add image" />
+              <IconButton icon="paperclip" onPress={handleAttachFile} accessibilityLabel="Attach file" />
               <IconButton
                 icon="selection-remove"
                 disabled={!hasSelection}
