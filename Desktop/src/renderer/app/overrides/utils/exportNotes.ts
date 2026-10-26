@@ -1,5 +1,4 @@
-// Exports become browser downloads, so they work the same in the desktop window (it asks where to save) and the web view.
-// The file formats are the phone's: the shared functions in @notespark/core plus fflate for zips.
+// Exports are browser downloads, so they work in the window and the web view; formats come from @notespark/core.
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { fileName, isNoteFile, markdownToNote, noteToMarkdown, notesToJson, Note } from '@notespark/core';
 

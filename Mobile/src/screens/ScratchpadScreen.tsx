@@ -59,8 +59,7 @@ const ScratchpadScreen: React.FC = () => {
     };
   }, [flush]);
 
-  // Reads the pad each time the screen shows (it may have changed under it, e.g. a task ticked on Tasks) and adds
-  // shared text; saves when another screen covers it.
+  // Reloads the pad on each focus and adds shared text; saves when another screen covers it.
   const append = route.params?.append;
   useFocusEffect(
     useCallback(() => {

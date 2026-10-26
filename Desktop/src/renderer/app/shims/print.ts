@@ -1,4 +1,4 @@
-// expo-print for the desktop: the main process prints the page to a real PDF, which is then shared (saved) like on the phone.
+// The main process prints the page to a PDF, which is then shared (saved).
 import { invoke } from '../bridge';
 import { writeBytes } from './file-system';
 

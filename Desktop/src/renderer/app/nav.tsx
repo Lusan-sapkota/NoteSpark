@@ -46,8 +46,7 @@ const NavContext = createContext<{ nav: Nav; route: Route; guard: React.MutableR
 export const useNavigation = <T = Nav,>() => useContext(NavContext)!.nav as unknown as T;
 export const useRoute = <T = Route,>() => useContext(NavContext)!.route as unknown as T;
 export const useIsFocused = () => true;
-// While `prevent` is on, leaving the screen (back, popTo, replace, reset) calls `callback` instead; the screen can then
-// call navigation.dispatch(event.data.action) to go on.
+// While `prevent` is on, leaving the screen calls `callback`; it can continue with navigation.dispatch(event.data.action).
 export const usePreventRemove = (prevent: boolean, callback: Guard['callback']) => {
   const { guard } = useContext(NavContext)!;
   guard.current = { prevent, callback };

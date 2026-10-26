@@ -1,5 +1,4 @@
-// AsyncStorage for the desktop renderer: the settings file in the main process, so the desktop window and the web view
-// share one set of settings (theme choice, reminders, drafts).
+// AsyncStorage backed by the main process settings file, shared by the window and the web view.
 import { invoke } from '../bridge';
 
 const settings = <T,>(op: string, key: string, value?: string) => invoke<T>('settings', { op, key, value });

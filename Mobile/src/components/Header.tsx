@@ -10,8 +10,7 @@ interface HeaderProps {
   elevated?: boolean;
 }
 
-// M3 small top app bar. Colors and the status bar inset come from Paper and the safe area.
-// `elevated` tints it to surfaceContainer while content scrolls under it.
+// M3 small top app bar; `elevated` tints it to surfaceContainer while content scrolls under it.
 const Header: React.FC<HeaderProps> = ({
   title,
   showBackButton = false,

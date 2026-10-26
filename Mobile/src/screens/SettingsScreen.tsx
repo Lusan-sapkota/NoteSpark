@@ -539,7 +539,7 @@ const SettingsScreen: React.FC = () => {
             isFirst={false}
             isLast={false}
           />
-          {/* The swap button flips this row between moving everything to the bin and erasing it without the bin. */}
+          {/* The swap button flips this row between moving to the bin and erasing without it. */}
           <GroupedRow
             title={deleteMode === 'bin' ? 'Move all notes to bin' : 'Delete all notes forever'}
             description={deleteMode === 'bin' ? 'Restorable from Bin for 30 days' : "Skips the bin. Can't be undone."}

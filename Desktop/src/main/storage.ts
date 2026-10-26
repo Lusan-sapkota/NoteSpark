@@ -1,5 +1,4 @@
-// The phone's own storage code (Mobile/src/storage), running here in the main process on the shims in packages/node-shims.
-// The renderer reaches it through the 'storage' channel; nothing is copied, so desktop and phone share the rules.
+// The phone's storage code (Mobile/src/storage) running in the main process; the renderer uses the 'storage' channel.
 import { BrowserWindow } from 'electron';
 import * as autoBackup from '../../../Mobile/src/storage/autoBackup';
 import * as database from '../../../Mobile/src/storage/database';
@@ -15,8 +14,7 @@ const desktopOnly = new Set(['autoBackup']);
 
 // What the unlock screen may ask while a profile is locked.
 const whileLocked = new Set(['getProfiles', 'getBinnedProfiles', 'getActiveProfile', 'getDefaultProfile', 'getAutoLockMinutes', 'getPinLockout', 'wrongPinMessage', 'hasProfilePin', 'usesBiometrics', 'canUseBiometrics', 'unlockWithBiometrics']);
-// What a browser may ask about profiles. Switching, PINs, locking and deleting happen on the desktop: the web view
-// works with the profile that is open there.
+// Profile calls a browser may make; switching, PINs, locking and deleting stay on the desktop.
 const webProfiles = new Set(['getProfiles', 'getBinnedProfiles', 'getActiveProfile', 'getDefaultProfile', 'getAutoLockMinutes', 'getPinLockout', 'wrongPinMessage', 'hasProfilePin', 'usesBiometrics', 'canUseBiometrics']);
 
 type Phase = 'starting' | 'ready' | 'locked' | 'unreadable';
@@ -107,8 +105,7 @@ export const retryOpen = async () => {
   if (phase === 'unreadable') await openDefault();
 };
 
-// Home asks for an index update every time it opens. Waiting a little means the search model's process is not started
-// during the first seconds of use, and several asks become one. 0 runs it at once (tests).
+// Delays Home's index update so the model process isn't started early and repeat asks merge; 0 runs at once (tests).
 const SYNC_DELAY_MS = Number(process.env.NOTESPARK_SYNC_DELAY_MS ?? 15_000);
 let syncTimer: NodeJS.Timeout | undefined;
 

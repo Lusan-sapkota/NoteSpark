@@ -3,9 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import GroupedRow from '../../../../Mobile/src/components/GroupedRow';
 import M3Switch from '../../../../Mobile/src/components/M3Switch';
 
-// A Settings row only the desktop has: electron.vite.config.ts adds it to the phone's Settings screen.
-// src/main/index.ts reads `trayOnClose` (on unless it is "false") when the window closes. The settings channel refuses keys
-// containing pin, key, secret, token or backup, so the name must avoid them ("keepInTray" has "pin" in it).
+// Desktop-only Settings row; the settings channel refuses keys containing pin/key/secret/token/backup, so not "keepInTray".
 const KeepInTrayRow = () => {
   const [on, setOn] = useState(true);
   useEffect(() => {

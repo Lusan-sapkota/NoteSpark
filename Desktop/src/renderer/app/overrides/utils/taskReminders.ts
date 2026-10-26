@@ -1,5 +1,4 @@
-// Task reminders are fired by the main process (src/main/notify.ts), so they work with the window closed.
-// This side only holds the chosen hour, which the main process reads from the same settings file.
+// Reminders fire from src/main/notify.ts; this side only stores the chosen hour.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const REMINDER_HOURS = [7, 8, 9, 12, 17, 20];

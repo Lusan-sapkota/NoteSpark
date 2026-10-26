@@ -1,5 +1,4 @@
-// The five desktop screens use Reanimated only for list layout animation and the reduced-motion check.
-// Motion on desktop is plain CSS for now, so these pass the list through unchanged.
+// Desktop motion is plain CSS, so list layout animation passes through unchanged.
 import React from 'react';
 import { FlatList, ScrollView, Text, View } from 'react-native';
 
@@ -20,8 +19,7 @@ export const LinearTransition = transition;
 
 export const useReducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// Shared values and timing, enough for the import and export screen's wavy progress bar: a requestAnimationFrame loop
-// updates the value and every mounted useAnimatedStyle re-reads its function (cheap: there are few of them).
+// Minimal shared values and timing for the wavy progress bar, driven by a requestAnimationFrame loop.
 const subscribers = new Set<() => void>();
 const notify = () => subscribers.forEach(fn => fn());
 

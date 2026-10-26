@@ -1,5 +1,4 @@
-// Firefly scheme: seed #9BBF2A, Material 3 Tonal Spot, contrast 0.
-// Source: docs/design/firefly-colors.md. Regenerate from the seed; don't hand-tune roles.
+// Firefly scheme (seed #9BBF2A, Tonal Spot) from docs/design/firefly-colors.md; don't hand-tune roles.
 export const firefly = {
   light: {
     primary: '#546524',
@@ -86,10 +85,10 @@ export const firefly = {
   },
 };
 
-// Corner radii. Controls and small labels share one radius; surfaces are larger; FABs (the bold element) keep M3's 16.
+// Corner radii: controls and small labels share one, surfaces are larger, FABs keep M3's 16.
 export const shape = {
   extraSmall: 4, // inline code
-  small: 8, // chips and small labels (same look as `control` at their height), images, code blocks
+  small: 8, // chips, small labels, images, code blocks
   segment: 4, // inner corners of a list group
   group: 20, // outer corners of a list group
   fab: 16, // Paper's AnimatedFAB hardcodes this
@@ -104,8 +103,7 @@ export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 }
 export const readingWidth = 680;
 
 
-// Type scale (family, size, line height in dp). UI is Figtree; note content is Literata.
-// noteCode is the system monospace font: each platform maps 'monospace' to its own.
+// Type scale (dp): UI is Figtree, note content is Literata, noteCode uses the platform monospace.
 export const typeScale = {
   displayLarge: ['Figtree-Regular', 57, 64],
   displayMedium: ['Figtree-Regular', 45, 52],

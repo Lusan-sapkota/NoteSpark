@@ -57,8 +57,7 @@ const EditorScreen: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
-  // The cursor is read from the body field, not controlled: a controlled selection on Android fights the
-  // field while it gains focus and the keyboard closes again. Toolbar inserts place it once via the ref.
+  // Cursor is read, not controlled: a controlled selection on Android closes the keyboard on focus.
   const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
   const [pendingSelection, setPendingSelection] = useState<{ start: number; end: number } | null>(null);
   const bodyRef = useRef<React.ComponentRef<typeof TextInput>>(null);
@@ -66,8 +65,7 @@ const EditorScreen: React.FC = () => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
-  // Undo and redo for the note text. A step is recorded when typing pauses for 600 ms; typing not yet recorded
-  // is undone as one step. `committed` is the text at the last recorded step.
+  // Undo/redo: a step is recorded after a 600 ms typing pause; `committed` is the last recorded text.
   const [undoStack, setUndoStack] = useState<{ past: string[]; future: string[] }>({ past: [], future: [] });
   const committed = useRef('');
   // "Link a note" picker: inserts [[Title]] at the cursor.
@@ -153,8 +151,7 @@ const EditorScreen: React.FC = () => {
     return () => clearTimeout(timer);
   }, [loaded, isDirty, title, content, isMarkdown]);
 
-  // Leaving with unsaved changes saves them: people go back without pressing Save, and asking each time got in the way.
-  // An empty new note is dropped by handleSave. If saving fails the editor stays open with the text.
+  // Leaving with unsaved changes saves them; if saving fails the editor stays open.
   usePreventRemove(isDirty && !saving, ({ data }) => {
     handleSave(() => navigation.dispatch(data.action));
   });
@@ -439,7 +436,7 @@ const EditorScreen: React.FC = () => {
           </View>
         </KeyboardAwareScrollView>
 
-        {/* Rides on top of the keyboard via a transform; opened offset cancels the bottom inset it already sits on. */}
+        {/* Rides on the keyboard via a transform; the opened offset cancels the bottom inset. */}
         {!showPreview && (
           <KeyboardStickyView offset={{ opened: insets.bottom }}>
           <View style={[styles.toolbar, { backgroundColor: theme.colors.surfaceContainer }]}>

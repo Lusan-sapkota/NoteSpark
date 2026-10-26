@@ -1,5 +1,4 @@
-// Same shape as the phone's Mobile/src/utils/imageCache.ts. Web pictures load straight from their address (the phone
-// keeps a copy for offline use); pictures that point at files on the phone fail and show the "gone" state.
+// Same shape as the phone's imageCache; pictures load straight from their address, phone file paths show "gone".
 // ponytail: no on-disk cache; web pictures are not loaded at all (the page's security policy blocks them).
 import { useCallback, useState } from 'react';
 

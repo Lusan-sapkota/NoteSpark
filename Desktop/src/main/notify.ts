@@ -1,5 +1,4 @@
-// Desktop notifications: task reminders (the phone's rules, fired from here so they work with the window closed) and
-// "Save clipboard text", the desktop's counterpart of sharing text to NoteSpark on the phone.
+// Desktop notifications: task reminders (work with the window closed) and "Save clipboard text".
 import { execFile } from 'node:child_process';
 import { clipboard, Notification } from 'electron';
 import { buildReminders, REMINDER_ID_PREFIX, type ProfileTasks } from '@notespark/core';
@@ -20,8 +19,7 @@ const FIRED_KEY = 'remindersFired';
 const HOURS = [7, 8, 9, 12, 17, 20];
 const RECHECK_MS = 30 * 60_000;
 
-// Looks every minute, but reads the notes only when they changed, the hour changed, or half an hour passed.
-// A reminder missed while the app was closed still fires once, the same day.
+// Checks every minute, reading notes only on change, a new hour or after 30 minutes; missed reminders fire once that day.
 export const startReminders = (open: () => void) => {
   let version = -1;
   let hour = -1;

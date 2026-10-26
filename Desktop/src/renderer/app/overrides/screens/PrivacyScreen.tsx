@@ -1,5 +1,4 @@
-// The desktop app's privacy policy. The phone's text (Mobile/src/screens/PrivacyScreen.tsx) is about Android; this one
-// describes what the desktop app does. Keep it in step with the app and update EFFECTIVE_DATE on every change.
+// The desktop privacy policy; keep it in step with the app and update EFFECTIVE_DATE on every change.
 import React from 'react';
 import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

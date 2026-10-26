@@ -1,7 +1,6 @@
 import { Note } from './types';
 
-// [[Note title]] links between notes. Titles match ignoring case and surrounding spaces; a title containing
-// [ ] or a line break can't be linked.
+// [[Note title]] links match ignoring case and spaces; titles with [ ] or a line break can't be linked.
 export const noteLinkPattern = /\[\[([^[\]\n]+)\]\]/g;
 
 const titleKey = (title: string) => title.trim().toLowerCase();

@@ -8,17 +8,14 @@
 html, body, #root { height: 100%; margin: 0; }
 :root { color-scheme: light dark; } /* native scrollbars follow nativeTheme.themeSource */
 #root { display: flex; }
-/* Nothing in the window scrolls sideways; screens scroll inside themselves. (The extended FAB keeps a hidden label
-   past the right edge, which otherwise gave the whole page a horizontal scrollbar.) */
+/* No page-level scrolling (the extended FAB's hidden label would add a horizontal scrollbar). */
 body { overflow: hidden; }
-/* On the web Paper wraps ProgressBar in a width:100% box, so a bar with its own width (the task count on a note)
-   took the whole row and squeezed the label beside it. */
+/* Paper's web ProgressBar wrapper is width:100%, which squeezes neighbouring labels. */
 [role="progressbar"] { width: auto !important; height: auto !important; }
 
-/* The header is the window's title bar: dragging it moves the window, and what is inside it still clicks. */
+/* The header is the title bar: draggable, with clickable children. */
 [data-drag] { -webkit-app-region: drag; }
 [data-nodrag] { -webkit-app-region: no-drag; }
 
-/* The editor surfaces (scratchpad, note body) are plain text areas with no box around them; the browser's focus ring
-   made a frame appear every time you started typing. Fields with their own outline (Paper's) are unaffected. */
+/* Borderless editor text areas shouldn't flash a focus ring; Paper fields keep their own outline. */
 textarea:focus, textarea:focus-visible, input:focus, input:focus-visible { outline: none; }

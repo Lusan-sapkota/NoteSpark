@@ -24,7 +24,7 @@ interface MarkdownRendererProps {
   onOpenNoteLink?: (title: string) => void;
 }
 
-// [[Title]] becomes a Markdown link on this made-up scheme, which renderLink hands to onOpenNoteLink.
+// [[Title]] becomes a link on a made-up scheme that renderLink hands to onOpenNoteLink.
 // ponytail: also rewritten inside code blocks; skip fenced code if that ever matters.
 const NOTE_LINK = 'notespark-note:';
 
@@ -41,8 +41,7 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
       onOpenNoteLink ? `[${title.trim()}](${NOTE_LINK}${encodeURIComponent(title.trim())})` : whole);
 
   // Rules run in document order and body renders last, so task items are numbered as they render.
-  // ponytail: a task line that doesn't render as a list item (indented code block) shifts later numbers; the write
-  // then fails its line check instead of ticking the wrong box.
+  // ponytail: a task line not rendered as a list item shifts later numbers; the write fails its line check.
   let taskIndex = 0;
 
   const f = theme.fonts;

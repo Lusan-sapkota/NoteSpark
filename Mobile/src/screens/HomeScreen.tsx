@@ -66,7 +66,7 @@ const HomeScreen: React.FC = () => {
   const selecting = selectedIds.length > 0;
   const clearSelection = () => setSelectedIds([]);
 
-  // The Rediscover card: whether it may show (on in Settings, not hidden today), and the pick for the current notes.
+  // Rediscover card: whether it may show, and the pick for the current notes.
   const [rediscoverAllowed, setRediscoverAllowed] = useState(false);
   const [rediscovery, setRediscovery] = useState<Rediscovery | null>(null);
   const checkRediscover = () =>
@@ -409,7 +409,7 @@ const HomeScreen: React.FC = () => {
       );
       return;
     }
-    // Locked profile: try fingerprint first when PIN + fingerprint is enabled; otherwise (or on "Use PIN") show PIN dialog.
+    // Locked profile: fingerprint first if enabled; otherwise, or on "Use PIN", the PIN dialog.
     if (await unlockWithBiometrics(profile)) {
       await executeTransfer(profile, targets);
       return;

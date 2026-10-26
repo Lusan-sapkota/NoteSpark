@@ -1,5 +1,4 @@
-// expo-image-picker for the desktop: the browser's file picker, then the picture is stored by the main process
-// and the note gets its address (/images/<id>.png), which works in the window and the web view.
+// Browser file picker; the main process stores the picture and the note gets its /images/<id>.png address.
 import { invoke } from '../bridge';
 
 const toBase64 = (file: File) =>

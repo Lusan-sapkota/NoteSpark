@@ -38,3 +38,7 @@ export const noteWithStateVector = (updates: Uint8Array[]): { note: NoteState; s
   const doc = docFromUpdates(updates);
   return { note: readNote(doc), stateVector: Y.encodeStateVector(doc) };
 };
+
+// For the sync engine: a doc's state vector, and the update a peer with `remote` lacks (any doc, catalog included).
+export const stateVectorOf = (updates: Uint8Array[]): Uint8Array => Y.encodeStateVector(docFromUpdates(updates));
+export const diffFor = (updates: Uint8Array[], remote: Uint8Array): Uint8Array => Y.encodeStateAsUpdate(docFromUpdates(updates), remote);

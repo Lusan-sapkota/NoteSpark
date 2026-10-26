@@ -1,0 +1,139 @@
+import * as Y from 'yjs';
+import { catalogUuids, isErased } from './catalog.ts';
+import { type NoteState, readNote } from './note.ts';
+import { type Delta, Replica } from './replica.ts';
+
+export interface ProfileInfo {
+  syncId: string;
+  name: string;
+  notes: number;
+  protected: boolean;
+  locked: boolean;
+}
+
+// A note as the first link compares it.
+export interface PlainNote {
+  uuid: string;
+  title: string;
+  content: string;
+  isMarkdown: boolean;
+}
+
+// All the sync engine knows about storage; `doc` is 'catalog' or a note uuid.
+export interface SyncStore {
+  profiles(): Promise<ProfileInfo[]>;
+  // Idempotent.
+  createProfile(syncId: string, name: string): Promise<void>;
+  plainNotes(syncId: string): Promise<PlainNote[]>;
+  // First link: adopt the hub's uuids, turn sync on, one transaction.
+  link(syncId: string, adopt: Map<string, string>): Promise<void>;
+  // Notes in the catalog, erased ones left out.
+  docs(syncId: string): Promise<string[]>;
+  stateVector(syncId: string, doc: string): Promise<Uint8Array>;
+  diff(syncId: string, doc: string, remoteStateVector: Uint8Array): Promise<Uint8Array>;
+  apply(syncId: string, doc: string, updates: Uint8Array[]): Promise<void>;
+  // Changes made here (not by `apply`), once committed.
+  subscribe(syncId: string, listener: (doc: string, update: Uint8Array) => void): () => void;
+}
+
+interface Profile {
+  name: string;
+  replica: Replica;
+}
+
+// A SyncStore in memory, for tests.
+export class MemoryStore implements SyncStore {
+  profilesById = new Map<string, Profile>();
+  plain = new Map<string, NoteState>(); // notes before the first link
+  private listeners = new Map<string, Set<(doc: string, update: Uint8Array) => void>>();
+
+  clientId: number;
+  constructor(clientId: number) {
+    this.clientId = clientId;
+  }
+
+  private profile(syncId: string) {
+    const p = this.profilesById.get(syncId);
+    if (!p) throw new Error(`unknown profile ${syncId}`);
+    return p.replica;
+  }
+  private emit(syncId: string, deltas: Delta[]) {
+    for (const d of deltas) this.listeners.get(syncId)?.forEach(l => l(d.doc, d.bytes));
+  }
+
+  async profiles(): Promise<ProfileInfo[]> {
+    return [...this.profilesById].map(([syncId, p]) => ({ syncId, name: p.name, notes: Object.keys(p.replica.notes()).length, protected: false, locked: false }));
+  }
+  async createProfile(syncId: string, name: string) {
+    if (!this.profilesById.has(syncId)) this.profilesById.set(syncId, { name, replica: new Replica(this.clientId) });
+  }
+  async plainNotes(syncId: string): Promise<PlainNote[]> {
+    const source = this.profilesById.get(syncId)?.replica.notes() ?? Object.fromEntries(this.plain);
+    return Object.entries(source).map(([uuid, n]) => ({ uuid, title: n.title, content: n.content, isMarkdown: n.isMarkdown }));
+  }
+  async link(syncId: string, adopt: Map<string, string>) {
+    if (this.profilesById.has(syncId)) return;
+    const replica = new Replica(this.clientId);
+    for (const [uuid, state] of this.plain) if (!adopt.has(uuid)) replica.save(uuid, state);
+    this.profilesById.set(syncId, { name: 'Profile', replica });
+    this.plain.clear();
+  }
+  async docs(syncId: string) {
+    const r = this.profile(syncId);
+    return catalogUuids(r.catalog).filter(u => !isErased(r.catalog, u));
+  }
+  async stateVector(syncId: string, doc: string) {
+    const r = this.profile(syncId);
+    return Y.encodeStateVector(doc === 'catalog' ? r.catalog : r.getDoc(doc));
+  }
+  async diff(syncId: string, doc: string, remote: Uint8Array) {
+    const r = this.profile(syncId);
+    return Y.encodeStateAsUpdate(doc === 'catalog' ? r.catalog : r.getDoc(doc), remote);
+  }
+  async apply(syncId: string, doc: string, updates: Uint8Array[]) {
+    this.profile(syncId).receive(updates.map(bytes => ({ doc, bytes })));
+  }
+  subscribe(syncId: string, listener: (doc: string, update: Uint8Array) => void) {
+    const set = this.listeners.get(syncId) ?? new Set();
+    this.listeners.set(syncId, set);
+    set.add(listener);
+    return () => void set.delete(listener);
+  }
+
+  // Local actions.
+  edit(syncId: string, uuid: string, state: NoteState) {
+    this.emit(syncId, this.profile(syncId).save(uuid, state));
+  }
+  erase(syncId: string, uuid: string) {
+    this.emit(syncId, this.profile(syncId).erase(uuid));
+  }
+  notes(syncId: string) {
+    return this.profile(syncId).notes();
+  }
+  erasedSet(syncId: string) {
+    const r = this.profile(syncId);
+    return catalogUuids(r.catalog).filter(u => isErased(r.catalog, u)).sort();
+  }
+  note(syncId: string, uuid: string): NoteState | null {
+    const r = this.profile(syncId);
+    return isErased(r.catalog, uuid) ? null : readNote(r.getDoc(uuid));
+  }
+
+  // Restart with a new client id.
+  snapshot() {
+    return [...this.profilesById].map(([syncId, p]) => ({
+      syncId, name: p.name,
+      updates: [{ doc: 'catalog', bytes: Y.encodeStateAsUpdate(p.replica.catalog) }, ...[...p.replica.docs].map(([doc, d]) => ({ doc, bytes: Y.encodeStateAsUpdate(d) }))],
+    }));
+  }
+  static restore(clientId: number, snapshot: ReturnType<MemoryStore['snapshot']>, plain: Map<string, NoteState> = new Map()) {
+    const store = new MemoryStore(clientId);
+    store.plain = new Map(plain);
+    for (const p of snapshot) {
+      const replica = new Replica(clientId);
+      replica.receive(p.updates);
+      store.profilesById.set(p.syncId, { name: p.name, replica });
+    }
+    return store;
+  }
+}

@@ -1,5 +1,4 @@
-// The phone's search code asks for an "embed" function; on desktop it is answered by a helper process that loads the
-// model on demand and exits after IDLE_MS (ten seconds) without work. Starting it takes about a tenth of a second.
+// Answers "embed" through a helper process that loads the model on demand and exits after IDLE_MS idle.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { utilityProcess, UtilityProcess } from 'electron';

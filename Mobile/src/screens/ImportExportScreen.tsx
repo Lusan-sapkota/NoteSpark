@@ -23,8 +23,7 @@ import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, lightTheme, readingWidth, shape, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-// M3 Expressive wavy progress indicator (indeterminate): a sine wave drawn from short rotated
-// segments that travels while work runs. Holds still when the OS asks for reduced motion.
+// Wavy indeterminate progress indicator; holds still under reduced motion.
 const WAVE = { amplitude: 3, wavelength: 22, stroke: 4, step: 4 };
 const WAVE_HEIGHT = WAVE.amplitude * 2 + WAVE.stroke + 4;
 
@@ -451,8 +450,7 @@ const ImportExportScreen: React.FC = () => {
     confirmIfReplacing(async () => {
       try {
         setFileImporting(true);
-        // Any type: Android often labels .md files as unknown, so the file name decides. Not copied to the cache:
-        // the files are read once from their content:// address (Expo Go can't read the picker's cache copies).
+        // Any type, since Android often labels .md as unknown; read from content:// directly.
         const result = await DocumentPicker.getDocumentAsync({ type: '*/*', multiple: true, copyToCacheDirectory: false });
         if (result.canceled || !result.assets?.length) return;
         const parsed: any[] = [];
@@ -505,7 +503,7 @@ const ImportExportScreen: React.FC = () => {
     setPasteOpen(false);
   };
 
-  // An action tile: icon, title and a line of help; the wavy indicator replaces the help line's spacer while busy.
+  // An action tile: icon, title and help line; the wavy indicator shows while busy.
   const tile = (opts: { icon: string; title: string; body: string; busyBody: string; busy: boolean; onPress: () => void; background: string; color: string }) => (
     <View style={[styles.tile, { backgroundColor: opts.background }]}>
       <TouchableRipple

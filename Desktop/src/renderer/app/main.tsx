@@ -41,8 +41,7 @@ const screens = {
 };
 
 
-// The window's own minimise, maximise and close buttons (the desktop window has no frame, and the system's buttons are
-// too small to hit comfortably). Each is 48 wide and as high as the bar; closing is red on hover.
+// Custom minimise, maximise and close buttons for the frameless window; closing is red on hover.
 const WindowButtons = () => {
   const { theme } = useTheme();
   const [maximized, setMaximized] = useState(false);
@@ -67,9 +66,7 @@ const WindowButtons = () => {
   );
 };
 
-// The header: logo and name, and (desktop window only) the web view switch, on one row that is also the window's title
-// bar (drag it to move the window). It sits on a tonal surface so the screen's own title row below reads as the page, not
-// as a second bar. The places (Scratchpad, Tasks, Settings) are buttons in the Notes title row, as on the phone.
+// The header row doubles as the window's title bar: logo, name and (desktop only) the web view switch.
 const TopBar = () => {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
@@ -83,8 +80,7 @@ const TopBar = () => {
     window.addEventListener('keydown', close);
     return () => window.removeEventListener('keydown', close);
   }, []);
-  // The panel eases in and out (a short curve with a slight overshoot, none when the system asks for reduced motion); it
-  // stays mounted until the closing transition has finished.
+  // The panel eases in and out (none with reduced motion) and stays mounted until the close transition ends.
   const [mounted, setMounted] = useState(false);
   const [shown, setShown] = useState(false);
   const visible = !!web?.on && open;

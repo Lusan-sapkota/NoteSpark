@@ -21,7 +21,6 @@ type Row =
   | { kind: 'task'; key: string; task: Task; isFirst: boolean; isLast: boolean };
 
 // Flat list of section headers and task rows, so the list keeps its spring layout animation.
-// Done tasks (when shown) get their own section by due date, and follow the open ones by note.
 const buildRows = (all: Task[], sortBy: 'due' | 'note', today: string): Row[] => {
   const tasks = sortBy === 'due' ? all.filter(t => !t.done) : all;
   const rows: Row[] = [];
@@ -59,7 +58,7 @@ const TasksScreen: React.FC = () => {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sortBy, setSortBy] = useState<'due' | 'note'>('due');
   const [showDone, setShowDone] = useState(false);
-  // The last tick, for Undo: the task as it was, the line as the tick left it, and a repeating task's next date.
+  // The last tick, for Undo: the task before, the line after, and a repeating task's next date.
   const [lastDone, setLastDone] = useState<{ task: Task; raw: string; next?: string } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 

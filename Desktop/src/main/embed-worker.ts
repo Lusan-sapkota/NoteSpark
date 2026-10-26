@@ -1,6 +1,4 @@
-// Runs the search model in its own process, so the memory it takes (about 70 MB) goes back to the system when it exits.
-// The main process starts it when a note or a query needs a vector and it quits after a quiet minute (see embedder.ts).
-// The model, tokenizer and pooling are the phone's: same files, same code from @notespark/core.
+// Runs the search model in its own process so its memory (about 70 MB) is freed when it exits (see embedder.ts).
 import { readFileSync } from 'node:fs';
 import { createTokenizer, meanPoolNormalize } from '@notespark/core';
 

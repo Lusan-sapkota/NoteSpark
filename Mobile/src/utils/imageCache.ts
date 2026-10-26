@@ -2,9 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
 
-// Web images in notes are downloaded once into app storage (not the OS cache, which Android may clear),
-// so they keep showing offline and survive the original link going dead. A cached image is removed only
-// when no note uses it anymore and it hasn't been viewed for 30 days (checked at app start).
+// Web images are kept in app storage (Android may clear the OS cache) so they show offline.
 const CACHE_DIR = `${FileSystem.documentDirectory}image-cache/`;
 const INDEX_KEY = 'imageCacheIndex'; // { [fileName]: last viewed, ms }
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -12,7 +10,7 @@ const KEEP_MS = 30 * DAY_MS;
 
 export const isWebImage = (uri: string) => /^https?:\/\//i.test(uri);
 
-// ponytail: two 32-bit string hashes name the file; a collision would show the wrong image. Use SHA-256 (expo-crypto) if that ever matters.
+// ponytail: two 32-bit hashes name the file; a collision shows the wrong image. Use SHA-256 if that matters.
 const fileNameFor = (url: string) => {
   let fnv = 0x811c9dc5;
   let djb = 5381;
@@ -44,8 +42,7 @@ const markViewed = async (name: string) => {
   await AsyncStorage.setItem(INDEX_KEY, JSON.stringify(idx)).catch(() => {});
 };
 
-// ready: cached file path. gone: the server says the image doesn't exist (or isn't an image).
-// failed: couldn't reach it (offline, timeout, storage full); worth retrying later.
+// gone: the server says there's no image; failed: couldn't reach it, worth retrying.
 type Result = { status: 'ready'; path: string } | { status: 'gone' | 'failed' };
 
 const inflight = new Map<string, Promise<Result>>();
@@ -59,7 +56,7 @@ const download = async (url: string, name: string): Promise<Result> => {
       return { status: 'ready', path };
     }
     await FileSystem.makeDirectoryAsync(CACHE_DIR, { intermediates: true }).catch(() => {});
-    // Download beside the final name and move it in only when complete, so a killed app never leaves a half file.
+    // Download to .part and move in when complete, so a killed app leaves no half file.
     const res = await FileSystem.downloadAsync(url, part);
     const type = Object.entries(res.headers ?? {}).find(([key]) => key.toLowerCase() === 'content-type')?.[1] ?? '';
     const lowerType = type.toLowerCase();
@@ -94,7 +91,7 @@ const getCachedImage = (url: string): Promise<Result> => {
 const forgetCachedImage = (url: string) =>
   FileSystem.deleteAsync(CACHE_DIR + fileNameFor(url), { idempotent: true }).catch(() => {});
 
-// Images picked from the phone are copied here: the picker's own copy sits in the OS cache, which Android may clear.
+// Picked phone images are copied here because the picker's copy sits in the clearable OS cache.
 const DEVICE_DIR = `${FileSystem.documentDirectory}note-images/`;
 
 export const keepDeviceImage = async (uri: string): Promise<string> => {
@@ -116,8 +113,7 @@ const pruneDeviceImages = async (allText: string) => {
   }
 };
 
-// Called once at app start with every note's text. Keeps any image a note still uses; removes the rest
-// once unviewed for 30 days, plus leftover partial downloads.
+// At app start: removes images no note uses once unviewed for 30 days, plus partial downloads.
 export const pruneImageCache = async (noteContents: string[]) => {
   try {
     await pruneDeviceImages(noteContents.join('\n'));

@@ -1,5 +1,4 @@
-// The two search model files. electron.vite.config.ts rewrites the phone's require('../../assets/models/x') into
-// 'models:x'; this finds the file: in the repository while developing, in the app's resources once packaged.
+// Resolves the search model files ('models:x') from the repository in dev, from app resources when packaged.
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { app } from 'electron';

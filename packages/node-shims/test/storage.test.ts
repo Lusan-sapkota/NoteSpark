@@ -102,7 +102,7 @@ test('reconcile never writes a stale row over a newer doc (F1)', async () => {
   const uuid = (await database.db.getFirstAsync('SELECT uuid FROM notes WHERE id = ?', [id])).uuid;
   const remote = new sync.Replica(4243);
   remote.receive(await allDeltas());
-  // what the old code could leave after a crash: the update stored, the notes row not yet written
+  // the old crash state: update stored, row not written
   for (const d of remote.save(uuid, { ...sync.readNote(remote.docs.get(uuid)!), content: 'remote edit' }))
     await database.db.runAsync('INSERT INTO crdt_updates (docId, "update", createdAt) VALUES (?, ?, ?)', [d.doc, d.bytes, 'now']);
   await crdt.reconcile(database.db);

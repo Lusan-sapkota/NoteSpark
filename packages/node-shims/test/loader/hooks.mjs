@@ -28,7 +28,7 @@ export async function resolve_(specifier, context, next) {
 }
 export { resolve_ as resolve };
 
-// Plain type stripping keeps `import { Note }` of a type; TypeScript's own transpile drops unused imports like Metro does.
+// Type stripping keeps type-only imports; TypeScript's transpile drops them.
 const ts = (await import(pathToFileURL(resolve(root, 'Mobile/node_modules/typescript/lib/typescript.js')).href)).default;
 export async function load(url, context, next) {
   if (!url.startsWith('file:') || !url.endsWith('.ts') || url.includes('/node_modules/')) return next(url, context);

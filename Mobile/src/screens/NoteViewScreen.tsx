@@ -54,8 +54,7 @@ const formatDate = (dateString: string) => {
 
 type Change = { text: string; type: 'same' | 'removed' | 'added' };
 
-// Word-level changes from a to b. The common start and end are skipped first; a middle too big to compare
-// shows as replaced as a whole.
+// Word-level changes from a to b; a middle too big to compare shows as replaced.
 const diffWords = (a: string, b: string): Change[] => {
   const A = a.split(/(\s+)/);
   const B = b.split(/(\s+)/);
@@ -120,7 +119,7 @@ const NoteViewScreen: React.FC = () => {
   // Notes that name this one without a [[link]].
   const [mentions, setMentions] = useState<Note[]>([]);
   const [showChanges, setShowChanges] = useState(true);
-  // Find in note: the query and which match is current. Lines are drawn plain while finding, so each can be measured.
+  // Find in note: the query and current match; lines are drawn plain while finding so each can be measured.
   const [find, setFind] = useState<{ query: string; index: number } | null>(null);
   const findParam: string | undefined = (route.params as any)?.find;
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
@@ -281,7 +280,7 @@ const NoteViewScreen: React.FC = () => {
     navigation.navigate('Editor', { noteId: note!.id });
   };
 
-  // Plain notes: render each line, turning URLs into links that ask before opening. Task lines become checkboxes.
+  // Plain notes: URLs become links that ask before opening; task lines become checkboxes.
   const renderPlainText = (content: string) => {
     const tasks = findTaskLines(content);
     return content.replace(/\[Image: ([^\]]+)\]/g, '').split(/\r?\n/).map((line, lineIdx) => {

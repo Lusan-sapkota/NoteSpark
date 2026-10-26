@@ -77,8 +77,7 @@ const AppContent = () => {
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
   const [lockedProfile, setLockedProfile] = useState<{ id: string; name: string } | null>(null);
   const [unreadableProfile, setUnreadableProfile] = useState<{ id: string; name: string } | null>(null);
-  // A protected profile locked again after time in the background. Drawn over the open screens, so whatever
-  // was on them (an unsaved note too) is still there after unlocking.
+  // Relock after time in the background, drawn over the open screens so unsaved work survives.
   const [relocked, setRelocked] = useState<{ id: string; name: string } | null>(null);
   const backgroundSince = useRef<number | null>(null);
   const lockState = useRef({ blocked: true, relocked: false });
@@ -129,7 +128,7 @@ const AppContent = () => {
     );
   }, [hasShareIntent, navReady, shareIntent]);
 
-  // Widget taps (notespark://new, notespark://note/<profileId>/<id>); expo-share-intent handles its own dataUrl links.
+  // Widget taps (notespark://new, notespark://note/<profileId>/<id>).
   const [widgetLink, setWidgetLink] = useState<string | null>(null);
   useEffect(() => {
     Linking.getInitialURL().then(url => url && setWidgetLink(url)).catch(() => {});
@@ -338,8 +337,7 @@ const AppContent = () => {
 export default function App() {
   return (
     <SafeAreaProvider>
-      {/* Keyboard avoidance is per screen (KeyboardAwareScrollView, KeyboardStickyView, KeyboardAvoidingView).
-          Padding the whole app while the keyboard animates made the editor body lose focus. */}
+      {/* Keyboard avoidance is per screen; padding the whole app made the editor lose focus. */}
       <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
         <ThemeProvider>
           <AppContent />

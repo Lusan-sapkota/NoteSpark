@@ -15,9 +15,7 @@ const devUrl = process.env.ELECTRON_RENDERER_URL;
 const APP = 'app://notespark/';
 const isAppUrl = (url: string) => url.startsWith(APP) || url.startsWith(`blob:${APP}`) || url.startsWith('devtools://') || (!!devUrl && url.startsWith(devUrl)) || url.startsWith('data:');
 
-// Memory (see docs/architecture/desktop.md, "Memory"): V8 tuned for size instead of speed of peak code (the renderer
-// uses about 45 MB less, with the same scroll and typing speed), a small young generation, no separate network process,
-// and the GPU work in the main process in software (one process fewer, and no 125 MB GPU process left in the tray).
+// Memory tuning: V8 optimised for size, small young generation, in-process network service (see docs/architecture/desktop.md).
 app.commandLine.appendSwitch('js-flags', '--optimize-for-size --max-semi-space-size=1 --min-semi-space-size=1');
 app.commandLine.appendSwitch('enable-features', 'NetworkServiceInProcess2');
 
@@ -37,21 +35,17 @@ const deliver = (action: MenuAction) => {
 let tray: Tray | null = null;
 let refreshMenuFn: (() => void) | null = null;
 
-// Closing the window leaves the app in the tray (sync and the web view need it running) until the person chooses Quit
-// there; unticking "Keep running in the tray" makes closing quit instead. About 175 MB while it sits in the tray.
+// Closing the window keeps the app in the tray (sync and the web view need it) unless "Keep running in the tray" is off.
 const keepInTray = async () => (await AsyncStorage.getItem('trayOnClose')) !== 'false';
 const keepsRunning = async () => webViewStatus().on || (await keepInTray());
 const quitIfIdle = async () => {
   if (BrowserWindow.getAllWindows().length === 0 && !(await keepsRunning())) app.quit();
 };
 
-// The header is the window's title bar and draws its own minimise, maximise and close buttons (the system's are too
-// small to hit comfortably and their size can't be changed), so the window has no frame: see the 'window:control' channel.
+// The window is frameless: the header draws its own buttons (see the 'window:control' channel).
 const pageColor = () => (nativeTheme.shouldUseDarkColors ? firefly.dark : firefly.light).background;
 
-// The app's size. 100 % reads small on a large monitor, so it starts bigger there (by the width in points of the screen the
-// window is on: 1536 on a 1920 panel and 2048 on a 2560 one, both at 125 % scaling, get 125 %);
-// the person's own zoom (Ctrl+= and Ctrl+-) is remembered, and "Actual size" goes back to the automatic one.
+// Zoom starts larger on big screens (by screen width); the person's own zoom is remembered, "Actual size" resets it.
 const ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
 const autoZoom = () => {
   const width = (window && !window.isDestroyed() ? screen.getDisplayMatching(window.getBounds()) : screen.getPrimaryDisplay()).size.width;
@@ -124,7 +118,7 @@ app.commandLine.appendSwitch('in-process-gpu');
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', showWindow);
-  app.on('window-all-closed', () => {}); // quitIfIdle (on each window's close) decides; the default quit would ignore the tray and the web view
+  app.on('window-all-closed', () => {}); // quitIfIdle decides; the default quit would ignore the tray and web view
   app.on('web-contents-created', (_e, contents) => {
     contents.on('will-attach-webview', e => e.preventDefault());
   });

@@ -1,5 +1,4 @@
-// expo-file-system/legacy for the desktop renderer, just for "write a file, then share it": the file is kept in memory
-// and sharing it (see sharing.ts) downloads it.
+// Write-then-share only: files are kept in memory and sharing downloads them (see sharing.ts).
 export const cacheDirectory = 'cache://';
 export const EncodingType = { UTF8: 'utf8', Base64: 'base64' } as const;
 

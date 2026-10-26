@@ -16,8 +16,7 @@ const withElevation = (c: typeof firefly.light) => ({
   },
 });
 
-// Static font files in assets/fonts, loaded in App.tsx under these names.
-// Each weight is its own family, so fontWeight stays '400' to avoid synthetic bold on Android.
+// Static fonts, one family per weight, so fontWeight stays '400' to avoid synthetic bold on Android.
 export const fontFiles = {
   'Figtree-Regular': require('../../assets/fonts/Figtree-Regular.ttf'),
   'Figtree-Medium': require('../../assets/fonts/Figtree-Medium.ttf'),
@@ -37,8 +36,7 @@ const type = (fontFamily: string, fontSize: number, lineHeight: number) => ({
 
 export type NoteVariant = 'noteTitle' | 'noteH1' | 'noteH2' | 'noteH3' | 'noteBody' | 'noteCode';
 
-// Type scale (size/line height in dp). UI is Figtree on Paper's MD3 variants;
-// note content is Literata on custom variants. See CLAUDE.md "Type scale".
+// UI is Figtree on MD3 variants; note content is Literata on custom variants.
 const scale = configureFonts({
   config: {
     ...Object.fromEntries(Object.entries(typeScale).map(([name, [family, size, line]]) => [
@@ -47,8 +45,7 @@ const scale = configureFonts({
     ])),
   },
 });
-// Paper components without a variant read fonts.default.
-// configureFonts doesn't type custom variants, so they're added to the type here.
+// configureFonts doesn't type custom variants, so they're added here.
 const fonts = {
   ...(scale as typeof scale & Record<NoteVariant, ReturnType<typeof type>>),
   default: { ...scale.default, fontFamily: 'Figtree-Regular', fontWeight: '400' as const },

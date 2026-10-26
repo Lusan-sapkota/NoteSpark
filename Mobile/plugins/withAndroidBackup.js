@@ -1,7 +1,4 @@
-// Keeps Android backup and device-to-device transfer working for notes and settings (files/ and databases/)
-// while excluding SecureStore, whose Android Keystore keys are bound to the old phone's hardware.
-// expo-secure-store's built-in XML rules add <include domain="sharedpref" path="."/>, which turns the rule
-// into an allowlist and leaves out SQLite databases and files.
+// Backs up files/ and databases/ but not SecureStore, whose Keystore keys are bound to the old phone.
 const fs = require('fs');
 const path = require('path');
 const { withAndroidManifest, withDangerousMod } = require('expo/config-plugins');

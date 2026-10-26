@@ -1,5 +1,5 @@
 // Builds a database with the phone's schema from a NoteSpark JSON export.
-// Usage: node scripts/seed-db.mjs export.json <data dir>/databases/notespark.db  (then run the app with NOTESPARK_DIR=<data dir>)
+// Usage: node scripts/seed-db.mjs export.json <data dir>/databases/notespark.db (run the app with NOTESPARK_DIR=<data dir>)
 import { mkdirSync, readFileSync, rmSync } from 'node:fs';
 import { dirname } from 'node:path';
 import Database from 'better-sqlite3-multiple-ciphers';

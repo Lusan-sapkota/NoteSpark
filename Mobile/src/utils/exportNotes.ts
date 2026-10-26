@@ -4,7 +4,7 @@ import * as Sharing from 'expo-sharing';
 import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
 import { fileName, isNoteFile, markdownToNote, noteToMarkdown, notesToJson, Note } from '@notespark/core';
 
-// Writes to the app cache (no storage permission needed), then the share sheet saves it wherever the person picks.
+// Writes to the app cache (no permission needed), then the share sheet saves it.
 export const shareNotesAsJson = async (notes: Note[]): Promise<void> => {
   const uri = `${FileSystem.cacheDirectory}notespark-export-${Date.now()}.json`;
   await FileSystem.writeAsStringAsync(uri, notesToJson(notes), { encoding: FileSystem.EncodingType.UTF8 });
@@ -28,9 +28,7 @@ export const shareNotesAsZip = async (notes: Note[]): Promise<void> => {
   await Sharing.shareAsync(file.uri, { mimeType: 'application/zip', UTI: 'public.zip-archive', dialogTitle: 'Save or share your notes' });
 };
 
-// Notes from one picked file: a NoteSpark .json backup, a .md or .txt note, or a .zip of those.
-// Throws when the file is none of these.
-// The picker's content:// addresses open with the File class; the legacy API is the fallback for file:// paths.
+// Notes from one picked .json backup, .md or .txt note, or .zip of those; throws on anything else.
 const readFile = async (uri: string, as: 'text' | 'bytes'): Promise<string | Uint8Array> => {
   try {
     const file = new File(uri);

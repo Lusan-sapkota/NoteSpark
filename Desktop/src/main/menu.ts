@@ -1,5 +1,4 @@
-// The application menu: the menu bar on macOS, the global menu on Linux desktops that have one (KDE and others), and
-// the keyboard shortcuts everywhere. Items that open a place in the app send an action to the window.
+// The application menu and keyboard shortcuts; items that open a place send an action to the window.
 import { app, Menu, MenuItemConstructorOptions, nativeTheme, shell } from 'electron';
 
 export type MenuAction =

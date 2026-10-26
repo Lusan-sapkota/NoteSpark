@@ -36,7 +36,7 @@ export class Replica {
     if (clientId !== undefined) this.catalog.clientID = clientId;
   }
 
-  private doc(uuid: string) {
+  getDoc(uuid: string) {
     let doc = this.docs.get(uuid);
     if (!doc) {
       doc = new Y.Doc();
@@ -57,7 +57,7 @@ export class Replica {
     const out: Delta[] = [];
     const known = isKnown(this.catalog, uuid);
     if (!known) out.push(this.catalogChange(() => markLive(this.catalog, uuid)));
-    const bytes = writeNote(this.doc(uuid), next);
+    const bytes = writeNote(this.getDoc(uuid), next);
     if (bytes) out.push({ doc: uuid, bytes });
     return out;
   }
@@ -73,7 +73,7 @@ export class Replica {
   receive(deltas: Delta[]) {
     for (const d of deltas) {
       if (d.doc === 'catalog') Y.applyUpdate(this.catalog, d.bytes);
-      else if (!isErased(this.catalog, d.doc)) Y.applyUpdate(this.doc(d.doc), d.bytes);
+      else if (!isErased(this.catalog, d.doc)) Y.applyUpdate(this.getDoc(d.doc), d.bytes);
     }
     this.reap();
   }
@@ -86,7 +86,7 @@ export class Replica {
     exchange(this.catalog, other.catalog);
     for (const uuid of new Set([...catalogUuids(this.catalog), ...this.docs.keys(), ...other.docs.keys()])) {
       if (isErased(this.catalog, uuid)) continue;
-      exchange(this.doc(uuid), other.doc(uuid));
+      exchange(this.getDoc(uuid), other.getDoc(uuid));
     }
     this.reap();
     other.reap();

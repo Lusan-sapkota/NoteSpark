@@ -1,5 +1,4 @@
-// Stands in for Mobile/src/storage/autoBackup.ts in the desktop renderer: the real module runs in the main process,
-// where "pick a folder" is the system folder dialog (desktop window only).
+// Stands in for Mobile/src/storage/autoBackup.ts; the real module runs in the main process.
 import type * as Real from '../../../../../../Mobile/src/storage/autoBackup';
 import { storageProxy } from '../../bridge';
 

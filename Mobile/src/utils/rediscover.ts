@@ -4,8 +4,7 @@ import { relatedNotes } from '../storage/semanticSearch';
 import { linksTo } from '@notespark/core';
 import { today } from '@notespark/core';
 
-// "Rediscover" on Home: one older note a day, so notes don't only get written. On unless switched off in Settings;
-// "Hide for today" hides it until tomorrow.
+// "Rediscover" on Home: one older note a day; on unless switched off in Settings.
 const OFF_KEY = 'rediscoverOff';
 const HIDDEN_KEY = 'rediscoverHidden'; // the YYYY-MM-DD it was hidden on
 
@@ -33,7 +32,7 @@ export const onThisDay = (notes: Note[], now = new Date()): Rediscovery | null =
   return { note, reason: `Written ${years === 1 ? 'a year' : `${years} years`} ago today` };
 };
 
-// Else, with search by meaning: a note untouched for a month that's close to one edited this week and not linked to it.
+// Else, with search by meaning: a month-old note close to one edited this week and not linked to it.
 export const pickRediscovery = async (notes: Note[], now = new Date()): Promise<Rediscovery | null> => {
   const dated = onThisDay(notes, now);
   if (dated) return dated;

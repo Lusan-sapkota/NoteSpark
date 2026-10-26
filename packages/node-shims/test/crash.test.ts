@@ -1,5 +1,4 @@
-// Crash injection: every SQLite call of an operation is made to fail once ("power loss": all later calls fail too,
-// the open transaction is discarded when the connection closes), then the database is reopened and checked.
+// Crash injection: every SQLite call of an operation fails once (all later ones too), then the database is reopened and checked.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { assertInStep, byTitle, crdt, database, freshProfile, notes, profiles, reopen, rows, sample, sqlite, sync } from './helpers.ts';
@@ -28,7 +27,6 @@ interface Scenario<C> {
   sync?: boolean;
   setup(): Promise<C>;
   op(c: C): Promise<unknown>;
-  // Extra checks on the reopened database, given the state before and after a clean run.
   check?(c: C, before: any, after: any, state: any): Promise<void>;
 }
 
@@ -80,8 +78,7 @@ const fixture = async () => {
 };
 const textOf = (title: string) => async () => (await database.db.getFirstAsync('SELECT content FROM notes WHERE title = ?', [title]))?.content;
 
-// Remote apply: after any crash the remote change is either fully there or fully absent, never reverted by the
-// reopen's reconcile, and applying it again (the hub resends) always ends with it present.
+// After a crash the remote change is fully there or absent, never reverted, and applying it again ends with it present.
 const remoteEdit = async (remote: any) => {
   const uuid = (await database.db.getFirstAsync("SELECT uuid FROM notes WHERE title = 'A'")).uuid;
   return remote.save(uuid, { ...sync.readNote(remote.docs.get(uuid)), content: 'remote edit' }).map((d: any) => ({ doc: d.doc, bytes: d.bytes }));
@@ -113,7 +110,7 @@ run({
   },
 });
 
-// Transfer touches two databases: after a crash in either, no note is lost from both, and each database is in step.
+// Two databases: no note is lost from both, and each is in step.
 test('crash at every statement: transfer to another profile and undo', async () => {
   const setup = async () => {
     const target = await freshProfile(true);

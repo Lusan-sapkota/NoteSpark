@@ -3,7 +3,7 @@ import { Snackbar as PaperSnackbar, SnackbarProps } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
 
-// Paper's M3 snackbar uses the inverse colors (a light bar in dark mode); this one sits on the app's own surfaces.
+// Unlike Paper's inverse-colored snackbar, this one uses the app's own surfaces.
 const Snackbar = (props: SnackbarProps) => {
   const { theme } = useTheme();
   return (

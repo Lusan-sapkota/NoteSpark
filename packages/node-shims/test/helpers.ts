@@ -1,4 +1,4 @@
-// Storage tests: the phone's storage code on the Node shims, one temp data folder per test file (one process each).
+// The phone's storage code on the Node shims, one temp folder per test file.
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,29 +18,25 @@ export const sync = await import('@notespark/sync');
 export const sqlite = await import('expo-sqlite');
 
 let n = 0;
-// A fresh profile database, opened as the live one.
 export const freshProfile = async (syncOn = false) => {
   const id = `t${++n}`;
   await database.openProfileDatabase(id);
   if (syncOn) await crdt.enableSync(database.db);
   return id;
 };
-// What a new process start does: close the connection (an open transaction is discarded) and open it again.
+// A process restart: close (dropping any open transaction) and open again.
 export const reopen = async (id: string) => {
   await database.closeProfileDatabase(id);
   await database.openProfileDatabase(id);
 };
 
-// Rows keyed by title (uuids differ between runs); titles are unique in the tests.
 export const byTitle = (r: Record<string, any>) => Object.fromEntries(Object.values(r).map(v => [v.title, v]));
 
-// Every note row, keyed by uuid, without the local id and timestamps.
 export const rows = async (): Promise<Record<string, any>> => {
   const all = await database.db.getAllAsync('SELECT * FROM notes ORDER BY uuid');
   return Object.fromEntries(all.map((r: any) => [r.uuid, { title: r.title, content: r.content, isMarkdown: r.isMarkdown, isPinned: r.isPinned, isArchived: r.isArchived, binned: r.deletedAt !== null }]));
 };
 
-// The docs in crdt_updates: uuid -> note state, and the catalog's erased set.
 export const docs = async () => {
   const db = database.db;
   const all = await db.getAllAsync('SELECT docId, "update" FROM crdt_updates ORDER BY id');
@@ -52,7 +48,7 @@ export const docs = async () => {
   return { state, erased: cat.erased, known: cat.known };
 };
 
-// Invariant: every row has a doc with the same content, no row is erased, no doc lacks a row (sync on).
+// Every row has a doc with the same content, and nothing erased has a row.
 export const assertInStep = async (label = '') => {
   const [r, d] = [await rows(), await docs()];
   const assert = (await import('node:assert/strict')).default;

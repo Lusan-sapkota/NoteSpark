@@ -9,8 +9,7 @@ type Queued = { title: string; message?: string; buttons: DialogButton[]; cancel
 
 const DialogContext = createContext<AlertFn>(() => {});
 
-// Same call shape as Alert.alert, drawn as an M3 Paper dialog so it follows the app theme
-// (native alerts follow the phone's theme instead).
+// Same call shape as Alert.alert, drawn as a Paper dialog so it follows the app theme.
 export const useAlert = () => useContext(DialogContext);
 
 export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -37,7 +36,7 @@ export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     <DialogContext.Provider value={alert}>
       {children}
       <Portal>
-        {/* Title, content and actions stay direct children: Dialog passes a style prop to each, which a Fragment can't take. */}
+        {/* Keep these direct children: Dialog passes each a style prop, which a Fragment can't take. */}
         <Dialog visible={!!current} dismissable={dismissable} onDismiss={() => close(cancelButton)}>
           {current && <Dialog.Title>{current.title}</Dialog.Title>}
           {!!current?.message && (

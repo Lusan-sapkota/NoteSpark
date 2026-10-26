@@ -26,8 +26,7 @@ export const fileName = (note: Note, taken: Set<string>) => {
   return name;
 };
 
-// The reverse of noteToMarkdown, for Markdown and text files from NoteSpark or other apps (Obsidian, Markor…).
-// created/updated/pinned/archived come from front matter; other front matter keys stay in the note.
+// The reverse of noteToMarkdown; other front matter keys stay in the note.
 export const markdownToNote = (fileName: string, text: string) => {
   const base = fileName.split('/').pop() ?? fileName;
   const ext = base.match(/\.([^.]+)$/)?.[1]?.toLowerCase() ?? '';

@@ -77,7 +77,7 @@ const LockChoice: React.FC<{
   );
 };
 
-// New profile, or a profile's lock. An M3 full-screen dialog: this form doesn't fit a centred dialog above the keyboard.
+// New profile, or a profile's lock, as a full-screen dialog (too big for a centred one above the keyboard).
 const ProfileLockScreen: React.FC = () => {
   const navigation = useNavigation<ProfileLockNavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'ProfileLock'>>();

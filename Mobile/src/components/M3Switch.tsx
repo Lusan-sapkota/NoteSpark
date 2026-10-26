@@ -11,8 +11,7 @@ interface M3SwitchProps {
   disabled?: boolean;
 }
 
-// Material 3 switch (Paper's Switch draws the platform's older one): a 52×32 track; off, a 16dp outlined thumb;
-// on, a 24dp thumb with a check on a primary track. The thumb springs across on tap.
+// Material 3 switch (Paper's Switch draws the older platform one); the thumb springs across on tap.
 const TRACK_W = 52;
 const TRACK_H = 32;
 
@@ -29,7 +28,7 @@ const M3Switch: React.FC<M3SwitchProps> = ({ value, onValueChange, accessibility
   const thumbStyle = useAnimatedStyle(() => {
     const size = 16 + 8 * on.value;
     const centre = 16 + 20 * on.value;
-    return { width: size, height: size, borderRadius: size / 2, left: centre - size / 2 - 2, top: (TRACK_H - size) / 2 - 2 }; // inside the 2dp border
+    return { width: size, height: size, borderRadius: size / 2, left: centre - size / 2 - 2, top: (TRACK_H - size) / 2 - 2 }; // inside the border
   });
 
   const c = theme.colors;

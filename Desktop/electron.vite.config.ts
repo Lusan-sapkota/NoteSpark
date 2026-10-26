@@ -34,8 +34,7 @@ export default defineConfig({
   main: {
     plugins: [
       {
-        // The phone loads the model and runs it inside loadEmbedder(). Here that function is replaced by one that asks the
-        // helper process in src/main/embedder.ts; the rest of the search code (chunks, index, queries) is untouched.
+        // Replaces loadEmbedder() with a call to the helper process in src/main/embedder.ts.
         name: 'embedder-in-helper-process',
         enforce: 'pre',
         transform: (code, id) => {
@@ -54,21 +53,20 @@ export default defineConfig({
   },
   preload: { resolve: { alias } },
   renderer: {
-    // The phone's screens and pictures live in ../Mobile; the dev server refuses files outside this folder by default.
+    // Let the dev server read ../Mobile.
     server: { fs: { allow: [resolve(__dirname, '..')] } },
     // Smaller code to parse and keep in memory; no source maps shipped.
     build: { minify: true, sourcemap: false },
     plugins: [
       react(),
       {
-        // The dev server injects an inline script (React refresh), which the strict CSP in index.html would block and leave
-        // the window blank. Only while serving: the built app keeps `script-src 'self'`.
+        // Dev only: React refresh injects an inline script that the strict CSP would block; builds keep `script-src 'self'`.
         name: 'dev-csp',
         apply: 'serve',
         transformIndexHtml: html => html.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"),
       },
       {
-        // The phone caps its screens at a 680 point reading column; on a monitor every screen uses the full width, like Home.
+        // Removes the phone's 680 reading-column cap so screens use the full width.
         name: 'desktop-full-width',
         enforce: 'pre',
         transform: (code, id) => (/Mobile\/src\/screens\/\w+\.tsx$/.test(id) && code.includes('maxWidth: readingWidth') ? code.replaceAll('maxWidth: readingWidth', "maxWidth: '100%'") : null),
@@ -88,8 +86,7 @@ export default defineConfig({
             : null,
       },
       {
-        // Small, loud edits to phone screens for things that make no sense on a computer. Each edit must find its text,
-        // so a change to the phone's source breaks the build here instead of quietly showing the wrong thing.
+        // Phone-only copy edits; each must find its text so source changes fail the build loudly.
         name: 'desktop-copy',
         enforce: 'pre',
         transform: (code, id) => {
@@ -121,8 +118,7 @@ export default defineConfig({
             return code;
           }
           if (id.endsWith('Mobile/src/screens/ProfileLockScreen.tsx')) {
-            // No fingerprint unlock on desktop (Electron has no cross-platform API for it), so the third choice goes
-            // and PIN becomes the last of the group.
+            // No fingerprint on desktop (no cross-platform Electron API): drop it and make PIN last.
             const start = code.indexOf('<LockChoice\n              icon={fingerprintReady');
             const end = start < 0 ? -1 : code.indexOf('\n            />\n', start);
             if (end < 0) throw new Error(`desktop-copy: fingerprint choice not found in ${id}`);
@@ -132,8 +128,7 @@ export default defineConfig({
             return code;
           }
           if (id.endsWith('Mobile/src/screens/SettingsScreen.tsx')) {
-            // Reminders and shared text work on the desktop too (src/main/notify.ts): reminders come from the main process,
-            // shared text is the tray's "Save clipboard text". The desktop's own row ends the group.
+            // Reminders and shared text run via src/main/notify.ts; the tray row ends the group.
             replaceAll(RESTORED, RESTORED_DESKTOP);
             replace('Your notes never leave your phone', 'Your notes never leave this computer');
             replace('description={shareLabel(shareTarget)}', 'description={`Save clipboard text from the tray: ${shareLabel(shareTarget).toLowerCase()}`}');
@@ -155,8 +150,7 @@ export default defineConfig({
         },
       },
       {
-        // The phone's icon buttons (app bar actions and IconButtons, the editor toolbar among them) have an accessibility label and
-        // no tooltip (there is no hover on a phone). On the desktop each one gets a tooltip with that label as its text.
+        // Wraps icon buttons in a tooltip that reuses their accessibility label.
         name: 'desktop-tooltips',
         enforce: 'pre', // after desktop-copy, which looks for the unwrapped buttons
         transform: (code, id) => {
@@ -167,8 +161,7 @@ export default defineConfig({
         },
       },
       {
-        // On a phone a dialog or a snackbar fills the width; on a wide window a confirmation as wide as the window looks wrong.
-        // Dialogs get 560 points, centred; snackbars 560, at the left edge like Material's. (A tag that sets its own style keeps it.)
+        // Caps dialogs (centred) and snackbars (left) at 560 wide instead of the full window.
         name: 'desktop-dialog-width',
         enforce: 'pre',
         transform: (code, id) => {

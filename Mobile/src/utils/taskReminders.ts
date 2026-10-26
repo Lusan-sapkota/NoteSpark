@@ -1,5 +1,4 @@
-// Reminders for tasks with a due date: one notification per profile and day, at the chosen hour on the due date.
-// Scheduled on the phone (no push); recomputed from the notes whenever Home loads.
+// One local notification per profile and day for tasks due then; recomputed whenever Home loads.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Notifications } from './notifications';
 import { buildReminders, REMINDER_ID_PREFIX, type ProfileTasks } from '@notespark/core';

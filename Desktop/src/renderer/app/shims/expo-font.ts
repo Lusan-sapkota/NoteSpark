@@ -1,5 +1,4 @@
-// @expo/vector-icons only needs to register its icon font. The FontFace API does that without expo-modules-core
-// and without inline <style> (the CSP has no 'unsafe-inline').
+// Registers the icon font via FontFace, since the CSP has no 'unsafe-inline' for a <style>.
 const loaded = new Set<string>();
 export const isLoaded = (name: string) => loaded.has(name);
 export const loadAsync = async (fonts: string | Record<string, string>) => {

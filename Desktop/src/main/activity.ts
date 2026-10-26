@@ -1,5 +1,4 @@
-// Is anyone using the app? The desktop window counts while it has focus; web view requests count as they happen.
-// Kept apart from storage.ts so the window can report in without loading the storage code.
+// Tracks whether anyone is using the app (window focus, web view requests), apart from storage.ts to avoid loading it.
 let focused = false;
 let last = Date.now();
 let onAway: (() => void) | undefined;

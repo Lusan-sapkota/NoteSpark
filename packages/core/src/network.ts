@@ -1,5 +1,4 @@
-// The "Network rule": NoteSpark only talks to private addresses (LAN, tunnels, this computer), never the internet.
-// Accepts the textual form of a peer address: IPv4, IPv6, or IPv4-mapped IPv6 (::ffff:192.168.1.5).
+// The "Network rule": only private peer addresses (IPv4, IPv6, IPv4-mapped) are allowed, never the internet.
 export const isPrivateAddress = (address: string): boolean => {
   const ip = address.trim().toLowerCase().replace(/^\[|\]$/g, '').replace(/%.*$/, '');
   const v4 = /^(?:::ffff:)?(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
@@ -16,5 +15,5 @@ export const isPrivateAddress = (address: string): boolean => {
     );
   }
   if (!ip.includes(':')) return false;
-  return ip === '::1' || /^f[cd][0-9a-f]{2}:/.test(ip) || /^fe[89ab][0-9a-f]:/.test(ip); // loopback, ULA fc00::/7, link-local fe80::/10
+  return ip === '::1' || /^f[cd][0-9a-f]{2}:/.test(ip) || /^fe[89ab][0-9a-f]:/.test(ip); // loopback, ULA, link-local
 };

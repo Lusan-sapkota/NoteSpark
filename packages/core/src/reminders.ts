@@ -1,5 +1,4 @@
-// Reminders for tasks with a due date: one per profile and day, at the chosen hour on the due date. Pure, so the phone
-// schedules them as notifications and the desktop fires them from its main process.
+// Pure reminders for tasks with a due date: one per profile and day, at the chosen hour.
 import { extractTasks } from './tasks';
 import { Note } from './types';
 

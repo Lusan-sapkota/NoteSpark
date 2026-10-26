@@ -1,5 +1,4 @@
-// #tags are read from note text, like tasks: a # at the start of a word, then letters, digits, _, - or /.
-// "# Heading" (space after #), number-only tags like #1, and text inside fenced code blocks don't count.
+// #tags come from note text; headings, number-only tags and fenced code don't count.
 const tagPattern = /(^|\s)#([\p{L}\p{N}_][\p{L}\p{N}_/-]*)/gu;
 const fence = /^\s*(```|~~~)/;
 

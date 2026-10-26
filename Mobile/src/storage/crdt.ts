@@ -1,19 +1,17 @@
-// Sync side of the storage: notes as Yjs updates in crdt_updates (docs/architecture/sync-architecture.md).
-// Row and updates are written in one transaction (`transact`). Not exposed to the desktop renderer.
+// Sync side of the storage: notes as Yjs updates, written with their rows in one transaction.
 import * as Crypto from 'expo-crypto';
 import * as SQLite from 'expo-sqlite';
 import { type NoteState, catalogUpdate, compact, noteCapture, noteWithStateVector, readCatalog, shouldCompact } from '@notespark/sync';
 
 type DB = SQLite.SQLiteDatabase;
 
-// A v4 uuid made by SQLite itself, so every INSERT, the backfill and the undo paths use one generator.
-// (No trigger: sqlcipher_export copies triggers differently on the phone and the desktop.)
+// A v4 uuid made by SQLite itself.
 export const UUID_SQL = `lower(hex(randomblob(4)) || '-' || hex(randomblob(2)) || '-4' || substr(hex(randomblob(2)), 2) || '-' || substr('89ab', 1 + (random() & 3), 1) || substr(hex(randomblob(2)), 2) || '-' || hex(randomblob(6)))`;
 
 const CATALOG = 'catalog';
 
 export const initCrdt = async (db: DB): Promise<void> => {
-  // sync_state.clientId is unused (F2); crdt_materialized: doc state each row was last written from (F1).
+  // clientId is unused (F2); crdt_materialized and crdt_adopted: see docs/architecture/data-and-storage.md.
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS crdt_updates (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -23,15 +21,20 @@ export const initCrdt = async (db: DB): Promise<void> => {
     );
     CREATE INDEX IF NOT EXISTS crdt_updates_doc ON crdt_updates (docId, id);
     CREATE TABLE IF NOT EXISTS sync_state (id INTEGER PRIMARY KEY CHECK (id = 1), clientId INTEGER NOT NULL);
-    CREATE TABLE IF NOT EXISTS crdt_materialized (docId TEXT PRIMARY KEY, stateVector BLOB NOT NULL);`
+    CREATE TABLE IF NOT EXISTS crdt_materialized (docId TEXT PRIMARY KEY, stateVector BLOB NOT NULL);
+    CREATE TABLE IF NOT EXISTS crdt_adopted (docId TEXT PRIMARY KEY);`
   );
+  await db.execAsync('ALTER TABLE sync_state ADD COLUMN syncId TEXT').catch(() => {});
 };
 
-// New random Yjs client id every process start, never stored (F2).
-let processClientId: number | null = null;
-const clientId = () => (processClientId ??= new DataView(Crypto.getRandomBytes(4).buffer).getUint32(0));
+// New random Yjs client id for every opened connection, never stored (F2).
+const clientIds = new WeakMap<DB, number>();
+const clientId = (db: DB) => {
+  if (!clientIds.has(db)) clientIds.set(db, new DataView(Crypto.getRandomBytes(4).buffer).getUint32(0));
+  return clientIds.get(db)!;
+};
 
-// Per connection; a row exists only while sync is on for this profile.
+// Per connection: whether sync is on.
 const states = new WeakMap<DB, boolean>();
 
 const syncOn = async (db: DB) => {
@@ -47,7 +50,8 @@ const loadUpdates = async (db: DB, docId: string) =>
 const setMarker = (db: DB, docId: string, stateVector: Uint8Array) =>
   db.runAsync('INSERT INTO crdt_materialized (docId, stateVector) VALUES (?, ?) ON CONFLICT(docId) DO UPDATE SET stateVector = excluded.stateVector', [docId, stateVector]);
 
-const append = async (db: DB, docId: string, update: Uint8Array) => {
+const append = async (db: DB, docId: string, update: Uint8Array, out?: Delta[]) => {
+  out?.push({ doc: docId, bytes: update });
   await db.runAsync('INSERT INTO crdt_updates (docId, "update", createdAt) VALUES (?, ?, ?)', [docId, update, new Date().toISOString()]);
   const stats = (await db.getFirstAsync<{ n: number; bytes: number }>('SELECT count(*) AS n, coalesce(sum(length("update")), 0) AS bytes FROM crdt_updates WHERE docId = ?', [docId]))!;
   if (!shouldCompact(stats.n, stats.bytes)) return;
@@ -72,44 +76,60 @@ export interface SyncWrites {
   erase(uuids: string[]): Promise<void>;
 }
 
-const capture = async (db: DB, ids: number[]): Promise<void> => {
+const capture = async (db: DB, ids: number[], out: Delta[]): Promise<void> => {
   const catalog = await loadUpdates(db, CATALOG);
   const { erased, known } = readCatalog(catalog);
   const live: string[] = [];
   for (const id of ids) {
     const row = await db.getFirstAsync<any>('SELECT * FROM notes WHERE id = ?', [id]);
     if (!row?.uuid || erased.has(row.uuid)) continue;
-    const { update, stateVector } = noteCapture(await loadUpdates(db, row.uuid), clientId(), stateOf(row));
-    if (update) await append(db, row.uuid, update);
+    if (await db.getFirstAsync('SELECT docId FROM crdt_adopted WHERE docId = ?', [row.uuid])) continue;
+    const { update, stateVector } = noteCapture(await loadUpdates(db, row.uuid), clientId(db), stateOf(row));
+    if (update) await append(db, row.uuid, update, out);
     await setMarker(db, row.uuid, stateVector);
     if (!known.has(row.uuid)) live.push(row.uuid);
   }
-  const update = live.length ? catalogUpdate(catalog, clientId(), { live }) : null;
-  if (update) await append(db, CATALOG, update);
+  const update = live.length ? catalogUpdate(catalog, clientId(db), { live }) : null;
+  if (update) await append(db, CATALOG, update, out);
 };
 
-const erase = async (db: DB, uuids: string[]): Promise<void> => {
+const erase = async (db: DB, uuids: string[], out: Delta[]): Promise<void> => {
   if (uuids.length === 0) return;
-  const update = catalogUpdate(await loadUpdates(db, CATALOG), clientId(), { erased: uuids });
-  if (update) await append(db, CATALOG, update);
+  const update = catalogUpdate(await loadUpdates(db, CATALOG), clientId(db), { erased: uuids });
+  if (update) await append(db, CATALOG, update, out);
   for (const uuid of uuids) {
     await db.runAsync('DELETE FROM crdt_updates WHERE docId = ?', [uuid]);
     await db.runAsync('DELETE FROM crdt_materialized WHERE docId = ?', [uuid]);
+    await db.runAsync('DELETE FROM crdt_adopted WHERE docId = ?', [uuid]);
   }
 };
 
 const chains = new WeakMap<DB, Promise<unknown>>();
+const listeners = new WeakMap<DB, Set<(d: Delta) => void>>();
 
-// One transaction per connection at a time (no nesting). Not withExclusiveTransactionAsync: no SQLCipher key there.
+// Called after each commit with the updates written here.
+export const onLocalUpdate = (db: DB, listener: (d: Delta) => void): (() => void) => {
+  const set = listeners.get(db) ?? new Set();
+  listeners.set(db, set);
+  set.add(listener);
+  return () => void set.delete(listener);
+};
+
+// One transaction per connection at a time, no nesting; not withExclusiveTransactionAsync (no SQLCipher key there).
 // ponytail: a foreign statement between BEGIN and COMMIT joins the transaction.
 export const transact = <T>(db: DB, work: (sync: SyncWrites) => Promise<T>): Promise<T> => {
   const run = async () => {
-    const on = await syncOn(db);
-    const sync: SyncWrites = { capture: ids => (on && ids.length ? capture(db, ids) : Promise.resolve()), erase: uuids => (on ? erase(db, uuids) : Promise.resolve()) };
+    await syncOn(db);
+    const out: Delta[] = [];
+    const sync: SyncWrites = {
+      capture: ids => (states.get(db) && ids.length ? capture(db, ids, out) : Promise.resolve()),
+      erase: uuids => (states.get(db) ? erase(db, uuids, out) : Promise.resolve()),
+    };
     await db.execAsync('BEGIN IMMEDIATE');
     try {
       const result = await work(sync);
       await db.execAsync('COMMIT');
+      for (const l of listeners.get(db) ?? []) for (const d of out) l(d);
       return result;
     } catch (error) {
       await db.execAsync('ROLLBACK').catch(() => {});
@@ -121,7 +141,7 @@ export const transact = <T>(db: DB, work: (sync: SyncWrites) => Promise<T>): Pro
   return next;
 };
 
-// Turning sync on seeds a doc for every note (bin included) from what the notes table holds now.
+// Seeds a doc for every note.
 export const enableSync = async (db: DB): Promise<void> => {
   if (await syncOn(db)) return;
   await db.runAsync('INSERT INTO sync_state (id, clientId) VALUES (1, 0)');
@@ -131,7 +151,7 @@ export const enableSync = async (db: DB): Promise<void> => {
 
 export const disableSync = async (db: DB): Promise<void> => {
   await transact(db, async () => {
-    await db.execAsync('DELETE FROM crdt_updates; DELETE FROM crdt_materialized; DELETE FROM sync_state');
+    await db.execAsync('DELETE FROM crdt_updates; DELETE FROM crdt_materialized; DELETE FROM crdt_adopted; DELETE FROM sync_state');
   });
   states.set(db, false);
 };
@@ -145,7 +165,7 @@ export const eraseNotes = (db: DB, uuids: string[]): Promise<void> => transact(d
 
 const sameBytes = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((v, i) => v === b[i]);
 
-// Safety net. A doc ahead of its row (marker differs) rebuilds the row instead of being overwritten.
+// A doc ahead of its row rebuilds the row instead of being overwritten.
 // ponytail: loads every doc; runs when sync is turned on and once per connection.
 export const reconcile = async (db: DB): Promise<void> => {
   if (!(await syncOn(db))) return;
@@ -193,7 +213,7 @@ export interface Delta {
   bytes: Uint8Array;
 }
 
-// Updates from another device in one transaction. Callers wrap this in changesNotes (notes.ts).
+// Updates from another device, in one transaction.
 export const applyRemote = async (db: DB, deltas: Delta[]): Promise<void> => {
   if (!(await syncOn(db))) throw new Error('Sync is off for this profile');
   await transact(db, async () => {
@@ -212,6 +232,38 @@ export const applyRemote = async (db: DB, deltas: Delta[]): Promise<void> => {
       await db.runAsync('DELETE FROM crdt_updates WHERE docId = ?', [uuid]);
       await db.runAsync('DELETE FROM crdt_materialized WHERE docId = ?', [uuid]);
     }
-    for (const uuid of touched) if (uuid !== CATALOG && !erased.has(uuid)) await materialize(db, uuid);
+    for (const uuid of touched) {
+      if (uuid === CATALOG || erased.has(uuid)) continue;
+      // First update for an adopted note: the row becomes the doc's next change.
+      if (await db.getFirstAsync('SELECT docId FROM crdt_adopted WHERE docId = ?', [uuid])) {
+        await db.runAsync('DELETE FROM crdt_adopted WHERE docId = ?', [uuid]);
+        const row = await db.getFirstAsync<{ id: number }>('SELECT id FROM notes WHERE uuid = ?', [uuid]);
+        if (row) await capture(db, [row.id], []);
+      } else await materialize(db, uuid);
+    }
   });
 };
+
+// First link: adopted notes take the hub's uuids, the rest get docs, sync turns on.
+export const linkProfile = async (db: DB, syncId: string, adopt: Map<string, string>): Promise<void> => {
+  const wasOn = await syncOn(db);
+  try {
+    await transact(db, async sync => {
+      for (const [from, to] of adopt) {
+        const r = await db.runAsync('UPDATE notes SET uuid = ? WHERE uuid = ? AND NOT EXISTS (SELECT 1 FROM notes WHERE uuid = ?)', [to, from, to]);
+        if (r.changes) await db.runAsync('INSERT OR IGNORE INTO crdt_adopted (docId) VALUES (?)', [to]);
+      }
+      await db.runAsync('INSERT INTO sync_state (id, clientId, syncId) VALUES (1, 0, ?) ON CONFLICT(id) DO UPDATE SET syncId = excluded.syncId', [syncId]);
+      states.set(db, true);
+      await sync.capture((await db.getAllAsync<{ id: number }>('SELECT id FROM notes')).map(r => r.id));
+    });
+  } catch (error) {
+    states.set(db, wasOn);
+    throw error;
+  }
+};
+
+export const linkedSyncId = async (db: DB): Promise<string | null> =>
+  (await db.getFirstAsync<{ syncId: string | null }>('SELECT syncId FROM sync_state WHERE id = 1').catch(() => null))?.syncId ?? null;
+
+export const docUpdates = loadUpdates;
