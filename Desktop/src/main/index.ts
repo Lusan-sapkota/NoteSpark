@@ -134,7 +134,6 @@ else {
     const refreshTray = async () => {
       refreshMenuFn?.();
       const web = webViewStatus();
-      const keep = await keepInTray();
       tray?.setContextMenu(Menu.buildFromTemplate([
         { label: 'Open NoteSpark', click: showWindow },
         { type: 'separator' },
@@ -144,7 +143,6 @@ else {
         // The link carries the one-time token, so it is copied, never shown in the menu.
         ...(web.on ? [{ label: 'Copy web view link', click: () => clipboard.writeText(webViewStatus().links.at(-1) ?? '') }] : []),
         { type: 'separator' },
-        { label: 'Keep running in the tray after closing', type: 'checkbox', checked: keep, click: item => AsyncStorage.setItem('keepInTray', String(item.checked)).then(refreshTray) },
         { label: 'Quit', click: () => app.quit() },
       ]));
     };
