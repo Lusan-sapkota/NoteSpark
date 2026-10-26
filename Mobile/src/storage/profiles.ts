@@ -6,7 +6,8 @@ import * as SQLite from 'expo-sqlite';
 import { UUID_SQL, transact, uuidsWhere } from './crdt';
 import { changesNotes, scratchpadAsNote, toNote } from './notes';
 import type { Note } from '../types';
-import { BIN_DAYS, db, dbName, deleteProfileDatabase, forgetProfileKey, getProfileKey, initDatabase, isProfileDatabaseOpen, isProfileEncrypted, openProfileConnection, openProfileDatabase, restoreProfileKey, setProfileEncryption, withDatabaseLock } from './database';
+import { copyAttachmentsForTransfer, deleteProfileAttachments, referencedHashes } from './attachments';
+import { BIN_DAYS, db, dbName, deleteProfileDatabase, forgetProfileKey, getOpenProfileId, getProfileKey, initDatabase, isProfileDatabaseOpen, isProfileEncrypted, openProfileConnection, openProfileDatabase, restoreProfileKey, setProfileEncryption, withDatabaseLock } from './database';
 
 export interface Profile {
   id: string;
@@ -281,6 +282,7 @@ export const restoreProfile = (id: string): Promise<void> => updateProfile(id, {
 // The file goes first: if it can't be deleted yet (still open), the profile stays listed and a later purge retries.
 export const deleteProfileForever = async (id: string): Promise<void> => {
   await deleteProfileDatabase(id);
+  await deleteProfileAttachments(id);
   await saveProfiles((await getStoredProfiles()).filter(p => p.id !== id));
   await storePin(id, null);
   await saveAttempt(id, null);
@@ -334,6 +336,12 @@ export const transferNotesToProfile = changesNotes(
         note.id,
         await db.getAllAsync('SELECT title, content, isMarkdown, savedAt FROM note_versions WHERE noteId = ? ORDER BY id ASC', [note.id])
       );
+    }
+    const allTexts: { content: string }[] = [...notes];
+    for (const versions of versionsByNote.values()) allTexts.push(...versions);
+    const attachmentHashes = referencedHashes(allTexts);
+    if (attachmentHashes.size > 0) {
+      await copyAttachmentsForTransfer(attachmentHashes, getOpenProfileId(), targetProfileId);
     }
     const insertedIds: number[] = [];
     await withDatabaseLock(async () => {

@@ -9,6 +9,7 @@ const map = {
   'expo-sqlite': shim('expo-sqlite.ts'),
   'expo-crypto': shim('expo-crypto.ts'),
   'expo-secure-store': shim('expo-secure-store.ts'),
+  'expo-file-system': shim('expo-file-system.ts'),
   'expo-file-system/legacy': shim('expo-file-system-legacy.ts'),
   '@react-native-async-storage/async-storage': shim('async-storage.ts'),
   'expo-local-authentication': resolve(root, 'packages/node-shims/test/loader/local-authentication.ts'),

@@ -27,6 +27,16 @@ export const withDatabaseLock = <T>(fn: () => Promise<T>): Promise<T> => {
 
 export const isProfileDatabaseOpen = (profileId: string) => dbName(profileId) === openName;
 
+export const getOpenProfileId = (): string =>
+  !openName || openName === 'notespark.db' ? 'default' : openName.slice('notespark-'.length, -'.db'.length);
+
+let encryptionChangeHook: ((profileId: string, conn: SQLite.SQLiteDatabase, oldKeyHex: string | null, newKeyHex: string | null) => Promise<void>) | null = null;
+export const registerAttachmentEncryptionHook = (
+  fn: (profileId: string, conn: SQLite.SQLiteDatabase, oldKeyHex: string | null, newKeyHex: string | null) => Promise<void>
+) => {
+  encryptionChangeHook = fn;
+};
+
 export const closeProfileDatabase = async (profileId: string): Promise<void> => {
   if (!isProfileDatabaseOpen(profileId)) return;
   dbReady = false;
@@ -118,7 +128,8 @@ export const isProfileEncrypted = async (id: string) => !!(await SecureStore.get
 // Returns false when nothing changed, including builds without SQLCipher (Expo Go).
 export const setProfileEncryption = (profileId: string, encrypt: boolean): Promise<boolean> =>
   withDatabaseLock(async () => {
-    if ((await isProfileEncrypted(profileId)) === encrypt) return false;
+    const oldKey = await SecureStore.getItemAsync(keyName(profileId));
+    if (Boolean(oldKey) === encrypt) return false;
     const name = dbName(profileId);
     const newKey = encrypt ? Array.from(Crypto.getRandomBytes(32), b => b.toString(16).padStart(2, '0')).join('') : null;
     const wasOpen = isProfileDatabaseOpen(profileId) && dbReady;
@@ -137,6 +148,7 @@ export const setProfileEncryption = (profileId: string, encrypt: boolean): Promi
            SELECT sqlcipher_export('converted');
            DETACH DATABASE converted;`
         );
+        if (encryptionChangeHook) await encryptionChangeHook(profileId, conn, oldKey, newKey);
       } finally {
         await conn.closeAsync();
       }

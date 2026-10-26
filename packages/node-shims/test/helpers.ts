@@ -14,6 +14,7 @@ export const database = await import(`${src}database.ts`);
 export const notes = await import(`${src}notes.ts`);
 export const profiles = await import(`${src}profiles.ts`);
 export const crdt = await import(`${src}crdt.ts`);
+export const attachments = await import(`${src}attachments.ts`);
 export const sync = await import('@notespark/sync');
 export const sqlite = await import('expo-sqlite');
 
