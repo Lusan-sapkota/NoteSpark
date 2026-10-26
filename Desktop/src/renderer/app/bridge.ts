@@ -19,3 +19,18 @@ export const invoke = async <T = unknown>(channel: string, args?: unknown): Prom
 };
 
 export type WebStatus = { on: boolean; port: number; links: string[] };
+
+// The phone's storage modules run in the main process; these proxies call them by name.
+export const storageProxy = <M extends Record<string, any>>(module: string, names: readonly (keyof M & string)[], onDone?: (name: string) => void) =>
+  Object.fromEntries(
+    names.map(name => [
+      name,
+      async (...args: unknown[]) => {
+        try {
+          return await invoke('storage', { module, fn: name, args });
+        } finally {
+          onDone?.(name);
+        }
+      },
+    ]),
+  ) as { [K in (typeof names)[number]]: M[K] };

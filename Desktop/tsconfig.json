@@ -50,6 +50,6 @@
     "../Mobile/src/storage/profiles.ts"
   ],
   "exclude": [
-    "src/renderer/spike"
+    "src/renderer/app"
   ]
 }
