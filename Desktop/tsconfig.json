@@ -19,6 +19,24 @@
       ],
       "better-sqlite3-multiple-ciphers": [
         "./node_modules/better-sqlite3-multiple-ciphers/index.d.ts"
+      ],
+      "expo-sqlite": [
+        "./src/main/shims/expo-sqlite.ts"
+      ],
+      "expo-crypto": [
+        "./src/main/shims/expo-crypto.ts"
+      ],
+      "expo-secure-store": [
+        "./src/main/shims/expo-secure-store.ts"
+      ],
+      "expo-local-authentication": [
+        "./src/main/shims/expo-local-authentication.ts"
+      ],
+      "expo-file-system/legacy": [
+        "./src/main/shims/expo-file-system-legacy.ts"
+      ],
+      "@react-native-async-storage/async-storage": [
+        "./src/main/shims/async-storage.ts"
       ]
     },
     "jsx": "react-jsx"
@@ -26,7 +44,10 @@
   "include": [
     "src",
     "electron.vite.config.ts",
-    "../packages/core/src"
+    "../packages/core/src",
+    "../Mobile/src/storage/database.ts",
+    "../Mobile/src/storage/notes.ts",
+    "../Mobile/src/storage/profiles.ts"
   ],
   "exclude": [
     "src/renderer/spike"

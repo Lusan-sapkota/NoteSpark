@@ -7,8 +7,19 @@ import { transformWithOxc } from 'vite';
 const alias = { '@notespark/core': resolve(__dirname, '../packages/core/src/index.ts') };
 const stub = (name: string) => resolve(__dirname, 'src/renderer/spike/stubs', name);
 
+// The phone's storage code runs in the main process; its Expo imports resolve to the shims in src/main/shims.
+const shim = (name: string) => resolve(__dirname, 'src/main/shims', name);
+const expoShims = [
+  { find: 'expo-file-system/legacy', replacement: shim('expo-file-system-legacy.ts') },
+  { find: 'expo-sqlite', replacement: shim('expo-sqlite.ts') },
+  { find: 'expo-crypto', replacement: shim('expo-crypto.ts') },
+  { find: 'expo-secure-store', replacement: shim('expo-secure-store.ts') },
+  { find: 'expo-local-authentication', replacement: shim('expo-local-authentication.ts') },
+  { find: '@react-native-async-storage/async-storage', replacement: shim('async-storage.ts') },
+];
+
 export default defineConfig({
-  main: { resolve: { alias } },
+  main: { resolve: { alias: [{ find: '@notespark/core', replacement: alias['@notespark/core'] }, ...expoShims] } },
   preload: { resolve: { alias } },
   renderer: {
     plugins: [

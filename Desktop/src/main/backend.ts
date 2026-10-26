@@ -1,5 +1,4 @@
-import { join } from 'node:path';
-import { app, nativeTheme } from 'electron';
+import { nativeTheme } from 'electron';
 import { startWebView, stopWebView, webViewStatus } from './web';
 
 // One API for both transports: Electron IPC (the window) and HTTP (the web view).
@@ -7,17 +6,9 @@ import { startWebView, stopWebView, webViewStatus } from './web';
 type Handler = { local?: boolean; run: (args: any) => unknown | Promise<unknown> };
 
 const handlers: Record<string, Handler> = {
-  'notes:list': {
-    async run() {
-      // The native SQLite module loads only when notes are first asked for.
-      const { default: Database } = await import('better-sqlite3-multiple-ciphers');
-      const db = new Database(process.env.NOTESPARK_DB ?? join(app.getPath('userData'), 'notes.db'), { readonly: true, fileMustExist: true });
-      try {
-        const rows = db.prepare('SELECT * FROM notes WHERE deletedAt IS NULL ORDER BY isPinned DESC, updatedAt DESC').all() as Record<string, unknown>[];
-        return rows.map(r => ({ ...r, isMarkdown: !!r.isMarkdown, isPinned: !!r.isPinned, isArchived: !!r.isArchived }));
-      } finally { db.close(); }
-    },
-  },
+  // The storage and settings code loads on first use, so a tray-only app stays small.
+  storage: { run: async args => (await import('./storage')).callStorage(args as any) },
+  settings: { run: async args => (await import('./storage')).callSettings(args as any) },
   'theme:get': { local: true, run: () => nativeTheme.themeSource },
   'theme:set': {
     local: true,

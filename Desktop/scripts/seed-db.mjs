@@ -1,6 +1,7 @@
 // Builds a database with the phone's schema from a NoteSpark JSON export.
-// Usage: node scripts/seed-db.mjs export.json notes.db
-import { readFileSync, rmSync } from 'node:fs';
+// Usage: node scripts/seed-db.mjs export.json <data dir>/databases/notespark.db  (then run the app with NOTESPARK_DIR=<data dir>)
+import { mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { dirname } from 'node:path';
 import Database from 'better-sqlite3-multiple-ciphers';
 
 const [input, output] = process.argv.slice(2);
@@ -8,6 +9,7 @@ if (!input || !output) throw new Error('Usage: node scripts/seed-db.mjs export.j
 const notes = JSON.parse(readFileSync(input, 'utf8'));
 if (!Array.isArray(notes)) throw new Error('Not a NoteSpark export');
 
+mkdirSync(dirname(output), { recursive: true });
 rmSync(output, { force: true });
 const db = new Database(output);
 // Same tables as Mobile/src/storage/database.ts (initDatabase).
