@@ -26,4 +26,4 @@ npm run dist       # also packages dist/NoteSpark-<version>.AppImage
 ## Notes for packagers
 
 - Native libraries (SQLite, the ONNX runtime, the vector extension) are unpacked from `app.asar`; the search model goes to `resources/models`.
-- Some Linux desktops (Ubuntu 24.04 and later) restrict the sandbox that an AppImage needs; a deb installs the helper with the right permissions.
+- Chromium's sandbox needs unprivileged user namespaces. Ubuntu 23.10 and later confine them for programs that have no AppArmor profile, so an AppImage can stop with "No usable sandbox!". `packaging/apparmor/notespark` is a profile of the kind Ubuntu ships for Slack, Discord and VS Code: copy it to `/etc/apparmor.d/` and run `sudo apparmor_parser -r /etc/apparmor.d/notespark`. (A deb installs the setuid sandbox helper instead and does not need it.) `--no-sandbox` also starts the app, but turns the sandbox off. Where the restriction is off, or a profile already allows it, nothing is needed.
