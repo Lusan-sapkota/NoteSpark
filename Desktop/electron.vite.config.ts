@@ -9,7 +9,7 @@ const app = (path: string) => resolve(__dirname, 'src/renderer/app', path);
 const mobileSrc = resolve(__dirname, '../Mobile/src');
 // Phone modules that can't run in a browser are swapped, by file, for the versions in src/renderer/app/overrides.
 const overrides: Record<string, string> = Object.fromEntries(
-  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'widget/widgets'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.ts`)]),
+  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${m.startsWith('components') ? 'tsx' : 'ts'}`)]),
 );
 
 // The phone's storage code runs in the main process; its Expo imports resolve to the shims in src/main/shims.
@@ -35,6 +35,15 @@ export default defineConfig({
         resolveId: (source, importer) => (importer && source.startsWith('.') ? overrides[resolve(dirname(importer), source).replace(/\.tsx?$/, '')] : undefined),
       },
       {
+        // Two phone files load a module with require() inside a handler, which a browser bundle doesn't have.
+        name: 'inline-requires',
+        transform: (code, id) => {
+          const rewrite = (file: string, module: string, name: string) =>
+            id.endsWith(file) && code.includes(`require('${module}')`) ? `import * as ${name} from '${module}';\n${code.replaceAll(`require('${module}')`, name)}` : null;
+          return rewrite('Mobile/src/screens/ImportExportScreen.tsx', 'expo-print', '__expoPrint') ?? rewrite('Mobile/src/components/MarkdownRenderer.tsx', 'react-native', '__reactNative');
+        },
+      },
+      {
         // @expo/vector-icons ships JSX inside .js files.
         name: 'jsx-in-js',
         enforce: 'pre',
@@ -52,9 +61,14 @@ export default defineConfig({
     resolve: {
       alias: {
         ...alias,
-        'react-native': resolve(__dirname, 'node_modules/react-native-web/dist/index.js'),
+        'react-native': app('shims/react-native.tsx'),
         '@react-navigation/native': app('nav.tsx'),
         'react-native-reanimated': app('shims/reanimated.tsx'),
+        'expo-image-picker': app('shims/image-picker.ts'),
+        'expo-file-system/legacy': app('shims/file-system.ts'),
+        'expo-sharing': app('shims/sharing.ts'),
+        'expo-document-picker': app('shims/document-picker.ts'),
+        'expo-print': app('shims/print.ts'),
         'react-native-keyboard-controller': app('shims/keyboard-controller.tsx'),
         'expo-font': app('shims/expo-font.ts'),
         'react-native-safe-area-context': app('shims/safe-area.tsx'),

@@ -15,10 +15,12 @@ import HomeScreen from '../../../../Mobile/src/screens/HomeScreen';
 import NoteViewScreen from '../../../../Mobile/src/screens/NoteViewScreen';
 import TasksScreen from '../../../../Mobile/src/screens/TasksScreen';
 import BinScreen from '../../../../Mobile/src/screens/BinScreen';
+import EditorScreen from '../../../../Mobile/src/screens/EditorScreen';
+import ImportExportScreen from '../../../../Mobile/src/screens/ImportExportScreen';
 import ScratchpadScreen from '../../../../Mobile/src/screens/ScratchpadScreen';
 
 // Screens that come in later steps show where they are headed instead of failing.
-const comingLater = (title: string, when: string, openBin = false) => () => {
+const comingLater = (title: string, when: string, links: [string, string][] = []) => () => {
   const navigation = useNavigation<any>();
   const { theme } = useTheme();
   return (
@@ -28,8 +30,8 @@ const comingLater = (title: string, when: string, openBin = false) => () => {
         <Text variant="bodyLarge">{title} comes to the desktop app {when}. Until then, use the phone.</Text>
         <View style={{ flexDirection: 'row', gap: space.sm, marginTop: space.lg }}>
           <Button mode="contained" onPress={() => navigation.goBack()}>Go back</Button>
-          {/* ponytail: the phone reaches the bin from Settings; until Settings is ported this is the only way in. */}
-          {openBin && <Button mode="outlined" onPress={() => navigation.navigate('Bin')}>Open bin</Button>}
+          {/* ponytail: the phone reaches these from Settings; until Settings is ported these are the only way in. */}
+          {links.map(([label, to]) => <Button key={to} mode="outlined" onPress={() => navigation.navigate(to)}>{label}</Button>)}
         </View>
       </View>
     </View>
@@ -42,9 +44,9 @@ const screens = {
   Tasks: TasksScreen,
   Bin: BinScreen,
   Scratchpad: ScratchpadScreen,
-  Editor: comingLater('Editor', 'in the next step'),
-  ImportExport: comingLater('Import and export', 'in the next step'),
-  Settings: comingLater('Settings', 'in a later step', true),
+  Editor: EditorScreen,
+  ImportExport: ImportExportScreen,
+  Settings: comingLater('Settings', 'in a later step', [['Open bin', 'Bin'], ['Import and export', 'ImportExport']]),
   ProfileLock: comingLater('Profile lock', 'in a later step'),
   About: comingLater('About', 'in a later step'),
   Privacy: comingLater('Privacy', 'in a later step'),

@@ -1,12 +1,17 @@
 import { join } from 'node:path';
-import { app, BrowserWindow, clipboard, Menu, nativeImage, nativeTheme, session, Tray, ipcMain } from 'electron';
+import { app, BrowserWindow, clipboard, Menu, nativeImage, nativeTheme, protocol, session, shell, Tray, ipcMain } from 'electron';
+import { serveAsset } from './assets';
 import { invoke } from './backend';
 import { startWebView, stopWebView, webViewStatus } from './web';
 
 // Strictly offline: no updater, crash reporter, analytics or remote content.
 // The renderer may load only the app's own files (and the Vite dev server in development).
 const devUrl = process.env.ELECTRON_RENDERER_URL;
-const isAppUrl = (url: string) => url.startsWith('file://') || url.startsWith('devtools://') || (!!devUrl && url.startsWith(devUrl)) || url.startsWith('data:');
+const APP = 'app://notespark/';
+const isAppUrl = (url: string) => url.startsWith(APP) || url.startsWith(`blob:${APP}`) || url.startsWith('devtools://') || (!!devUrl && url.startsWith(devUrl)) || url.startsWith('data:');
+
+// The UI is served from app://notespark/, so pictures at /images/<name> have the same address in the window and the web view.
+protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 const icon = nativeImage.createFromPath(join(__dirname, '../../resources/icon.png'));
 let window: BrowserWindow | null = null;
@@ -33,9 +38,13 @@ const createWindow = () => {
   // Closing destroys the renderer; the main process stays in the tray.
   win.on('closed', () => { window = null; });
   win.webContents.on('will-navigate', (e, url) => { if (!isAppUrl(url)) e.preventDefault(); });
-  win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
+  // A link the person clicks opens in their own browser (the same as the phone); the app itself never loads it.
+  win.webContents.setWindowOpenHandler(({ url }) => {
+    if (/^(https?|mailto):/i.test(url)) void shell.openExternal(url);
+    return { action: 'deny' };
+  });
   if (devUrl) win.loadURL(devUrl);
-  else win.loadFile(join(__dirname, '../renderer/index.html'));
+  else win.loadURL(APP);
   window = win;
 };
 
@@ -58,6 +67,13 @@ else {
   });
 
   app.whenReady().then(() => {
+    protocol.handle('app', async request => {
+      const url = new URL(request.url);
+      const asset = url.host === 'notespark' ? await serveAsset(url.pathname) : null;
+      return asset
+        ? new Response(new Uint8Array(asset.body), { headers: { 'Content-Type': asset.type, ...asset.headers } })
+        : new Response('Not found', { status: 404 });
+    });
     const ses = session.defaultSession;
     ses.setSpellCheckerEnabled(false);
     ses.setPermissionRequestHandler((_wc, _permission, done) => done(false));

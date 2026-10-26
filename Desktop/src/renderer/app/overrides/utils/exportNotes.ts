@@ -1,7 +1,9 @@
 // Exports become browser downloads, so they work the same in the desktop window (it asks where to save) and the web view.
-import { fileName, noteToMarkdown, notesToJson, Note } from '@notespark/core';
+// The file formats are the phone's: the shared functions in @notespark/core plus fflate for zips.
+import { strFromU8, strToU8, unzipSync, zipSync } from 'fflate';
+import { fileName, isNoteFile, markdownToNote, noteToMarkdown, notesToJson, Note } from '@notespark/core';
 
-const download = (name: string, type: string, data: string) => {
+const download = (name: string, type: string, data: BlobPart) => {
   const url = URL.createObjectURL(new Blob([data], { type }));
   const a = document.createElement('a');
   a.href = url;
@@ -13,5 +15,25 @@ const download = (name: string, type: string, data: string) => {
 export const shareNotesAsJson = async (notes: Note[]) => download(`notespark-export-${Date.now()}.json`, 'application/json', notesToJson(notes));
 export const shareNoteAsMarkdown = async (note: Note) =>
   download(fileName(note, new Set()), note.isMarkdown ? 'text/markdown' : 'text/plain', noteToMarkdown(note));
-// ponytail: zip needs fflate, a dependency to approve; added with the import and export screen in phase 3.
-export const shareNotesAsZip = async (_notes: Note[]): Promise<void> => { throw new Error('Zip export is not available on desktop yet'); };
+
+export const notesToZip = (notes: Note[]): Uint8Array => {
+  const taken = new Set<string>();
+  return zipSync(Object.fromEntries(notes.map(note => [fileName(note, taken), strToU8(noteToMarkdown(note))])));
+};
+export const shareNotesAsZip = async (notes: Note[]) => download(`notespark-markdown-${Date.now()}.zip`, 'application/zip', notesToZip(notes) as BlobPart);
+
+// Notes from one picked file: a NoteSpark .json backup, a .md or .txt note, or a .zip of those. `uri` is a blob address.
+export const notesFromFile = async (uri: string, name: string): Promise<any[]> => {
+  const response = await fetch(uri);
+  if (/\.json$/i.test(name)) {
+    const parsed = JSON.parse(await response.text());
+    if (!Array.isArray(parsed)) throw new Error('Not a NoteSpark backup');
+    return parsed;
+  }
+  if (isNoteFile(name)) return [markdownToNote(name, await response.text())];
+  if (/\.zip$/i.test(name)) {
+    const entries = unzipSync(new Uint8Array(await response.arrayBuffer()), { filter: f => isNoteFile(f.name) });
+    return Object.entries(entries).map(([path, data]) => markdownToNote(path, strFromU8(data)));
+  }
+  throw new Error('Unsupported file');
+};

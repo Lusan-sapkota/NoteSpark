@@ -47,7 +47,8 @@
     "../packages/core/src",
     "../Mobile/src/storage/database.ts",
     "../Mobile/src/storage/notes.ts",
-    "../Mobile/src/storage/profiles.ts"
+    "../Mobile/src/storage/profiles.ts",
+    "../Mobile/src/storage/autoBackup.ts"
   ],
   "exclude": [
     "src/renderer/app"

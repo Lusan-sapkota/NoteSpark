@@ -1,22 +1,15 @@
 import { createServer, IncomingMessage, Server, ServerResponse } from 'node:http';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import { networkInterfaces } from 'node:os';
-import { extname, join, normalize } from 'node:path';
 import { isPrivateAddress } from '@notespark/core';
+import { serveAsset } from './assets';
 
 // The web view: the desktop UI bundle plus the same backend API, for a browser on your own network.
 // Off until switched on. Private addresses only, a random token, and nothing is stored on disk.
 type Invoke = (channel: string, args: unknown, from: 'ipc' | 'http') => Promise<unknown>;
 
 const PORT = 4577;
-const MAX_BODY = 1_000_000;
-const root = join(__dirname, '../renderer');
-const types: Record<string, string> = {
-  '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-  '.ttf': 'font/ttf', '.png': 'image/png', '.svg': 'image/svg+xml', '.json': 'application/json',
-};
-
+const MAX_BODY = 25_000_000; // room for one picture as base64 (15 MB limit in assets.ts); only read after sign-in
 let servers: Server[] = [];
 let token = '';
 let hosts: string[] = []; // host:port values we answer to (Host header check against DNS rebinding)
@@ -101,13 +94,8 @@ const handle = (invoke: Invoke) => async (req: IncomingMessage, res: ServerRespo
   }
 
   if (req.method !== 'GET' && req.method !== 'HEAD') return send(res, 405, 'Method not allowed');
-  const file = normalize(join(root, url.pathname === '/' ? 'index.html' : decodeURIComponent(url.pathname)));
-  if (!file.startsWith(root + '/')) return send(res, 404, 'Not found');
-  try {
-    return send(res, 200, await readFile(file), { 'Content-Type': types[extname(file)] ?? 'application/octet-stream' });
-  } catch {
-    return send(res, 404, 'Not found');
-  }
+  const asset = await serveAsset(url.pathname);
+  return asset ? send(res, 200, asset.body, { 'Content-Type': asset.type, ...asset.headers }) : send(res, 404, 'Not found');
 };
 
 export const webViewStatus = () => ({
