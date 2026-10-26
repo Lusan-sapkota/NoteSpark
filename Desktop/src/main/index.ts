@@ -1,5 +1,5 @@
 import { join } from 'node:path';
-import { app, BrowserWindow, clipboard, Menu, nativeImage, nativeTheme, protocol, session, shell, Tray, ipcMain } from 'electron';
+import { app, BrowserWindow, clipboard, Menu, nativeImage, nativeTheme, protocol, screen, session, shell, Tray, ipcMain } from 'electron';
 import { firefly } from '@notespark/core';
 import { serveAsset } from './assets';
 import { setWindowFocused } from './activity';
@@ -39,7 +39,7 @@ let refreshMenuFn: (() => void) | null = null;
 
 // Closing the window leaves the app in the tray (sync and the web view need it running) until the person chooses Quit
 // there; unticking "Keep running in the tray" makes closing quit instead. About 175 MB while it sits in the tray.
-const keepInTray = async () => (await AsyncStorage.getItem('keepInTray')) !== 'false';
+const keepInTray = async () => (await AsyncStorage.getItem('trayOnClose')) !== 'false';
 const keepsRunning = async () => webViewStatus().on || (await keepInTray());
 const quitIfIdle = async () => {
   if (BrowserWindow.getAllWindows().length === 0 && !(await keepsRunning())) app.quit();
@@ -51,6 +51,23 @@ const HEADER_HEIGHT = 56;
 const chrome = () => {
   const colors = nativeTheme.shouldUseDarkColors ? firefly.dark : firefly.light;
   return { color: colors.background, symbolColor: colors.onSurface, height: HEADER_HEIGHT };
+};
+
+// The app's size. 100 % reads small on a large monitor, so it starts bigger there (by the width in points of the screen the
+// window is on: 1536 on a 1920 panel and 2048 on a 2560 one, both at 125 % scaling, get 125 %);
+// the person's own zoom (Ctrl+= and Ctrl+-) is remembered, and "Actual size" goes back to the automatic one.
+const ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
+const autoZoom = () => {
+  const width = (window && !window.isDestroyed() ? screen.getDisplayMatching(window.getBounds()) : screen.getPrimaryDisplay()).size.width;
+  return width >= 2200 ? 1.5 : width >= 1400 ? 1.25 : 1;
+};
+const currentZoom = async () => Number(await AsyncStorage.getItem('zoomFactor')) || autoZoom();
+const applyZoom = async () => { if (window && !window.isDestroyed()) window.webContents.setZoomFactor(await currentZoom()); };
+const changeZoom = async (step: 1 | -1 | 0) => {
+  const now = await currentZoom();
+  if (step === 0) await AsyncStorage.removeItem('zoomFactor');
+  else await AsyncStorage.setItem('zoomFactor', String(step > 0 ? ZOOM_STEPS.find(z => z > now + 0.001) ?? now : [...ZOOM_STEPS].reverse().find(z => z < now - 0.001) ?? now));
+  await applyZoom();
 };
 
 const createWindow = () => {
@@ -74,6 +91,7 @@ const createWindow = () => {
       spellcheck: false, // Electron downloads Hunspell dictionaries from a Google CDN otherwise
     },
   });
+  win.webContents.on('did-finish-load', () => void applyZoom());
   win.once('ready-to-show', () => win.show());
   const recolor = () => { if (!win.isDestroyed()) win.setTitleBarOverlay(chrome()); };
   nativeTheme.on('updated', recolor);
@@ -167,6 +185,7 @@ else {
         if (window && windowReady) window.webContents.send('menu:action', action);
       },
       webOn: webViewStatus().on,
+      zoom: step => void changeZoom(step),
       toggleWeb: () => (webViewStatus().on ? stopWebView().then(refreshTray).then(quitIfIdle) : startWebView(invoke).then(refreshTray, () => {})),
     }));
     refreshMenuFn = refreshMenu;

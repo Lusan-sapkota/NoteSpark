@@ -4,15 +4,16 @@ import GroupedRow from '../../../../Mobile/src/components/GroupedRow';
 import M3Switch from '../../../../Mobile/src/components/M3Switch';
 
 // A Settings row only the desktop has: electron.vite.config.ts adds it to the phone's Settings screen.
-// src/main/index.ts reads `keepInTray` (on unless it is "false") when the window closes.
+// src/main/index.ts reads `trayOnClose` (on unless it is "false") when the window closes. The settings channel refuses keys
+// containing pin, key, secret, token or backup, so the name must avoid them ("keepInTray" has "pin" in it).
 const KeepInTrayRow = () => {
   const [on, setOn] = useState(true);
   useEffect(() => {
-    AsyncStorage.getItem('keepInTray').then(value => setOn(value !== 'false'), () => {});
+    AsyncStorage.getItem('trayOnClose').then(value => setOn(value !== 'false'), () => {});
   }, []);
   const change = (next: boolean) => {
     setOn(next);
-    AsyncStorage.setItem('keepInTray', String(next)).catch(() => {});
+    AsyncStorage.setItem('trayOnClose', String(next)).catch(() => {});
   };
   return (
     <GroupedRow

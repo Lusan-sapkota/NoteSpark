@@ -11,7 +11,7 @@ const isMac = process.platform === 'darwin';
 
 const go = (...routes: string[]): MenuAction => ({ type: 'go', routes: ['Home', ...routes] });
 
-export const buildAppMenu = ({ send, webOn, toggleWeb }: { send(action: MenuAction): void; webOn: boolean; toggleWeb(): void }): Menu => {
+export const buildAppMenu = ({ send, webOn, toggleWeb, zoom }: { send(action: MenuAction): void; webOn: boolean; toggleWeb(): void; zoom(step: 1 | -1 | 0): void }): Menu => {
   const place = (label: string, accelerator: string, action: MenuAction): MenuItemConstructorOptions => ({ label, accelerator, click: () => send(action) });
   const theme = (label: string, mode: 'light' | 'dark' | 'system'): MenuItemConstructorOptions => ({
     label, type: 'radio', checked: nativeTheme.themeSource === mode, click: () => send({ type: 'theme', mode }),
@@ -62,7 +62,10 @@ export const buildAppMenu = ({ send, webOn, toggleWeb }: { send(action: MenuActi
       submenu: [
         { label: 'Appearance', submenu: [theme('Match system', 'system'), theme('Light', 'light'), theme('Dark', 'dark')] },
         { type: 'separator' },
-        { role: 'zoomIn' }, { role: 'zoomOut' }, { role: 'resetZoom' },
+        // Own items instead of the roles, so the size is remembered (and starts suited to the screen).
+        { label: 'Zoom in', accelerator: 'CmdOrCtrl+=', click: () => zoom(1) },
+        { label: 'Zoom out', accelerator: 'CmdOrCtrl+-', click: () => zoom(-1) },
+        { label: 'Actual size', accelerator: 'CmdOrCtrl+0', click: () => zoom(0) },
         { type: 'separator' },
         { role: 'togglefullscreen' },
       ],

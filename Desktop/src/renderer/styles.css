@@ -18,3 +18,7 @@ body { overflow: hidden; }
 /* The header is the window's title bar: dragging it moves the window, and what is inside it still clicks. */
 [data-drag] { -webkit-app-region: drag; }
 [data-nodrag] { -webkit-app-region: no-drag; }
+
+/* The editor surfaces (scratchpad, note body) are plain text areas with no box around them; the browser's focus ring
+   made a frame appear every time you started typing. Fields with their own outline (Paper's) are unaffected. */
+textarea:focus, textarea:focus-visible, input:focus, input:focus-visible { outline: none; }

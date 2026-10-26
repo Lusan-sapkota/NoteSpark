@@ -65,6 +65,17 @@ export default defineConfig({
         transformIndexHtml: html => html.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"),
       },
       {
+        // The phone caps its screens at a 680 point reading column, which leaves wide gaps on a monitor. Lists and settings
+        // get 1100, the screens you read or write in 860 (about 90 characters at the note font), so lines stay readable.
+        name: 'desktop-column-widths',
+        enforce: 'pre',
+        transform: (code, id) => {
+          const screen = /Mobile\/src\/screens\/(\w+)\.tsx$/.exec(id)?.[1];
+          if (!screen || !code.includes('maxWidth: readingWidth')) return null;
+          return code.replaceAll('maxWidth: readingWidth', `maxWidth: ${['NoteViewScreen', 'EditorScreen', 'ScratchpadScreen'].includes(screen) ? 860 : 1100}`);
+        },
+      },
+      {
         name: 'phone-module-overrides',
         enforce: 'pre',
         resolveId: (source, importer) => (importer && source.startsWith('.') ? overrides[resolve(dirname(importer), source).replace(/\.tsx?$/, '')] : undefined),
