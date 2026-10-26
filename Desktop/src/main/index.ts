@@ -1,6 +1,7 @@
 import { join } from 'node:path';
 import { app, BrowserWindow, clipboard, Menu, nativeImage, nativeTheme, protocol, session, shell, Tray, ipcMain } from 'electron';
 import { serveAsset } from './assets';
+import { setWindowFocused } from './activity';
 import { invoke } from './backend';
 import { startWebView, stopWebView, webViewStatus } from './web';
 
@@ -35,6 +36,9 @@ const createWindow = () => {
     },
   });
   win.once('ready-to-show', () => win.show());
+  // The auto-lock counts time while the window is out of sight or out of focus.
+  win.on('focus', () => setWindowFocused(true));
+  for (const event of ['blur', 'hide', 'minimize', 'closed'] as const) win.on(event as 'blur', () => setWindowFocused(false));
   // Closing destroys the renderer; the main process stays in the tray.
   win.on('closed', () => { window = null; });
   win.webContents.on('will-navigate', (e, url) => { if (!isAppUrl(url)) e.preventDefault(); });

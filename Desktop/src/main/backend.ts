@@ -1,4 +1,5 @@
 import { clipboard, nativeTheme } from 'electron';
+import { touch } from './activity';
 import { renderPdf, saveImage } from './assets';
 import { startWebView, stopWebView, webViewStatus } from './web';
 
@@ -9,6 +10,10 @@ type Handler = { local?: boolean; run: (args: any, from: 'ipc' | 'http') => unkn
 const handlers: Record<string, Handler> = {
   // The storage and settings code loads on first use, so a tray-only app stays small.
   storage: { run: async (args, from) => (await import('./storage')).callStorage(args as any, from) },
+  'lock:status': { run: async () => (await import('./storage')).lockStatus() },
+  'lock:unlock': { local: true, run: async args => (await import('./storage')).unlock(args) },
+  'lock:erase': { local: true, run: async () => (await import('./storage')).eraseLocked() },
+  'lock:retry': { local: true, run: async () => (await import('./storage')).retryOpen() },
   settings: { run: async args => (await import('./storage')).callSettings(args as any) },
   'pdf:render': { run: args => renderPdf(args) },
   'images:save': { run: args => saveImage(args) },
@@ -27,5 +32,6 @@ const handlers: Record<string, Handler> = {
 export const invoke = async (channel: string, args: unknown, from: 'ipc' | 'http') => {
   const handler = Object.hasOwn(handlers, channel) ? handlers[channel] : undefined;
   if (!handler || (handler.local && from !== 'ipc')) throw new Error(`Unknown channel: ${channel}`);
+  if (from === 'http') touch(); // using the web view counts as using the app
   return handler.run(args, from);
 };
