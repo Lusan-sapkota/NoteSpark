@@ -176,6 +176,11 @@ else {
       else if (action === 'close') window.close();
       else if (action === 'state') return { maximized: window.isMaximized() || window.isFullScreen() };
     });
+    // The header's menu button: the same menu as the application menu, for desktops with no global menu.
+    ipcMain.handle('menu:popup', (e, x: unknown, y: unknown) => {
+      if (!window || e.sender !== window.webContents || typeof x !== 'number' || typeof y !== 'number') return;
+      Menu.getApplicationMenu()?.popup({ window, x: Math.round(x), y: Math.round(y) });
+    });
     const refreshMenu = () => Menu.setApplicationMenu(buildAppMenu({
       send: action => {
         if (action.type !== 'theme') return deliver(action);

@@ -112,9 +112,22 @@ const TopBar = () => {
   const tip = { enterTouchDelay: 250, leaveTouchDelay: 150 };
   const quiet = theme.colors.onSurfaceVariant;
   const showName = width >= 760;
+  // The macOS menu bar covers it; elsewhere a global menu may be missing (Wayland, Windows' hidden title bar).
+  const showMenu = isDesktop && !/Mac/.test(navigator.userAgent);
   return (
     <View style={{ zIndex: 20 }}>
       <View dataSet={{ drag: '' }} style={{ height: 48, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg, paddingRight: isDesktop ? 0 : space.sm, backgroundColor: theme.colors.surfaceContainerLow }}>
+        {showMenu && (
+          <View dataSet={{ nodrag: '' }} style={{ marginLeft: -space.sm, marginRight: space.xs }}>
+            <Tip title="Menu" {...tip}>
+              <IconButton icon="menu" size={22} iconColor={quiet} accessibilityLabel="Menu" style={{ margin: 0, width: 36, height: 36 }}
+                onPress={(e: any) => {
+                  const r = e?.currentTarget?.getBoundingClientRect?.();
+                  void window.notespark?.popupMenu(r?.left ?? 0, r?.bottom ?? 40);
+                }} />
+            </Tip>
+          </View>
+        )}
         <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 28, height: 28 }} />
         {showName && <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginLeft: space.md }}>NoteSpark</Text>}
         <View style={{ flex: 1 }} />

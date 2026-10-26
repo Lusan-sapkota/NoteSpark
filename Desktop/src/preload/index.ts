@@ -9,5 +9,7 @@ contextBridge.exposeInMainWorld('notespark', {
   refreshTray: (): Promise<void> => ipcRenderer.invoke('tray:refresh'),
   // The header's own minimise, maximise and close buttons.
   windowControl: (action: 'minimize' | 'maximize' | 'close' | 'state'): Promise<{ maximized: boolean } | void> => ipcRenderer.invoke('window:control', action),
+  // Pops the application menu up at a point under the header's menu button.
+  popupMenu: (x: number, y: number): Promise<void> => ipcRenderer.invoke('menu:popup', x, y),
   onWindowState: (callback: (state: { maximized: boolean }) => void) => { ipcRenderer.on('window:state', (_e, state) => callback(state)); },
 });

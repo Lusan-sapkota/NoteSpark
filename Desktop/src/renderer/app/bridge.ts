@@ -1,6 +1,6 @@
 // Reaches the backend via Electron's preload bridge, or fetch() against the web view server in a browser.
 declare global {
-  interface Window { notespark?: { invoke(channel: string, args?: unknown): Promise<unknown>; refreshTray(): Promise<void>; onLockChanged(callback: () => void): void; onMenu(callback: (action: unknown) => void): void; windowControl(action: 'minimize' | 'maximize' | 'close' | 'state'): Promise<{ maximized: boolean } | void>; onWindowState(callback: (state: { maximized: boolean }) => void): void } }
+  interface Window { notespark?: { invoke(channel: string, args?: unknown): Promise<unknown>; refreshTray(): Promise<void>; onLockChanged(callback: () => void): void; onMenu(callback: (action: unknown) => void): void; windowControl(action: 'minimize' | 'maximize' | 'close' | 'state'): Promise<{ maximized: boolean } | void>; popupMenu(x: number, y: number): Promise<void>; onWindowState(callback: (state: { maximized: boolean }) => void): void } }
 }
 
 export const isDesktop = !!window.notespark;
