@@ -6,7 +6,9 @@ import { CHUNK, Hub, T, bytesToHash, decodeFrame, encodeFrame } from '../src/ind
 import { type Device, World, note, sha256, uuid } from './harness.ts';
 
 const makeBlob = (len: number, seed: number): { hash: string; bytes: Uint8Array } => {
-  const bytes = Uint8Array.from({ length: len }, (_, i) => (i * 37 + seed) & 0xff);
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i += 31) bytes[i] = (i * 37 + seed) & 0xff;
+  if (len > 0) bytes[len - 1] = seed & 0xff;
   return { hash: bytesToHash(sha256(bytes)), bytes };
 };
 
