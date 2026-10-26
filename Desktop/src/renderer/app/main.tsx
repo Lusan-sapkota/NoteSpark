@@ -66,15 +66,29 @@ const WindowButtons = () => {
   );
 };
 
-// The header row doubles as the window's title bar: logo, name and (desktop only) the web view switch.
+// The header row is the desktop window's title bar: logo, name, the web view switch and window buttons.
 const TopBar = () => {
   const { theme } = useTheme();
   const { width } = useWindowDimensions();
   const [web, setWeb] = useState<WebStatus | null>(null);
   useEffect(() => { if (isDesktop) invoke<WebStatus>('web:status').then(setWeb).catch(() => {}); }, []);
   const [open, setOpen] = useState(false); // the details panel under the chip
-  const toggle = () =>
-    invoke<WebStatus>(web?.on ? 'web:stop' : 'web:start').then(w => { setWeb(w); setOpen(!!w.on); window.notespark?.refreshTray(); }, e => console.error(e));
+  // Starting copies the link and says so for two seconds; the chip opens the details.
+  const [copied, setCopied] = useState(false);
+  useEffect(() => {
+    if (!copied) return;
+    const hide = setTimeout(() => setCopied(false), 2000);
+    return () => clearTimeout(hide);
+  }, [copied]);
+  const toggle = () => {
+    const starting = !web?.on;
+    invoke<WebStatus>(starting ? 'web:start' : 'web:stop').then(async w => {
+      setWeb(w);
+      setOpen(false);
+      window.notespark?.refreshTray();
+      if (starting && w.on) setCopied(await invoke('web:copy').then(() => true, () => false));
+    }, e => console.error(e));
+  };
   useEffect(() => {
     const close = (e: KeyboardEvent) => { if (e.key === 'Escape') setOpen(false); };
     window.addEventListener('keydown', close);
@@ -122,6 +136,11 @@ const TopBar = () => {
         )}
         {isDesktop && <WindowButtons />}
       </View>
+      {copied && (
+        <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ position: 'absolute', top: 52, right: space.lg, paddingVertical: space.sm, paddingHorizontal: space.md, borderRadius: shape.control, backgroundColor: theme.colors.inverseSurface }}>
+          <Text variant="bodySmall" style={{ color: theme.colors.inverseOnSurface }}>Link copied</Text>
+        </View>
+      )}
       {mounted && (
         <>
           {/* Clicking anywhere else closes the panel; the top bar stays clickable above it. */}
@@ -266,7 +285,8 @@ const Shell = () => {
     <View style={{ flex: 1, backgroundColor: theme.colors.background }}>
       <PaperProvider theme={theme}>
         <DialogProvider>
-          <TopBar />
+          {/* In a browser the tab shows the name and icon, and every screen has its own app bar. */}
+          {isDesktop && <TopBar />}
           <View style={{ flex: 1 }}>{body}</View>
         </DialogProvider>
       </PaperProvider>
