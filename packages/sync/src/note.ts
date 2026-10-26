@@ -53,7 +53,6 @@ export const writeNote = (doc: Y.Doc, next: NoteState): Uint8Array | null => {
   return changed ? Y.encodeStateAsUpdate(doc, before) : null;
 };
 
-// Builds a doc from stored updates, in any order and with repeats.
 export const docFromUpdates = (updates: Uint8Array[], clientID?: number): Y.Doc => {
   const doc = new Y.Doc();
   doc.transact(() => updates.forEach(u => Y.applyUpdate(doc, u)));

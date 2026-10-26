@@ -5,7 +5,6 @@ import * as Y from 'yjs';
 import { catalogUuids, isErased, isKnown, markErased, markLive } from './catalog.ts';
 import { type NoteState, readNote, writeNote } from './note.ts';
 
-// A change to send: the catalog, or one note's doc.
 export interface Delta {
   doc: 'catalog' | string;
   bytes: Uint8Array;
@@ -53,7 +52,6 @@ export class Replica {
     return { doc: 'catalog', bytes: Y.encodeStateAsUpdate(this.catalog, before) };
   }
 
-  // Creates or edits a note from the editor's new state. Nothing for an erased note.
   save(uuid: string, next: NoteState): Delta[] {
     if (isErased(this.catalog, uuid)) return [];
     const out: Delta[] = [];
@@ -64,7 +62,6 @@ export class Replica {
     return out;
   }
 
-  // Erasing for good: a tombstone in the catalog, and the doc is dropped here and wherever the tombstone arrives.
   erase(uuid: string): Delta[] {
     if (isErased(this.catalog, uuid)) return [];
     const out = [this.catalogChange(() => markErased(this.catalog, uuid))];
@@ -85,7 +82,6 @@ export class Replica {
     for (const uuid of [...this.docs.keys()]) if (isErased(this.catalog, uuid)) this.docs.delete(uuid);
   }
 
-  // Meeting another replica: catalogs first, then each note both know of.
   syncWith(other: Replica) {
     exchange(this.catalog, other.catalog);
     for (const uuid of new Set([...catalogUuids(this.catalog), ...this.docs.keys(), ...other.docs.keys()])) {

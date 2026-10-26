@@ -47,7 +47,6 @@ export const enableSync = async (db: DB): Promise<void> => {
   await reconcile(db);
 };
 
-// Back to a plain notes table: the updates are dropped, the notes stay.
 export const disableSync = async (db: DB): Promise<void> => {
   await db.execAsync('DELETE FROM crdt_updates; DELETE FROM sync_state');
   states.set(db, null);
@@ -99,7 +98,6 @@ export const captureNotes = async (db: DB, ids: number[]): Promise<void> => {
 export const uuidsWhere = async (db: DB | Txn, where: string, params: unknown[] = []): Promise<string[]> =>
   (await db.getAllAsync<{ uuid: string }>(`SELECT uuid FROM notes WHERE uuid IS NOT NULL AND ${where}`, params as any)).map(r => r.uuid);
 
-// After notes are erased for good: a tombstone in the catalog, and their docs go.
 export const eraseNotes = async (db: DB, uuids: string[]): Promise<void> => {
   const state = await syncState(db);
   if (!state || uuids.length === 0) return;

@@ -1,6 +1,5 @@
 import * as Y from 'yjs';
 
-// When a doc's stored updates are folded into one (sync.md).
 export const COMPACT_UPDATES = 200;
 export const COMPACT_BYTES = 256 * 1024;
 
