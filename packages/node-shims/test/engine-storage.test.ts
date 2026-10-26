@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { test } from 'node:test';
 import { Client, FakeClock, Hub, Net } from '../../sync-protocol/src/index.ts';
-import { crdt, database, sqlite } from './helpers.ts';
+import { attachments, crdt, database, profiles, sqlite } from './helpers.ts';
 
 const src = new URL('../../../Mobile/src/storage/', import.meta.url).href;
 const { storageStore } = await import(`${src}syncStore.ts`);
@@ -75,4 +75,64 @@ test('hub and two phones on real storage: link, adopt, live edits, erase, restar
   hub.stop();
   a.client.stop();
   b.client.stop();
+});
+
+test('real storageStore syncs encrypted attachments across separate profiles and hub', async () => {
+  const clock = new FakeClock();
+  const rng = () => 0.5;
+  const net = new Net(clock, rng);
+
+  const openProtected = async (pin: string) => {
+    const id = `e${++n}`;
+    await profiles.setProfilePin(id, pin);
+    await database.setProfileEncryption(id, true);
+    const conn = await database.openProfileConnection(id, { useNewConnection: true });
+    await database.initDatabase(conn);
+    return { id, conn };
+  };
+
+  const { id: hubId, conn: hubDb } = await openProtected('1111');
+  const { id: aId, conn: aDb } = await openProtected('2222');
+  const { id: bId, conn: bDb } = await openProtected('3333');
+
+  const hub = new Hub(storageStore(hubDb, 'Vault', hubId), clock, sha256);
+  const aClient = new Client({
+    store: storageStore(aDb, 'Vault', aId),
+    clock,
+    rng,
+    hash: sha256,
+    link: { syncId: '', name: 'Vault' },
+    connect: () => { const [x, y] = net.pair(); hub.accept(y); return x; },
+  });
+  aClient.start();
+  await clock.advance(10_000);
+  const syncId = aClient.syncId!;
+
+  const bClient = new Client({
+    store: storageStore(bDb, 'Vault', bId),
+    clock,
+    rng,
+    hash: sha256,
+    link: { syncId, name: '' },
+    connect: () => { const [x, y] = net.pair(); hub.accept(y); return x; },
+  });
+  bClient.start();
+  await clock.advance(10_000);
+
+  // Attach a file on Phone A (stored encrypted with Phone A's profile key)
+  const payload = Uint8Array.from({ length: 90_000 }, (_, i) => (i * 19 + 7) & 0xff);
+  const added = await attachments.addAttachment({ bytes: payload, name: 'contract.pdf', size: payload.byteLength }, aId);
+  assert.equal(await attachments.hasAttachment(added.hash, bId), false);
+  await add(aDb, 'Contract', `Signed [contract.pdf](attachment:${added.hash})`);
+
+  await clock.advance(15_000);
+
+  // Hub and Phone B now both have the attachment encrypted under their own profile keys
+  assert.equal(await attachments.hasAttachment(added.hash, hubId), true);
+  assert.equal(await attachments.hasAttachment(added.hash, bId), true);
+  assert.deepEqual(await attachments.readAttachment(added.hash, bId), payload);
+
+  hub.stop();
+  aClient.stop();
+  bClient.stop();
 });
