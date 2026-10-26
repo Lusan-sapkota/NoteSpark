@@ -54,6 +54,31 @@ export default defineConfig({
             if (!code.includes(from)) throw new Error(`desktop-copy: "${from.slice(0, 50)}" not found in ${id}`);
             code = code.replace(from, to);
           };
+          const replaceAll = (from: string, to: string) => {
+            if (!code.includes(from)) throw new Error(`desktop-copy: "${from.slice(0, 50)}" not found in ${id}`);
+            code = code.replaceAll(from, to);
+          };
+          const RESTORED = "If this phone was restored from a backup, a locked profile's encryption key isn't included in backups.";
+          const RESTORED_DESKTOP = "If NoteSpark's folder was moved or restored from a backup, a protected profile's key may be missing: it is kept in your system's keyring, not in the folder.";
+          if (id.endsWith('Mobile/src/screens/HomeScreen.tsx')) {
+            replaceAll(RESTORED, RESTORED_DESKTOP);
+            return code;
+          }
+          if (id.endsWith('Mobile/src/screens/EditorScreen.tsx')) {
+            replace('Your phone may be low on storage.', 'Your computer may be low on storage.');
+            return code;
+          }
+          if (id.endsWith('Mobile/src/screens/ProfileLockScreen.tsx')) {
+            // No fingerprint unlock on desktop (Electron has no cross-platform API for it), so the third choice goes
+            // and PIN becomes the last of the group.
+            const start = code.indexOf('<LockChoice\n              icon={fingerprintReady');
+            const end = start < 0 ? -1 : code.indexOf('\n            />\n', start);
+            if (end < 0) throw new Error(`desktop-copy: fingerprint choice not found in ${id}`);
+            code = code.slice(0, code.lastIndexOf('\n', start) + 1) + code.slice(end + '\n            />\n'.length);
+            replace('isLast={false}\n            />\n          </View>', 'isLast\n            />\n          </View>');
+            replace('Anyone using this phone can open it', 'Anyone using this computer can open it');
+            return code;
+          }
           const dropRow = (title: string) => {
             const start = code.indexOf(`<GroupedRow\n            title="${title}"`);
             const end = start < 0 ? -1 : code.indexOf('\n          />\n', start);
@@ -62,6 +87,8 @@ export default defineConfig({
           };
           if (id.endsWith('Mobile/src/screens/SettingsScreen.tsx')) {
             // Share-to-NoteSpark and task reminders are phone features; the row above them becomes the last in its group.
+            replaceAll(RESTORED, RESTORED_DESKTOP);
+            replace('Your notes never leave your phone', 'Your notes never leave this computer');
             dropRow('Text shared to NoteSpark');
             dropRow('Task reminders');
             const row = code.indexOf('title="Rediscover on Home"');

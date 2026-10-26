@@ -81,7 +81,8 @@ const frame = (width: number) => (content: React.ReactNode, nav: any, route: { n
     <View style={{ flex: 1 }}>{content}</View>
   );
 
-// A slim bar above every screen: the round logo and name, and (desktop window only) the web view switch.
+// A slim bar above every screen: the round logo (the screens below carry their own titles) and, in the desktop window
+// only, the web view switch.
 const TopBar = () => {
   const { theme } = useTheme();
   const [web, setWeb] = useState<WebStatus | null>(null);
@@ -92,7 +93,7 @@ const TopBar = () => {
     <>
       <View style={{ flexDirection: 'row', alignItems: 'center', minHeight: 48, paddingHorizontal: space.md, backgroundColor: theme.colors.background, borderBottomWidth: 1, borderBottomColor: theme.colors.outlineVariant }}>
         <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 28, height: 28 }} />
-        <Text variant="titleMedium" style={{ marginLeft: space.sm, flex: 1 }}>NoteSpark</Text>
+        <View style={{ flex: 1 }} />
         {isDesktop && (
           <IconButton icon={web?.on ? 'web-off' : 'web'} accessibilityLabel={web?.on ? 'Stop web view' : 'Start web view'} onPress={toggle} />
         )}
