@@ -49,7 +49,7 @@ export const useFocusEffect = (effect: () => void | (() => void)) => {
   useEffect(() => ref.current(), []);
 };
 
-export const Navigator: React.FC<{ initial: string; screens: Record<string, React.ComponentType<any>> }> = ({ initial, screens }) => {
+export const Navigator: React.FC<{ initial: string; screens: Record<string, React.ComponentType<any>>; frame?: (content: React.ReactNode, nav: Nav, route: Route) => React.ReactNode }> = ({ initial, screens, frame }) => {
   const [stack, setStack] = useState<Route[]>(() => [route(initial)]);
   const top = stack[stack.length - 1];
   const listeners = useRef(new Map<string, Set<Listener>>());
@@ -93,7 +93,8 @@ export const Navigator: React.FC<{ initial: string; screens: Record<string, Reac
   }), [stack.length]);
 
   const Screen = screens[top.name];
-  return <NavContext.Provider value={{ nav, route: top, guard }}>{Screen ? <Screen key={top.key} /> : null}</NavContext.Provider>;
+  const content = Screen ? <Screen key={top.key} /> : null;
+  return <NavContext.Provider value={{ nav, route: top, guard }}>{frame ? frame(content, nav, top) : content}</NavContext.Provider>;
 };
 
 // Pieces of the real package that the phone's code imports but the five screens never use.

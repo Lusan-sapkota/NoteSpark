@@ -2,6 +2,7 @@ import { dirname, resolve } from 'node:path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'electron-vite';
 import { transformWithOxc } from 'vite';
+import pkg from './package.json';
 
 // Shared pure code lives in ../packages/core (same alias as Mobile).
 const alias = { '@notespark/core': resolve(__dirname, '../packages/core/src/index.ts') };
@@ -9,7 +10,7 @@ const app = (path: string) => resolve(__dirname, 'src/renderer/app', path);
 const mobileSrc = resolve(__dirname, '../Mobile/src');
 // Phone modules that can't run in a browser are swapped, by file, for the versions in src/renderer/app/overrides.
 const overrides: Record<string, string> = Object.fromEntries(
-  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${m.startsWith('components') ? 'tsx' : 'ts'}`)]),
+  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'screens/PrivacyScreen'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
 );
 
 // The phone's storage code runs in the main process; its Expo imports resolve to the shims in src/main/shims.
@@ -35,8 +36,53 @@ export default defineConfig({
         resolveId: (source, importer) => (importer && source.startsWith('.') ? overrides[resolve(dirname(importer), source).replace(/\.tsx?$/, '')] : undefined),
       },
       {
+        // The phone's pictures: require('x.png') becomes an image source with a bundled address.
+        name: 'require-images',
+        enforce: 'pre',
+        transform: (code, id) =>
+          id.includes('/Mobile/src/') && /require\((['"])\.\.?\/[^'"]+\.png\1\)/.test(code)
+            ? code.replace(/require\((['"])(\.\.?\/[^'"]+\.png)\1\)/g, (_m, _q, file) => `({ uri: new URL('${file}', import.meta.url).href })`)
+            : null,
+      },
+      {
+        // Small, loud edits to phone screens for things that make no sense on a computer. Each edit must find its text,
+        // so a change to the phone's source breaks the build here instead of quietly showing the wrong thing.
+        name: 'desktop-copy',
+        enforce: 'pre',
+        transform: (code, id) => {
+          const replace = (from: string, to: string) => {
+            if (!code.includes(from)) throw new Error(`desktop-copy: "${from.slice(0, 50)}" not found in ${id}`);
+            code = code.replace(from, to);
+          };
+          const dropRow = (title: string) => {
+            const start = code.indexOf(`<GroupedRow\n            title="${title}"`);
+            const end = start < 0 ? -1 : code.indexOf('\n          />\n', start);
+            if (end < 0) throw new Error(`desktop-copy: row "${title}" not found in ${id}`);
+            code = code.slice(0, code.lastIndexOf('\n', start) + 1) + code.slice(end + '\n          />\n'.length);
+          };
+          if (id.endsWith('Mobile/src/screens/SettingsScreen.tsx')) {
+            // Share-to-NoteSpark and task reminders are phone features; the row above them becomes the last in its group.
+            dropRow('Text shared to NoteSpark');
+            dropRow('Task reminders');
+            const row = code.indexOf('title="Rediscover on Home"');
+            const flag = row < 0 ? -1 : code.indexOf('isLast={false}', row);
+            if (flag < 0) throw new Error(`desktop-copy: Rediscover row not found in ${id}`);
+            code = code.slice(0, flag) + 'isLast' + code.slice(flag + 'isLast={false}'.length);
+            return code;
+          }
+          if (id.endsWith('Mobile/src/screens/OnboardingScreen.tsx')) {
+            replace('Notes that stay on your phone', 'Notes that stay on this computer');
+            replace('No account, no cloud, no ads. Even search works offline: it finds notes by meaning, not just by matching words.', 'No account, no cloud, no ads. Your notes live in a database on this computer. The web view, if you turn it on, is only for devices on your own network.');
+            replace('Tap New note on the home screen and start typing.', 'Choose New note on the home screen and start typing.');
+            return code;
+          }
+          return null;
+        },
+      },
+      {
         // Two phone files load a module with require() inside a handler, which a browser bundle doesn't have.
         name: 'inline-requires',
+        enforce: 'pre',
         transform: (code, id) => {
           const rewrite = (file: string, module: string, name: string) =>
             id.endsWith(file) && code.includes(`require('${module}')`) ? `import * as ${name} from '${module}';\n${code.replaceAll(`require('${module}')`, name)}` : null;
@@ -64,6 +110,7 @@ export default defineConfig({
         'react-native': app('shims/react-native.tsx'),
         '@react-navigation/native': app('nav.tsx'),
         'react-native-reanimated': app('shims/reanimated.tsx'),
+        'expo-application': app('shims/application.ts'),
         'expo-image-picker': app('shims/image-picker.ts'),
         'expo-file-system/legacy': app('shims/file-system.ts'),
         'expo-sharing': app('shims/sharing.ts'),
@@ -77,6 +124,6 @@ export default defineConfig({
       // Mobile/ has its own node_modules; make its files use Desktop's single copy.
       dedupe: ['react', 'react-dom', 'react-native-paper', '@expo/vector-icons', 'react-native-markdown-display'],
     },
-    define: { global: 'globalThis', __DEV__: 'false', 'process.env.NODE_ENV': '"production"' },
+    define: { __APP_VERSION__: JSON.stringify(pkg.version), global: 'globalThis', __DEV__: 'false', 'process.env.NODE_ENV': '"production"' },
   },
 });

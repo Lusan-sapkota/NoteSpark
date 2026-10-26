@@ -1,12 +1,26 @@
 // One way to reach the backend, whichever shell the page runs in: Electron's preload bridge in the desktop
 // window, or fetch() against the web view's server in a browser.
 declare global {
-  interface Window { notespark?: { invoke(channel: string, args?: unknown): Promise<unknown>; refreshTray(): Promise<void> } }
+  interface Window { notespark?: { invoke(channel: string, args?: unknown): Promise<unknown>; refreshTray(): Promise<void>; onLockChanged(callback: () => void): void } }
 }
 
 export const isDesktop = !!window.notespark;
 
+// A call that finds the profile locked tells the shell, which shows the unlock screen.
+const check = (error: unknown) => {
+  if (/PROFILE_LOCKED|PROFILE_UNREADABLE/.test(String((error as Error)?.message))) window.dispatchEvent(new Event('notespark-lock'));
+  return error;
+};
+
 export const invoke = async <T = unknown>(channel: string, args?: unknown): Promise<T> => {
+  try {
+    return await call<T>(channel, args);
+  } catch (error) {
+    throw check(error);
+  }
+};
+
+const call = async <T,>(channel: string, args?: unknown): Promise<T> => {
   if (window.notespark) return (await window.notespark.invoke(channel, args)) as T;
   const res = await fetch('/api/invoke', {
     method: 'POST',

@@ -39,7 +39,9 @@
         "./src/main/shims/async-storage.ts"
       ]
     },
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "resolveJsonModule": true,
+    "esModuleInterop": true
   },
   "include": [
     "src",

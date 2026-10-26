@@ -64,3 +64,8 @@ export const useAnimatedStyle = <T,>(factory: () => T): T => {
 };
 // Springs settle in about a quarter second; a timed ease is close enough for the switch thumb.
 export const withSpring = (to: number, _options?: unknown): any => withTiming(to, { duration: 250, easing: (t: number) => 1 - (1 - t) ** 3 });
+
+// Entering animations are skipped on desktop; the object only has to answer the calls the screens make.
+const entering: any = { springify: () => entering, duration: () => entering, delay: () => entering };
+export const FadeInRight = entering;
+export const FadeIn = entering;
