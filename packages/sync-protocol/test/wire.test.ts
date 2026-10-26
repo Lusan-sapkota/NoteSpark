@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { CHUNK, type Frame, MAX_BUFFERED, MAX_DOC_BYTES, MAX_FRAME, ProtocolError, Reassembler, T, chunkUpdate, decodeFrame, encodeFrame } from '../src/wire.ts';
+import { CHUNK, type Frame, MAX_BUFFERED, MAX_DOC_BYTES, MAX_FRAME, ProtocolError, Reassembler, T, chunkBlob, chunkUpdate, decodeFrame, encodeFrame } from '../src/wire.ts';
 
 const U = '0b9d1f9e-5a54-4b9e-8a3a-1f2b3c4d5e6f';
 const U2 = 'ffffffff-ffff-4fff-bfff-ffffffffffff';
+const H1 = 'a1b2c3d4e5f60718293a4b5c6d7e8f90a1b2c3d4e5f60718293a4b5c6d7e8f90';
+const H2 = '00112233445566778899aabbccddeeff00112233445566778899aabbccddeeff';
 const samples: Frame[] = [
   { type: T.PROFILES, profiles: [{ syncId: U, name: 'Personal é😀', notes: 300, protected: true, locked: false }] },
   { type: T.SUBSCRIBE, syncId: U },
@@ -14,6 +16,10 @@ const samples: Frame[] = [
   { type: T.UPDATE, doc: U, id: 70000, index: 1, count: 3, bytes: Uint8Array.of(9, 9) },
   { type: T.DOC_DONE, doc: U2 },
   { type: T.READY },
+  { type: T.BLOB_HAVE, hashes: [H1, H2] },
+  { type: T.BLOB_REQ, hash: H1 },
+  { type: T.BLOB, hash: H2, index: 1, count: 3, bytes: Uint8Array.of(4, 5, 6) },
+  { type: T.BLOB_ACK, hash: H2 },
   { type: T.PING, nonce: 2 ** 40 },
   { type: T.PONG, nonce: 5 },
   { type: T.ERROR, code: 423, message: 'locked' },
@@ -35,13 +41,24 @@ test('chunking at 64 KB and reassembly, in any order, with repeats', () => {
   assert.deepEqual(out, update);
   assert.equal(r.buffered, 0);
   assert.equal(chunkUpdate('catalog', 2, new Uint8Array(0)).length, 1);
+
+  const blobBytes = Uint8Array.from({ length: CHUNK * 2 + 99 }, (_, i) => (i * 7) & 0xff);
+  const blobFrames = chunkBlob(H1, blobBytes);
+  assert.equal(blobFrames.length, 3);
+  let blobOut: Uint8Array | null = null;
+  for (const i of [1, 2, 0, 1]) blobOut = r.add(decodeFrame(encodeFrame(blobFrames[i])) as any) ?? blobOut;
+  assert.deepEqual(blobOut, blobBytes);
+  assert.equal(r.buffered, 0);
 });
 
-test('limits: 32 MB per document (413), buffered bytes, open assemblies, changed counts', () => {
+test('limits: 32 MB per document/blob (413), buffered bytes, open assemblies, changed counts', () => {
   const chunk = (id: number, index: number, count: number, bytes = new Uint8Array(CHUNK)) => ({ type: T.UPDATE, doc: 'catalog', id, index, count, bytes }) as any;
   const r = new Reassembler();
   for (let i = 0; i < MAX_DOC_BYTES / CHUNK; i++) r.add(chunk(1, i, 600));
   assert.throws(() => r.add(chunk(1, 512, 600)), (e: any) => e instanceof ProtocolError && e.code === 413);
+  const rb = new Reassembler();
+  for (let i = 0; i < MAX_DOC_BYTES / CHUNK; i++) rb.add({ type: T.BLOB, hash: H1, index: i, count: 600, bytes: new Uint8Array(CHUNK) });
+  assert.throws(() => rb.add({ type: T.BLOB, hash: H1, index: 512, count: 600, bytes: new Uint8Array(1) }), (e: any) => e instanceof ProtocolError && e.code === 413);
   const r2 = new Reassembler();
   for (let id = 0; id < 16; id++) r2.add(chunk(id, 0, 2));
   assert.throws(() => r2.add(chunk(99, 0, 2)), (e: any) => e.code === 429);
@@ -85,7 +102,7 @@ test('fuzz: a million random and mutated inputs never crash, never over-allocate
       const f = decodeFrame(input);
       accepted++;
       assert.ok(encodeFrame(f).length <= input.length + 8, 'decoded more than it was given');
-      if (f.type === T.UPDATE) { try { if (re.add(f)) applied++; } catch (e) { assert.ok(e instanceof ProtocolError); } }
+      if (f.type === T.UPDATE || f.type === T.BLOB) { try { if (re.add(f)) applied++; } catch (e) { assert.ok(e instanceof ProtocolError); } }
     } catch (e) {
       assert.ok(e instanceof ProtocolError, `seed ${seed} run ${i}: ${e}`);
     }

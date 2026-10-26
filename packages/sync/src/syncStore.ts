@@ -51,17 +51,35 @@ export interface SyncStore {
   applyFile(syncId: string, uuid: string | null, edit: FileEdit): Promise<string>;
   // A deleted file means the bin, never an erase.
   binNote(syncId: string, uuid: string): Promise<void>;
+  // Attachment blobs stored for this profile (64-char lowercase hex SHA-256).
+  blobs?(syncId: string): Promise<string[]>;
+  getBlob?(syncId: string, hash: string): Promise<Uint8Array | null>;
+  putBlob?(syncId: string, hash: string, bytes: Uint8Array): Promise<void>;
 }
+
+const BLOB_REF_RE = /attachment:([0-9a-fA-F]{64})\b/g;
+export const extractBlobHashes = (notes: Iterable<{ content: string }>): string[] => {
+  const out = new Set<string>();
+  for (const n of notes) {
+    if (!n?.content) continue;
+    const re = new RegExp(BLOB_REF_RE.source, 'g');
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(n.content)) !== null) out.add(m[1].toLowerCase());
+  }
+  return [...out].sort();
+};
 
 interface Profile {
   name: string;
   replica: Replica;
+  blobs: Map<string, Uint8Array>;
 }
 
 // A SyncStore in memory, for tests.
 export class MemoryStore implements SyncStore {
   profilesById = new Map<string, Profile>();
   plain = new Map<string, NoteState>(); // notes before the first link
+  plainBlobs = new Map<string, Uint8Array>(); // blobs before the first link
   private listeners = new Map<string, Set<(doc: string, update: Uint8Array) => void>>();
 
   clientId: number;
@@ -69,10 +87,13 @@ export class MemoryStore implements SyncStore {
     this.clientId = clientId;
   }
 
-  private profile(syncId: string) {
+  private profileEntry(syncId: string) {
     const p = this.profilesById.get(syncId);
     if (!p) throw new Error(`unknown profile ${syncId}`);
-    return p.replica;
+    return p;
+  }
+  private profile(syncId: string) {
+    return this.profileEntry(syncId).replica;
   }
   private changeListeners = new Map<string, Set<(uuid: string) => void>>();
   private emit(syncId: string, deltas: Delta[]) {
@@ -86,7 +107,7 @@ export class MemoryStore implements SyncStore {
     return [...this.profilesById].map(([syncId, p]) => ({ syncId, name: p.name, notes: Object.keys(p.replica.notes()).length, protected: false, locked: false }));
   }
   async createProfile(syncId: string, name: string) {
-    if (!this.profilesById.has(syncId)) this.profilesById.set(syncId, { name, replica: new Replica(this.clientId) });
+    if (!this.profilesById.has(syncId)) this.profilesById.set(syncId, { name, replica: new Replica(this.clientId), blobs: new Map() });
   }
   async plainNotes(syncId: string): Promise<PlainNote[]> {
     const source = this.profilesById.get(syncId)?.replica.notes() ?? Object.fromEntries(this.plain);
@@ -96,8 +117,11 @@ export class MemoryStore implements SyncStore {
     if (this.profilesById.has(syncId)) return;
     const replica = new Replica(this.clientId);
     for (const [uuid, state] of this.plain) if (!adopt.has(uuid)) replica.save(uuid, state);
-    this.profilesById.set(syncId, { name: 'Profile', replica });
+    const blobs = new Map<string, Uint8Array>();
+    for (const [h, b] of this.plainBlobs) blobs.set(h, b.slice());
+    this.profilesById.set(syncId, { name: 'Profile', replica, blobs });
     this.plain.clear();
+    this.plainBlobs.clear();
   }
   async docs(syncId: string) {
     const r = this.profile(syncId);
@@ -169,21 +193,41 @@ export class MemoryStore implements SyncStore {
     const cur = await this.note(syncId, uuid);
     if (cur && !cur.deletedAt) this.edit(syncId, uuid, { ...cur, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
   }
+  async blobs(syncId: string): Promise<string[]> {
+    return [...this.profileEntry(syncId).blobs.keys()].sort();
+  }
+  async getBlob(syncId: string, hash: string): Promise<Uint8Array | null> {
+    const b = this.profileEntry(syncId).blobs.get(hash.toLowerCase());
+    return b ? b.slice() : null;
+  }
+  async putBlob(syncId: string, hash: string, bytes: Uint8Array): Promise<void> {
+    this.profileEntry(syncId).blobs.set(hash.toLowerCase(), bytes.slice());
+  }
+  referencedBlobs(syncId: string): string[] {
+    return extractBlobHashes(Object.values(this.notes(syncId)));
+  }
 
   // Restart with a new client id.
   snapshot() {
     return [...this.profilesById].map(([syncId, p]) => ({
       syncId, name: p.name,
       updates: [{ doc: 'catalog', bytes: Y.encodeStateAsUpdate(p.replica.catalog) }, ...[...p.replica.docs].map(([doc, d]) => ({ doc, bytes: Y.encodeStateAsUpdate(d) }))],
+      blobs: [...p.blobs].map(([h, b]) => [h, b.slice()] as [string, Uint8Array]),
     }));
   }
-  static restore(clientId: number, snapshot: ReturnType<MemoryStore['snapshot']>, plain: Map<string, NoteState> = new Map()) {
+  static restore(
+    clientId: number,
+    snapshot: ReturnType<MemoryStore['snapshot']>,
+    plain: Map<string, NoteState> = new Map(),
+    plainBlobs: Map<string, Uint8Array> = new Map()
+  ) {
     const store = new MemoryStore(clientId);
     store.plain = new Map(plain);
+    store.plainBlobs = new Map(plainBlobs);
     for (const p of snapshot) {
       const replica = new Replica(clientId);
       replica.receive(p.updates);
-      store.profilesById.set(p.syncId, { name: p.name, replica });
+      store.profilesById.set(p.syncId, { name: p.name, replica, blobs: new Map(p.blobs ?? []) });
     }
     return store;
   }

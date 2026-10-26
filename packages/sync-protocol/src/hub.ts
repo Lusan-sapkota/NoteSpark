@@ -44,6 +44,10 @@ export class Hub implements FanOut {
     for (const s of this.sessions) if (s !== from && s.syncId === syncId) s.push(doc, bytes);
   }
 
+  forwardBlob(syncId: string, hash: string, from: Session | null) {
+    for (const s of this.sessions) if (s !== from && s.syncId === syncId) s.offerBlobs([hash]);
+  }
+
   stop() {
     for (const off of this.watching.values()) off();
     this.watching.clear();

@@ -2,7 +2,10 @@
 import type { SyncStore } from '@notespark/sync';
 import { type NoteState, diffFor, readCatalog, rebaseText, stateVectorOf } from '@notespark/sync';
 import type * as SQLite from 'expo-sqlite';
+import { addAttachment, hasAttachment, listAttachments, readAttachment } from './attachments';
 import { UUID_SQL, applyRemote, docUpdates, linkProfile, linkedSyncId, onDocsChanged, onLocalUpdate, transact } from './crdt';
+import { getOpenProfileId, getProfileKey } from './database';
+import { hasProfilePin } from './profiles';
 
 type DB = SQLite.SQLiteDatabase;
 
@@ -12,7 +15,8 @@ const stateOf = (r: any): NoteState => ({
   deletedAt: r.deletedAt ?? null, createdAt: r.createdAt, updatedAt: r.updatedAt,
 });
 
-export const storageStore = (db: DB, name = 'Profile'): SyncStore => {
+export const storageStore = (db: DB, name = 'Profile', profileId?: string): SyncStore => {
+  const resolveProfileId = () => profileId ?? getOpenProfileId();
   const own = async (syncId: string) => {
     if ((await linkedSyncId(db)) !== syncId) throw new Error('This profile is not linked to that sync id');
   };
@@ -20,8 +24,12 @@ export const storageStore = (db: DB, name = 'Profile'): SyncStore => {
     profiles: async () => {
       const syncId = await linkedSyncId(db);
       if (!syncId) return [];
+      const pid = resolveProfileId();
+      const isProtected = await hasProfilePin(pid);
+      const locked = isProtected && !(await getProfileKey(pid));
+      if (locked) return [{ syncId, name, notes: 0, protected: true, locked: true }];
       const n = (await db.getFirstAsync<{ n: number }>('SELECT count(*) AS n FROM notes'))!.n;
-      return [{ syncId, name, notes: n, protected: false, locked: false }];
+      return [{ syncId, name, notes: n, protected: isProtected, locked: false }];
     },
     createProfile: async (syncId: string) => {
       if (!(await linkedSyncId(db))) await linkProfile(db, syncId, new Map());
@@ -69,5 +77,21 @@ export const storageStore = (db: DB, name = 'Profile'): SyncStore => {
         await db.runAsync('UPDATE notes SET deletedAt = ? WHERE id = ?', [new Date().toISOString(), row.id]);
         await sync.capture([row.id]);
       }),
+    blobs: async syncId => {
+      await own(syncId);
+      const list = await listAttachments(resolveProfileId());
+      return list.map(a => a.hash);
+    },
+    getBlob: async (syncId, hash) => {
+      await own(syncId);
+      const pid = resolveProfileId();
+      if (!(await hasAttachment(hash, pid))) return null;
+      return readAttachment(hash, pid);
+    },
+    putBlob: async (syncId, hash, bytes) => {
+      await own(syncId);
+      const added = await addAttachment({ bytes, name: hash, size: bytes.byteLength }, resolveProfileId());
+      if (added.hash !== hash.toLowerCase()) throw new Error('Blob hash mismatch');
+    },
   };
 };

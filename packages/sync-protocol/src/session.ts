@@ -1,8 +1,8 @@
-import type { SyncStore } from '@notespark/sync';
+import { type SyncStore, extractBlobHashes } from '@notespark/sync';
 import { type Hash, fingerprints, planAdoption } from './adopt.ts';
 import type { Channel } from './channel.ts';
 import type { Clock } from './clock.ts';
-import { CHUNK, type Frame, type LinkEntry, MAX_DOCS_IN_FLIGHT, MAX_DOC_BYTES, MAX_LINK_ENTRIES, type PairEntry, ProtocolError, Reassembler, T, chunkUpdate, decodeFrame, encodeFrame } from './wire.ts';
+import { CHUNK, type Frame, type LinkEntry, MAX_DOCS_IN_FLIGHT, MAX_DOC_BYTES, MAX_LINK_ENTRIES, type PairEntry, ProtocolError, Reassembler, T, bytesToHash, chunkBlob, chunkUpdate, decodeFrame, encodeFrame } from './wire.ts';
 
 export const PING_EVERY = 15_000;
 export const DEAD_AFTER = 45_000;
@@ -21,6 +21,7 @@ export interface LinkPlan {
 
 export interface FanOut {
   forward(syncId: string, doc: string, bytes: Uint8Array, from: Session | null): void;
+  forwardBlob?(syncId: string, hash: string, from: Session | null): void;
   watch(syncId: string): void;
   profileFor(syncId: string): Promise<{ locked: boolean } | null>;
   attach(session: Session): void;
@@ -71,6 +72,9 @@ export class Session {
   private planPairs: PairEntry[] = [];
   private linkSyncId = '';
   private planned: LinkPlan | null = null;
+  private peerBlobs = new Set<string>();
+  private pendingBlobs: string[] = [];
+  private blobsInflight = new Set<string>();
 
   constructor(o: SessionOptions) {
     this.o = o;
@@ -264,12 +268,101 @@ export class Session {
         if (!bytes) return;
         try { await this.o.store.apply(this.syncId, f.doc, [bytes]); } catch (e) { throw new ProtocolError(400, 'bad update'); }
         this.o.hub?.forward(this.syncId, f.doc, bytes, this);
+        if (f.doc !== 'catalog' && this.state === 'live' && this.o.store.blobs) {
+          const note = await this.o.store.note(this.syncId, f.doc);
+          if (note) {
+            const have = new Set(await this.o.store.blobs(this.syncId));
+            for (const h of extractBlobHashes([note])) {
+              if (!have.has(h)) this.enqueueBlobReq(h);
+            }
+            this.pumpBlobs();
+          }
+        }
         return;
       }
       case T.DOC_DONE: return this.pulled(f.doc);
       case T.READY: this.peerReady = true; return this.maybeLive();
+      case T.BLOB_HAVE: {
+        for (const h of f.hashes) {
+          this.peerBlobs.add(h);
+          // If an earlier request ran before the peer had this blob, allow re-requesting now that peer announced it.
+          this.blobsInflight.delete(h);
+        }
+        if (this.o.store.blobs) {
+          const [have, referenced] = await Promise.all([
+            this.o.store.blobs(this.syncId).then(xs => new Set(xs)),
+            this.o.store.allNotes(this.syncId).then(ns => new Set(extractBlobHashes(ns))),
+          ]);
+          for (const h of f.hashes) {
+            if (referenced.has(h) && !have.has(h)) this.enqueueBlobReq(h);
+          }
+          this.pumpBlobs();
+        }
+        return;
+      }
+      case T.BLOB_REQ: {
+        const blob = await this.o.store.getBlob?.(this.syncId, f.hash);
+        if (!blob) return;
+        if (blob.length > MAX_DOC_BYTES) {
+          this.o.onProblem?.({ code: 413, doc: f.hash });
+          return;
+        }
+        for (const c of chunkBlob(f.hash, blob)) this.send(c);
+        return;
+      }
+      case T.BLOB: {
+        const bytes = this.assembler.add(f);
+        if (!bytes) return;
+        const actual = bytesToHash(this.o.hash(bytes));
+        if (actual !== f.hash) throw new ProtocolError(400, 'blob hash mismatch');
+        await this.o.store.putBlob?.(this.syncId, f.hash, bytes);
+        this.blobsInflight.delete(f.hash);
+        this.send({ type: T.BLOB_ACK, hash: f.hash });
+        this.o.hub?.forwardBlob?.(this.syncId, f.hash, this);
+        this.pumpBlobs();
+        return;
+      }
+      case T.BLOB_ACK: {
+        return;
+      }
       default: throw new ProtocolError(400, 'unexpected frame');
     }
+  }
+
+  private enqueueBlobReq(hash: string) {
+    if (!this.blobsInflight.has(hash) && !this.pendingBlobs.includes(hash)) {
+      this.pendingBlobs.push(hash);
+    }
+  }
+
+  private pumpBlobs() {
+    while (this.blobsInflight.size < MAX_DOCS_IN_FLIGHT && this.pendingBlobs.length > 0) {
+      const next = this.pendingBlobs.shift()!;
+      this.blobsInflight.add(next);
+      this.send({ type: T.BLOB_REQ, hash: next });
+    }
+  }
+
+  offerBlobs(hashes: string[]) {
+    if (!this.subscribed() || hashes.length === 0) return;
+    for (let i = 0; i < hashes.length; i += MAX_LINK_ENTRIES) {
+      this.send({ type: T.BLOB_HAVE, hashes: hashes.slice(i, i + MAX_LINK_ENTRIES) });
+    }
+  }
+
+  private async syncBlobs() {
+    if (!this.subscribed() || !this.o.store.blobs) return;
+    this.blobsInflight.clear();
+    const [haveList, notes] = await Promise.all([
+      this.o.store.blobs(this.syncId),
+      this.o.store.allNotes(this.syncId),
+    ]);
+    const have = new Set(haveList);
+    this.offerBlobs(haveList);
+    for (const h of extractBlobHashes(notes)) {
+      if (!have.has(h)) this.enqueueBlobReq(h);
+    }
+    this.pumpBlobs();
   }
 
   private async startExchange() {
@@ -303,6 +396,7 @@ export class Session {
       this.exchanging = false;
       if (this.firstExchange && !this.readySent) { this.readySent = true; this.send({ type: T.READY }); if (!this.peerReady) this.phase(PHASE_TIMEOUT * 2); }
       this.maybeLive();
+      await this.syncBlobs();
     }
   }
 
@@ -315,6 +409,17 @@ export class Session {
     if (!this.subscribed() || bytes.length <= 2) return;
     if (bytes.length > MAX_DOC_BYTES) return this.o.onProblem?.({ code: 413, doc });
     for (const c of chunkUpdate(doc, this.nextId++, bytes)) this.send(c);
+    if (doc !== 'catalog' && this.o.store.blobs) {
+      this.queue(async () => {
+        const note = await this.o.store.note(this.syncId, doc);
+        if (!note) return;
+        const refs = extractBlobHashes([note]);
+        if (refs.length === 0) return;
+        const have = new Set(await this.o.store.blobs!(this.syncId));
+        const available = refs.filter(h => have.has(h));
+        if (available.length > 0) this.offerBlobs(available);
+      });
+    }
   }
 }
 

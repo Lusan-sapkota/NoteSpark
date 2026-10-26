@@ -9,23 +9,20 @@ import { buildAppMenu, MenuAction } from './menu';
 import AsyncStorage from '@notespark/node-shims/async-storage';
 import { startWebView, stopWebView, webViewStatus } from './web';
 
-// Strictly offline: no updater, crash reporter, analytics or remote content.
-// The renderer may load only the app's own files (and the Vite dev server in development).
+// The app stays offline and the renderer loads only local content or the development server.
 const devUrl = process.env.ELECTRON_RENDERER_URL;
 const APP = 'app://notespark/';
 const isAppUrl = (url: string) => url.startsWith(APP) || url.startsWith(`blob:${APP}`) || url.startsWith('devtools://') || (!!devUrl && url.startsWith(devUrl)) || url.startsWith('data:');
 
-// Memory tuning: V8 optimised for size, small young generation, in-process network service (see docs/architecture/desktop.md).
 app.commandLine.appendSwitch('js-flags', '--optimize-for-size --max-semi-space-size=1 --min-semi-space-size=1');
 app.commandLine.appendSwitch('enable-features', 'NetworkServiceInProcess2');
 
-// The UI is served from app://notespark/, so pictures at /images/<name> have the same address in the window and the web view.
 protocol.registerSchemesAsPrivileged([{ scheme: 'app', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 
 const icon = nativeImage.createFromPath(join(__dirname, '../../resources/icon.png'));
 let window: BrowserWindow | null = null;
 
-// Menu actions go to the window once its screens are ready (the window may have to be opened first).
+// Queue menu actions until the window is ready.
 let windowReady = false;
 const queued: MenuAction[] = [];
 const deliver = (action: MenuAction) => {
@@ -35,17 +32,16 @@ const deliver = (action: MenuAction) => {
 let tray: Tray | null = null;
 let refreshMenuFn: (() => void) | null = null;
 
-// Closing the window keeps the app in the tray (sync and the web view need it) unless "Keep running in the tray" is off.
+// Keep the app in the tray while sync or the web view is active unless disabled.
 const keepInTray = async () => (await AsyncStorage.getItem('trayOnClose')) !== 'false';
 const keepsRunning = async () => webViewStatus().on || (await keepInTray());
 const quitIfIdle = async () => {
   if (BrowserWindow.getAllWindows().length === 0 && !(await keepsRunning())) app.quit();
 };
 
-// The window is frameless: the header draws its own buttons (see the 'window:control' channel).
 const pageColor = () => (nativeTheme.shouldUseDarkColors ? firefly.dark : firefly.light).background;
 
-// Zoom starts larger on big screens (by screen width); the person's own zoom is remembered, "Actual size" resets it.
+// Choose an automatic zoom by screen size and remember manual changes.
 const ZOOM_STEPS = [0.8, 0.9, 1, 1.1, 1.25, 1.5, 1.75, 2];
 const autoZoom = () => {
   const width = (window && !window.isDestroyed() ? screen.getDisplayMatching(window.getBounds()) : screen.getPrimaryDisplay()).size.width;
@@ -70,32 +66,30 @@ const createWindow = () => {
     icon,
     title: 'NoteSpark',
     titleBarStyle: 'hidden',
-    autoHideMenuBar: true, // the menu lives in the global menu; Alt still shows it where there is none
-    backgroundColor: pageColor(), // the theme's background, so there is no white flash
+    autoHideMenuBar: true,
+    backgroundColor: pageColor(),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,
       sandbox: true,
       nodeIntegration: false,
-      spellcheck: false, // Electron downloads Hunspell dictionaries from a Google CDN otherwise
+      spellcheck: false,
     },
   });
   win.webContents.on('did-finish-load', () => void applyZoom());
-  // Moving the window to another monitor can change the automatic size.
+  // Reapply automatic zoom when the window changes monitors.
   let moved: NodeJS.Timeout | undefined;
   win.on('move', () => { clearTimeout(moved); moved = setTimeout(() => void applyZoom(), 300); });
   win.on('closed', () => clearTimeout(moved));
   win.once('ready-to-show', () => win.show());
-  // The header's own window buttons show Maximize or Restore by this.
   const tellState = () => { if (!win.isDestroyed()) win.webContents.send('window:state', { maximized: win.isMaximized() || win.isFullScreen() }); };
   for (const event of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen'] as const) win.on(event as 'maximize', tellState);
-  // The auto-lock counts time while the window is out of sight or out of focus.
+  // Track focus for the auto-lock timer.
   win.on('focus', () => setWindowFocused(true));
   for (const event of ['blur', 'hide', 'minimize', 'closed'] as const) win.on(event as 'blur', () => setWindowFocused(false));
-  // Closing destroys the renderer; quitIfIdle decides whether the app goes with it.
   win.on('closed', () => { window = null; windowReady = false; void quitIfIdle(); });
   win.webContents.on('will-navigate', (e, url) => { if (!isAppUrl(url)) e.preventDefault(); });
-  // A link the person clicks opens in their own browser (the same as the phone); the app itself never loads it.
+  // Open external links in the system browser.
   win.webContents.setWindowOpenHandler(({ url }) => {
     if (/^(https?|mailto):/i.test(url)) void shell.openExternal(url);
     return { action: 'deny' };
@@ -110,15 +104,13 @@ const showWindow = () => {
   else { if (window.isMinimized()) window.restore(); window.show(); window.focus(); }
 };
 
-// Software rendering in the main process: no separate GPU process (about 125 MB less RAM).
-// ponytail: revisit if the web UI scrolls badly on low-end CPUs.
 app.disableHardwareAcceleration();
 app.commandLine.appendSwitch('in-process-gpu');
 
 if (!app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance', showWindow);
-  app.on('window-all-closed', () => {}); // quitIfIdle decides; the default quit would ignore the tray and web view
+  app.on('window-all-closed', () => {});
   app.on('web-contents-created', (_e, contents) => {
     contents.on('will-attach-webview', e => e.preventDefault());
   });
@@ -152,7 +144,6 @@ else {
         web.on
           ? { label: 'Stop web view', click: () => stopWebView().then(refreshTray).then(quitIfIdle) }
           : { label: 'Start web view', click: () => startWebView(invoke).then(refreshTray, () => {}) },
-        // The link carries the one-time token, so it is copied, never shown in the menu.
         ...(web.on ? [{ label: 'Copy web view link', click: () => clipboard.writeText(webViewStatus().links.at(-1) ?? '') }] : []),
         { type: 'separator' },
         { label: 'Save clipboard text', click: () => void saveClipboard((fn, ...args) => invoke('storage', { module: 'notes', fn, args }, 'ipc')) },
@@ -176,7 +167,6 @@ else {
       else if (action === 'close') window.close();
       else if (action === 'state') return { maximized: window.isMaximized() || window.isFullScreen() };
     });
-    // The header's menu button: the same menu as the application menu, for desktops with no global menu.
     ipcMain.handle('menu:popup', (e, x: unknown, y: unknown) => {
       if (!window || e.sender !== window.webContents || typeof x !== 'number' || typeof y !== 'number') return;
       Menu.getApplicationMenu()?.popup({ window, x: Math.round(x), y: Math.round(y) });
@@ -184,7 +174,6 @@ else {
     const refreshMenu = () => Menu.setApplicationMenu(buildAppMenu({
       send: action => {
         if (action.type !== 'theme') return deliver(action);
-        // The appearance changes (and is remembered) without opening a window; an open window follows.
         nativeTheme.themeSource = action.mode;
         void AsyncStorage.setItem('themePreference', action.mode);
         if (window && windowReady) window.webContents.send('menu:action', action);
@@ -200,4 +189,3 @@ else {
     startReminders(() => deliver({ type: 'go', routes: ['Home', 'Tasks'] }));
   });
 }
-

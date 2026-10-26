@@ -47,7 +47,7 @@ export class Device {
   restart(clientId: number) {
     this.syncId = this.client?.syncId ?? this.syncId;
     this.client?.stop();
-    this.store = MemoryStore.restore(clientId, this.store.snapshot(), this.store.plain);
+    this.store = MemoryStore.restore(clientId, this.store.snapshot(), this.store.plain, this.store.plainBlobs);
     this.start();
   }
 }

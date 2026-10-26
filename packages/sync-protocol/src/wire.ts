@@ -11,7 +11,9 @@ const MAX_TEXT = 1000;
 
 export const T = {
   PROFILES: 0x02, SUBSCRIBE: 0x03, LINK: 0x04, LINK_PLAN: 0x05, LINK_CONFIRM: 0x06,
-  SV: 0x10, UPDATE: 0x11, DOC_DONE: 0x12, READY: 0x13, PING: 0x20, PONG: 0x21, ERROR: 0x30, BYE: 0x31,
+  SV: 0x10, UPDATE: 0x11, DOC_DONE: 0x12, READY: 0x13,
+  BLOB_HAVE: 0x14, BLOB_REQ: 0x15, BLOB: 0x16, BLOB_ACK: 0x17,
+  PING: 0x20, PONG: 0x21, ERROR: 0x30, BYE: 0x31,
 } as const;
 
 // 400 malformed, 403 not linked, 409 version, 413 too large, 423 locked, 429 rate limit, 503 shutting down.
@@ -40,10 +42,22 @@ export type Frame =
   | { type: 0x11; doc: string; id: number; index: number; count: number; bytes: Uint8Array }
   | { type: 0x12; doc: string }
   | { type: 0x13 }
+  | { type: 0x14; hashes: string[] }
+  | { type: 0x15; hash: string }
+  | { type: 0x16; hash: string; index: number; count: number; bytes: Uint8Array }
+  | { type: 0x17; hash: string }
   | { type: 0x20; nonce: number }
   | { type: 0x21; nonce: number }
   | { type: 0x30; code: number; message: string }
   | { type: 0x31; reason: string };
+
+const HASH_HEX = /^[0-9a-f]{64}$/;
+export const hashToBytes = (hash: string): Uint8Array => {
+  if (!HASH_HEX.test(hash)) return bad('bad hash');
+  return Uint8Array.from({ length: 32 }, (_, i) => parseInt(hash.slice(i * 2, i * 2 + 2), 16));
+};
+export const bytesToHash = (b: Uint8Array): string =>
+  Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
 
 class Writer {
   parts: number[] = [];
@@ -104,6 +118,13 @@ export const encodeFrame = (f: Frame): Uint8Array => {
     case T.UPDATE: writeDoc(w, f.doc); w.uint(f.id); w.uint(f.index); w.uint(f.count); w.bytes(f.bytes); break;
     case T.DOC_DONE: writeDoc(w, f.doc); break;
     case T.READY: break;
+    case T.BLOB_HAVE:
+      w.uint(f.hashes.length);
+      for (const h of f.hashes) w.raw(hashToBytes(h));
+      break;
+    case T.BLOB_REQ: w.raw(hashToBytes(f.hash)); break;
+    case T.BLOB: w.raw(hashToBytes(f.hash)); w.uint(f.index); w.uint(f.count); w.bytes(f.bytes); break;
+    case T.BLOB_ACK: w.raw(hashToBytes(f.hash)); break;
     case T.PING: case T.PONG: w.uint(f.nonce); break;
     case T.ERROR: w.uint(f.code); w.str(f.message.slice(0, 200)); break;
     case T.BYE: w.str(f.reason.slice(0, 200)); break;
@@ -188,6 +209,21 @@ export const decodeFrame = (data: Uint8Array): Frame => {
     }
     case T.DOC_DONE: f = { type, doc: r.doc() }; break;
     case T.READY: f = { type }; break;
+    case T.BLOB_HAVE: {
+      const n = r.count(32, MAX_LINK_ENTRIES);
+      const hashes: string[] = [];
+      for (let i = 0; i < n; i++) hashes.push(bytesToHash(r.raw(32)));
+      f = { type, hashes };
+      break;
+    }
+    case T.BLOB_REQ: f = { type, hash: bytesToHash(r.raw(32)) }; break;
+    case T.BLOB: {
+      const hash = bytesToHash(r.raw(32)), index = r.uint(), count = r.uint();
+      if (count < 1 || count > MAX_DOC_BYTES / CHUNK || index >= count) bad('bad chunk numbers');
+      f = { type, hash, index, count, bytes: r.bytes(CHUNK) };
+      break;
+    }
+    case T.BLOB_ACK: f = { type, hash: bytesToHash(r.raw(32)) }; break;
     case T.PING: case T.PONG: f = { type, nonce: r.uint() }; break;
     case T.ERROR: f = { type, code: r.uint(), message: r.str() }; break;
     case T.BYE: f = { type, reason: r.str() }; break;
@@ -203,16 +239,22 @@ export const chunkUpdate = (doc: string, id: number, bytes: Uint8Array): Frame[]
   return Array.from({ length: count }, (_, index) => ({ type: T.UPDATE, doc, id, index, count, bytes: bytes.subarray(index * CHUNK, (index + 1) * CHUNK) }));
 };
 
+// A blob as BLOB frames of at most CHUNK bytes.
+export const chunkBlob = (hash: string, bytes: Uint8Array): Frame[] => {
+  const count = Math.max(1, Math.ceil(bytes.length / CHUNK));
+  return Array.from({ length: count }, (_, index) => ({ type: T.BLOB, hash, index, count, bytes: bytes.subarray(index * CHUNK, (index + 1) * CHUNK) }));
+};
+
 interface Assembly { count: number; parts: Map<number, Uint8Array>; bytes: number }
 
-// Puts chunks back together; refuses over-limit documents (413) and buffering (429).
+// Puts chunks back together; refuses over-limit documents/blobs (413) and buffering (429).
 export class Reassembler {
   private open = new Map<string, Assembly>();
   private finished = new Set<string>(); // a late repeat must not start a new assembly
   buffered = 0;
 
-  add(f: Extract<Frame, { type: 0x11 }>): Uint8Array | null {
-    const key = `${f.doc}/${f.id}`;
+  add(f: Extract<Frame, { type: 0x11 | 0x16 }>): Uint8Array | null {
+    const key = f.type === T.UPDATE ? `${f.doc}/${f.id}` : `blob/${f.hash}`;
     if (this.finished.has(key)) return null;
     let a = this.open.get(key);
     if (!a) {
