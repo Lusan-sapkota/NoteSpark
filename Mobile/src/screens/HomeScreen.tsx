@@ -7,12 +7,13 @@ import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../types';
 import { clearDraft, getDraft, getNotes, getNotesVersion, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
 import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
-import { extractTags } from '@notespark/core';
+import { extractTags, mergeSearch } from '@notespark/core';
 import { shareNotesAsJson, shareNotesAsZip } from '../utils/exportNotes';
 import { syncTaskReminders } from '../utils/taskReminders';
 import { updateWidgets } from '../widget/widgets';
@@ -46,7 +47,18 @@ const HomeScreen: React.FC = () => {
   const [searchText, setSearchText] = useState('');
   // The list filters with this deferred copy, so typing stays responsive with many notes.
   const deferredSearch = useDeferredValue(searchText);
-  const [searchType, setSearchType] = useState<'all' | 'title' | 'content' | 'meaning'>('all');
+  // 'both' is words, then related notes by meaning; it needs a build with the model.
+  const [searchType, setSearchTypeState] = useState<'both' | 'all' | 'title' | 'content'>(isMeaningSearchAvailable() ? 'both' : 'all');
+  const setSearchType = (type: typeof searchType) => {
+    setSearchTypeState(type);
+    AsyncStorage.setItem('searchType', type).catch(() => {});
+  };
+  useEffect(() => {
+    AsyncStorage.getItem('searchType').then(saved => {
+      if (saved === 'all' || saved === 'title' || saved === 'content') setSearchTypeState(saved);
+      else if (saved === 'both' && isMeaningSearchAvailable()) setSearchTypeState('both');
+    }).catch(() => {});
+  }, []);
   const [meaningIds, setMeaningIds] = useState<number[] | null>(null);
   const [filter, setFilter] = useState<Filter>('all');
   const [sortType, setSortType] = useState<'edited' | 'created'>('edited');
@@ -202,7 +214,7 @@ const HomeScreen: React.FC = () => {
 
   useEffect(() => {
     const query = searchText.trim();
-    if (searchType !== 'meaning' || !query) {
+    if (searchType !== 'both' || !query) {
       setMeaningIds(null);
       return;
     }
@@ -225,7 +237,7 @@ const HomeScreen: React.FC = () => {
     return [...counts.keys()].sort((a, b) => counts.get(b)! - counts.get(a)! || a.localeCompare(b));
   }, [notes, tagsByNote]);
 
-  const filteredNotes = useMemo(() => {
+  const searchResult = useMemo(() => {
     // Archived notes only show under the Archived filter.
     let filtered = notes.filter(n => (filter === 'archived') === n.isArchived);
     if (filter === 'pinned') filtered = filtered.filter(n => n.isPinned);
@@ -233,10 +245,7 @@ const HomeScreen: React.FC = () => {
     else if (filter === 'markdown' || filter === 'text') {
       filtered = filtered.filter(n => filter === 'markdown' ? n.isMarkdown : !n.isMarkdown);
     }
-    if (searchType === 'meaning' && deferredSearch.trim() && meaningIds) {
-      const byId = new Map(filtered.map(n => [n.id, n]));
-      return meaningIds.map(id => byId.get(id)).filter((n): n is Note => !!n);
-    }
+    const byId = new Map(filtered.map(n => [n.id, n]));
     if (deferredSearch.trim()) {
       const text = deferredSearch.trim().toLowerCase();
       filtered = filtered.filter(n => {
@@ -258,8 +267,12 @@ const HomeScreen: React.FC = () => {
         return (new Date(b.createdAt || 0).getTime()) - (new Date(a.createdAt || 0).getTime());
       }
     });
-    return filtered;
+    if (searchType !== 'both' || !deferredSearch.trim()) return { notes: filtered, relatedFrom: -1 };
+    const { words, related } = mergeSearch(filtered, meaningIds, byId);
+    return { notes: [...words, ...related], relatedFrom: related.length ? words.length : -1 };
   }, [notes, tagsByNote, deferredSearch, searchType, filter, sortType, meaningIds]);
+  const filteredNotes = searchResult.notes;
+  const relatedFrom = searchResult.relatedFrom;
 
   const handleSelect = useCallback((noteId: number) => {
     setSelectedIds(ids => (ids.includes(noteId) ? ids.filter(id => id !== noteId) : [...ids, noteId]));
@@ -461,9 +474,9 @@ const HomeScreen: React.FC = () => {
 
   // A text search carries over: the note opens finding it.
   const handleNotePress = useCallback((noteId: number) => {
-    const find = searchType === 'meaning' ? undefined : deferredSearch.trim() || undefined;
+    const find = deferredSearch.trim() || undefined;
     navigation.navigate('NoteView', { noteId: noteId.toString(), find });
-  }, [navigation, searchType, deferredSearch]);
+  }, [navigation, deferredSearch]);
 
   const showBinned = (noteId: number) => {
     setUndo(() => async () => {
@@ -572,7 +585,7 @@ const HomeScreen: React.FC = () => {
       const isPinned = item.isPinned;
       const prev = filteredNotes[index - 1];
       const next = filteredNotes[index + 1];
-      return (
+      const row = (
         <NoteItem
           note={item}
           onPress={handleNotePress}
@@ -585,13 +598,22 @@ const HomeScreen: React.FC = () => {
           onSelect={handleSelect}
           selecting={selecting}
           selected={selectedIds.includes(item.id)}
-          isFirst={!prev || prev.isPinned !== isPinned}
-          isLast={!next || next.isPinned !== isPinned}
+          isFirst={!prev || index === relatedFrom || prev.isPinned !== isPinned}
+          isLast={!next || index + 1 === relatedFrom || next.isPinned !== isPinned}
           showCreated={sortType === 'created'}
         />
       );
+      if (index !== relatedFrom) return row;
+      return (
+        <>
+          <Text variant="titleSmall" accessibilityRole="header" style={[styles.relatedHeading, { color: theme.colors.onSurfaceVariant }]}>
+            Also related
+          </Text>
+          {row}
+        </>
+      );
     },
-    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, filteredNotes, sortType]
+    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, filteredNotes, sortType, relatedFrom, theme]
   );
 
   const handleCreateNote = () => {
@@ -698,7 +720,7 @@ const HomeScreen: React.FC = () => {
 
       <View style={[styles.controls, { backgroundColor: elevated ? theme.colors.elevation.level2 : theme.colors.background }]}>
         <Searchbar
-          placeholder={searchType === 'meaning' ? 'Search by meaning' : 'Search notes'}
+          placeholder="Search notes"
           value={searchText}
           onChangeText={setSearchText}
           style={{ backgroundColor: theme.colors.surfaceContainerHigh, borderRadius: shape.control }}
@@ -726,28 +748,28 @@ const HomeScreen: React.FC = () => {
                 trailingIcon={sortType === 'created' ? 'check' : undefined}
                 onPress={() => { setSortType('created'); setOptionsVisible(false); }}
               />
+              {isMeaningSearchAvailable() && (
+                <Menu.Item
+                  title="Words and meaning"
+                  trailingIcon={searchType === 'both' ? 'check' : undefined}
+                  onPress={() => { setSearchType('both'); setOptionsVisible(false); }}
+                />
+              )}
               <Menu.Item
-                title="Search titles and text"
+                title="Titles and text"
                 trailingIcon={searchType === 'all' ? 'check' : undefined}
                 onPress={() => { setSearchType('all'); setOptionsVisible(false); }}
               />
               <Menu.Item
-                title="Search titles only"
+                title="Titles only"
                 trailingIcon={searchType === 'title' ? 'check' : undefined}
                 onPress={() => { setSearchType('title'); setOptionsVisible(false); }}
               />
               <Menu.Item
-                title="Search text only"
+                title="Text only"
                 trailingIcon={searchType === 'content' ? 'check' : undefined}
                 onPress={() => { setSearchType('content'); setOptionsVisible(false); }}
               />
-              {isMeaningSearchAvailable() && (
-                <Menu.Item
-                  title="Search by meaning"
-                  trailingIcon={searchType === 'meaning' ? 'check' : undefined}
-                  onPress={() => { setSearchType('meaning'); setOptionsVisible(false); }}
-                />
-              )}
             </Menu>
           )}
         />
@@ -997,6 +1019,12 @@ const styles = StyleSheet.create({
   skeletonTitle: {
     height: 16,
     width: '45%',
+  },
+  relatedHeading: {
+    minHeight: 48,
+    textAlignVertical: 'center',
+    marginHorizontal: space.lg,
+    paddingTop: space.md,
   },
   // Same inset as the note cards (NoteItem).
   rediscover: {

@@ -9,3 +9,4 @@ export * from './noteFiles';
 export * from './network';
 export * from './reminders';
 export * from './attachments';
+export * from './search';
