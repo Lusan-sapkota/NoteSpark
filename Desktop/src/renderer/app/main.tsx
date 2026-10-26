@@ -6,6 +6,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { invoke, isDesktop, WebStatus } from './bridge';
 import logo from './round.png';
 import Tip from './Tip';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { canShowMenuButton, MENU_BUTTON_CHANGED } from './KeepInTrayRow';
 import { Navigator, useCurrentNavigation } from './nav';
 import { setMeaningSearchAvailable } from './overrides/storage/semanticSearch';
 // The phone's real screens, theme and shared components, imported straight from Mobile/.
@@ -112,8 +114,15 @@ const TopBar = () => {
   const tip = { enterTouchDelay: 250, leaveTouchDelay: 150 };
   const quiet = theme.colors.onSurfaceVariant;
   const showName = width >= 760;
-  // The macOS menu bar covers it; elsewhere a global menu may be missing (Wayland, Windows' hidden title bar).
-  const showMenu = isDesktop && !/Mac/.test(navigator.userAgent);
+  // Not on macOS, whose menu bar covers it; elsewhere a global menu may be missing (Wayland, Windows' hidden title bar). Settings can hide it.
+  const [menuSetting, setMenuSetting] = useState(true);
+  useEffect(() => {
+    const read = () => AsyncStorage.getItem('menuButton').then(value => setMenuSetting(value !== 'false'), () => {});
+    read();
+    window.addEventListener(MENU_BUTTON_CHANGED, read);
+    return () => window.removeEventListener(MENU_BUTTON_CHANGED, read);
+  }, []);
+  const showMenu = canShowMenuButton && menuSetting;
   return (
     <View style={{ zIndex: 20 }}>
       <View dataSet={{ drag: '' }} style={{ height: 48, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg, paddingRight: isDesktop ? 0 : space.sm, backgroundColor: theme.colors.surfaceContainerLow }}>
