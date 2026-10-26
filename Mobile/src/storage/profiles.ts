@@ -3,6 +3,7 @@ import * as Crypto from 'expo-crypto';
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
+import { UUID_SQL, captureNotes, eraseNotes, uuidsWhere } from './crdt';
 import { changesNotes, scratchpadAsNote, toNote } from './notes';
 import { Note } from '../types';
 import { BIN_DAYS, db, dbName, deleteProfileDatabase, forgetProfileKey, getProfileKey, initDatabase, isProfileDatabaseOpen, isProfileEncrypted, openProfileConnection, openProfileDatabase, restoreProfileKey, setProfileEncryption, withDatabaseLock } from './database';
@@ -342,7 +343,7 @@ export const transferNotesToProfile = changesNotes(
         await targetDb.withExclusiveTransactionAsync(async txn => {
           for (const note of notes) {
             const res = await txn.runAsync(
-              'INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived) VALUES (?, ?, ?, ?, ?, ?, ?)',
+              `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ${UUID_SQL})`,
               [note.title, note.content, note.isMarkdown ? 1 : 0, note.createdAt, note.updatedAt, note.isPinned ? 1 : 0, note.isArchived ? 1 : 0]
             );
             const newId = res.lastInsertRowId;
@@ -355,22 +356,27 @@ export const transferNotesToProfile = changesNotes(
             }
           }
         });
+        await captureNotes(targetDb, insertedIds);
       } finally {
         await targetDb.closeAsync();
       }
+      // The notes move: the target has them under new uuids, so the source erases the old ones for good.
+      const movedUuids = await uuidsWhere(db, `id IN (${notes.map(() => '?').join(',')})`, notes.map(n => n.id));
       for (const note of notes) {
         await db.runAsync('DELETE FROM notes WHERE id = ?', [note.id]);
         await db.runAsync('DELETE FROM note_versions WHERE noteId = ?', [note.id]);
       }
+      await eraseNotes(db, movedUuids);
     });
     return changesNotes(async () => {
       await withDatabaseLock(async () => {
         for (const note of notes) {
           const res = await db.runAsync(
-            'INSERT INTO notes (id, title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+            `INSERT INTO notes (id, title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ${UUID_SQL})`,
             [note.id, note.title, note.content, note.isMarkdown ? 1 : 0, note.createdAt, note.updatedAt, note.isPinned ? 1 : 0, note.isArchived ? 1 : 0]
           );
           const restoredId = res.lastInsertRowId || note.id;
+          await captureNotes(db, [restoredId]);
           for (const v of versionsByNote.get(note.id) ?? []) {
             await db.runAsync(
               'INSERT INTO note_versions (noteId, title, content, isMarkdown, savedAt) VALUES (?, ?, ?, ?, ?)',
@@ -380,12 +386,14 @@ export const transferNotesToProfile = changesNotes(
         }
         const targetDb = await openProfileConnection(targetProfileId, { useNewConnection: true });
         try {
+          const insertedUuids = await uuidsWhere(targetDb, `id IN (${insertedIds.map(() => '?').join(',')})`, insertedIds);
           await targetDb.withExclusiveTransactionAsync(async txn => {
             for (const id of insertedIds) {
               await txn.runAsync('DELETE FROM notes WHERE id = ?', [id]);
               await txn.runAsync('DELETE FROM note_versions WHERE noteId = ?', [id]);
             }
           });
+          await eraseNotes(targetDb, insertedUuids);
         } finally {
           await targetDb.closeAsync();
         }

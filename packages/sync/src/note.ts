@@ -56,7 +56,9 @@ export const writeNote = (doc: Y.Doc, next: NoteState): Uint8Array | null => {
 // Builds a doc from stored updates, in any order and with repeats.
 export const docFromUpdates = (updates: Uint8Array[], clientID?: number): Y.Doc => {
   const doc = new Y.Doc();
-  if (clientID !== undefined) doc.clientID = clientID;
   doc.transact(() => updates.forEach(u => Y.applyUpdate(doc, u)));
+  // After the replay: updates this device wrote earlier carry this id, and Yjs swaps the id for a random one when
+  // it sees its own id arrive from "another client".
+  if (clientID !== undefined) doc.clientID = clientID;
   return doc;
 };

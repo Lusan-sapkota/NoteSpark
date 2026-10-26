@@ -1,6 +1,7 @@
 {
   "compilerOptions": {
     "strict": true,
+    "allowImportingTsExtensions": true,
     "target": "ES2023",
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -16,6 +17,9 @@
     "paths": {
       "@notespark/core": [
         "../packages/core/src/index.ts"
+      ],
+      "@notespark/sync": [
+        "../packages/sync/src/index.ts"
       ],
       "better-sqlite3-multiple-ciphers": [
         "./node_modules/better-sqlite3-multiple-ciphers/index.d.ts"
@@ -56,6 +60,8 @@
     "src",
     "electron.vite.config.ts",
     "../packages/core/src",
+    "../packages/sync/src",
+    "../Mobile/src/storage/crdt.ts",
     "../Mobile/src/storage/database.ts",
     "../Mobile/src/storage/notes.ts",
     "../Mobile/src/storage/profiles.ts",

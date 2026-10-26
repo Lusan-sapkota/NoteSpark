@@ -1,5 +1,6 @@
 export interface Note {
   id: number;
+  uuid?: string; // global id for sync; never changes (the numeric id is local to this device)
   title: string;
   content: string;
   isMarkdown: boolean;

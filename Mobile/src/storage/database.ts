@@ -2,6 +2,7 @@ import * as Crypto from 'expo-crypto';
 import { deleteAsync, getInfoAsync, moveAsync } from 'expo-file-system/legacy';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
+import { UUID_SQL, eraseNotes, initCrdt, reconcileOnce, uuidsWhere } from './crdt';
 
 export const dbName = (profileId: string) => (profileId === 'default' ? 'notespark.db' : `notespark-${profileId}.db`);
 
@@ -179,10 +180,16 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   await db.execAsync('ALTER TABLE notes ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0').catch(() => {});
   await db.execAsync('ALTER TABLE notes ADD COLUMN deletedAt TEXT').catch(() => {});
   await db.execAsync('ALTER TABLE notes ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0').catch(() => {});
+  // The global id sync uses; backfilled once, then set by every INSERT (UUID_SQL) and never changed.
+  await db.execAsync('ALTER TABLE notes ADD COLUMN uuid TEXT').catch(() => {});
+  await db.execAsync(`UPDATE notes SET uuid = ${UUID_SQL} WHERE uuid IS NULL OR uuid = ''`);
+  await db.execAsync('CREATE UNIQUE INDEX IF NOT EXISTS notes_uuid ON notes (uuid)');
+  await initCrdt(db);
   const now = new Date().toISOString();
-  await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', [
-    new Date(Date.now() - BIN_DAYS * 86400000).toISOString(),
-  ]);
+  const cutoff = [new Date(Date.now() - BIN_DAYS * 86400000).toISOString()];
+  const purged = await uuidsWhere(db, 'deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
+  await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
+  await eraseNotes(db, purged);
   // Earlier versions of each note (see saveVersion in notes.ts).
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS note_versions (
@@ -202,6 +209,7 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   );
   await db.runAsync("UPDATE notes SET createdAt = ? WHERE createdAt IS NULL OR createdAt = ''", [now]);
   await db.runAsync("UPDATE notes SET updatedAt = ? WHERE updatedAt IS NULL OR updatedAt = ''", [now]);
+  await reconcileOnce(db);
   await initSearchIndex(db);
 };
 

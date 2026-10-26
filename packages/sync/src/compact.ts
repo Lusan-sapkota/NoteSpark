@@ -4,8 +4,9 @@ import * as Y from 'yjs';
 export const COMPACT_UPDATES = 200;
 export const COMPACT_BYTES = 256 * 1024;
 
-export const needsCompaction = (updates: Uint8Array[]) =>
-  updates.length >= COMPACT_UPDATES || updates.reduce((n, u) => n + u.length, 0) >= COMPACT_BYTES;
+export const shouldCompact = (count: number, bytes: number) => count >= COMPACT_UPDATES || bytes >= COMPACT_BYTES;
+
+export const needsCompaction = (updates: Uint8Array[]) => shouldCompact(updates.length, updates.reduce((n, u) => n + u.length, 0));
 
 // One update with the same state: loading the doc first drops deleted text, which merging the bytes would keep.
 export const compact = (updates: Uint8Array[]): Uint8Array => {

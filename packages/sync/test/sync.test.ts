@@ -240,3 +240,25 @@ test(`property: ${SEEDS} seeded runs of three replicas converge (SEED=n replays 
     }
   }
 });
+
+test('store: updates kept as rows rebuild the note, the catalog and its tombstones', async () => {
+  const { noteUpdate, noteFromUpdates, catalogUpdate, readCatalog } = await import('../src/index.ts');
+  const rows: Uint8Array[] = [];
+  for (const state of [note(), note({ content: 'Hello again' }), note({ content: 'Hello again', isPinned: true })]) {
+    const u = noteUpdate(rows, 5, state);
+    assert.ok(u);
+    rows.push(u);
+  }
+  assert.equal(noteUpdate(rows, 5, note({ content: 'Hello again', isPinned: true })), null);
+  // One client id for all of this device's updates, however often the doc is rebuilt.
+  const ids = new Set(rows.map(u => Y.decodeUpdate(u).structs.map(s => s.id.client)).flat());
+  assert.deepEqual([...ids], [5]);
+  assert.deepEqual(noteFromUpdates(rows), note({ content: 'Hello again', isPinned: true }));
+
+  const catalog: Uint8Array[] = [];
+  catalog.push(catalogUpdate(catalog, 5, { live: ['a', 'b'] })!);
+  assert.equal(catalogUpdate(catalog, 5, { live: ['a'] }), null);
+  catalog.push(catalogUpdate(catalog, 5, { erased: ['b'] })!);
+  const { erased, known } = readCatalog(catalog);
+  assert.deepEqual([[...erased], [...known].sort()], [['b'], ['a', 'b']]);
+});

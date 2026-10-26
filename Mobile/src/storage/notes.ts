@@ -1,6 +1,7 @@
 // All note reads and writes. database.ts only opens the database and runs migrations.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './database';
+import { UUID_SQL, captureNotes, eraseNotes, uuidsWhere } from './crdt';
 import { Note, NoteVersion } from '../types';
 import { TaskLine, toggleTaskLine } from '@notespark/core';
 import { renameLinks } from '@notespark/core';
@@ -121,10 +122,11 @@ export const getScratchpadNote = async (): Promise<Note> => {
 export const saveNote = changesNotes(async (note: Omit<Note, 'id' | 'isPinned' | 'isArchived'>): Promise<number> => {
   const now = new Date().toISOString();
   const result = await db.runAsync(
-    `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?)`,
+    `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, uuid) VALUES (?, ?, ?, ?, ?, ${UUID_SQL})`,
     [note.title, note.content, note.isMarkdown ? 1 : 0, now, now]
   );
   if (result.lastInsertRowId) {
+    await captureNotes(db, [result.lastInsertRowId]);
     return result.lastInsertRowId;
   } else {
     throw new Error('Failed to insert note');
@@ -168,6 +170,7 @@ export const updateNote = changesNotes(async (
     [note.title, note.content, note.isMarkdown ? 1 : 0, now, note.id]
   );
   if (result.changes === 0) throw new Error('Note not found or no changes made');
+  await captureNotes(db, [note.id]);
   if (old) await updateLinksAfterRename(note.id, old.title, note.title);
 });
 
@@ -181,18 +184,25 @@ const updateLinksAfterRename = async (id: number, from: string, to: string) => {
   );
   const others = await db.getAllAsync<{ title: string }>('SELECT title FROM notes WHERE id != ? AND deletedAt IS NULL', [id]);
   if (others.some(n => key(n.title) === key(from))) return;
+  const changed: number[] = [];
   for (const row of rows) {
     const content = renameLinks(row.content, from, to);
-    if (content !== row.content) await db.runAsync('UPDATE notes SET content = ? WHERE id = ?', [content, row.id]);
+    if (content !== row.content) {
+      await db.runAsync('UPDATE notes SET content = ? WHERE id = ?', [content, row.id]);
+      changed.push(row.id);
+    }
   }
+  await captureNotes(db, changed);
 };
 
 export const moveNoteToBin = changesNotes(async (id: number): Promise<void> => {
   await db.runAsync('UPDATE notes SET deletedAt = ? WHERE id = ?', [new Date().toISOString(), id]);
+  await captureNotes(db, [id]);
 });
 
 export const restoreNote = changesNotes(async (id: number): Promise<void> => {
   await db.runAsync('UPDATE notes SET deletedAt = NULL WHERE id = ?', [id]);
+  await captureNotes(db, [id]);
 });
 
 export const getBinNotes = async (): Promise<Note[]> => {
@@ -201,16 +211,20 @@ export const getBinNotes = async (): Promise<Note[]> => {
 };
 
 export const emptyBin = changesNotes(async (): Promise<void> => {
+  const uuids = await uuidsWhere(db, 'deletedAt IS NOT NULL');
   await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL');
+  await eraseNotes(db, uuids);
 });
 
 // Erases the note for good; the app moves notes to the bin first.
 export const deleteNote = changesNotes(async (id: number): Promise<void> => {
+  const uuids = await uuidsWhere(db, 'id = ?', [id]);
   const result = await db.runAsync(
     'DELETE FROM notes WHERE id = ?',
     [id]
   );
   if (result.changes > 0) {
+    await eraseNotes(db, uuids);
     return;
   } else {
     throw new Error('Note not found');
@@ -220,6 +234,7 @@ export const deleteNote = changesNotes(async (id: number): Promise<void> => {
 // Pinning isn't an edit, so updatedAt stays as it is.
 export const setNotePinned = changesNotes(async (id: number, pinned: boolean): Promise<void> => {
   await db.runAsync('UPDATE notes SET isPinned = ? WHERE id = ?', [pinned ? 1 : 0, id]);
+  await captureNotes(db, [id]);
 });
 
 // Archiving unpins the note (like Keep), so the archive has no pinned group. Not an edit: updatedAt stays.
@@ -228,6 +243,7 @@ export const setNoteArchived = changesNotes(async (id: number, archived: boolean
     `UPDATE notes SET isArchived = ?, isPinned = CASE WHEN ? THEN 0 ELSE isPinned END WHERE id = ?`,
     [archived ? 1 : 0, archived ? 1 : 0, id]
   );
+  await captureNotes(db, [id]);
 });
 
 // The line as written now, and the next due date if the task repeats; null if the line changed meanwhile.
@@ -254,20 +270,29 @@ export const restoreTaskLine = async (noteId: number, line: number, current: str
   return true;
 };
 
+const idsWhere = async (where: string, params: unknown[] = []) =>
+  (await db.getAllAsync<{ id: number }>(`SELECT id FROM notes WHERE ${where}`, params as any)).map(r => r.id);
+
 // Returns the deletion time, which marks this batch for restoreBatch.
 export const moveAllNotesToBin = changesNotes(async (): Promise<string> => {
   const now = new Date().toISOString();
+  const ids = await idsWhere('deletedAt IS NULL');
   await db.runAsync('UPDATE notes SET deletedAt = ? WHERE deletedAt IS NULL', [now]);
+  await captureNotes(db, ids);
   return now;
 });
 
 export const restoreBatch = changesNotes(async (deletedAt: string): Promise<void> => {
+  const ids = await idsWhere('deletedAt = ?', [deletedAt]);
   await db.runAsync('UPDATE notes SET deletedAt = NULL WHERE deletedAt = ?', [deletedAt]);
+  await captureNotes(db, ids);
 });
 
 // Erases every note outside the bin; the bin is untouched.
 export const deleteAllNotesForever = changesNotes(async (): Promise<void> => {
+  const uuids = await uuidsWhere(db, 'deletedAt IS NULL');
   await db.runAsync('DELETE FROM notes WHERE deletedAt IS NULL');
+  await eraseNotes(db, uuids);
 });
 
 export const exportNotesAsJson = async (): Promise<string> => {
@@ -293,6 +318,8 @@ export const importNotes = changesNotes(async (notes: any[], mode: ImportMode): 
     throw new Error('No valid notes found in import data.');
   }
   let imported = 0;
+  const added: number[] = [];
+  const replaced = mode === 'replace' ? await uuidsWhere(db, '1 = 1') : [];
   await db.withExclusiveTransactionAsync(async txn => {
     if (mode === 'replace') {
       await txn.runAsync('DELETE FROM notes');
@@ -308,8 +335,8 @@ export const importNotes = changesNotes(async (notes: any[], mode: ImportMode): 
         if (seen.has(key)) continue;
         seen.add(key);
       }
-      await txn.runAsync(
-        `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      const inserted = await txn.runAsync(
+        `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ${UUID_SQL})`,
         [
           note.title,
           note.content,
@@ -320,8 +347,11 @@ export const importNotes = changesNotes(async (notes: any[], mode: ImportMode): 
           note.isArchived ? 1 : 0,
         ]
       );
+      added.push(inserted.lastInsertRowId);
       imported++;
     }
   });
+  await eraseNotes(db, replaced);
+  await captureNotes(db, added);
   return { imported, skipped: valid.length - imported };
 });
