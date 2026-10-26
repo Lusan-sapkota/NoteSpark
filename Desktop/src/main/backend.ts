@@ -10,6 +10,7 @@ type Handler = { local?: boolean; run: (args: any, from: 'ipc' | 'http') => unkn
 const handlers: Record<string, Handler> = {
   // The storage and settings code loads on first use, so a tray-only app stays small.
   storage: { run: async (args, from) => (await import('./storage')).callStorage(args as any, from) },
+  'search:available': { run: async () => (await import('./storage')).searchAvailable() },
   'lock:status': { run: async () => (await import('./storage')).lockStatus() },
   'lock:unlock': { local: true, run: async args => (await import('./storage')).unlock(args) },
   'lock:erase': { local: true, run: async () => (await import('./storage')).eraseLocked() },

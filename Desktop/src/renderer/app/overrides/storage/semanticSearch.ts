@@ -1,5 +1,10 @@
-// Search by meaning needs the ONNX model and sqlite-vec, which come to the desktop later (phase 5).
-export const isMeaningSearchAvailable = () => false;
-export const searchByMeaning = async (_query: string): Promise<number[] | null> => null;
-export const syncSearchIndex = async (): Promise<void> => {};
-export const relatedNotes = async (_noteId: number, _limit = 5): Promise<number[]> => [];
+// Stands in for Mobile/src/storage/semanticSearch.ts in the desktop renderer: the model and the vector index run in the
+// main process. The phone's availability check is synchronous, so the shell asks once at start and stores the answer.
+import type * as Real from '../../../../../../Mobile/src/storage/semanticSearch';
+import { storageProxy } from '../../bridge';
+
+let available = false;
+export const setMeaningSearchAvailable = (value: boolean) => { available = value; };
+export const isMeaningSearchAvailable = () => available;
+
+export const { searchByMeaning, syncSearchIndex, relatedNotes } = storageProxy<typeof Real>('semanticSearch', ['searchByMeaning', 'syncSearchIndex', 'relatedNotes'] as const);

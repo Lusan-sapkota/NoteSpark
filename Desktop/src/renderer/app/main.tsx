@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { invoke, isDesktop, WebStatus } from './bridge';
 import logo from './round.png';
 import { Navigator } from './nav';
+import { setMeaningSearchAvailable } from './overrides/storage/semanticSearch';
 // The phone's real screens, theme and shared components, imported straight from Mobile/.
 import { ThemeProvider, useTheme } from '../../../../Mobile/src/theme/ThemeContext';
 import { readingWidth, space } from '../../../../Mobile/src/theme/theme';
@@ -138,6 +139,7 @@ const Shell = () => {
   const [lock, setLock] = useState<LockState | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<boolean | null>(null);
+  const [searchKnown, setSearchKnown] = useState(false); // Home reads the answer when it first draws
   const opened = useRef(false); // once the notes have been open, a lock covers them instead of replacing them
 
   const refresh = useCallback(() => {
@@ -145,6 +147,7 @@ const Shell = () => {
   }, []);
   useEffect(() => {
     refresh();
+    invoke<boolean>('search:available').then(setMeaningSearchAvailable, () => setMeaningSearchAvailable(false)).finally(() => setSearchKnown(true));
     invoke<string | null>('settings', { op: 'get', key: 'onboarded' }).then(v => setOnboarding(v !== 'true'), () => setOnboarding(false));
     // Re-check whenever the window comes back, a call finds the profile locked, or the app locks it.
     window.addEventListener('focus', refresh);
@@ -181,7 +184,7 @@ const Shell = () => {
         <Button mode="contained" onPress={refresh} style={{ alignSelf: 'flex-start', marginTop: space.xl }}>Try again</Button>
       </View>
     );
-  } else if (!lock || onboarding === null) {
+  } else if (!lock || onboarding === null || !searchKnown) {
     body = <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" /></View>;
   } else if (lock.phase === 'unreadable' && lock.profile) {
     body = <UnreadableProfile profileName={lock.profile.name} onRetry={() => invoke('lock:retry').then(refresh)} onErase={erase} />;

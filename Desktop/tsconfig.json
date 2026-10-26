@@ -37,6 +37,15 @@
       ],
       "@react-native-async-storage/async-storage": [
         "./src/main/shims/async-storage.ts"
+      ],
+      "react-native": [
+        "./src/main/shims/react-native.ts"
+      ],
+      "expo-asset": [
+        "./src/main/shims/expo-asset.ts"
+      ],
+      "onnxruntime-react-native": [
+        "./node_modules/onnxruntime-node"
       ]
     },
     "jsx": "react-jsx",
@@ -50,7 +59,8 @@
     "../Mobile/src/storage/database.ts",
     "../Mobile/src/storage/notes.ts",
     "../Mobile/src/storage/profiles.ts",
-    "../Mobile/src/storage/autoBackup.ts"
+    "../Mobile/src/storage/autoBackup.ts",
+    "../Mobile/src/storage/semanticSearch.ts"
   ],
   "exclude": [
     "src/renderer/app"

@@ -5,10 +5,11 @@ import * as autoBackup from '../../../Mobile/src/storage/autoBackup';
 import * as database from '../../../Mobile/src/storage/database';
 import * as notes from '../../../Mobile/src/storage/notes';
 import * as profiles from '../../../Mobile/src/storage/profiles';
+import * as semanticSearch from '../../../Mobile/src/storage/semanticSearch';
 import { idleMs, watchAway } from './activity';
 import AsyncStorage from './shims/async-storage';
 
-const modules = { notes, profiles, database, autoBackup } as Record<string, Record<string, unknown>>;
+const modules = { notes, profiles, database, autoBackup, semanticSearch } as Record<string, Record<string, unknown>>;
 // Backups write into a folder chosen in a system dialog on this computer, so only the desktop window may change them.
 const desktopOnly = new Set(['autoBackup']);
 
@@ -71,6 +72,9 @@ const start = () =>
       } catch {}
     });
   })());
+
+// Whether the search model and the vector index can be used here (the phone's own check).
+export const searchAvailable = () => semanticSearch.isMeaningSearchAvailable();
 
 export const lockStatus = async () => {
   await start();

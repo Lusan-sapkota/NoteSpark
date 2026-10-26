@@ -21,7 +21,8 @@
     "vite": "8.3.5"
   },
   "allowScripts": {
-    "electron-winstaller": false
+    "electron-winstaller": false,
+    "onnxruntime-node": false
   },
   "homepage": "https://github.com/Lusan-Sapkota/NoteSpark",
   "build": {
@@ -29,7 +30,16 @@
     "productName": "NoteSpark",
     "files": [
       "out/**",
-      "resources/icon.png"
+      "resources/icon.png",
+      "!node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
+      "!node_modules/onnxruntime-node/bin/napi-v6/win32/**",
+      "!node_modules/onnxruntime-node/bin/napi-v6/linux/arm64/**",
+      "!node_modules/onnxruntime-node/bin/napi-v6/linux/x64/libonnxruntime_providers_*.so",
+      "!node_modules/onnxruntime-node/script/**",
+      "!node_modules/adm-zip/**",
+      "!node_modules/global-agent/**",
+      "!node_modules/better-sqlite3-multiple-ciphers/{deps,src,build}/**",
+      "!node_modules/better-sqlite3-multiple-ciphers/prebuilds/{darwin,win32,linuxmusl,linux-arm64}*"
     ],
     "electronLanguages": [
       "en-US"
@@ -44,16 +54,33 @@
       "category": "Office",
       "icon": "resources/icon.png",
       "maintainer": "Lusan Sapkota <lusan@aigeeks.dev>"
-    }
+    },
+    "asarUnpack": [
+      "node_modules/onnxruntime-node/bin/**",
+      "node_modules/sqlite-vec-*/**",
+      "node_modules/better-sqlite3-multiple-ciphers/prebuilds/**"
+    ],
+    "extraResources": [
+      {
+        "from": "../Mobile/assets/models",
+        "to": "models",
+        "filter": [
+          "all-MiniLM-L6-v2-int8.onnx",
+          "all-MiniLM-L6-v2-vocab.txt"
+        ]
+      }
+    ]
   },
   "dependencies": {
     "@expo/vector-icons": "15.1.1",
     "better-sqlite3-multiple-ciphers": "13.0.3",
     "fflate": "0.8.3",
+    "onnxruntime-node": "1.24.3",
     "react": "19.3.0",
     "react-dom": "19.3.0",
     "react-native-markdown-display": "7.0.2",
     "react-native-paper": "5.15.3",
-    "react-native-web": "0.21.4"
+    "react-native-web": "0.21.4",
+    "sqlite-vec": "0.1.9"
   }
 }

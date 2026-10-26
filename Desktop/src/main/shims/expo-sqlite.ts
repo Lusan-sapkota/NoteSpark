@@ -1,12 +1,14 @@
 // Just enough of expo-sqlite for the phone's storage code (Mobile/src/storage), on better-sqlite3-multiple-ciphers.
 // The native module loads on first open, so a tray-only app never pays for it.
 import { mkdirSync, rmSync } from 'node:fs';
-import { join } from 'node:path';
+import { createRequire } from 'node:module';
+import { join, sep } from 'node:path';
 import { databaseDir } from './paths';
 
 type Raw = {
   prepare(sql: string): { all(...p: unknown[]): any[]; get(...p: unknown[]): any; run(...p: unknown[]): { changes: number; lastInsertRowid: number | bigint } };
   exec(sql: string): void;
+  loadExtension(path: string, entryPoint?: string): void;
   close(): void;
 };
 type Params = unknown[] | [unknown[]];
@@ -38,7 +40,18 @@ const exportAll = (raw: Raw, schema: string) => {
 };
 
 export const defaultDatabaseDirectory = databaseDir();
-export const bundledExtensions: Record<string, { libPath: string; entryPoint: string } | undefined> = {}; // no sqlite-vec yet
+// The vector index for search by meaning. Looked up on first use; a packaged app keeps the library outside app.asar.
+const nodeRequire = createRequire(__filename);
+export const bundledExtensions: Record<string, { libPath: string; entryPoint: string } | undefined> = {
+  get 'sqlite-vec'() {
+    try {
+      const libPath = (nodeRequire('sqlite-vec') as { getLoadablePath(): string }).getLoadablePath().replace(`app.asar${sep}`, `app.asar.unpacked${sep}`);
+      return { libPath, entryPoint: 'sqlite3_vec_init' };
+    } catch {
+      return undefined;
+    }
+  },
+};
 
 export class SQLiteDatabase {
   // Calls run in order; an exclusive transaction holds the queue until it finishes.
@@ -81,7 +94,7 @@ export class SQLiteDatabase {
   getFirstAsync<T = any>(sql: string, ...p: Params): Promise<T | null> { return this.serial(() => this.ops().getFirstAsync(sql, ...p)); }
   runAsync(sql: string, ...p: Params): Promise<{ changes: number; lastInsertRowId: number }> { return this.serial(() => this.ops().runAsync(sql, ...p)); }
   execAsync(sql: string): Promise<void> { return this.serial(() => this.ops().execAsync(sql)); }
-  loadExtensionAsync(_path?: string, _entry?: string): Promise<void> { return Promise.reject(new Error('Extensions are not supported on desktop yet')); }
+  loadExtensionAsync(path: string, entryPoint?: string): Promise<void> { return this.serial(() => this.db().loadExtension(path, entryPoint)); }
   closeAsync(): Promise<void> {
     return this.serial(() => { this.raw?.close(); this.raw = null; });
   }

@@ -1,5 +1,5 @@
 // The file calls the phone's storage code makes: moving and deleting database files, and writing backups into a folder.
-import { existsSync, mkdirSync, readdirSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { BrowserWindow, dialog } from 'electron';
@@ -8,6 +8,7 @@ const path = (uri: string) => (uri.startsWith('file://') ? fileURLToPath(uri) : 
 export const getInfoAsync = async (uri: string) => ({ exists: existsSync(path(uri)) });
 export const deleteAsync = async (uri: string, _options?: { idempotent?: boolean }) => rmSync(path(uri), { force: true });
 export const moveAsync = async ({ from, to }: { from: string; to: string }) => renameSync(path(from), path(to));
+export const readAsStringAsync = async (uri: string, _options?: unknown) => readFileSync(path(uri), 'utf8');
 export const writeAsStringAsync = async (uri: string, text: string) => writeFileSync(path(uri), text, { mode: 0o600 });
 
 // Android's folder picker (SAF) becomes the system folder dialog; a "folder address" is a plain path.

@@ -18,6 +18,9 @@ const shim = (name: string) => resolve(__dirname, 'src/main/shims', name);
 const expoShims = [
   { find: 'expo-file-system/legacy', replacement: shim('expo-file-system-legacy.ts') },
   { find: 'expo-sqlite', replacement: shim('expo-sqlite.ts') },
+  { find: 'expo-asset', replacement: shim('expo-asset.ts') },
+  { find: 'react-native', replacement: shim('react-native.ts') },
+  { find: 'onnxruntime-react-native', replacement: 'onnxruntime-node' }, // same API, for Node
   { find: 'expo-crypto', replacement: shim('expo-crypto.ts') },
   { find: 'expo-secure-store', replacement: shim('expo-secure-store.ts') },
   { find: 'expo-local-authentication', replacement: shim('expo-local-authentication.ts') },
@@ -25,7 +28,26 @@ const expoShims = [
 ];
 
 export default defineConfig({
-  main: { resolve: { alias: [{ find: '@notespark/core', replacement: alias['@notespark/core'] }, ...expoShims] } },
+  main: {
+    plugins: [
+      {
+        // The phone loads the model and runs it inside loadEmbedder(). Here that function is replaced by one that asks the
+        // helper process in src/main/embedder.ts; the rest of the search code (chunks, index, queries) is untouched.
+        name: 'embedder-in-helper-process',
+        enforce: 'pre',
+        transform: (code, id) => {
+          if (!id.endsWith('Mobile/src/storage/semanticSearch.ts')) return null;
+          const start = code.indexOf('const loadEmbedder = async (): Promise<Embed> => {');
+          const end = code.indexOf('\n};\n\nconst getEmbedder', start);
+          if (start < 0 || end < 0) throw new Error(`embedder-in-helper-process: loadEmbedder not found in ${id}`);
+          return `import { embedInWorker } from '${resolve(__dirname, 'src/main/embedder.ts')}';\n` + code.slice(0, start) + 'const loadEmbedder = async (): Promise<Embed> => embedInWorker;' + code.slice(end + 3);
+        },
+      },
+    ],
+    resolve: { alias: [{ find: '@notespark/core', replacement: alias['@notespark/core'] }, ...expoShims] },
+    // The search model's helper process is a second entry next to the main one.
+    build: { rollupOptions: { input: { index: resolve(__dirname, 'src/main/index.ts'), 'embed-worker': resolve(__dirname, 'src/main/embed-worker.ts') } } },
+  },
   preload: { resolve: { alias } },
   renderer: {
     plugins: [
