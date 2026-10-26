@@ -47,11 +47,13 @@ const quitIfIdle = async () => {
 
 // The header is the window's title bar (the app draws it); Electron draws the minimise, maximise and close buttons on
 // top of it. Their colors come from the theme tokens and follow light and dark.
-const HEADER_HEIGHT = 56;
+const HEADER_HEIGHT = 64;
+let zoomNow = 1; // the header grows with the zoom, so the window buttons Electron draws over it must too
 const chrome = () => {
   const colors = nativeTheme.shouldUseDarkColors ? firefly.dark : firefly.light;
-  return { color: colors.background, symbolColor: colors.onSurface, height: HEADER_HEIGHT };
+  return { color: colors.surfaceContainerLow, symbolColor: colors.onSurface, height: Math.round(HEADER_HEIGHT * zoomNow) };
 };
+const pageColor = () => (nativeTheme.shouldUseDarkColors ? firefly.dark : firefly.light).background;
 
 // The app's size. 100 % reads small on a large monitor, so it starts bigger there (by the width in points of the screen the
 // window is on: 1536 on a 1920 panel and 2048 on a 2560 one, both at 125 % scaling, get 125 %);
@@ -62,7 +64,12 @@ const autoZoom = () => {
   return width >= 2200 ? 1.5 : width >= 1400 ? 1.25 : 1;
 };
 const currentZoom = async () => Number(await AsyncStorage.getItem('zoomFactor')) || autoZoom();
-const applyZoom = async () => { if (window && !window.isDestroyed()) window.webContents.setZoomFactor(await currentZoom()); };
+const applyZoom = async () => {
+  if (!window || window.isDestroyed()) return;
+  zoomNow = await currentZoom();
+  window.webContents.setZoomFactor(zoomNow);
+  window.setTitleBarOverlay(chrome());
+};
 const changeZoom = async (step: 1 | -1 | 0) => {
   const now = await currentZoom();
   if (step === 0) await AsyncStorage.removeItem('zoomFactor');
@@ -82,7 +89,7 @@ const createWindow = () => {
     titleBarStyle: 'hidden',
     titleBarOverlay: chrome(),
     autoHideMenuBar: true, // the menu lives in the global menu; Alt still shows it where there is none
-    backgroundColor: chrome().color, // the theme's background, so there is no white flash
+    backgroundColor: pageColor(), // the theme's background, so there is no white flash
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

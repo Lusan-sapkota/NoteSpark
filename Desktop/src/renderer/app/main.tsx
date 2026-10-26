@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { Image, Pressable, StyleSheet, View } from 'react-native';
+import { Image, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { ActivityIndicator, Banner, Button, Icon, IconButton, PaperProvider, Text, Tooltip as PaperTooltip, TooltipProps } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { invoke, isDesktop, WebStatus } from './bridge';
@@ -77,34 +77,42 @@ const useWindowButtons = () => {
   return room;
 };
 
-// The header: logo, the places, and (desktop window only) the web view switch, on one row that is also the window's
-// title bar (drag it to move the window). The current place sits in a tonal pill with a filled icon; every place has a tooltip. Screens keep their own title row below, on the same background, so the two read as one header.
+// The header: logo and name, the places, and (desktop window only) the web view switch, on one row that is also the
+// window's title bar (drag it to move the window). It sits on a tonal surface so the screen's own title row below reads
+// as the page, not as a second bar. Each place is a labelled pill (icon only in a narrow window); the current one is
+// filled in the secondary container with a solid icon, and its tooltip carries the shortcut.
 const TopBar = () => {
   const { theme } = useTheme();
   const here = useCurrentNavigation();
   const room = useWindowButtons();
+  const { width } = useWindowDimensions();
   const [web, setWeb] = useState<WebStatus | null>(null);
   useEffect(() => { if (isDesktop) invoke<WebStatus>('web:status').then(setWeb).catch(() => {}); }, []);
   const toggle = () =>
     invoke<WebStatus>(web?.on ? 'web:stop' : 'web:start').then(w => { setWeb(w); window.notespark?.refreshTray(); }, e => console.error(e));
   const tip = { enterTouchDelay: 250, leaveTouchDelay: 150 };
   const quiet = theme.colors.onSurfaceVariant;
+  const mod = /Mac/.test(navigator.platform) ? '\u2318' : 'Ctrl+';
+  const showName = width >= 760;
+  const showLabels = width >= 600;
   return (
     <>
-      <View dataSet={{ drag: '' }} style={{ height: 56, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg + room.left, paddingRight: space.sm + room.right, backgroundColor: theme.colors.background }}>
-        <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 32, height: 32, marginRight: space.lg }} />
-        <View dataSet={{ nodrag: '' }} style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs }}>
-          {here && destinations.map(d => {
+      <View dataSet={{ drag: '' }} style={{ height: 64, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg + room.left, paddingRight: space.sm + room.right, backgroundColor: theme.colors.surfaceContainerLow }}>
+        <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 36, height: 36 }} />
+        {showName && <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginLeft: space.md }}>NoteSpark</Text>}
+        <View dataSet={{ nodrag: '' }} style={{ flexDirection: 'row', alignItems: 'center', gap: space.xs, marginLeft: showName ? space.xl : space.lg }}>
+          {here && destinations.map((d, i) => {
             const active = d.covers.includes(here.route.name);
-            // Material's navigation indicator: a 56 by 32 pill behind the icon marks where you are, so the row never
-            // shifts as you move; the name is in the tooltip, and in the title row of the screen below.
             return (
-              <Tooltip key={d.name} title={d.label} {...tip}>
-                <Pressable accessibilityRole="button" accessibilityLabel={d.label} accessibilityState={{ selected: active }} aria-current={active ? "page" : undefined} hitSlop={{ top: 4, bottom: 4 }} onPress={() => goTo(here.nav, d.name)}
-                  style={{ width: 56, height: 40, alignItems: 'center', justifyContent: 'center' }}>
-                  <View style={{ width: 56, height: 32, borderRadius: shape.full, alignItems: 'center', justifyContent: 'center', backgroundColor: active ? theme.colors.secondaryContainer : 'transparent' }}>
-                    <Icon source={active ? d.icon : d.outline} size={24} color={active ? theme.colors.onSecondaryContainer : quiet} />
-                  </View>
+              <Tooltip key={d.name} title={`${d.label}  ${mod}${i + 1}`} {...tip}>
+                <Pressable accessibilityRole="button" accessibilityLabel={d.label} accessibilityState={{ selected: active }} aria-current={active ? 'page' : undefined} onPress={() => goTo(here.nav, d.name)}
+                  style={({ hovered, pressed }: any) => ({
+                    height: 40, minWidth: 40, paddingHorizontal: showLabels || active ? space.lg : 0, borderRadius: shape.full,
+                    flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: space.sm,
+                    backgroundColor: active ? theme.colors.secondaryContainer : hovered || pressed ? theme.colors.surfaceContainerHighest : 'transparent',
+                  })}>
+                  <Icon source={active ? d.icon : d.outline} size={20} color={active ? theme.colors.onSecondaryContainer : quiet} />
+                  {(showLabels || active) && <Text variant="labelLarge" style={{ color: active ? theme.colors.onSecondaryContainer : quiet }}>{d.label}</Text>}
                 </Pressable>
               </Tooltip>
             );
@@ -114,9 +122,15 @@ const TopBar = () => {
         {isDesktop && (
           <View dataSet={{ nodrag: '' }}>
             <Tooltip title={web?.on ? 'Stop web view' : 'Start web view'} {...tip}>
-              <IconButton icon={web?.on ? 'web-off' : 'web'} size={22} mode={web?.on ? 'contained' : undefined} selected={!!web?.on}
-                iconColor={web?.on ? theme.colors.onPrimary : quiet} containerColor={web?.on ? theme.colors.primary : undefined}
-                accessibilityLabel={web?.on ? 'Stop web view' : 'Start web view'} onPress={toggle} style={{ margin: 0, width: 40, height: 40 }} />
+              {web?.on ? (
+                <Pressable accessibilityRole="button" accessibilityLabel="Stop web view" onPress={toggle}
+                  style={({ hovered }: any) => ({ height: 40, paddingHorizontal: space.lg, borderRadius: shape.full, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: theme.colors.tertiaryContainer, opacity: hovered ? 0.9 : 1 })}>
+                  <Icon source="web" size={20} color={theme.colors.onTertiaryContainer} />
+                  <Text variant="labelLarge" style={{ color: theme.colors.onTertiaryContainer }}>Web view on</Text>
+                </Pressable>
+              ) : (
+                <IconButton icon="web" size={22} iconColor={quiet} accessibilityLabel="Start web view" onPress={toggle} style={{ margin: 0, width: 40, height: 40 }} />
+              )}
             </Tooltip>
           </View>
         )}
