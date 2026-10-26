@@ -46,23 +46,30 @@ const Tooltip = (props: TooltipProps) => {
   return <PaperTooltip {...props} theme={{ colors: { onSurface: theme.colors.surfaceContainerHighest, surface: theme.colors.onSurface } }} />;
 };
 
-// How much room the window's own buttons (minimise, maximise, close) take at each end of the header. The header is the
-// title bar, so it leaves that room free; in a browser (the web view) there are no such buttons and the room is 0.
-const useWindowButtons = () => {
-  const [room, setRoom] = useState({ left: 0, right: 0 });
+// The window's own minimise, maximise and close buttons (the desktop window has no frame, and the system's buttons are
+// too small to hit comfortably). Each is 48 wide and as high as the bar; closing is red on hover.
+const WindowButtons = () => {
+  const { theme } = useTheme();
+  const [maximized, setMaximized] = useState(false);
   useEffect(() => {
-    const overlay = (navigator as any).windowControlsOverlay;
-    if (!overlay?.visible) return;
-    const measure = () => {
-      const area = overlay.getTitlebarAreaRect();
-      setRoom({ left: Math.round(area.x), right: Math.max(0, Math.round(window.innerWidth - area.x - area.width)) });
-    };
-    measure();
-    overlay.addEventListener('geometrychange', measure);
-    window.addEventListener('resize', measure);
-    return () => { overlay.removeEventListener('geometrychange', measure); window.removeEventListener('resize', measure); };
+    window.notespark?.windowControl('state').then(state => state && setMaximized(state.maximized), () => {});
+    window.notespark?.onWindowState(state => setMaximized(state.maximized));
   }, []);
-  return room;
+  const buttons = [
+    { action: 'minimize', label: 'Minimize', icon: 'window-minimize' },
+    { action: 'maximize', label: maximized ? 'Restore' : 'Maximize', icon: maximized ? 'window-restore' : 'window-maximize' },
+    { action: 'close', label: 'Close', icon: 'window-close' },
+  ] as const;
+  return (
+    <View dataSet={{ nodrag: '' }} style={{ flexDirection: 'row', alignSelf: 'stretch', marginLeft: space.sm }}>
+      {buttons.map(b => (
+        <Pressable key={b.action} accessibilityRole="button" accessibilityLabel={b.label} onPress={() => { void window.notespark?.windowControl(b.action); }}
+          style={({ hovered, pressed }: any) => ({ width: 48, alignItems: 'center', justifyContent: 'center', backgroundColor: hovered || pressed ? (b.action === 'close' ? theme.colors.error : theme.colors.surfaceContainerHighest) : 'transparent' })}>
+          {({ hovered, pressed }: any) => <Icon source={b.icon} size={18} color={(hovered || pressed) && b.action === 'close' ? theme.colors.onError : theme.colors.onSurface} />}
+        </Pressable>
+      ))}
+    </View>
+  );
 };
 
 // The header: logo and name, and (desktop window only) the web view switch, on one row that is also the window's title
@@ -70,7 +77,6 @@ const useWindowButtons = () => {
 // as a second bar. The places (Scratchpad, Tasks, Settings) are buttons in the Notes title row, as on the phone.
 const TopBar = () => {
   const { theme } = useTheme();
-  const room = useWindowButtons();
   const { width } = useWindowDimensions();
   const [web, setWeb] = useState<WebStatus | null>(null);
   useEffect(() => { if (isDesktop) invoke<WebStatus>('web:status').then(setWeb).catch(() => {}); }, []);
@@ -103,7 +109,7 @@ const TopBar = () => {
   const showName = width >= 760;
   return (
     <View style={{ zIndex: 20 }}>
-      <View dataSet={{ drag: '' }} style={{ height: 48, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg + room.left, paddingRight: space.sm + room.right, backgroundColor: theme.colors.surfaceContainerLow }}>
+      <View dataSet={{ drag: '' }} style={{ height: 48, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg, paddingRight: isDesktop ? 0 : space.sm, backgroundColor: theme.colors.surfaceContainerLow }}>
         <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 28, height: 28 }} />
         {showName && <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginLeft: space.md }}>NoteSpark</Text>}
         <View style={{ flex: 1 }} />
@@ -123,6 +129,7 @@ const TopBar = () => {
             </Tooltip>
           </View>
         )}
+        {isDesktop && <WindowButtons />}
       </View>
       {mounted && (
         <>
@@ -189,6 +196,15 @@ const Shell = () => {
   const listening = useRef(false);
   useEffect(() => {
     if (here && !listening.current && window.notespark?.onMenu) { listening.current = true; window.notespark.onMenu(action => menuHandler.current(action)); }
+  }, [here]);
+  // Back without the arrow: Alt+Left, or the mouse's back button (the arrow sits at the top left of each screen).
+  useEffect(() => {
+    const back = () => { if (here?.nav.canGoBack()) here.nav.goBack(); };
+    const key = (e: KeyboardEvent) => { if (e.altKey && e.key === 'ArrowLeft') { e.preventDefault(); back(); } };
+    const mouse = (e: MouseEvent) => { if (e.button === 3) { e.preventDefault(); back(); } };
+    window.addEventListener('keydown', key);
+    window.addEventListener('mouseup', mouse);
+    return () => { window.removeEventListener('keydown', key); window.removeEventListener('mouseup', mouse); };
   }, [here]);
   const [lock, setLock] = useState<LockState | null>(null);
   const [error, setError] = useState<string | null>(null);

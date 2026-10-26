@@ -45,14 +45,8 @@ const quitIfIdle = async () => {
   if (BrowserWindow.getAllWindows().length === 0 && !(await keepsRunning())) app.quit();
 };
 
-// The header is the window's title bar (the app draws it); Electron draws the minimise, maximise and close buttons on
-// top of it. Their colors come from the theme tokens and follow light and dark.
-const HEADER_HEIGHT = 48;
-let zoomNow = 1; // the header grows with the zoom, so the window buttons Electron draws over it must too
-const chrome = () => {
-  const colors = nativeTheme.shouldUseDarkColors ? firefly.dark : firefly.light;
-  return { color: colors.surfaceContainerLow, symbolColor: colors.onSurface, height: Math.round(HEADER_HEIGHT * zoomNow) };
-};
+// The header is the window's title bar and draws its own minimise, maximise and close buttons (the system's are too
+// small to hit comfortably and their size can't be changed), so the window has no frame: see the 'window:control' channel.
 const pageColor = () => (nativeTheme.shouldUseDarkColors ? firefly.dark : firefly.light).background;
 
 // The app's size. 100 % reads small on a large monitor, so it starts bigger there (by the width in points of the screen the
@@ -64,12 +58,7 @@ const autoZoom = () => {
   return width >= 2200 ? 1.5 : width >= 1400 ? 1.25 : 1;
 };
 const currentZoom = async () => Number(await AsyncStorage.getItem('zoomFactor')) || autoZoom();
-const applyZoom = async () => {
-  if (!window || window.isDestroyed()) return;
-  zoomNow = await currentZoom();
-  window.webContents.setZoomFactor(zoomNow);
-  window.setTitleBarOverlay(chrome());
-};
+const applyZoom = async () => { if (window && !window.isDestroyed()) window.webContents.setZoomFactor(await currentZoom()); };
 const changeZoom = async (step: 1 | -1 | 0) => {
   const now = await currentZoom();
   if (step === 0) await AsyncStorage.removeItem('zoomFactor');
@@ -78,7 +67,6 @@ const changeZoom = async (step: 1 | -1 | 0) => {
 };
 
 const createWindow = () => {
-  zoomNow = autoZoom(); // the buttons' strip is sized when the window is made; applyZoom corrects it for a saved zoom
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -88,7 +76,6 @@ const createWindow = () => {
     icon,
     title: 'NoteSpark',
     titleBarStyle: 'hidden',
-    titleBarOverlay: chrome(),
     autoHideMenuBar: true, // the menu lives in the global menu; Alt still shows it where there is none
     backgroundColor: pageColor(), // the theme's background, so there is no white flash
     webPreferences: {
@@ -100,14 +87,14 @@ const createWindow = () => {
     },
   });
   win.webContents.on('did-finish-load', () => void applyZoom());
-  // Moving the window to another monitor can change the automatic size; the buttons' strip must follow the header's height.
+  // Moving the window to another monitor can change the automatic size.
   let moved: NodeJS.Timeout | undefined;
   win.on('move', () => { clearTimeout(moved); moved = setTimeout(() => void applyZoom(), 300); });
   win.on('closed', () => clearTimeout(moved));
   win.once('ready-to-show', () => win.show());
-  const recolor = () => { if (!win.isDestroyed()) win.setTitleBarOverlay(chrome()); };
-  nativeTheme.on('updated', recolor);
-  win.on('closed', () => { nativeTheme.off('updated', recolor); });
+  // The header's own window buttons show Maximize or Restore by this.
+  const tellState = () => { if (!win.isDestroyed()) win.webContents.send('window:state', { maximized: win.isMaximized() || win.isFullScreen() }); };
+  for (const event of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen'] as const) win.on(event as 'maximize', tellState);
   // The auto-lock counts time while the window is out of sight or out of focus.
   win.on('focus', () => setWindowFocused(true));
   for (const event of ['blur', 'hide', 'minimize', 'closed'] as const) win.on(event as 'blur', () => setWindowFocused(false));
@@ -188,6 +175,13 @@ else {
       for (const action of queued.splice(0)) window.webContents.send('menu:action', action);
     });
     ipcMain.handle('tray:refresh', async () => { await refreshTray(); });
+    ipcMain.handle('window:control', (e, action: unknown) => {
+      if (!window || e.sender !== window.webContents) return;
+      if (action === 'minimize') window.minimize();
+      else if (action === 'maximize') (window.isMaximized() ? window.unmaximize() : window.maximize());
+      else if (action === 'close') window.close();
+      else if (action === 'state') return { maximized: window.isMaximized() || window.isFullScreen() };
+    });
     const refreshMenu = () => Menu.setApplicationMenu(buildAppMenu({
       send: action => {
         if (action.type !== 'theme') return deliver(action);

@@ -70,6 +70,15 @@ export default defineConfig({
         name: 'desktop-column-widths',
         enforce: 'pre',
         transform: (code, id) => {
+          if (id.endsWith('Mobile/src/components/Header.tsx')) {
+            // A screen with a back arrow keeps its header over its content, not at the window's far left edge (a long reach
+            // on a monitor). Home's header has no arrow and spans the window like its list.
+            if (!code.includes('<Appbar.Header mode="small" elevated={elevated}>') || !code.includes("import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';")) throw new Error(`desktop-column-widths: Header not as expected in ${id}`);
+            return code
+              .replace("import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';", "import { NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';")
+              .replace('<Appbar.Header mode="small" elevated={elevated}>', '<View style={showBackButton ? { width: \'100%\', maxWidth: 1100, alignSelf: \'center\' } : undefined}><Appbar.Header mode="small" elevated={elevated}>')
+              .replace('</Appbar.Header>', '</Appbar.Header></View>');
+          }
           const screen = /Mobile\/src\/screens\/(\w+)\.tsx$/.exec(id)?.[1];
           if (!screen || !code.includes('maxWidth: readingWidth')) return null;
           return code.replaceAll('maxWidth: readingWidth', `maxWidth: ${['NoteViewScreen', 'EditorScreen', 'ScratchpadScreen'].includes(screen) ? 860 : 1100}`);
