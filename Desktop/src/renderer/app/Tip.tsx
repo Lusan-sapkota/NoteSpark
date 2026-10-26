@@ -1,4 +1,3 @@
-import React from 'react';
 import { Tooltip, TooltipProps } from 'react-native-paper';
 import { useTheme } from '../../../../Mobile/src/theme/ThemeContext';
 

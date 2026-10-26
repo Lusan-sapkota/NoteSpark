@@ -40,7 +40,6 @@ const screens = {
   Privacy: PrivacyScreen,
 };
 
-const Tooltip = Tip;
 
 // The window's own minimise, maximise and close buttons (the desktop window has no frame, and the system's buttons are
 // too small to hit comfortably). Each is 48 wide and as high as the bar; closing is red on hover.
@@ -111,7 +110,7 @@ const TopBar = () => {
         <View style={{ flex: 1 }} />
         {isDesktop && (
           <View dataSet={{ nodrag: '' }}>
-            <Tooltip title={web?.on ? (open ? 'Hide web view details' : 'Show web view details') : 'Start web view'} {...tip}>
+            <Tip title={web?.on ? (open ? 'Hide web view details' : 'Show web view details') : 'Start web view'} {...tip}>
               {web?.on ? (
                 <Pressable accessibilityRole="button" accessibilityLabel="Web view details" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)}
                   style={({ hovered }: any) => ({ height: 32, paddingLeft: space.md, paddingRight: space.sm, borderRadius: shape.control, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: theme.colors.tertiaryContainer, opacity: hovered ? 0.9 : 1 })}>
@@ -122,7 +121,7 @@ const TopBar = () => {
               ) : (
                 <IconButton icon="web" size={22} iconColor={quiet} accessibilityLabel="Start web view" onPress={toggle} style={{ margin: 0, width: 36, height: 36 }} />
               )}
-            </Tooltip>
+            </Tip>
           </View>
         )}
         {isDesktop && <WindowButtons />}

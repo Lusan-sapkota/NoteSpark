@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GroupedRow from '../../../../Mobile/src/components/GroupedRow';
 import M3Switch from '../../../../Mobile/src/components/M3Switch';
