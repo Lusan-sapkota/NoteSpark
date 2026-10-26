@@ -82,13 +82,29 @@ const TopBar = () => {
     window.addEventListener('keydown', close);
     return () => window.removeEventListener('keydown', close);
   }, []);
+  // The panel eases in and out (a short curve with a slight overshoot, none when the system asks for reduced motion); it
+  // stays mounted until the closing transition has finished.
+  const [mounted, setMounted] = useState(false);
+  const [shown, setShown] = useState(false);
+  const visible = !!web?.on && open;
+  const reduce = typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  useEffect(() => {
+    if (visible) {
+      setMounted(true);
+      const start = setTimeout(() => setShown(true), 30); // after the first paint, so the change is animated
+      return () => clearTimeout(start);
+    }
+    setShown(false);
+    const done = setTimeout(() => setMounted(false), reduce ? 0 : 220);
+    return () => clearTimeout(done);
+  }, [visible]);
   const tip = { enterTouchDelay: 250, leaveTouchDelay: 150 };
   const quiet = theme.colors.onSurfaceVariant;
   const showName = width >= 760;
   return (
     <View style={{ zIndex: 20 }}>
-      <View dataSet={{ drag: '' }} style={{ height: 64, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg + room.left, paddingRight: space.sm + room.right, backgroundColor: theme.colors.surfaceContainerLow }}>
-        <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 36, height: 36 }} />
+      <View dataSet={{ drag: '' }} style={{ height: 48, flexDirection: 'row', alignItems: 'center', paddingLeft: space.lg + room.left, paddingRight: space.sm + room.right, backgroundColor: theme.colors.surfaceContainerLow }}>
+        <Image source={{ uri: logo }} accessibilityLabel="NoteSpark logo" style={{ width: 28, height: 28 }} />
         {showName && <Text variant="titleMedium" style={{ color: theme.colors.onSurface, marginLeft: space.md }}>NoteSpark</Text>}
         <View style={{ flex: 1 }} />
         {isDesktop && (
@@ -96,31 +112,41 @@ const TopBar = () => {
             <Tooltip title={web?.on ? (open ? 'Hide web view details' : 'Show web view details') : 'Start web view'} {...tip}>
               {web?.on ? (
                 <Pressable accessibilityRole="button" accessibilityLabel="Web view details" accessibilityState={{ expanded: open }} onPress={() => setOpen(!open)}
-                  style={({ hovered }: any) => ({ height: 40, paddingLeft: space.lg, paddingRight: space.md, borderRadius: shape.full, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: theme.colors.tertiaryContainer, opacity: hovered ? 0.9 : 1 })}>
+                  style={({ hovered }: any) => ({ height: 32, paddingLeft: space.md, paddingRight: space.sm, borderRadius: shape.control, flexDirection: 'row', alignItems: 'center', gap: space.sm, backgroundColor: theme.colors.tertiaryContainer, opacity: hovered ? 0.9 : 1 })}>
                   <Icon source="web" size={20} color={theme.colors.onTertiaryContainer} />
                   <Text variant="labelLarge" style={{ color: theme.colors.onTertiaryContainer }}>Web view on</Text>
                   <Icon source={open ? 'chevron-up' : 'chevron-down'} size={18} color={theme.colors.onTertiaryContainer} />
                 </Pressable>
               ) : (
-                <IconButton icon="web" size={22} iconColor={quiet} accessibilityLabel="Start web view" onPress={toggle} style={{ margin: 0, width: 40, height: 40 }} />
+                <IconButton icon="web" size={22} iconColor={quiet} accessibilityLabel="Start web view" onPress={toggle} style={{ margin: 0, width: 36, height: 36 }} />
               )}
             </Tooltip>
           </View>
         )}
       </View>
-      {web?.on && open && (
-        <View dataSet={{ nodrag: '' }} style={{ position: 'absolute', top: 68, right: space.lg, width: 360, maxWidth: '92%', padding: space.lg, gap: space.md, borderRadius: shape.group, backgroundColor: theme.colors.surfaceContainerHigh }}>
-          <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>Web view is on</Text>
-          <View style={{ gap: space.xs }}>
-            <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Open one of these in a browser on your network:</Text>
-            {web.links.map(l => <Text key={l} variant="bodyMedium" selectable style={{ color: theme.colors.onSurface }}>{l.replace(/\?t=.*/, '')}</Text>)}
+      {mounted && (
+        <>
+          {/* Clicking anywhere else closes the panel; the top bar stays clickable above it. */}
+          <Pressable accessibilityLabel="Close web view details" onPress={() => setOpen(false)} style={{ position: 'fixed' as any, top: 48, left: 0, right: 0, bottom: 0 }} />
+          <View dataSet={{ nodrag: '' }} style={{
+            position: 'absolute', top: 52, right: space.lg, width: 360, maxWidth: '92%', padding: space.lg, gap: space.md, borderRadius: shape.group, backgroundColor: theme.colors.surfaceContainerHigh,
+            opacity: shown ? 1 : 0,
+            transform: [{ translateY: shown ? 0 : -8 }, { scale: shown ? 1 : 0.97 }],
+            transformOrigin: 'top right',
+            transitionProperty: 'opacity, transform', transitionDuration: reduce ? '0ms' : '220ms', transitionTimingFunction: 'cubic-bezier(0.34, 1.3, 0.64, 1)',
+          } as any}>
+            <Text variant="titleSmall" style={{ color: theme.colors.onSurface }}>Web view is on</Text>
+            <View style={{ gap: space.xs }}>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Open one of these in a browser on your network:</Text>
+              {web?.links.map(l => <Text key={l} variant="bodyMedium" selectable style={{ color: theme.colors.onSurface }}>{l.replace(/\?t=.*/, '')}</Text>)}
+            </View>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Anyone with the link can read and edit your notes.</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm }}>
+              <Button mode="text" onPress={toggle}>Stop web view</Button>
+              <Button mode="contained-tonal" onPress={() => invoke('web:copy')}>Copy link</Button>
+            </View>
           </View>
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>Anyone with the link can read and edit your notes.</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm }}>
-            <Button mode="text" onPress={toggle}>Stop web view</Button>
-            <Button mode="contained-tonal" onPress={() => invoke('web:copy')}>Copy link</Button>
-          </View>
-        </View>
+        </>
       )}
     </View>
   );

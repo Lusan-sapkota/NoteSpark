@@ -47,7 +47,7 @@ const quitIfIdle = async () => {
 
 // The header is the window's title bar (the app draws it); Electron draws the minimise, maximise and close buttons on
 // top of it. Their colors come from the theme tokens and follow light and dark.
-const HEADER_HEIGHT = 64;
+const HEADER_HEIGHT = 48;
 let zoomNow = 1; // the header grows with the zoom, so the window buttons Electron draws over it must too
 const chrome = () => {
   const colors = nativeTheme.shouldUseDarkColors ? firefly.dark : firefly.light;
@@ -78,6 +78,7 @@ const changeZoom = async (step: 1 | -1 | 0) => {
 };
 
 const createWindow = () => {
+  zoomNow = autoZoom(); // the buttons' strip is sized when the window is made; applyZoom corrects it for a saved zoom
   const win = new BrowserWindow({
     width: 1000,
     height: 700,
@@ -99,6 +100,10 @@ const createWindow = () => {
     },
   });
   win.webContents.on('did-finish-load', () => void applyZoom());
+  // Moving the window to another monitor can change the automatic size; the buttons' strip must follow the header's height.
+  let moved: NodeJS.Timeout | undefined;
+  win.on('move', () => { clearTimeout(moved); moved = setTimeout(() => void applyZoom(), 300); });
+  win.on('closed', () => clearTimeout(moved));
   win.once('ready-to-show', () => win.show());
   const recolor = () => { if (!win.isDestroyed()) win.setTitleBarOverlay(chrome()); };
   nativeTheme.on('updated', recolor);
