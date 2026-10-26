@@ -65,24 +65,10 @@ export default defineConfig({
         transformIndexHtml: html => html.replace("script-src 'self'", "script-src 'self' 'unsafe-inline'"),
       },
       {
-        // The phone caps its screens at a 680 point reading column, which leaves wide gaps on a monitor. Lists and settings
-        // get 1100, the screens you read or write in 860 (about 90 characters at the note font), so lines stay readable.
-        name: 'desktop-column-widths',
+        // The phone caps its screens at a 680 point reading column; on a monitor every screen uses the full width, like Home.
+        name: 'desktop-full-width',
         enforce: 'pre',
-        transform: (code, id) => {
-          if (id.endsWith('Mobile/src/components/Header.tsx')) {
-            // A screen with a back arrow keeps its header over its content, not at the window's far left edge (a long reach
-            // on a monitor). Home's header has no arrow and spans the window like its list.
-            if (!code.includes('<Appbar.Header mode="small" elevated={elevated}>') || !code.includes("import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';")) throw new Error(`desktop-column-widths: Header not as expected in ${id}`);
-            return code
-              .replace("import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';", "import { NativeScrollEvent, NativeSyntheticEvent, View } from 'react-native';")
-              .replace('<Appbar.Header mode="small" elevated={elevated}>', '<View style={showBackButton ? { width: \'100%\', maxWidth: 1100, alignSelf: \'center\' } : undefined}><Appbar.Header mode="small" elevated={elevated}>')
-              .replace('</Appbar.Header>', '</Appbar.Header></View>');
-          }
-          const screen = /Mobile\/src\/screens\/(\w+)\.tsx$/.exec(id)?.[1];
-          if (!screen || !code.includes('maxWidth: readingWidth')) return null;
-          return code.replaceAll('maxWidth: readingWidth', `maxWidth: ${['NoteViewScreen', 'EditorScreen', 'ScratchpadScreen'].includes(screen) ? 860 : 1100}`);
-        },
+        transform: (code, id) => (/Mobile\/src\/screens\/\w+\.tsx$/.test(id) && code.includes('maxWidth: readingWidth') ? code.replaceAll('maxWidth: readingWidth', "maxWidth: '100%'") : null),
       },
       {
         name: 'phone-module-overrides',
@@ -163,6 +149,18 @@ export default defineConfig({
             return code;
           }
           return null;
+        },
+      },
+      {
+        // The phone's icon buttons have an accessibility label and no tooltip (there is no hover on a phone). On the desktop
+        // each one gets a tooltip with that label as its text.
+        name: 'desktop-tooltips',
+        enforce: 'pre', // after desktop-copy, which looks for the unwrapped buttons
+        transform: (code, id) => {
+          if (!id.includes('/Mobile/src/') || !/\.tsx$/.test(id) || !code.includes('<Appbar.')) return null;
+          let count = 0;
+          const wrapped = code.replace(/<Appbar\.(?:Action|BackAction)\b((?:(?!\/>)[\s\S])*?)accessibilityLabel=("[^"]*"|\{(?:[^{}]|\{[^{}]*\})*\})((?:(?!\/>)[\s\S])*?)\/>/g, (all, _a, label) => { count++; return `<Tip title=${label}>${all}</Tip>`; });
+          return count ? `import Tip from '${resolve(__dirname, 'src/renderer/app/Tip.tsx')}';\n${wrapped}` : null;
         },
       },
       {

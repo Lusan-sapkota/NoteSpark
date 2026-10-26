@@ -1,10 +1,11 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Image, Pressable, StyleSheet, useWindowDimensions, View } from 'react-native';
-import { ActivityIndicator, Button, Icon, IconButton, PaperProvider, Text, Tooltip as PaperTooltip, TooltipProps } from 'react-native-paper';
+import { ActivityIndicator, Button, Icon, IconButton, PaperProvider, Text, } from 'react-native-paper';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { invoke, isDesktop, WebStatus } from './bridge';
 import logo from './round.png';
+import Tip from './Tip';
 import { Navigator, useCurrentNavigation } from './nav';
 import { setMeaningSearchAvailable } from './overrides/storage/semanticSearch';
 // The phone's real screens, theme and shared components, imported straight from Mobile/.
@@ -39,12 +40,7 @@ const screens = {
   Privacy: PrivacyScreen,
 };
 
-// Paper draws tooltips in the inverse colors (a light bubble on a dark screen). This one sits on the app's own surfaces,
-// like the phone's snackbar: a raised surface with the normal text color, in light and dark.
-const Tooltip = (props: TooltipProps) => {
-  const { theme } = useTheme();
-  return <PaperTooltip {...props} theme={{ colors: { onSurface: theme.colors.surfaceContainerHighest, surface: theme.colors.onSurface } }} />;
-};
+const Tooltip = Tip;
 
 // The window's own minimise, maximise and close buttons (the desktop window has no frame, and the system's buttons are
 // too small to hit comfortably). Each is 48 wide and as high as the bar; closing is red on hover.
