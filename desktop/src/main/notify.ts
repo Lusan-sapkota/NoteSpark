@@ -1,7 +1,7 @@
 // Desktop notifications: task reminders (work with the window closed) and "Save clipboard text".
 import { execFile } from 'node:child_process';
 import { clipboard, Notification } from 'electron';
-import { buildReminders, dueLabel, extractTasks, REMINDER_ID_PREFIX, today, type ProfileTasks } from '@notespark/core';
+import { buildReminders, REMINDER_ID_PREFIX, type ProfileTasks } from '@notespark/core';
 import * as notes from '../../../mobile/src/storage/notes';
 import * as profiles from '../../../mobile/src/storage/profiles';
 import AsyncStorage from '@notespark/node-shims/async-storage';
@@ -13,21 +13,6 @@ const say = (title: string, body: string, onClick?: () => void) => {
   // Some Linux desktops refuse Electron's notification call; notify-send reaches the same service (no click action).
   if (process.platform === 'linux') n.on('failed', () => execFile('notify-send', ['--app-name=NoteSpark', title, body], () => {}));
   n.show();
-};
-
-// The open profile's open tasks due today or earlier, soonest first, for the tray menu (the phone's "Tasks due" widget).
-// null for a profile with a PIN: nothing is read or shown without it.
-export const dueTasks = async (): Promise<{ text: string; when: string }[] | null> => {
-  await (await import('./storage')).lockStatus();
-  const profile = await profiles.getActiveProfile();
-  if (await profiles.hasProfilePin(profile.id)) return null;
-  const now = today();
-  return (await profiles.readProfileNotes(profile.id, { withScratchpad: true }))
-    .filter(n => !n.isArchived)
-    .flatMap(n => extractTasks(n))
-    .filter(t => t.due && t.due <= now)
-    .sort((a, b) => a.due!.localeCompare(b.due!))
-    .map(t => ({ text: t.text, when: dueLabel(t.due!, now) }));
 };
 
 const FIRED_KEY = 'remindersFired';
