@@ -15,3 +15,5 @@ export * from './related';
 export * from './noteMap';
 export * from './templates';
 export * from './i18n';
+export * from './landscape';
+export * from './cards';
