@@ -10,3 +10,4 @@ export * from './network';
 export * from './reminders';
 export * from './attachments';
 export * from './search';
+export * from './mermaid';

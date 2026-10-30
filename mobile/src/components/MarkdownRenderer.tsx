@@ -6,7 +6,8 @@ import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
 import NoteImages from './NoteImages';
 import TaskRow from './TaskRow';
-import { findTaskLines, mapTaskLines, splitDue, noteLinkPattern } from '@notespark/core';
+import MermaidDiagram from './MermaidDiagram';
+import { findTaskLines, isMermaidFence, mapTaskLines, splitDue, noteLinkPattern } from '@notespark/core';
 import { openAttachmentInViewer } from '../storage/attachments';
 
 const firstText = (node: ASTNode): string => (node.children?.length ? firstText(node.children[0]) : node.content ?? '');
@@ -219,6 +220,11 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
         rules={{
           // Same cached, retryable image view the screens use.
           image: (node) => <NoteImages key={node.key} uris={node.attributes.src ? [node.attributes.src] : []} />,
+          // A ```mermaid block is drawn as a diagram; every other fence stays code.
+          fence: (node, children, parent, styles, inheritedStyles) =>
+            isMermaidFence((node as ASTNode & { sourceInfo?: string }).sourceInfo)
+              ? <MermaidDiagram key={node.key} code={node.content.replace(/\n$/, '')} />
+              : renderRules.fence!(node, children, parent, styles, inheritedStyles),
           link: (node, children) => <React.Fragment key={node.key}>{renderLink({ ...node.attributes, children })}</React.Fragment>,
           body: (node, children, parent, styles) => {
             taskIndex = 0;
