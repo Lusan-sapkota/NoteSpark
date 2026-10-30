@@ -9,7 +9,7 @@ import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, formatDue, splitDue, toggleTaskLine } from '@notespark/core';
-import { extractTags } from '@notespark/core';
+import { extractTags, suggestTags } from '@notespark/core';
 import { findMention, findNoteByTitle, hasConnections, linkedTitles, linkMention, linksTo, noteLinkPattern, noteMap } from '@notespark/core';
 import MermaidDiagram from '../components/MermaidDiagram';
 import { shareNoteAsMarkdown } from '../utils/exportNotes';
@@ -229,6 +229,19 @@ const NoteViewScreen: React.FC = () => {
       setSnackbar(note.isArchived ? 'Note unarchived' : 'Note archived');
     } catch (error) {
       alert(note.isArchived ? "Couldn't unarchive the note" : "Couldn't archive the note", 'Try again. If it keeps failing, restart the app.');
+    }
+  };
+
+  // Adds a tag that close notes use, as a line at the end of the note.
+  const addTag = async (tag: string) => {
+    if (!note) return;
+    const updated = { ...note, content: `${note.content.trimEnd()}\n#${tag}\n` };
+    try {
+      await updateNote(updated, { keepVersion: false });
+      setNote({ ...updated, updatedAt: new Date().toISOString() });
+      setSnackbar(`Tag #${tag} added`);
+    } catch (error) {
+      alert("Couldn't add the tag", 'Try again. If it keeps failing, restart the app.');
     }
   };
 
@@ -547,6 +560,19 @@ const NoteViewScreen: React.FC = () => {
                 style={[styles.info, { backgroundColor: theme.colors.tertiaryContainer }]}
               >
                 <Text variant="labelMedium" maxFontSizeMultiplier={1.5} style={{ color: theme.colors.onTertiaryContainer }}>#{tag}</Text>
+              </TouchableRipple>
+            ))}
+            {suggestTags(extractTags(content), related.map(r => r.content)).map(tag => (
+              <TouchableRipple
+                key={`suggest-${tag}`}
+                onPress={() => addTag(tag)}
+                accessibilityRole="button"
+                accessibilityLabel={`Add tag ${tag}, used by related notes`}
+                hitSlop={12}
+                borderless
+                style={[styles.info, { borderWidth: 1, borderColor: theme.colors.outlineVariant }]}
+              >
+                <Text variant="labelMedium" maxFontSizeMultiplier={1.5} style={{ color: theme.colors.onSurfaceVariant }}>+ #{tag}</Text>
               </TouchableRipple>
             ))}
           </View>
