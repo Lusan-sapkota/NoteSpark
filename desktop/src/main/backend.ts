@@ -23,6 +23,8 @@ const handlers: Record<string, Handler> = {
     local: true,
     run: (mode: unknown) => { if (mode === 'light' || mode === 'dark' || mode === 'system') nativeTheme.themeSource = mode; },
   },
+  // Pairing tokens pass through here, so sync is for the desktop window only, never the web view.
+  sync: { local: true, run: async (args: any) => (await import('./sync')).syncHub().call(String(args?.op), args?.args) },
   'web:status': { local: true, run: () => webViewStatus() },
   'web:start': { local: true, run: () => startWebView(invoke) },
   // The link carries the token, so it goes to the clipboard from here and never passes through the page.

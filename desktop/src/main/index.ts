@@ -9,6 +9,8 @@ import { buildAppMenu, MenuAction } from './menu';
 import AsyncStorage from '@notespark/node-shims/async-storage';
 import { syncLanguage } from './language';
 import { startWebView, stopWebView, webViewStatus } from './web';
+import { stopSync, syncHub } from './sync';
+import { onProfilesChanged } from './storage';
 
 // The app stays offline and the renderer loads only local content or the development server.
 const devUrl = process.env.ELECTRON_RENDERER_URL;
@@ -161,7 +163,10 @@ else {
     };
     void refreshTray();
     tray.on('click', showWindow);
-    app.on('before-quit', () => { void stopWebView(); });
+    app.on('before-quit', () => { void stopWebView(); void stopSync(); });
+    // Sync starts with the app when it was left on; the storage code opens first, the hub only follows it.
+    onProfilesChanged(() => void syncHub().profilesChanged().catch(() => {}));
+    void invoke('lock:status', undefined, 'ipc').then(() => syncHub().start()).catch(() => {});
     ipcMain.handle('menu:ready', e => {
       if (e.sender !== window?.webContents) return;
       windowReady = true;

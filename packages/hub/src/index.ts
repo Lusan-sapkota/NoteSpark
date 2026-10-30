@@ -9,3 +9,4 @@ export * from './storeRpc.ts';
 export * from './supervisor.ts';
 export * from './controller.ts';
 export * from './worker.ts';
+export * from './multiStore.ts';

@@ -23,7 +23,11 @@ let phase: Phase = 'starting';
 let phaseProfile: profiles.Profile | null = null;
 let starting: Promise<void> | undefined;
 
-const announce = () => BrowserWindow.getAllWindows().forEach(w => w.webContents.send('lock:changed'));
+const announce = () => { BrowserWindow.getAllWindows().forEach(w => w.webContents.send('lock:changed')); profilesChanged?.(); };
+// Sync reads the lock state: it is told after every change (a lock, an unlock, a profile call).
+let profilesChanged: (() => void) | null = null;
+export const onProfilesChanged = (fn: () => void) => { profilesChanged = fn; };
+export const isReady = () => phase === 'ready';
 
 // What App.tsx does at start: convert profiles that have a PIN, open the default profile (or ask for its PIN).
 const openDefault = async () => {
@@ -93,6 +97,7 @@ export const unlock = async ({ pin }: { pin: unknown }) => {
   }
   phase = 'ready';
   phaseProfile = null;
+  profilesChanged?.();
   return true;
 };
 
@@ -127,7 +132,9 @@ export const callStorage = async ({ module, fn, args }: { module: string; fn: st
   }
   if (phase !== 'ready' && !(module === 'profiles' && whileLocked.has(fn))) throw new Error(phase === 'unreadable' ? 'PROFILE_UNREADABLE' : 'PROFILE_LOCKED');
   if (from === 'http' && module === 'profiles' && !webProfiles.has(fn)) throw new Error('Profiles are managed in the desktop window');
-  return target(...(Array.isArray(args) ? args : []));
+  const result = await target(...(Array.isArray(args) ? args : []));
+  if (module === 'profiles') profilesChanged?.(); // switching, locking, a PIN or a deletion can change which profiles the hub may use
+  return result;
 };
 
 // The renderer's AsyncStorage: the same settings file the storage code reads.

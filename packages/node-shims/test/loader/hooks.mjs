@@ -17,6 +17,8 @@ const map = {
   '@notespark/core': resolve(root, 'packages/core/src/index.ts'),
   '@notespark/sync': resolve(root, 'packages/sync/src/index.ts'),
   '@notespark/sync-protocol': resolve(root, 'packages/sync-protocol/src/index.ts'),
+  '@notespark/hub': resolve(root, 'packages/hub/src/index.ts'),
+  '@notespark/node-shims/paths': shim('paths.ts'),
   'better-sqlite3-multiple-ciphers': resolve(root, 'desktop/node_modules/better-sqlite3-multiple-ciphers/lib/index.js'),
 };
 const isFile = p => existsSync(p) && statSync(p).isFile();

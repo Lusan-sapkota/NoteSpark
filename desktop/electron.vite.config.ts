@@ -48,9 +48,9 @@ export default defineConfig({
       },
     ],
     // @notespark/sync (Yjs) is used by the phone's storage code only, so only the main process needs it.
-    resolve: { alias: [{ find: '@notespark/core', replacement: alias['@notespark/core'] }, { find: '@notespark/sync', replacement: resolve(__dirname, '../packages/sync/src/index.ts') }, ...expoShims] },
+    resolve: { alias: [{ find: '@notespark/core', replacement: alias['@notespark/core'] }, { find: '@notespark/sync-protocol', replacement: resolve(__dirname, '../packages/sync-protocol/src/index.ts') }, { find: '@notespark/sync', replacement: resolve(__dirname, '../packages/sync/src/index.ts') }, { find: '@notespark/hub', replacement: resolve(__dirname, '../packages/hub/src/index.ts') }, ...expoShims] },
     // The search model's helper process is a second entry next to the main one.
-    build: { rollupOptions: { input: { index: resolve(__dirname, 'src/main/index.ts'), 'embed-worker': resolve(__dirname, 'src/main/embed-worker.ts') } } },
+    build: { rollupOptions: { input: { index: resolve(__dirname, 'src/main/index.ts'), 'embed-worker': resolve(__dirname, 'src/main/embed-worker.ts'), 'hub-worker': resolve(__dirname, 'src/main/hub-worker.ts') } } },
   },
   preload: { resolve: { alias } },
   renderer: {
