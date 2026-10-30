@@ -13,7 +13,8 @@ import { clearDraft, getDraft, getNotes, getNotesVersion, moveNoteToBin, restore
 import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
-import { extractTags, mergeSearch } from '@notespark/core';
+import { extractTags, mergeSearch, TemplateKind, templateNote, today } from '@notespark/core';
+import { DailyNoteDialog, TemplateDialog } from '../components/NoteTemplates';
 import { shareNotesAsJson, shareNotesAsZip } from '../utils/exportNotes';
 import { syncTaskReminders } from '../utils/taskReminders';
 import { updateWidgets } from '../widget/widgets';
@@ -63,6 +64,9 @@ const HomeScreen: React.FC = () => {
   const [filter, setFilter] = useState<Filter>('all');
   const [sortType, setSortType] = useState<'edited' | 'created'>('edited');
   const [optionsVisible, setOptionsVisible] = useState(false);
+  const [moreVisible, setMoreVisible] = useState(false);
+  const [dailyVisible, setDailyVisible] = useState(false);
+  const [templateVisible, setTemplateVisible] = useState(false);
   const [fabExtended, setFabExtended] = useState(true);
   const [snackbar, setSnackbar] = useState('');
   // What the snackbar's Undo does, if it has one.
@@ -616,6 +620,20 @@ const HomeScreen: React.FC = () => {
     [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, filteredNotes, sortType, relatedFrom, theme]
   );
 
+  // A day's note: open it if it exists, else start it from the daily template (nothing is saved until it's edited).
+  const openDailyNote = (day: string) => {
+    setDailyVisible(false);
+    setTemplateVisible(false);
+    const existing = notes.find(n => n.title.trim() === day);
+    if (existing) navigation.navigate('NoteView', { noteId: String(existing.id) });
+    else startTemplate('daily', day);
+  };
+  const startTemplate = (kind: TemplateKind, day = today()) => {
+    setTemplateVisible(false);
+    const { title, content } = templateNote(kind, day);
+    navigation.navigate('Editor', { title, text: content, template: true, markdown: true });
+  };
+
   const handleCreateNote = () => {
     navigation.navigate('Editor');
   };
@@ -712,6 +730,16 @@ const HomeScreen: React.FC = () => {
               />
               <Appbar.Action icon="notebook-edit-outline" accessibilityLabel="Scratchpad" onPress={() => navigation.navigate('Scratchpad')} />
               <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel="Tasks" onPress={() => navigation.navigate('Tasks')} />
+              <Menu
+                visible={moreVisible}
+                onDismiss={() => setMoreVisible(false)}
+                anchor={<Appbar.Action icon="dots-vertical" accessibilityLabel="More" onPress={() => setMoreVisible(true)} />}
+              >
+                <Menu.Item title="Daily note" leadingIcon="calendar-today" onPress={() => { setMoreVisible(false); setDailyVisible(true); }} />
+                <Menu.Item title="New from template" leadingIcon="file-document-plus-outline" onPress={() => { setMoreVisible(false); setTemplateVisible(true); }} />
+                <Menu.Item title="Ask your notes" leadingIcon="comment-search-outline" onPress={() => { setMoreVisible(false); navigation.navigate('Ask'); }} />
+                <Menu.Item title="Tidy up notes" leadingIcon="broom" onPress={() => { setMoreVisible(false); navigation.navigate('Tidy'); }} />
+              </Menu>
               <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
             </>
           }
@@ -769,16 +797,6 @@ const HomeScreen: React.FC = () => {
                 title="Text only"
                 trailingIcon={searchType === 'content' ? 'check' : undefined}
                 onPress={() => { setSearchType('content'); setOptionsVisible(false); }}
-              />
-              <Menu.Item
-                title="Ask your notes"
-                leadingIcon="comment-search-outline"
-                onPress={() => { setOptionsVisible(false); navigation.navigate('Ask'); }}
-              />
-              <Menu.Item
-                title="Tidy up notes"
-                leadingIcon="broom"
-                onPress={() => { setOptionsVisible(false); navigation.navigate('Tidy'); }}
               />
             </Menu>
           )}
@@ -897,6 +915,12 @@ const HomeScreen: React.FC = () => {
       )}
 
       <Portal>
+        <DailyNoteDialog visible={dailyVisible} notes={notes} onDismiss={() => setDailyVisible(false)} onPick={openDailyNote} />
+        <TemplateDialog
+          visible={templateVisible}
+          onDismiss={() => setTemplateVisible(false)}
+          onPick={kind => (kind === 'daily' ? openDailyNote(today()) : startTemplate(kind))}
+        />
         <Dialog visible={profileDialogVisible} onDismiss={() => setProfileDialogVisible(false)}>
           <Dialog.Title>Switch profile</Dialog.Title>
           <Dialog.ScrollArea style={styles.profileList}>

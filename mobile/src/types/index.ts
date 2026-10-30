@@ -5,7 +5,8 @@ export type RootStackParamList = {
   Home: { binnedNoteId?: number; tag?: string } | undefined;
   // title / text: prefill for a new note (from a [[link]], or text shared from another app).
   // draft: reopen the unsaved text kept by the editor (see getDraft).
-  Editor: { noteId?: string; title?: string; text?: string; draft?: boolean } | undefined;
+  // template: the text is a template, so it counts as the starting point (an untouched one leaves no note); markdown: its format.
+  Editor: { noteId?: string; title?: string; text?: string; draft?: boolean; template?: boolean; markdown?: boolean } | undefined;
   NoteView: { noteId: string; find?: string } | undefined; // find: text to find in the note on open
   Settings: { message?: string } | undefined; // message: snackbar after the profile form closes
   ProfileLock: { profileId?: string } | undefined; // no id: new profile

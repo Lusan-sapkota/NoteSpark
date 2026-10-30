@@ -60,7 +60,7 @@ const EditorScreen: React.FC = () => {
   const alert = useAlert();
   const [saving, setSaving] = useState(false);
 
-  const { noteId, title: titleParam, text: textParam, draft: fromDraft } = route.params ?? {};
+  const { noteId, title: titleParam, text: textParam, draft: fromDraft, template, markdown: markdownParam } = route.params ?? {};
 
   const [title, setTitle] = useState<string>('');
   const [content, setContent] = useState<string>('');
@@ -114,8 +114,9 @@ const EditorScreen: React.FC = () => {
       setIsEditing(false);
       setCreatedAt(null);
       setUpdatedAt(null);
-      showLoaded({ title: '', content: '', isMarkdown: false }).then(() => {
+      showLoaded(template ? { title: titleParam ?? '', content: textParam ?? '', isMarkdown: !!markdownParam } : { title: '', content: '', isMarkdown: false }).then(() => {
         // Prefilled text (a [[link]] or a share) counts as unsaved.
+        if (template) return;
         if (titleParam) setTitle(titleParam);
         if (textParam) setContent(textParam);
       });

@@ -13,3 +13,4 @@ export * from './search';
 export * from './mermaid';
 export * from './related';
 export * from './noteMap';
+export * from './templates';
