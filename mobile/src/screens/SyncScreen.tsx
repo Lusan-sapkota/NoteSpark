@@ -125,11 +125,11 @@ const SyncScreen: React.FC = () => {
 
   const tips = (
     <View style={[styles.tips, { backgroundColor: theme.colors.surfaceContainerLow }]}>
-      <Icon source="wifi-off" size={24} color={theme.colors.onSurfaceVariant} />
-      <View style={styles.tipsText}>
+      <View style={styles.tipsHead}>
+        <Icon source="wifi-off" size={24} color={theme.colors.onSurfaceVariant} />
         <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('sync.noWifiTitle')}</Text>
-        <Text variant="bodyMedium" style={muted}>{t('sync.noWifiBody')}</Text>
       </View>
+      <Text variant="bodyMedium" style={muted}>{t('sync.noWifiBody')}</Text>
     </View>
   );
 
@@ -234,8 +234,8 @@ const styles = StyleSheet.create({
   firefly: { position: 'absolute', right: 2, top: 2, width: 14, height: 14, borderRadius: 7, borderWidth: 2 },
   statusRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
   statusText: { flex: 1 },
-  tips: { flexDirection: 'row', gap: space.lg, padding: space.lg, borderRadius: shape.group },
-  tipsText: { flex: 1, gap: space.xs },
+  tips: { gap: space.sm, padding: space.lg, borderRadius: shape.group },
+  tipsHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
 });
 
 export default SyncScreen;
