@@ -31,6 +31,3 @@ export const BackHandler = {
 export const FlatList = React.forwardRef<any, any>((props, ref) => (
   <WebFlatList windowSize={5} initialNumToRender={10} maxToRenderPerBatch={10} updateCellsBatchingPeriod={40} {...props} ref={ref} />
 ));
-
-// Direction on the desktop is the page's (set by the language provider), so the phone's switch is never used.
-export const I18nManager = { isRTL: false, allowRTL: (_allow: boolean) => {}, forceRTL: (_force: boolean) => {} };

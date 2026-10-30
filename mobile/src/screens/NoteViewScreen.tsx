@@ -43,16 +43,17 @@ const getPlainText = (markdown: string) =>
     .replace(/\n{2,}/g, '\n') // extra newlines
     .trim();
 
-// "today, 12:49 PM", "yesterday, …", "Oct 25, 12:49 PM", with the year only when it isn't this year.
-const formatDate = (dateString: string) => {
+// "Edited today, 12:49 PM", "Edited yesterday, …", "Edited Oct 25, 12:49 PM" (year only when it isn't this year).
+// `kind` picks the sentence ("edited", "savedUntil", "versionBefore"); each is three whole sentences per language.
+const formatDate = (dateString: string, kind: 'edited' | 'savedUntil' | 'versionBefore') => {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return '';
   const time = date.toLocaleTimeString(getLanguage(), { hour: 'numeric', minute: '2-digit' });
   const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(date).setHours(0, 0, 0, 0)) / 86400000);
-  if (days === 0) return translate('note.dateToday', { time });
-  if (days === 1) return translate('note.dateYesterday', { time });
+  if (days === 0) return translate(`note.${kind}Today`, { time });
+  if (days === 1) return translate(`note.${kind}Yesterday`, { time });
   const sameYear = date.getFullYear() === new Date().getFullYear();
-  return translate('note.dateAt', { date: date.toLocaleDateString(getLanguage(), { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) }), time });
+  return translate(`note.${kind}On`, { date: date.toLocaleDateString(getLanguage(), { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) }), time });
 };
 
 type Change = { text: string; type: 'same' | 'removed' | 'added' };
@@ -549,7 +550,7 @@ const NoteViewScreen: React.FC = () => {
           </View>
           <View style={styles.infoRow}>
             {note.isMarkdown ? infoLabel('language-markdown', 'Markdown') : infoLabel('text', t('note.plainTextLabel'))}
-            {infoLabel('pencil-outline', t('note.edited', { date: formatDate(note.updatedAt) }))}
+            {infoLabel('pencil-outline', formatDate(note.updatedAt, 'edited'))}
             {note.isArchived && infoLabel('archive-outline', t('note.archivedLabel'))}
             {extractTags(content).map(tag => (
               <TouchableRipple
@@ -716,7 +717,7 @@ const NoteViewScreen: React.FC = () => {
               <Dialog.ScrollArea style={styles.historyArea}>
                 <ScrollView contentContainerStyle={styles.historyText}>
                   <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                    {t('note.savedUntil', { date: formatDate(history.viewing.savedAt) })}
+                    {formatDate(history.viewing.savedAt, 'savedUntil')}
                   </Text>
                   {showChanges && (
                     <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
@@ -753,7 +754,7 @@ const NoteViewScreen: React.FC = () => {
                   {history?.versions.length ? history.versions.map(v => (
                     <List.Item
                       key={v.id}
-                      title={t('note.versionBefore', { date: formatDate(v.savedAt) })}
+                      title={formatDate(v.savedAt, 'versionBefore')}
                       description={toPreview(v.content) || v.title}
                       descriptionNumberOfLines={2}
                       left={props => <List.Icon {...props} icon="history" />}

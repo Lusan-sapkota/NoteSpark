@@ -39,23 +39,27 @@ export const toPreview = (content: string) =>
     .replace(/\s+/g, ' ')
     .trim();
 
-const relativeDate = (dateStr: string) => {
+// "Edited just now", "Edited 5 min ago", "Edited 12:49 PM", "Edited yesterday", "Edited Oct 25": whole sentences, so
+// each language can put the words in its own order. `created` picks "Created ..." instead.
+const relativeDate = (dateStr: string, created: boolean) => {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return '';
   const minutes = Math.round((Date.now() - date.getTime()) / 60000);
-  if (minutes < 1) return translate('home.justNow');
-  if (minutes < 60) return translate('home.minutesAgo', { count: minutes });
+  if (minutes < 1) return translate(created ? 'home.createdJustNow' : 'home.editedJustNow');
+  if (minutes < 60) return translate(created ? 'home.createdMinutesAgo' : 'home.editedMinutesAgo', { count: minutes });
   const today = new Date();
   if (date.toDateString() === today.toDateString()) {
-    return date.toLocaleTimeString(getLanguage(), { hour: 'numeric', minute: '2-digit' });
+    return translate(created ? 'home.createdTime' : 'home.editedTime', { time: date.toLocaleTimeString(getLanguage(), { hour: 'numeric', minute: '2-digit' }) });
   }
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return translate('home.yesterday');
-  return date.toLocaleDateString(getLanguage(), {
-    month: 'short',
-    day: 'numeric',
-    ...(date.getFullYear() !== today.getFullYear() && { year: 'numeric' }),
+  if (date.toDateString() === yesterday.toDateString()) return translate(created ? 'home.createdYesterday' : 'home.editedYesterday');
+  return translate(created ? 'home.createdOn' : 'home.editedOn', {
+    date: date.toLocaleDateString(getLanguage(), {
+      month: 'short',
+      day: 'numeric',
+      ...(date.getFullYear() !== today.getFullYear() && { year: 'numeric' }),
+    }),
   });
 };
 
@@ -81,7 +85,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   const swipe = useRef<SwipeableMethods>(null);
   const preview = useMemo(() => toPreview(note.content), [note.content]);
   const title = note.title || t('common.untitledNote');
-  const date = relativeDate(showCreated ? note.createdAt : note.updatedAt);
+  const date = relativeDate(showCreated ? note.createdAt : note.updatedAt, showCreated);
   const onColor = selected ? theme.colors.onSecondaryContainer : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
   const onColorVariant = selected ? theme.colors.onSecondaryContainer : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant;
   const background = selected ? theme.colors.secondaryContainer : isPinned ? theme.colors.primaryContainer : theme.colors.surfaceContainerLow;
@@ -132,7 +136,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
               </View>
             )}
             <Text variant="bodySmall" style={[styles.date, { color: onColorVariant }]}>
-              {showCreated ? t('home.created', { date }) : t('home.edited', { date })}
+              {date}
             </Text>
             {selecting ? (
               // A check, not just the color, shows what's selected. The row itself is the touch target.

@@ -1,5 +1,5 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
-import { I18nManager } from 'react-native';
+import { I18nManager, View } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { isRtl, LanguageCode, resolveLanguage, setLanguage, t } from '@notespark/core';
 
@@ -65,7 +65,13 @@ export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const value = useMemo(() => ({ t, language, preference, setPreference }), [language, preference, setPreference]);
-  return <I18nContext.Provider value={value}>{loaded ? children : null}</I18nContext.Provider>;
+  // Desktop and web: react-native-web flips left and right styles below an element with dir="rtl" (the page's own dir only mirrors flex rows).
+  const web = typeof document !== 'undefined';
+  return (
+    <I18nContext.Provider value={value}>
+      {!loaded ? null : web ? <View style={{ flex: 1 }} {...({ dir: isRtl(language) ? 'rtl' : 'ltr' } as object)}>{children}</View> : children}
+    </I18nContext.Provider>
+  );
 };
 
 // Components use this so they redraw when the language changes; code outside components can import `t` from '@notespark/core'.

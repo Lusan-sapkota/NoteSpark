@@ -1,9 +1,14 @@
 export default {
   // Dates
-  'note.dateToday': 'today, {time}',
-  'note.dateYesterday': 'yesterday, {time}',
-  'note.dateAt': '{date}, {time}',
-  'note.edited': 'Edited {date}',
+  'note.editedToday': 'Edited today, {time}',
+  'note.editedYesterday': 'Edited yesterday, {time}',
+  'note.editedOn': 'Edited {date}, {time}',
+  'note.savedUntilToday': 'Saved until today, {time}',
+  'note.savedUntilYesterday': 'Saved until yesterday, {time}',
+  'note.savedUntilOn': 'Saved until {date}, {time}',
+  'note.versionBeforeToday': 'Before today, {time}',
+  'note.versionBeforeYesterday': 'Before yesterday, {time}',
+  'note.versionBeforeOn': 'Before {date}, {time}',
   // App bar and menu
   'note.pinNote': 'Pin note',
   'note.unpinNote': 'Unpin note',
@@ -40,11 +45,9 @@ export default {
   'note.map': 'Note map',
   'note.mapEmpty': 'Nothing connects to this note yet. Link a note with [[Title]] and it shows up here.',
   // Version history
-  'note.savedUntil': 'Saved until {date}',
   'note.changesHelp': 'Changes made after this version: removed text is struck through, added text is underlined.',
   'note.hideChanges': 'Hide changes',
   'note.showChanges': 'Show changes',
-  'note.versionBefore': 'Before {date}',
   'note.noVersions': 'No earlier versions yet. Each time you save changes, the version before is kept here (the last 20).',
   // Snackbars
   'note.copied': 'Copied to clipboard',
