@@ -1,10 +1,10 @@
-import React, { useCallback, useMemo, useState } from 'react';
-import { RefreshControl, StyleSheet, View } from 'react-native';
+import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { NativeScrollEvent, NativeSyntheticEvent, RefreshControl, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Appbar, FAB, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
+import { AnimatedFAB, Appbar, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import AddTaskDialog from '../components/AddTaskDialog';
@@ -72,8 +72,18 @@ const TaskMenu: React.FC<{ title: string; onEdit: () => void; onOpen: () => void
 
 const TasksScreen: React.FC = () => {
   const navigation = useNavigation<TasksScreenNavigationProp>();
-  const { theme } = useTheme();
-  const { elevated, onScroll } = useHeaderElevation();
+  const { theme, isDarkMode } = useTheme();
+  const { elevated, onScroll: onHeaderScroll } = useHeaderElevation();
+  // Same as Home: the extended FAB collapses while scrolling down and expands on scroll up or at the top.
+  const [fabExtended, setFabExtended] = useState(true);
+  const lastOffset = useRef(0);
+  const onScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    onHeaderScroll(e);
+    const y = e.nativeEvent.contentOffset.y;
+    const extended = y <= 0 || y < lastOffset.current;
+    if (extended !== fabExtended) setFabExtended(extended);
+    lastOffset.current = y;
+  };
   const alert = useAlert();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [sortBy, setSortBy] = useState<'due' | 'note'>('due');
@@ -308,7 +318,16 @@ const TasksScreen: React.FC = () => {
           </View>
         }
       />
-      <FAB icon="plus" label="Add task" onPress={() => setAdding(true)} accessibilityLabel="Add task" style={styles.fab} />
+      <AnimatedFAB
+        icon="star-four-points"
+        label="Add task"
+        extended={fabExtended}
+        onPress={() => setAdding(true)}
+        animateFrom="right"
+        accessibilityLabel="Add task"
+        // The firefly glow in dark mode, as on Home's New note button.
+        style={[styles.fab, isDarkMode && { shadowColor: theme.colors.primary }]}
+      />
       <AddTaskDialog visible={adding} onDismiss={() => setAdding(false)} onAdd={addTask} />
       <AddTaskDialog visible={!!editing} task={editing ?? undefined} onDismiss={() => setEditing(null)} onAdd={saveEdit} />
       <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={4000} action={{ label: 'Undo', onPress: undoDelete }}>Task deleted</Snackbar>
