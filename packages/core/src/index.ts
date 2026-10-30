@@ -12,3 +12,4 @@ export * from './attachments';
 export * from './search';
 export * from './mermaid';
 export * from './related';
+export * from './noteMap';

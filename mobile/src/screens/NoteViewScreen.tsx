@@ -3,14 +3,15 @@ import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking, Nativ
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Appbar, Button, Dialog, Divider, FAB, Icon, IconButton, List, Portal, ProgressBar, Searchbar, Text, TouchableRipple } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Button, Dialog, Divider, FAB, Icon, IconButton, List, Modal, Portal, ProgressBar, Searchbar, Text, TouchableRipple } from 'react-native-paper';
 import { useReducedMotion } from 'react-native-reanimated';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, formatDue, splitDue, toggleTaskLine } from '@notespark/core';
 import { extractTags } from '@notespark/core';
-import { findMention, findNoteByTitle, linkMention, linksTo, noteLinkPattern } from '@notespark/core';
+import { findMention, findNoteByTitle, hasConnections, linkedTitles, linkMention, linksTo, noteLinkPattern, noteMap } from '@notespark/core';
+import MermaidDiagram from '../components/MermaidDiagram';
 import { shareNoteAsMarkdown } from '../utils/exportNotes';
 import { Note, NoteVersion } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -119,6 +120,8 @@ const NoteViewScreen: React.FC = () => {
   const [backlinks, setBacklinks] = useState<Note[]>([]);
   // Notes that name this one without a [[link]].
   const [mentions, setMentions] = useState<Note[]>([]);
+  const [outgoing, setOutgoing] = useState<string[]>([]);
+  const [showMap, setShowMap] = useState(false);
   const [showChanges, setShowChanges] = useState(true);
   // Find in note: the query and current match; lines are drawn plain while finding so each can be measured.
   const [find, setFind] = useState<{ query: string; index: number } | null>(null);
@@ -157,7 +160,9 @@ const NoteViewScreen: React.FC = () => {
         if (fetchedNote) {
           const linking = await getNotesWithLinks();
           setBacklinks(linking.filter(n => n.id !== fetchedNote.id && linksTo(n.content, fetchedNote.title)));
-          const others = (await getNotes()).filter(n => n.id !== fetchedNote.id && !linksTo(n.content, fetchedNote.title));
+          const all = await getNotes();
+          setOutgoing([...new Set(linkedTitles(fetchedNote.content))].filter(t => findNoteByTitle(all, t)));
+          const others = all.filter(n => n.id !== fetchedNote.id && !linksTo(n.content, fetchedNote.title));
           setMentions(others.filter(n => findMention(n.content, fetchedNote.title) >= 0).slice(0, 10));
           const ids = await relatedNotes(fetchedNote.id);
           const notes = await Promise.all(ids.map(id => getNoteById(id).catch(() => null)));
@@ -461,6 +466,11 @@ const NoteViewScreen: React.FC = () => {
                 onPress={() => { setMenuVisible(false); setFind({ query: '', index: 0 }); }}
               />
               <Menu.Item
+                leadingIcon="graph-outline"
+                title="Show map"
+                onPress={() => { setMenuVisible(false); setShowMap(true); }}
+              />
+              <Menu.Item
                 leadingIcon="history"
                 title="Version history"
                 onPress={() => { setMenuVisible(false); openHistory(); }}
@@ -646,6 +656,31 @@ const NoteViewScreen: React.FC = () => {
       />
 
       <Portal>
+        <Modal
+          visible={showMap}
+          onDismiss={() => setShowMap(false)}
+          style={styles.sheetWrap}
+          contentContainerStyle={[styles.sheet, { backgroundColor: theme.colors.surfaceContainerLow, paddingBottom: space.lg + insets.bottom }]}
+        >
+          <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>Note map</Text>
+          {note && (() => {
+            const groups = {
+              links: outgoing,
+              linkedFrom: backlinks.map(n => n.title),
+              mentionedIn: mentions.map(n => n.title),
+              related: related.map(n => n.title),
+            };
+            return hasConnections(groups) ? (
+              <ScrollView style={styles.sheetBody}>
+                <MermaidDiagram code={noteMap(note.title, groups)} />
+              </ScrollView>
+            ) : (
+              <Text variant="bodyMedium" style={[styles.sheetEmpty, { color: theme.colors.onSurfaceVariant }]}>
+                Nothing connects to this note yet. Link a note with [[Title]] and it shows up here.
+              </Text>
+            );
+          })()}
+        </Modal>
         <Dialog visible={!!history?.open} onDismiss={closeHistory}>
           <Dialog.Title>{history?.viewing ? history.viewing.title || 'Untitled note' : 'Version history'}</Dialog.Title>
           {history?.viewing ? (
@@ -719,6 +754,10 @@ const NoteViewScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  sheetWrap: { justifyContent: 'flex-end' },
+  sheet: { borderTopLeftRadius: shape.extraLarge, borderTopRightRadius: shape.extraLarge, padding: space.lg, maxHeight: '80%' },
+  sheetBody: { flexGrow: 0, marginTop: space.sm },
+  sheetEmpty: { marginTop: space.sm },
   container: {
     flex: 1,
   },
