@@ -115,6 +115,7 @@ const AddTaskDialog: React.FC<{ visible: boolean; task?: { text: string; due?: s
             <Button
               mode={custom || picking ? 'contained-tonal' : 'outlined'}
               icon="calendar-month-outline"
+              style={styles.chipShape}
               onPress={() => { input.current?.blur?.(); setPicking(p => !p); }}
               accessibilityState={{ expanded: picking }}
             >
