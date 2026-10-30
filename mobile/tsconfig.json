@@ -5,8 +5,9 @@
     "allowImportingTsExtensions": true,
     "paths": {
       "@notespark/core": ["../packages/core/src/index.ts"],
-      "@notespark/sync": ["../packages/sync/src/index.ts"]
+      "@notespark/sync": ["../packages/sync/src/index.ts"],
+      "@notespark/sync-protocol": ["../packages/sync-protocol/src/index.ts"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", "../packages/core/src/**/*.ts", "../packages/sync/src/**/*.ts"]
+  "include": ["**/*.ts", "**/*.tsx", "../packages/core/src/**/*.ts", "../packages/sync/src/**/*.ts", "../packages/sync-protocol/src/**/*.ts"]
 }

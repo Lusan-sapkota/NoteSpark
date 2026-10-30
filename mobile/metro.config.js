@@ -7,8 +7,9 @@ const config = getDefaultConfig(__dirname);
 // @notespark/sync. Yjs is installed in packages/sync, so the phone, the tests and the desktop all use one copy.
 const core = path.resolve(__dirname, '../packages/core');
 const sync = path.resolve(__dirname, '../packages/sync');
-config.watchFolders = [...(config.watchFolders ?? []), core, sync];
-config.resolver.extraNodeModules = { '@notespark/core': core, '@notespark/sync': sync };
+const syncProtocol = path.resolve(__dirname, '../packages/sync-protocol');
+config.watchFolders = [...(config.watchFolders ?? []), core, sync, syncProtocol];
+config.resolver.extraNodeModules = { '@notespark/core': core, '@notespark/sync': sync, '@notespark/sync-protocol': syncProtocol };
 
 // Hermes has no crypto.getRandomValues (see shims/lib0-webcrypto.js).
 const defaultResolve = config.resolver.resolveRequest;

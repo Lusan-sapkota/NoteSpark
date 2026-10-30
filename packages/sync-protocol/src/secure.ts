@@ -8,6 +8,8 @@ import {
 } from './noise.ts';
 import { MAX_FRAME, T, encodeFrame } from './wire.ts';
 
+// React Native adds an Origin header to every WebSocket and cannot remove it, so the phone sends this fixed value. A web page cannot.
+export const APP_ORIGIN = 'notespark://app';
 export const MAX_FIRST_MESSAGE = 1024; // the hub reads no more than this before the handshake succeeds
 const FRAGMENT = MAX_NOISE_MESSAGE - TAG - 1;
 const NONE = new Uint8Array(0);

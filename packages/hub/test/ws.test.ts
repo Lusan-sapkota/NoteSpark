@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import net from 'node:net';
 import { test } from 'node:test';
-import { FakeClock, Handshake, PROTOCOL_VERSION, T, decodeFrame, encodePayload, generateKeypair } from '@notespark/sync-protocol';
+import { APP_ORIGIN, FakeClock, Handshake, PROTOCOL_VERSION, T, decodeFrame, encodePayload, generateKeypair } from '@notespark/sync-protocol';
 import { WebSocket } from 'ws';
 import { SUBPROTOCOL } from '../src/wsClient.ts';
 import { U, note, open, outcome, rawTcp, setup, sleep, until } from './support.ts';
@@ -58,6 +58,14 @@ test('an upgrade with an Origin header (a web page) is refused before the handsh
   const r = await outcome(open(w.port, { headers: { Origin: 'https://evil.example' } }));
   assert.equal(r.opened, false);
   assert.ok(w.log.includes('refused: Origin header'));
+  for (const origin of ['', 'notespark://app/', 'NOTESPARK://APP', 'http://127.0.0.1']) assert.equal((await outcome(open(w.port, { headers: { Origin: origin } }))).opened, false, origin);
+  await w.stop();
+});
+
+test('the phone\'s fixed app Origin is the one Origin accepted', async () => {
+  const w = await setup();
+  const r = await outcome(open(w.port, { headers: { Origin: APP_ORIGIN } }));
+  assert.equal(r.opened, true);
   await w.stop();
 });
 

@@ -4,7 +4,7 @@
 import { createServer, type IncomingMessage, type Server } from 'node:http';
 import type { Socket } from 'node:net';
 import { isPrivateAddress } from '@notespark/core';
-import { type Clock, type Hub, type HelloPayload, type Keypair, MAX_FIRST_MESSAGE, SecureChannel, realClock } from '@notespark/sync-protocol';
+import { type Clock, type Hub, type HelloPayload, type Keypair, APP_ORIGIN, MAX_FIRST_MESSAGE, SecureChannel, realClock } from '@notespark/sync-protocol';
 import { WebSocketServer } from 'ws';
 import { MAX_WS_MESSAGE, SUBPROTOCOL, rawFromWs } from './wsClient.ts';
 
@@ -116,7 +116,7 @@ export class HubServer {
 
   private onUpgrade(req: IncomingMessage, socket: Socket, head: Buffer) {
     const protocols = String(req.headers['sec-websocket-protocol'] ?? '').split(',').map(p => p.trim());
-    if (req.headers.origin !== undefined) { this.o.log?.('refused: Origin header'); return socket.destroy(); } // a web page
+    if (req.headers.origin !== undefined && req.headers.origin !== APP_ORIGIN) { this.o.log?.('refused: Origin header'); return socket.destroy(); } // a web page
     if (req.method !== 'GET' || !protocols.includes(SUBPROTOCOL) || head.length > MAX_FIRST_MESSAGE) { this.o.log?.('refused: not our protocol'); return socket.destroy(); }
     this.wss.handleUpgrade(req, socket, head, ws => {
       const stop = (socket as Socket & { stopTimer?: () => void }).stopTimer;

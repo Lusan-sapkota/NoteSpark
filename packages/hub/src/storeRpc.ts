@@ -81,7 +81,7 @@ export class StoreError extends Error {
 export const remoteStore = (port: Port, o: { timeoutMs?: number; blobTimeoutMs?: number; after?: (ms: number, fn: () => void) => () => void } = {}) => {
   const waiting = new Map<number, { resolve(v: unknown): void; reject(e: Error): void; stop: () => void }>();
   const listeners = new Map<number, (...a: any[]) => void>();
-  const after = o.after ?? ((ms, fn) => { const t = setTimeout(fn, ms); t.unref?.(); return () => clearTimeout(t); });
+  const after = o.after ?? ((ms, fn) => { const t = setTimeout(fn, ms); (t as { unref?: () => void }).unref?.(); return () => clearTimeout(t); });
   let counter = 0;
   port.on(raw => {
     const m = raw as Msg;
