@@ -14,3 +14,4 @@ export * from './mermaid';
 export * from './related';
 export * from './noteMap';
 export * from './templates';
+export * from './i18n';

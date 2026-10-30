@@ -12,6 +12,7 @@ import { Navigator, useCurrentNavigation } from './nav';
 import { setMeaningSearchAvailable } from './overrides/storage/semanticSearch';
 // The phone's real screens, theme and shared components, imported straight from mobile/.
 import { ThemeProvider, useTheme } from '../../../../mobile/src/theme/ThemeContext';
+import { I18nProvider } from '../../../../mobile/src/i18n/I18nContext';
 import { readingWidth, shape, space } from '../../../../mobile/src/theme/theme';
 import { DialogProvider, useAlert } from '../../../../mobile/src/components/DialogProvider';
 import { getStartScreen, StartScreen, startRoutes } from '../../../../mobile/src/utils/startScreen';
@@ -324,5 +325,5 @@ const Shell = () => {
 };
 
 createRoot(document.getElementById('root')!).render(
-  <SafeAreaProvider><ThemeProvider><Shell /></ThemeProvider></SafeAreaProvider>,
+  <SafeAreaProvider><ThemeProvider><I18nProvider><Shell /></I18nProvider></ThemeProvider></SafeAreaProvider>,
 );

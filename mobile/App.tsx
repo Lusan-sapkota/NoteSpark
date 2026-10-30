@@ -6,6 +6,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { Button, PaperProvider, Portal, Text } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
+import { I18nProvider } from './src/i18n/I18nContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { getShareTarget } from './src/storage/notes';
 import { eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, getDefaultProfile, syncProfileEncryption, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
@@ -352,7 +353,9 @@ export default function App() {
       {/* Keyboard avoidance is per screen; padding the whole app made the editor lose focus. */}
       <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
         <ThemeProvider>
-          <AppContent />
+          <I18nProvider>
+            <AppContent />
+          </I18nProvider>
         </ThemeProvider>
       </KeyboardProvider>
     </SafeAreaProvider>
