@@ -98,3 +98,19 @@ test('a 64 KB chunk and a 4 MB blob cross intact', async () => {
   }
   void store;
 });
+
+test('a call that carries too much, or names a document that is not the catalog or a uuid, is refused before storage', async () => {
+  const { remote, store } = await setupRpc();
+  let reached = 0;
+  for (const op of ['apply', 'putBlob', 'applyFile', 'diff', 'stateVector']) (store as any)[op] = async () => { reached++; };
+  const big = new Uint8Array(49 * 1024 * 1024);
+  await assert.rejects(remote.putBlob!('s1', 'a'.repeat(64), big), (e: StoreError) => e.code === 'BAD');
+  await assert.rejects(remote.apply('s1', U(1), [big]), (e: StoreError) => e.code === 'BAD');
+  await assert.rejects(remote.applyFile('s1', null, { base: null, title: 't', content: 'x'.repeat(49 * 1024 * 1024), isPinned: false, isArchived: false }), (e: StoreError) => e.code === 'BAD');
+  for (const doc of ['../../etc', 'notes', 'x'.repeat(40), '']) await assert.rejects(remote.apply('s1', doc, []), (e: StoreError) => e.code === 'BAD');
+  await assert.rejects(remote.stateVector('s1', 'junk'), (e: StoreError) => e.code === 'BAD');
+  assert.equal(reached, 0);
+  await remote.apply('s1', 'catalog', []); // the catalog and a uuid are fine
+  await remote.apply('s1', U(7), []);
+  assert.equal(reached, 2);
+});

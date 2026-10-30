@@ -15,6 +15,7 @@ import * as profiles from '../../../mobile/src/storage/profiles';
 import { storageStore } from '../../../mobile/src/storage/syncStore';
 
 export const DEFAULT_PORT = 4578;
+const MAX_SYNCED_PROFILES = 20; // a device cannot make more profiles than this here
 const KEY_NAME = 'hubKey';
 
 // hub.json: settings only, no secrets (the key is in the keyring, the device list in devices.json).
@@ -108,21 +109,22 @@ export class SyncHub {
 
   // What the hub process may reach: only profiles with the switch on, and a protected one only while it is the unlocked profile.
   private source(): ProfileSource {
+    const exists = async (id: string) => (await profiles.getProfiles()).some(p => p.id === id); // not binned, not deleted
     const name = async (id: string) => (await profiles.getProfiles()).find(p => p.id === id)?.name ?? id;
     const unlocked = async (id: string) => !(await profiles.hasProfilePin(id)) || (database.isProfileDatabaseOpen(id) && this.d.isReady());
     return {
       synced: () => this.settings.profiles,
-      describe: async id => ({ name: await name(id), isProtected: await profiles.hasProfilePin(id), unlocked: await unlocked(id) }),
+      describe: async id => ({ name: await name(id), isProtected: await profiles.hasProfilePin(id), unlocked: await unlocked(id), exists: await exists(id) }),
       syncIdOf: async id => this.settings.syncIds[id] ?? null,
       open: async id => {
-        if (!(await unlocked(id))) return null;
+        if (!(await exists(id)) || !(await unlocked(id))) return null; // never open (or create) a database for a profile that is gone
         const store = storageStore(await this.handle(id), await name(id), id);
         const [info] = await store.profiles();
         if (info && this.settings.syncIds[id] !== info.syncId) { this.settings.syncIds[id] = info.syncId; this.save(); }
         return store;
       },
       adopt: async (syncId, label) => {
-        if (!this.settings.acceptNew) return null;
+        if (!this.settings.acceptNew || this.settings.profiles.length >= MAX_SYNCED_PROFILES) return null;
         const profile = await profiles.addProfile(label.slice(0, 40) || 'From a device');
         await linkProfile(await this.handle(profile.id), syncId, new Map());
         this.settings.profiles.push(profile.id);
@@ -188,6 +190,7 @@ export class SyncHub {
   }
 
   async stop() {
+    this.lastCode = null;
     if (this.watch) clearInterval(this.watch);
     this.watch = null;
     this.controller.stop();
@@ -260,7 +263,7 @@ export class SyncHub {
         return r;
       }
       case 'pairCancel': this.lastCode = null; return this.controller.call('pairCancel');
-      case 'pairState': return this.controller.call('pairState');
+      case 'pairState': { const r = (await this.controller.call('pairState')) as { active: boolean }; if (!r.active) this.lastCode = null; return r; }
       case 'devices': return this.controller.call('devices');
       case 'rename': return this.controller.call('rename', { key: key(a?.key), name: String(a?.name ?? '').slice(0, 64) });
       case 'revoke': return this.controller.call('revoke', { key: key(a?.key) });

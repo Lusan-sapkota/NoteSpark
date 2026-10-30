@@ -40,7 +40,7 @@ const bindAddresses = () => listenAddresses((options.ifaces ?? networkInterfaces
 const peerAllowed = (address: string) => {
   const ip = address.replace(/^::ffff:/i, '');
   if (!isPrivateAddress(ip)) return false;
-  return lanNow || ip === '::1' || /^127\./.test(ip) || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(ip) || /\.ts\.net$/i.test(ip);
+  return lanNow || ip === '::1' || /^127\./.test(ip) || /^100\.(6[4-9]|[7-9]\d|1[01]\d|12[0-7])\./.test(ip);
 };
 
 // Counted per IPv4 address or IPv6 /64, like the hub's caps.

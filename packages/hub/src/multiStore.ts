@@ -5,7 +5,7 @@ import type { ProfileInfo, SyncStore } from '@notespark/sync';
 
 export interface ProfileSource {
   synced(): string[]; // local profile ids with the sync switch on
-  describe(id: string): Promise<{ name: string; isProtected: boolean; unlocked: boolean }>;
+  describe(id: string): Promise<{ name: string; isProtected: boolean; unlocked: boolean; exists?: boolean }>; // exists false: deleted or binned, skipped
   syncIdOf(id: string): Promise<string | null>; // while locked: the id remembered from the last time it was open
   open(id: string): Promise<SyncStore | null>; // null: cannot be used now
   adopt(syncId: string, name: string): Promise<string | null>; // a device linked a new profile: make one, or null when not allowed
@@ -18,12 +18,14 @@ export class LockedError extends Error {
 
 export const multiStore = (source: ProfileSource) => {
   let map: Map<string, string> | null = null; // sync id -> local profile id
+  const creating = new Map<string, Promise<void>>();
   const watchers = new Set<{ syncId: string; kind: 'subscribe' | 'onNoteChange'; l: (...a: any[]) => void; off: (() => void) | null; dead: boolean }>();
 
   const listAll = async (): Promise<(ProfileInfo & { localId: string })[]> => {
     const out: (ProfileInfo & { localId: string })[] = [];
     for (const id of source.synced()) {
       const d = await source.describe(id);
+      if (d.exists === false) continue;
       if (d.isProtected && !d.unlocked) {
         const syncId = await source.syncIdOf(id);
         if (syncId) out.push({ syncId, name: d.name, notes: 0, protected: true, locked: true, localId: id });
@@ -41,6 +43,7 @@ export const multiStore = (source: ProfileSource) => {
     if (!id) { await listAll(); id = map!.get(syncId); }
     if (!id) throw new Error('unknown profile');
     const d = await source.describe(id);
+    if (d.exists === false) throw new Error('unknown profile');
     const store = d.isProtected && !d.unlocked ? null : await source.open(id);
     if (!store) throw new LockedError();
     return store;
@@ -63,12 +66,19 @@ export const multiStore = (source: ProfileSource) => {
 
   const store: SyncStore = {
     profiles: async () => (await listAll()).map(({ localId: _l, ...p }) => p),
-    createProfile: async (syncId, name) => {
-      if (!map) await listAll();
-      if (map!.has(syncId)) return;
-      const id = await source.adopt(syncId, name);
-      if (!id) throw new Error('This computer does not accept new profiles from devices');
-      map = null;
+    // One at a time per sync id, so two calls cannot make two profiles; only a real UUID is a sync id.
+    createProfile: (syncId, name) => {
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(syncId)) return Promise.reject(new Error('bad sync id'));
+      const run = async () => {
+        if (!map) await listAll();
+        if (map!.has(syncId)) return;
+        const id = await source.adopt(syncId, name);
+        if (!id) throw new Error('This computer does not accept new profiles from devices');
+        map = null;
+      };
+      const next = (creating.get(syncId) ?? Promise.resolve()).then(run, run);
+      creating.set(syncId, next.catch(() => {}));
+      return next;
     },
     plainNotes: async syncId => (await route(syncId)).plainNotes(syncId),
     link: async (syncId, adopt) => (await route(syncId)).link(syncId, adopt),

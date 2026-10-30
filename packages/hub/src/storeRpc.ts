@@ -5,6 +5,11 @@ import type { Port } from './port.ts';
 
 export const MAX_IN_FLIGHT = 64;
 const MAX_STRING = 4096;
+const MAX_CALL_BYTES = 48 * 1024 * 1024; // one attachment is 32 MB; a call carrying more than this is refused
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+const isDoc = (v: unknown) => v === 'catalog' || (typeof v === 'string' && UUID.test(v)); // never an arbitrary document id
+// Rough size of what a call carries, counted before anything is handed to storage.
+const weight = (v: unknown): number => v instanceof Uint8Array ? v.byteLength : typeof v === 'string' ? v.length : Array.isArray(v) ? v.reduce((n: number, x) => n + weight(x), 0) : v instanceof Map ? v.size * 80 : v && typeof v === 'object' ? Object.values(v).reduce((n: number, x) => n + weight(x), 0) : 0;
 
 type Msg =
   | { k: 's:call'; id: number; op: string; args: unknown[] }
@@ -17,18 +22,18 @@ type Msg =
 const isStr = (v: unknown) => typeof v === 'string' && v.length <= MAX_STRING;
 const isBytes = (v: unknown) => v instanceof Uint8Array;
 const isBytesList = (v: unknown) => Array.isArray(v) && v.length <= 4096 && v.every(isBytes);
-const isEdit = (v: any) => !!v && (v.base === null || isStr(v.base) || typeof v.base === 'string') && typeof v.title === 'string' && typeof v.content === 'string' && typeof v.isPinned === 'boolean' && typeof v.isArchived === 'boolean';
+const isEdit = (v: any) => !!v && (v.base === null || typeof v.base === 'string') && typeof v.title === 'string' && typeof v.content === 'string' && typeof v.isPinned === 'boolean' && typeof v.isArchived === 'boolean';
 
 // Per call: how to check the arguments.
 const CALLS: Record<string, (a: unknown[]) => boolean> = {
   profiles: a => a.length === 0,
   createProfile: a => isStr(a[0]) && isStr(a[1]),
   plainNotes: a => isStr(a[0]),
-  link: a => isStr(a[0]) && a[1] instanceof Map && [...a[1]].every(([k, v]) => isStr(k) && isStr(v)),
+  link: a => isStr(a[0]) && a[1] instanceof Map && a[1].size <= 100_000 && [...a[1]].every(([k, v]) => isStr(k) && isStr(v)),
   docs: a => isStr(a[0]),
-  stateVector: a => isStr(a[0]) && isStr(a[1]),
-  diff: a => isStr(a[0]) && isStr(a[1]) && isBytes(a[2]),
-  apply: a => isStr(a[0]) && isStr(a[1]) && isBytesList(a[2]),
+  stateVector: a => isStr(a[0]) && isDoc(a[1]),
+  diff: a => isStr(a[0]) && isDoc(a[1]) && isBytes(a[2]),
+  apply: a => isStr(a[0]) && isDoc(a[1]) && isBytesList(a[2]),
   note: a => isStr(a[0]) && isStr(a[1]),
   allNotes: a => isStr(a[0]),
   applyFile: a => isStr(a[0]) && (a[1] === null || isStr(a[1])) && isEdit(a[2]),
@@ -48,7 +53,7 @@ export const serveStore = (port: Port, store: SyncStore, log: (e: string) => voi
     if (!m || typeof m !== 'object' || typeof m.k !== 'string' || !m.k.startsWith('s:')) return;
     if (m.k === 's:call') {
       const check = Object.hasOwn(CALLS, m.op) ? CALLS[m.op] : undefined;
-      if (!check || !Array.isArray(m.args) || !check(m.args) || typeof m.id !== 'number') { log(`refused store call ${String(m.op).slice(0, 40)}`); return reply({ k: 's:ret', id: m.id, ok: false, message: 'Bad request', code: 'BAD' }); }
+      if (!check || !Array.isArray(m.args) || m.args.length > 4 || weight(m.args) > MAX_CALL_BYTES || !check(m.args) || typeof m.id !== 'number') { log(`refused store call ${String(m.op).slice(0, 40)}`); return reply({ k: 's:ret', id: m.id, ok: false, message: 'Bad request', code: 'BAD' }); }
       if (inFlight >= MAX_IN_FLIGHT) return reply({ k: 's:ret', id: m.id, ok: false, message: 'Busy', code: 'BUSY' });
       inFlight++;
       Promise.resolve()

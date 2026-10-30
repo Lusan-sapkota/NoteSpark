@@ -4,17 +4,18 @@ import { MemoryStore } from '@notespark/sync';
 import { type ProfileSource, multiStore } from '../src/multiStore.ts';
 import { U, note, sleep } from './support.ts';
 
+const SNEW = '11111111-1111-4111-8111-111111111111';
 const rig = async () => {
   const stores = { work: new MemoryStore(1), home: new MemoryStore(2) };
   await stores.work.createProfile('sw', 'x');
   await stores.home.createProfile('sh', 'x');
-  const state = { synced: ['work', 'home'], unlocked: new Set<string>(['work']), opened: [] as string[], keyReads: 0, allowNew: false, adopted: [] as string[] };
+  const state = { synced: ['work', 'home'], unlocked: new Set<string>(['work']), opened: [] as string[], keyReads: 0, allowNew: false, adopted: [] as string[], gone: new Set<string>() };
   const source: ProfileSource = {
     synced: () => state.synced,
-    describe: async id => ({ name: id === 'work' ? 'Work' : 'Home', isProtected: id === 'work', unlocked: state.unlocked.has(id) }),
+    describe: async id => ({ name: id === 'work' ? 'Work' : 'Home', isProtected: id === 'work', unlocked: state.unlocked.has(id), exists: !state.gone.has(id) }),
     syncIdOf: async id => (id === 'work' ? 'sw' : 'sh'),
     open: async id => { state.opened.push(id); return (stores as any)[id] ?? null; },
-    adopt: async (syncId, name) => { if (!state.allowNew) return null; state.adopted.push(syncId); const m = new MemoryStore(9); await m.createProfile(syncId, name); (stores as any)[syncId] = m; state.synced.push(syncId); return syncId; },
+    adopt: async (syncId, name) => { if (!state.allowNew) return null; await sleep(20); state.adopted.push(syncId); const m = new MemoryStore(9); await m.createProfile(syncId, name); (stores as any)[syncId] = m; state.synced.push(syncId); return syncId; },
   };
   return { stores, state, ...multiStore(source) };
 };
@@ -58,12 +59,12 @@ test('a protected profile that is locked is never opened: it reports locked, eve
 
 test('a new profile from a device is made only when the switch allows it', async () => {
   const { state, store, stores } = await rig();
-  await assert.rejects(store.createProfile('snew', 'Phone notes'), /does not accept new profiles/);
+  await assert.rejects(store.createProfile(SNEW, 'Phone notes'), /does not accept new profiles/);
   state.allowNew = true;
-  await store.createProfile('snew', 'Phone notes');
-  await store.createProfile('snew', 'Phone notes'); // idempotent
-  assert.deepEqual(state.adopted, ['snew']);
-  assert.ok((await store.profiles()).some(p => p.syncId === 'snew'));
+  await store.createProfile(SNEW, 'Phone notes');
+  await store.createProfile(SNEW, 'Phone notes'); // idempotent
+  assert.deepEqual(state.adopted, [SNEW]);
+  assert.ok((await store.profiles()).some(p => p.syncId === SNEW));
   assert.ok(stores);
 });
 
@@ -80,4 +81,16 @@ test('rebind moves listeners to the new connection and unsubscribe stops them', 
   off();
   stores.home.edit('sh', U(5), note('c'));
   assert.equal(seen.length, 2);
+});
+
+test('two calls for one new sync id make one profile; a sync id that is not a UUID is refused; a binned or deleted profile is skipped', async () => {
+  const { state, store } = await rig();
+  state.allowNew = true;
+  await Promise.all([store.createProfile(SNEW, 'A'), store.createProfile(SNEW, 'A'), store.createProfile(SNEW, 'A')]);
+  assert.deepEqual(state.adopted, [SNEW]);
+  await assert.rejects(store.createProfile('../../x', 'bad'), /bad sync id/);
+  await assert.rejects(store.createProfile('x'.repeat(5000), 'bad'), /bad sync id/);
+  state.gone.add('home');
+  assert.ok(!(await store.profiles()).some(p => p.syncId === 'sh'));
+  await assert.rejects(store.docs('sh'), /unknown profile/);
 });
