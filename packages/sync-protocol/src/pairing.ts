@@ -140,6 +140,7 @@ export class PairingMode {
   constructor(clock: Clock, random: (n: number) => Uint8Array = randomBytes) { this.clock = clock; this.random = random; }
 
   get locked() { return this.clock.now() < this.lockedUntil; }
+  get lockMsLeft() { return Math.max(0, this.lockedUntil - this.clock.now()); }
   get active() { return !!this.token && this.clock.now() < this.expires && !this.locked; }
 
   // null while locked. Starting again replaces the old token.

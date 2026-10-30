@@ -254,8 +254,12 @@ export class SyncHub {
       case 'status': return this.status();
       case 'setOn': await this.setOn(a === true); return this.status();
       case 'update': this.update({ name: a?.name, tunnelName: a?.tunnelName, acceptNew: a?.acceptNew, webLan: a?.webLan }); await this.restartIf(a); return this.status();
-      case 'pairStart': return this.controller.call('pairStart');
-      case 'pairCancel': return this.controller.call('pairCancel');
+      case 'pairStart': {
+        const r = (await this.controller.call('pairStart')) as { code: string; expiresAt: number } | null;
+        this.lastCode = r ? { code: r.code, expiresAt: r.expiresAt } : null;
+        return r;
+      }
+      case 'pairCancel': this.lastCode = null; return this.controller.call('pairCancel');
       case 'pairState': return this.controller.call('pairState');
       case 'devices': return this.controller.call('devices');
       case 'rename': return this.controller.call('rename', { key: key(a?.key), name: String(a?.name ?? '').slice(0, 64) });
@@ -264,9 +268,17 @@ export class SyncHub {
       case 'chooseFolder': { const f = await this.d.chooseFolder?.(); if (f) { this.update({ mirrorFolder: f }); await this.applyMirror(); } return this.status(); }
       case 'clearFolder': this.update({ mirrorFolder: null }); await this.applyMirror(); return this.status();
       case 'diagnostics': return this.controller.call('diagnostics');
+      case 'copyText': return this.copyText(a === 'diagnostics' ? 'diagnostics' : 'code');
       case 'ackPaired': this.paired = null; return null;
       default: throw new Error(`Unknown sync call: ${op}`);
     }
+  }
+  private lastCode: { code: string; expiresAt: number } | null = null;
+  // Text for the clipboard, made here so the page never has to hold it. The pairing code is only available until it expires.
+  async copyText(what: 'code' | 'diagnostics'): Promise<string> {
+    if (what === 'diagnostics') return ((await this.controller.call('diagnostics')) as string[]).join('\n');
+    if (!this.lastCode || this.lastCode.expiresAt <= Date.now()) { this.lastCode = null; throw new Error('The code has expired. Start again to get a new one.'); }
+    return this.lastCode.code;
   }
   // A new computer name or tunnel name only reaches a QR made after it, and the hub process reads both at start.
   private async restartIf(a: any) {

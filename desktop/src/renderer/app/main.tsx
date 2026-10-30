@@ -32,6 +32,7 @@ import ProfileLockScreen from '../../../../mobile/src/screens/ProfileLockScreen'
 import ProfileUnlockScreen from '../../../../mobile/src/screens/ProfileUnlockScreen';
 import AboutScreen from '../../../../mobile/src/screens/AboutScreen';
 import PrivacyScreen from '../../../../mobile/src/screens/PrivacyScreen';
+import SyncScreen from './SyncScreen';
 import OnboardingScreen from '../../../../mobile/src/screens/OnboardingScreen';
 
 const screens = {
@@ -50,6 +51,7 @@ const screens = {
   ProfileLock: ProfileLockScreen,
   About: AboutScreen,
   Privacy: PrivacyScreen,
+  Sync: SyncScreen,
 };
 
 

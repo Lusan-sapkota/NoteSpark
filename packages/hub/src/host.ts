@@ -108,7 +108,7 @@ export class HubHost {
     return { uri: pairingUri(link), code: pairingCode(link), hubId: deviceId(this.o.hubKey.pub), expiresAt: this.pairExpires, addresses: link.addresses };
   }
   pairCancel() { this.pairing.cancel(); }
-  pairState() { return { active: this.pairing.active, locked: this.pairing.locked, expiresAt: this.pairExpires }; }
+  pairState() { return { active: this.pairing.active, locked: this.pairing.locked, lockMsLeft: this.pairing.lockMsLeft, expiresAt: this.pairExpires }; }
 
   deviceList() { return this.devices.list().map(d => ({ ...d, id: deviceId(Uint8Array.from(Buffer.from(d.key, 'hex'))) })); }
   rename(keyHex: string, name: string) { return this.devices.rename(Uint8Array.from(Buffer.from(keyHex, 'hex')), name); }

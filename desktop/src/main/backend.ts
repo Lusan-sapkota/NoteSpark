@@ -24,7 +24,15 @@ const handlers: Record<string, Handler> = {
     run: (mode: unknown) => { if (mode === 'light' || mode === 'dark' || mode === 'system') nativeTheme.themeSource = mode; },
   },
   // Pairing tokens pass through here, so sync is for the desktop window only, never the web view.
-  sync: { local: true, run: async (args: any) => (await import('./sync')).syncHub().call(String(args?.op), args?.args) },
+  sync: {
+    local: true,
+    run: async (args: any) => {
+      const hub = (await import('./sync')).syncHub();
+      // Copying goes through the main process so a pairing code or the diagnostics never pass through the page.
+      if (args?.op === 'copy') { clipboard.writeText((await hub.call('copyText', args.args)) as string); return null; }
+      return hub.call(String(args?.op), args?.args);
+    },
+  },
   'web:status': { local: true, run: () => webViewStatus() },
   'web:start': { local: true, run: () => startWebView(invoke) },
   // The link carries the token, so it goes to the clipboard from here and never passes through the page.
