@@ -431,23 +431,25 @@ const SettingsScreen: React.FC = () => {
             isFirst={false}
             isLast={false}
           />
-          {isMeaningSearchAvailable() && (
-            <GroupedRow
-              title="Related notes while writing"
-              description="Suggests notes close to the paragraph you're writing"
-              icon="lightbulb-outline"
-              right={
-                <M3Switch
-                  value={liveRelated}
-                  onValueChange={on => { setLiveRelated(on); setLiveRelatedOn(on).catch(() => {}); }}
-                  accessibilityLabel="Related notes while writing"
-                />
-              }
-              onPress={() => { setLiveRelated(!liveRelated); setLiveRelatedOn(!liveRelated).catch(() => {}); }}
-              isFirst={false}
-              isLast={false}
-            />
-          )}
+          <GroupedRow
+            title="Related notes while writing"
+            description={isMeaningSearchAvailable()
+              ? "Suggests notes close to the paragraph you're writing"
+              : "Needs search by meaning, which this build doesn't have"}
+            icon="lightbulb-outline"
+            right={
+              <M3Switch
+                value={liveRelated}
+                onValueChange={on => { setLiveRelated(on); setLiveRelatedOn(on).catch(() => {}); }}
+                accessibilityLabel="Related notes while writing"
+                disabled={!isMeaningSearchAvailable()}
+              />
+            }
+            onPress={() => { setLiveRelated(!liveRelated); setLiveRelatedOn(!liveRelated).catch(() => {}); }}
+            disabled={!isMeaningSearchAvailable()}
+            isFirst={false}
+            isLast={false}
+          />
           <GroupedRow
             title="Text shared to NoteSpark"
             description={shareLabel(shareTarget)}

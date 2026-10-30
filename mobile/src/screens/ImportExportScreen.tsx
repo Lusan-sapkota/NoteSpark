@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { cancelAnimation, Easing, SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { Button, Checkbox, Dialog, Icon, IconButton, RadioButton, SegmentedButtons, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { Button, Dialog, Icon, IconButton, RadioButton, SegmentedButtons, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import Menu from '../components/Menu';
 import { RootStackParamList } from '../types';
 import { sendAppNotification } from '../utils/notifications';
@@ -596,9 +596,10 @@ const ImportExportScreen: React.FC = () => {
               icon="paperclip"
               onPress={() => setIncludeAttachments(v => !v)}
               right={
-                <Checkbox.Android
-                  status={includeAttachments ? 'checked' : 'unchecked'}
-                  onPress={() => setIncludeAttachments(v => !v)}
+                <M3Switch
+                  value={includeAttachments}
+                  onValueChange={setIncludeAttachments}
+                  accessibilityLabel="Include attachments"
                 />
               }
               isFirst={false}
