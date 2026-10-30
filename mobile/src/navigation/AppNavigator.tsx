@@ -109,6 +109,16 @@ const AppNavigator: React.FC<{ onReady?: () => void; start?: StartScreen; reopen
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="Landscape"
+          component={require('../screens/LandscapeScreen').default}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="Review"
+          component={require('../screens/ReviewScreen').default}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="Tidy"
           component={require('../screens/TidyScreen').default}
           options={{ headerShown: false }}

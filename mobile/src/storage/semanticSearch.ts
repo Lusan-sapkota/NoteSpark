@@ -3,7 +3,7 @@ import * as SQLite from 'expo-sqlite';
 import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
 import { db, isDatabaseReady, withDatabaseLock } from './database';
-import { createTokenizer, linksTo, meanPoolNormalize } from '@notespark/core';
+import { buildLandscape, createTokenizer, Landscape, LandscapeNote, linksTo, meanPoolNormalize } from '@notespark/core';
 
 const DIMS = 384;
 // ponytail: cut-off picked from a few test sentences; tune with real notes.
@@ -311,6 +311,37 @@ export const notePairs = async (limit = 60): Promise<NotePair[] | null> => {
     return [...pairs.values()].sort((x, y) => x.distance - y.distance).slice(0, limit);
   } catch (error) {
     console.warn('Note pairs failed:', error);
+    return null;
+  }
+};
+
+// The whole notebook grouped by meaning (see buildLandscape in core). Each note's vector is the average of its chunks'.
+// null when search by meaning is missing or reading fails. Reads one row per chunk: a few seconds for a big notebook.
+export const notebookLandscape = async (): Promise<Landscape | null> => {
+  if (!isMeaningSearchAvailable()) return null;
+  try {
+    const notes = await db.getAllAsync<{ id: number; title: string; content: string; createdAt: string }>(
+      'SELECT id, title, content, createdAt FROM notes WHERE deletedAt IS NULL AND isArchived = 0 ORDER BY updatedAt DESC LIMIT 1500'
+    );
+    const out: LandscapeNote[] = [];
+    for (const n of notes) {
+      const chunks = await db.getAllAsync<{ id: number }>('SELECT id FROM note_chunks WHERE noteId = ? ORDER BY id LIMIT 8', [n.id]);
+      const sum = new Float32Array(DIMS);
+      let count = 0;
+      for (const { id } of chunks) {
+        const row = await db.getFirstAsync<{ embedding: Uint8Array }>('SELECT embedding FROM chunk_vectors WHERE rowid = CAST(? AS INTEGER)', [id]);
+        if (!row) continue;
+        const v = new Float32Array(row.embedding.buffer.slice(row.embedding.byteOffset, row.embedding.byteOffset + row.embedding.byteLength));
+        for (let i = 0; i < DIMS; i++) sum[i] += v[i];
+        count++;
+      }
+      if (!count) continue; // not indexed yet
+      const length = Math.sqrt(sum.reduce((a, x) => a + x * x, 0)) || 1;
+      out.push({ id: n.id, title: n.title, content: n.content, createdAt: n.createdAt, vector: sum.map(x => x / length) });
+    }
+    return buildLandscape(out, new Date().toISOString());
+  } catch (error) {
+    console.warn('Notebook landscape failed:', error);
     return null;
   }
 };

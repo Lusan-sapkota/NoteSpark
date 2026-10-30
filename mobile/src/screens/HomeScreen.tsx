@@ -15,6 +15,7 @@ import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../s
 import { Note } from '../types';
 import { extractTags, mergeSearch, TemplateKind, templateNote, today } from '@notespark/core';
 import { DailyNoteDialog, TemplateDialog } from '../components/NoteTemplates';
+import { dueCardCount } from '../utils/reviewCards';
 import { shareNotesAsJson, shareNotesAsZip } from '../utils/exportNotes';
 import { syncTaskReminders } from '../utils/taskReminders';
 import { updateWidgets } from '../widget/widgets';
@@ -67,6 +68,7 @@ const HomeScreen: React.FC = () => {
   const [sortType, setSortType] = useState<'edited' | 'created'>('edited');
   const [optionsVisible, setOptionsVisible] = useState(false);
   const [moreVisible, setMoreVisible] = useState(false);
+  const [dueCards, setDueCards] = useState(0); // review cards due now, shown in the More menu
   const [dailyVisible, setDailyVisible] = useState(false);
   const [templateVisible, setTemplateVisible] = useState(false);
   const [fabExtended, setFabExtended] = useState(true);
@@ -621,6 +623,10 @@ const HomeScreen: React.FC = () => {
     [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, filteredNotes, sortType, relatedFrom, theme, t]
   );
 
+  useEffect(() => {
+    dueCardCount(notes).then(setDueCards, () => setDueCards(0));
+  }, [notes]);
+
   // A day's note: open it if it exists, else start it from the daily template (nothing is saved until it's edited).
   const openDailyNote = (day: string) => {
     setDailyVisible(false);
@@ -740,6 +746,8 @@ const HomeScreen: React.FC = () => {
                 <Menu.Item title={t('home.newFromTemplate')} leadingIcon="file-document-plus-outline" onPress={() => { setMoreVisible(false); setTemplateVisible(true); }} />
                 <Menu.Item title={t('home.askYourNotes')} leadingIcon="comment-search-outline" onPress={() => { setMoreVisible(false); navigation.navigate('Ask'); }} />
                 <Menu.Item title={t('home.tidyUpNotes')} leadingIcon="broom" onPress={() => { setMoreVisible(false); navigation.navigate('Tidy'); }} />
+                <Menu.Item title={t('landscape.title')} leadingIcon="chart-bubble" onPress={() => { setMoreVisible(false); navigation.navigate('Landscape'); }} />
+                <Menu.Item title={dueCards > 0 ? t('review.menuDue', { count: dueCards }) : t('review.menu')} leadingIcon="cards-outline" onPress={() => { setMoreVisible(false); navigation.navigate('Review'); }} />
               </Menu>
               <Appbar.Action icon="cog-outline" accessibilityLabel={t('common.settings')} onPress={() => navigation.navigate('Settings')} />
             </>

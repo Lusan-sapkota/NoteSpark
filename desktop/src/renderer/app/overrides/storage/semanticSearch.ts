@@ -6,5 +6,5 @@ let available = false;
 export const setMeaningSearchAvailable = (value: boolean) => { available = value; };
 export const isMeaningSearchAvailable = () => available;
 
-export const { searchByMeaning, syncSearchIndex, relatedNotes, relatedToText, searchPassages, notePairs } = storageProxy<typeof Real>('semanticSearch', ['searchByMeaning', 'syncSearchIndex', 'relatedNotes', 'relatedToText', 'searchPassages', 'notePairs'] as const);
+export const { searchByMeaning, syncSearchIndex, relatedNotes, relatedToText, searchPassages, notePairs, notebookLandscape } = storageProxy<typeof Real>('semanticSearch', ['searchByMeaning', 'syncSearchIndex', 'relatedNotes', 'relatedToText', 'searchPassages', 'notePairs', 'notebookLandscape'] as const);
 export type { Passage, NotePair } from '../../../../../../mobile/src/storage/semanticSearch';

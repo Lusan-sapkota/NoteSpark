@@ -55,6 +55,8 @@ export const buildAppMenu = ({ send, webOn, toggleWeb, zoom }: { send(action: Me
         place(t('common.settings'), 'CmdOrCtrl+4', go('Settings')),
         place(t('desktop.askNotes'), 'CmdOrCtrl+5', go('Ask')),
         place(t('desktop.tidyNotes'), 'CmdOrCtrl+6', go('Tidy')),
+        place(t('landscape.title'), 'CmdOrCtrl+7', go('Landscape')),
+        place(t('review.title'), 'CmdOrCtrl+8', go('Review')),
         { type: 'separator' },
         place(t('desktop.bin'), 'CmdOrCtrl+Shift+Backspace', go('Settings', 'Bin')),
       ],
