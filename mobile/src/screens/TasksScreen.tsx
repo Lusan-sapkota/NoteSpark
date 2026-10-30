@@ -7,10 +7,11 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { AnimatedFAB, Appbar, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
-import AddTaskDialog from '../components/AddTaskDialog';
+import AddTaskDialog, { TaskTarget } from '../components/AddTaskDialog';
+import { updateWidgets } from '../widget/widgets';
 import { RootStackParamList } from '../types';
-import { deleteTaskLine, getNotes, getScratchpad, getScratchpadNote, insertTaskLine, restoreTaskLine, saveScratchpad, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
-import { dueLabel, extractTasks, formatDue, editTaskLine, repeatLabel, setLineDue, Task, today as getToday } from '@notespark/core';
+import { addTaskToNote, deleteTaskLine, getNotes, getScratchpadNote, insertTaskLine, restoreTaskLine, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
+import { dueLabel, extractTasks, formatDue, editTaskLine, repeatLabel, Repeat, Task, today as getToday } from '@notespark/core';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -94,7 +95,7 @@ const TasksScreen: React.FC = () => {
   const [adding, setAdding] = useState(false);
   const [editing, setEditing] = useState<Task | null>(null);
   const [deleted, setDeleted] = useState<Task | null>(null);
-  const [added, setAdded] = useState(false);
+  const [added, setAdded] = useState('');
 
   const load = useCallback(async () => {
     try {
@@ -127,6 +128,7 @@ const TasksScreen: React.FC = () => {
     } catch {
       alert("Couldn't update the task", 'Try again. If it keeps failing, restart the app.');
     }
+    updateWidgets().catch(() => {}); // the Tasks due widget
     load();
   };
 
@@ -141,33 +143,36 @@ const TasksScreen: React.FC = () => {
     } catch {
       alert("Couldn't undo", 'Try again. If it keeps failing, restart the app.');
     }
+    updateWidgets().catch(() => {}); // the Tasks due widget
     load();
   };
 
-  // New tasks go on the end of the scratchpad, which the list already reads.
-  const addTask = async (text: string, due: string | null) => {
+  // A new task goes on the end of the chosen note (the scratchpad unless picked), where the list already reads it.
+  const addTask = async (text: string, due: string | null, every: Repeat | null, target: TaskTarget) => {
     setAdding(false);
     try {
-      const pad = await getScratchpad();
-      await saveScratchpad(`${pad}${pad && !pad.endsWith('\n') ? '\n' : ''}${setLineDue(text.replace(/\s+/g, ' '), due)}\n`);
-      setAdded(true);
+      const line = editTaskLine('- [ ] x', text.replace(/\s+/g, ' '), due, every);
+      if (!(await addTaskToNote(target.id, line))) throw new Error('missing');
+      setAdded(target.title);
     } catch {
       alert("Couldn't add the task", 'Try again. If it keeps failing, restart the app.');
     }
+    updateWidgets().catch(() => {}); // the Tasks due widget
     load();
   };
 
-  const saveEdit = async (text: string, due: string | null) => {
+  const saveEdit = async (text: string, due: string | null, every: Repeat | null) => {
     const task = editing;
     setEditing(null);
     if (!task) return;
     try {
-      if (!(await restoreTaskLine(task.noteId, task.line, task.raw, editTaskLine(task.raw, text, due)))) {
+      if (!(await restoreTaskLine(task.noteId, task.line, task.raw, editTaskLine(task.raw, text, due, every)))) {
         alert('This task changed', 'Its note was edited. The list has been refreshed.');
       }
     } catch {
       alert("Couldn't save the task", 'Try again. If it keeps failing, restart the app.');
     }
+    updateWidgets().catch(() => {}); // the Tasks due widget
     load();
   };
 
@@ -182,6 +187,7 @@ const TasksScreen: React.FC = () => {
     } catch {
       alert("Couldn't delete the task", 'Try again. If it keeps failing, restart the app.');
     }
+    updateWidgets().catch(() => {}); // the Tasks due widget
     load();
   };
 
@@ -194,6 +200,7 @@ const TasksScreen: React.FC = () => {
     } catch {
       alert("Couldn't undo", 'Open the note to add the task again.');
     }
+    updateWidgets().catch(() => {}); // the Tasks due widget
     load();
   };
 
@@ -331,7 +338,7 @@ const TasksScreen: React.FC = () => {
       <AddTaskDialog visible={adding} onDismiss={() => setAdding(false)} onAdd={addTask} />
       <AddTaskDialog visible={!!editing} task={editing ?? undefined} onDismiss={() => setEditing(null)} onAdd={saveEdit} />
       <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={4000} action={{ label: 'Undo', onPress: undoDelete }}>Task deleted</Snackbar>
-      <Snackbar visible={added} onDismiss={() => setAdded(false)} duration={3000}>Task added to Scratchpad</Snackbar>
+      <Snackbar visible={!!added} onDismiss={() => setAdded('')} duration={3000}>Task added to {added}</Snackbar>
       <Snackbar
         visible={!!lastDone}
         onDismiss={() => setLastDone(null)}

@@ -144,6 +144,8 @@ const AppContent = () => {
     const match = /^notespark:\/\/note\/(?:([^/]+)\/)?(\d+)$/.exec(widgetLink);
     if (widgetLink === 'notespark://new') {
       appNavigation.dispatch(StackActions.push('Editor'));
+    } else if (widgetLink === 'notespark://tasks') {
+      appNavigation.navigate('Tasks');
     } else if (match) {
       const [, profileId, noteId] = match;
       getActiveProfile()

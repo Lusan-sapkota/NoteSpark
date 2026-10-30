@@ -276,6 +276,14 @@ export const restoreTaskLine = async (noteId: number, line: number, current: str
   return true;
 };
 
+// Adds a task line at the end of a note or the scratchpad. false if the note is gone.
+export const addTaskToNote = async (noteId: number, line: string): Promise<boolean> => {
+  const note = await readTaskSource(noteId);
+  if (!note) return false;
+  await writeTaskSource(note, `${note.content.trimEnd()}${note.content.trim() ? '\n' : ''}${line}\n`);
+  return true;
+};
+
 // Delete a task's line if it's still as listed; insertTaskLine puts it back (Undo).
 export const deleteTaskLine = async (noteId: number, line: number, current: string): Promise<boolean> => {
   const note = await readTaskSource(noteId);

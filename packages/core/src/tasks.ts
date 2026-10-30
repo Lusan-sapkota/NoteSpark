@@ -105,12 +105,13 @@ export const setLineDue = (line: string, due: string | null): string => {
   return due ? `${task} due:${due}` : task;
 };
 
-// A task line with new text and due date (null clears it); keeps its indent, marker, box and repeat.
-export const editTaskLine = (raw: string, text: string, due: string | null): string => {
+// A task line with new text and due date (null clears it); keeps its indent, marker and box.
+// `every`: a repeat, null for none; left out, the line keeps the repeat it has.
+export const editTaskLine = (raw: string, text: string, due: string | null, every?: Repeat | null): string => {
   const m = taskLine.exec(raw);
   if (!m) return raw;
-  const { every } = splitDue(m[3]);
-  return `${m[1]}[${m[2]}] ${text}${every ? ` every:${every}` : ''}${due ? ` due:${due}` : ''}`;
+  const repeat = every === undefined ? splitDue(m[3]).every : every;
+  return `${m[1]}[${m[2]}] ${text}${repeat ? ` every:${repeat}` : ''}${due ? ` due:${due}` : ''}`;
 };
 
 // `next` is set when a repeating task was ticked: it stays open with that new due date.

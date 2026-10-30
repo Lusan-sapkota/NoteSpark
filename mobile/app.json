@@ -93,6 +93,18 @@
               "resizeMode": "horizontal|vertical",
               "widgetCategory": "home_screen",
               "updatePeriodMillis": 0
+            },
+            {
+              "name": "DueTasks",
+              "label": "NoteSpark tasks",
+              "description": "Tasks due today and overdue",
+              "minWidth": "250dp",
+              "minHeight": "110dp",
+              "targetCellWidth": 4,
+              "targetCellHeight": 2,
+              "resizeMode": "horizontal|vertical",
+              "widgetCategory": "home_screen",
+              "updatePeriodMillis": 0
             }
           ]
         }
