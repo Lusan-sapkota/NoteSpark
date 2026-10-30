@@ -1,5 +1,6 @@
+import { reconcileSync } from '../sync/syncRuntime';
 import React, { useCallback, useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView } from 'react-native';
+import { Platform, StyleSheet, View, ScrollView } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, Icon, IconButton, List, RadioButton, SegmentedButtons, Text, TextInput } from 'react-native-paper';
@@ -249,6 +250,7 @@ const SettingsScreen: React.FC = () => {
       }
       closePinDialog();
       await switchProfile(profile.id, enteredPin);
+      void reconcileSync();
       await loadProfiles();
     } catch (error) {
       alert(
@@ -589,6 +591,22 @@ const SettingsScreen: React.FC = () => {
               isLast={i === binnedProfiles.length - 1}
             />
           ))}
+
+          {/* The desktop has its own Sync screen and row (KeepInTrayRow), so this one is for the phone. */}
+          {Platform.OS !== 'web' && (
+            <>
+              {sectionTitle(t('sync.title'))}
+              <GroupedRow
+                title={t('sync.settingsRow')}
+                description={t('sync.settingsRowHelp')}
+                icon="sync"
+                right={chevron}
+                onPress={() => navigation.navigate('Sync')}
+                isFirst
+                isLast
+              />
+            </>
+          )}
 
           {sectionTitle(t('settings.backupAndStorage'))}
           <GroupedRow

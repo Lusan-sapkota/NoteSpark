@@ -55,7 +55,8 @@
         {
           "android": {
             "enableMinifyInReleaseBuilds": true,
-            "enableShrinkResourcesInReleaseBuilds": true
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "usesCleartextTraffic": true
           }
         }
       ],
@@ -65,6 +66,14 @@
       ],
       "./plugins/withAndroidBackup",
       "expo-asset",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "NoteSpark uses the camera only to read the pairing code from your computer.",
+          "recordAudioAndroid": false
+        }
+      ],
+      "./plugins/withNoMlKitDownload",
       "onnxruntime-react-native",
       [
         "expo-secure-store",

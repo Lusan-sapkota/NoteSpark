@@ -17,6 +17,7 @@ import core from './core';
 import desktop from './desktop';
 import landscape from './landscape';
 import review from './review';
+import sync from './sync';
 
 // The English text, the source of truth: every other language is checked against these keys.
-export const en = { ...common, ...home, ...editor, ...note, ...tasks, ...scratchpad, ...ask, ...settings, ...profiles, ...onboarding, ...importExport, ...bin, ...privacy, ...about, ...app, ...core, ...desktop, ...landscape, ...review } as const;
+export const en = { ...common, ...home, ...editor, ...note, ...tasks, ...scratchpad, ...ask, ...settings, ...profiles, ...onboarding, ...importExport, ...bin, ...privacy, ...about, ...app, ...core, ...desktop, ...landscape, ...review, ...sync } as const;

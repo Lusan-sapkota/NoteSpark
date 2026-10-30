@@ -1,3 +1,4 @@
+import { reconcileSync } from './src/sync/syncRuntime';
 import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer, StackActions } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
@@ -317,6 +318,7 @@ const AppContent = () => {
 
   // Font load failure falls back to the system font instead of blocking the app.
   const ready = dbInitialized && showOnboarding !== null && (fontsLoaded || !!fontError);
+  useEffect(() => { if (ready && !lockedProfile && !unreadableProfile) void reconcileSync(); }, [ready, lockedProfile, unreadableProfile]);
 
   return (
     <View style={[styles.root, { backgroundColor: theme.colors.background }]}>

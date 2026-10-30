@@ -12,6 +12,7 @@ export type RootStackParamList = {
   ProfileLock: { profileId?: string } | undefined; // no id: new profile
   ImportExport: undefined;
   About: undefined;
+  Sync: undefined;
   Privacy: undefined;
   Tasks: undefined;
   Scratchpad: { append?: string } | undefined; // append: shared text to add at the end

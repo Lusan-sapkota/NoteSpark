@@ -10,6 +10,7 @@ import SettingsScreen from '../screens/SettingsScreen';
 import ImportExportScreen from '../screens/ImportExportScreen';
 import AboutScreen from '../screens/AboutScreen';
 import PrivacyScreen from '../screens/PrivacyScreen';
+import SyncScreen from '../screens/SyncScreen';
 import TasksScreen from '../screens/TasksScreen';
 import BinScreen from '../screens/BinScreen';
 import { useTheme } from '../theme/ThemeContext';
@@ -87,6 +88,13 @@ const AppNavigator: React.FC<{ onReady?: () => void; start?: StartScreen; reopen
         <Stack.Screen
           name="About"
           component={AboutScreen}
+          options={{
+            headerShown: false,
+          }}
+        />
+        <Stack.Screen
+          name="Sync"
+          component={SyncScreen}
           options={{
             headerShown: false,
           }}
