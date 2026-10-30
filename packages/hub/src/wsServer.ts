@@ -31,6 +31,16 @@ export interface ServerOptions {
   log?: (event: string) => void;
 }
 
+// What the caps count: an IPv4 address, or the /64 an IPv6 address belongs to (one machine can hold a whole /64).
+export const limitKey = (address: string): string => {
+  const ip = address.toLowerCase().replace(/^\[|\]$/g, '').replace(/%.*$/, '');
+  if (!ip.includes(':') || /^(?:::ffff:)?\d+\.\d+\.\d+\.\d+$/.test(ip)) return ip.replace(/^::ffff:/, '');
+  const [head, tail = ''] = ip.split('::');
+  const a = head ? head.split(':') : [], b = tail ? tail.split(':') : [];
+  const groups = ip.includes('::') ? [...a, ...new Array(Math.max(0, 8 - a.length - b.length)).fill('0'), ...b] : a;
+  return groups.slice(0, 4).map(g => (g || '0').padStart(4, '0')).join(':') + '::/64';
+};
+
 const hex = (b: Uint8Array) => Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
 
 export class HubServer {
@@ -75,14 +85,15 @@ export class HubServer {
   }
 
   private onConnection(socket: Socket) {
-    const ip = (this.o.peerAddress ?? (s => s.remoteAddress ?? ''))(socket);
+    const address = (this.o.peerAddress ?? (s => s.remoteAddress ?? ''))(socket);
+    const ip = limitKey(address);
     const L = this.limits, now = this.clock.now();
     const recent = (this.attempts.get(ip) ?? []).filter(t => now - t < L.windowMs);
     recent.push(now);
     this.attempts.set(ip, recent);
     if (this.attempts.size > 1024) for (const [k, v] of this.attempts) if (v.every(t => now - t >= L.windowMs)) this.attempts.delete(k);
     const mine = this.perIp.get(ip) ?? 0;
-    if (!isPrivateAddress(ip)) return this.refuse(socket, 'public address');
+    if (!isPrivateAddress(address)) return this.refuse(socket, 'public address');
     if (this.sockets.size >= L.maxConnections || mine >= L.maxPerIp) return this.refuse(socket, 'connection cap');
     if (recent.length > L.newPerIp) return this.refuse(socket, 'rate limit');
     this.sockets.add(socket);

@@ -240,3 +240,33 @@ test('the connector returns null for a host string the URL parser refuses, inste
   assert.equal(connect(), null);
   assert.equal(connect(), null);
 });
+
+test('a name is resolved first: a name that points at the internet is never dialled, one that points inside is', async () => {
+  const w = await setup();
+  const key = generateKeypair();
+  w.known.add(Buffer.from(key.pub).toString('hex'));
+  let dialled = 0;
+  w.server.address(); // keep the server alive
+  const mk = (ips: string[]) => new Client({
+    store: new MemoryStore(1), clock: realClock, rng: Math.random, hash: sha256, link: { syncId: '', name: 'P' },
+    connect: wsConnector({ deviceKey: key, hubKey: w.hubKey.pub, name: 'P', addresses: [{ host: 'studio.local', port: w.port }], resolve: async () => { dialled++; return ips; } }),
+  });
+  const before = w.server.connections;
+  const bad = mk(['8.8.8.8']);
+  bad.start();
+  await new Promise(r => setTimeout(r, 300));
+  assert.notEqual(bad.state, 'live');
+  assert.equal(w.server.connections, before, 'nothing reached the hub');
+  bad.stop();
+  const mixed = mk(['127.0.0.1', '1.1.1.1']); // every answer must be private
+  mixed.start();
+  await new Promise(r => setTimeout(r, 300));
+  assert.notEqual(mixed.state, 'live');
+  mixed.stop();
+  const good = mk(['127.0.0.1']);
+  good.start();
+  await until(() => good.state === 'live');
+  assert.ok(dialled >= 3);
+  good.stop();
+  await w.stop();
+});

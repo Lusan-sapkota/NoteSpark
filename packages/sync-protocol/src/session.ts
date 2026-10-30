@@ -9,6 +9,8 @@ export const DEAD_AFTER = 45_000;
 export const RECONCILE_EVERY = 30_000;
 export const PULL_TIMEOUT = 20_000;
 export const PHASE_TIMEOUT = 30_000;
+// A reference to a file nobody has (two people edited inside it at once) is asked for this many times per connection, unless a peer offers it.
+export const MAX_BLOB_MISSES = 3;
 export const CONFIRM_TIMEOUT = 10 * 60_000
 
 export type SessionState = 'start' | 'linking' | 'syncing' | 'live' | 'closed';
@@ -75,6 +77,7 @@ export class Session {
   private peerBlobs = new Set<string>();
   private pendingBlobs: string[] = [];
   private blobsInflight = new Set<string>();
+  private blobMisses = new Map<string, number>();
 
   constructor(o: SessionOptions) {
     this.o = o;
@@ -320,6 +323,7 @@ export class Session {
         const actual = bytesToHash(this.o.hash(bytes));
         if (actual !== f.hash) throw new ProtocolError(400, 'blob hash mismatch');
         await this.o.store.putBlob?.(this.syncId, f.hash, bytes);
+        this.blobMisses.delete(f.hash);
         this.blobsInflight.delete(f.hash);
         this.send({ type: T.BLOB_ACK, hash: f.hash });
         this.o.hub?.forwardBlob?.(this.syncId, f.hash, this);
@@ -364,7 +368,11 @@ export class Session {
     const have = new Set(haveList);
     this.offerBlobs(haveList);
     for (const h of extractBlobHashes(notes)) {
-      if (!have.has(h)) this.enqueueBlobReq(h);
+      if (have.has(h)) continue;
+      const asked = this.blobMisses.get(h) ?? 0;
+      if (asked >= MAX_BLOB_MISSES && !this.peerBlobs.has(h)) continue;
+      this.blobMisses.set(h, asked + 1);
+      this.enqueueBlobReq(h);
     }
     this.pumpBlobs();
   }

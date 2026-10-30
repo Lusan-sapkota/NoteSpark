@@ -1,6 +1,8 @@
 // The Node end of the transport: a Noise-secured WebSocket as a Channel (docs/architecture/sync-architecture.md section 4).
 import { isPrivateAddress } from '@notespark/core';
 import { type Channel, type Clock, type Keypair, type RawSocket, SecureChannel, realClock } from '@notespark/sync-protocol';
+import { lookup } from 'node:dns/promises';
+import { isIP } from 'node:net';
 import { WebSocket } from 'ws';
 
 export const SUBPROTOCOL = 'notespark.sync.v1';
@@ -52,23 +54,59 @@ export interface ConnectorOptions {
   deviceKey: Keypair;
   hubKey: Uint8Array;
   name: string;
-  addresses: Target[]; // tried one per attempt, in turn; each must be a private address
+  addresses: Target[]; // tried one per attempt, in turn; each must be a private address or a .local / .ts.net name
   token?: () => Uint8Array | undefined; // pairing only
   clock?: Clock;
+  resolve?: (host: string) => Promise<string[]>; // a test seam; the default is the operating system
   onChannel?: (c: SecureChannel, target: Target) => void;
 }
+
+const osResolve = async (host: string) => (await lookup(host, { all: true })).map(a => a.address);
+
+// A name is resolved first and every answer must be private, then the IP is dialled (never the name), so a name that
+// points at the internet is refused like any public address. Until the socket exists, sends are held.
+const deferred = (target: Promise<WebSocket | null>, clock?: Clock): RawSocket => {
+  const held: Uint8Array[] = [];
+  let inner: RawSocket | null = null, closed = false;
+  const raw: RawSocket = {
+    send: d => { if (inner) inner.send(d); else if (!closed) held.push(d); },
+    close: g => { closed = true; held.length = 0; inner ? inner.close(g) : raw.onClose(); },
+    onMessage: () => {},
+    onClose: () => {},
+  };
+  target.then(ws => {
+    if (!ws || closed) { ws?.terminate(); if (!closed) { closed = true; raw.onClose(); } return; }
+    inner = rawFromWs(ws, clock);
+    inner.onMessage = d => raw.onMessage(d);
+    inner.onClose = () => { closed = true; raw.onClose(); };
+    for (const d of held.splice(0)) inner.send(d);
+  }, () => { if (!closed) { closed = true; raw.onClose(); } });
+  return raw;
+};
 
 // For `Client`'s `connect`: a new secure channel each call. A public address is refused (null), never dialled.
 export const wsConnector = (o: ConnectorOptions): (() => Channel | null) => {
   let turn = 0;
+  const open = (host: string, port: number) => {
+    const bare = host.replace(/^\[|\]$/g, '');
+    const url = `ws://${bare.includes(':') ? `[${bare.replace('%', '%25')}]` : bare}:${port}`;
+    return new WebSocket(url, SUBPROTOCOL, { maxPayload: MAX_WS_MESSAGE, perMessageDeflate: false, handshakeTimeout: 10_000 });
+  };
   return () => {
     const target = o.addresses[turn++ % o.addresses.length];
     if (!target || !isPrivateAddress(target.host)) return null;
-    const bare = target.host.replace(/^\[|\]$/g, '');
-    const host = bare.includes(':') ? `[${bare.replace('%', '%25')}]` : bare;
-    let ws: WebSocket;
-    try { ws = new WebSocket(`ws://${host}:${target.port}`, SUBPROTOCOL, { maxPayload: MAX_WS_MESSAGE, perMessageDeflate: false, handshakeTimeout: 10_000 }); } catch { return null; } // a host string the URL parser refuses
-    const channel = SecureChannel.client(rawFromWs(ws, o.clock), { s: o.deviceKey, hubKey: o.hubKey, name: o.name, token: o.token?.() });
+    const literal = isIP(target.host.replace(/^\[|\]$/g, '').replace(/%.*$/, '')) !== 0;
+    let raw: RawSocket;
+    try {
+      raw = literal
+        ? rawFromWs(open(target.host, target.port), o.clock)
+        : deferred((async () => {
+          const ips = await (o.resolve ?? osResolve)(target.host);
+          if (ips.length === 0 || !ips.every(isPrivateAddress)) return null; // resolves to the internet: never dialled
+          return open(ips[0], target.port);
+        })(), o.clock);
+    } catch { return null; } // a host string the URL parser refuses
+    const channel = SecureChannel.client(raw, { s: o.deviceKey, hubKey: o.hubKey, name: o.name, token: o.token?.() });
     o.onChannel?.(channel, target);
     return channel;
   };

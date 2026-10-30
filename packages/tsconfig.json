@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "strict": true,
+    "noEmit": true,
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": true,
+    "skipLibCheck": true,
+    "types": ["node"],
+    "typeRoots": ["../mobile/node_modules/@types"],
+    "paths": {
+      "@notespark/core": ["./core/src/index.ts"],
+      "@notespark/sync": ["./sync/src/index.ts"],
+      "@notespark/sync-protocol": ["./sync-protocol/src/index.ts"]
+    }
+  },
+  "include": ["sync/src", "sync-protocol/src", "sync-protocol/test", "hub/src", "hub/test", "core/src/network.ts"]
+}

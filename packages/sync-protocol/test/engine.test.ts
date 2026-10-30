@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { Session, backoff } from '../src/index.ts';
 import { T, encodeFrame } from '../src/wire.ts';
-import { World, note, rng, uuid } from './harness.ts';
+import { World, note, rng, sha256, uuid } from './harness.ts';
 
 // A device that links a local profile to a hub profile ('' = a new one).
 const linked = async (w: World, notes: Record<string, ReturnType<typeof note>>, hubSyncId = '', over: Record<string, unknown> = {}) => {
@@ -180,4 +180,33 @@ test('a stopped client does not reconnect', async () => {
   assert.equal(a.client!.state, 'off');
   assert.equal(w.clock.pending(), 0, 'no timer left running');
   assert.ok(w.net.sent - sent < 5);
+});
+
+test('a reference to a file nobody has is asked for a few times, then not again; once a peer offers it, it is fetched', async () => {
+  const w = new World();
+  const a = await linked(w, { [uuid(1)]: note('One') });
+  const syncId = a.client!.syncId!;
+  const b = await linked(w, {}, syncId);
+  const bytes = Uint8Array.from({ length: 5000 }, (_, i) => (i * 13) & 255);
+  const hash = Array.from(sha256(bytes), x => x.toString(16).padStart(2, '0')).join('');
+  let requests = 0;
+  const pair = w.net.pair.bind(w.net);
+  w.net.pair = () => {
+    const ends = pair();
+    for (const end of ends) { const send = end.send; end.send = d => { if (d[0] === T.BLOB_REQ) requests++; send(d); }; }
+    return ends;
+  };
+  for (const d of [a, b]) { d.online = false; d.client!.session?.close('offline'); }
+  await w.run(5000);
+  for (const d of [a, b]) d.online = true;
+  a.store.edit(syncId, uuid(2), note('Dangling', `[f.bin](attachment:${hash})`)); // a reference, but no file anywhere
+  await w.run(5 * 60_000);
+  const early = requests;
+  assert.ok(early > 0 && early <= 3 * 4, `asked ${early} times`);
+  await w.run(10 * 60_000);
+  assert.equal(requests, early, 'it stopped asking');
+  await a.store.putBlob(syncId, hash, bytes); // the file turns up on one device
+  await w.run(3 * 60_000);
+  assert.deepEqual(await b.store.getBlob(syncId, hash), bytes);
+  assert.deepEqual(await w.hubStore.getBlob(syncId, hash), bytes);
 });

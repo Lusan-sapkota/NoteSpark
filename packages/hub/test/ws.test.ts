@@ -196,3 +196,25 @@ test('the hub binds only to what it is given', async () => {
   assert.equal((w.server.address() as net.AddressInfo).address, '127.0.0.1');
   await w.stop();
 });
+
+test('limitKey: IPv4 as is, IPv6 by its /64, mapped and bracketed forms normalised', async () => {
+  const { limitKey } = await import('../src/wsServer.ts');
+  assert.equal(limitKey('192.168.1.5'), '192.168.1.5');
+  assert.equal(limitKey('::ffff:192.168.1.5'), '192.168.1.5');
+  assert.equal(limitKey('fd00::1'), limitKey('fd00::abcd:1'));
+  assert.equal(limitKey('fd00:0:0:1::5'), limitKey('FD00:0:0:1:aaaa:bbbb:cccc:dddd'));
+  assert.notEqual(limitKey('fd00:0:0:1::5'), limitKey('fd00:0:0:2::5'));
+  assert.equal(limitKey('[fe80::1%eth0]'), limitKey('fe80::2'));
+  assert.equal(limitKey('fd00:1:2:3:4:5:6:7'), 'fd00:0001:0002:0003::/64');
+});
+
+test('one IPv6 /64 shares one connection cap, however many addresses it uses', async () => {
+  let n = 0;
+  const w = await setup({ limits: { maxPerIp: 2, firstMessageMs: 5000 }, peerAddress: () => `fd00::${(++n).toString(16)}` });
+  const socks = [0, 1, 2, 3].map(() => net.connect(w.port, '127.0.0.1'));
+  const closed = await Promise.all(socks.map(s => new Promise<boolean>(r => { s.on('error', () => {}); s.on('close', () => r(true)); setTimeout(() => r(false), 400); })));
+  assert.equal(closed.filter(Boolean).length, 2);
+  assert.equal(w.server.connections, 2);
+  socks.forEach(s => s.destroy());
+  await w.stop();
+});
