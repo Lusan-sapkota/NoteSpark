@@ -158,3 +158,26 @@ test('a note over 32 MB stays on its device, is reported, and everything else sy
   assert.deepEqual(problems[0], { code: 413, doc: uuid(2) });
   assert.equal(a.client!.state, 'live');
 });
+
+test('a peer that sends faster than the store can apply is cut off at 64 MB queued (429)', async () => {
+  const w = new World();
+  w.hubStore.profiles = () => new Promise(() => {}); // the hub never gets to the frames
+  const [a, b] = w.net.pair();
+  const session = w.hub.accept(b);
+  const frame = encodeFrame({ type: T.SV, doc: 'catalog', stateVector: new Uint8Array(1024 * 1024 - 64) });
+  for (let i = 0; i < 70 && session.state !== 'closed'; i++) a.send(frame);
+  await w.run(100);
+  assert.equal(session.state, 'closed');
+  assert.equal(session.closeCode, 429);
+});
+
+test('a stopped client does not reconnect', async () => {
+  const w = new World();
+  const a = await linked(w, { [uuid(1)]: note('One') });
+  const sent = w.net.sent;
+  a.client!.stop();
+  await w.run(5 * 60_000);
+  assert.equal(a.client!.state, 'off');
+  assert.equal(w.clock.pending(), 0, 'no timer left running');
+  assert.ok(w.net.sent - sent < 5);
+});

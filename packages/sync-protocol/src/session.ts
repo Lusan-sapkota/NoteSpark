@@ -2,7 +2,7 @@ import { type SyncStore, extractBlobHashes } from '@notespark/sync';
 import { type Hash, fingerprints, planAdoption } from './adopt.ts';
 import type { Channel } from './channel.ts';
 import type { Clock } from './clock.ts';
-import { CHUNK, type Frame, type LinkEntry, MAX_DOCS_IN_FLIGHT, MAX_DOC_BYTES, MAX_LINK_ENTRIES, type PairEntry, ProtocolError, Reassembler, T, bytesToHash, chunkBlob, chunkUpdate, decodeFrame, encodeFrame } from './wire.ts';
+import { CHUNK, type Frame, type LinkEntry, MAX_BUFFERED, MAX_DOCS_IN_FLIGHT, MAX_DOC_BYTES, MAX_LINK_ENTRIES, type PairEntry, ProtocolError, Reassembler, T, bytesToHash, chunkBlob, chunkUpdate, decodeFrame, encodeFrame } from './wire.ts';
 
 export const PING_EVERY = 15_000;
 export const DEAD_AFTER = 45_000;
@@ -140,8 +140,12 @@ export class Session {
       if (this.answering.size >= MAX_DOCS_IN_FLIGHT) return this.fail(new ProtocolError(400, 'too many documents in flight'));
       this.answering.add(f.doc);
     }
-    this.queue(() => this.handle(f));
+    // Received but not yet handled: a peer that sends faster than the store can apply is cut off (64 MB).
+    this.queuedBytes += data.length;
+    if (this.queuedBytes > MAX_BUFFERED) return this.fail(new ProtocolError(429, 'too much buffered input'));
+    this.queue(async () => { try { await this.handle(f); } finally { this.queuedBytes -= data.length; } });
   }
+  private queuedBytes = 0;
 
   // Gives up waiting for the other end after `ms`.
   private phase(ms: number | null) {

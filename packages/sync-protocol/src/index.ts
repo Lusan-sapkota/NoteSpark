@@ -4,5 +4,6 @@ export * from './client.ts';
 export * from './clock.ts';
 export * from './hub.ts';
 export * from './noise.ts';
+export * from './secure.ts';
 export * from './session.ts';
 export * from './wire.ts';

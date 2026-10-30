@@ -1,4 +1,4 @@
-// The "Network rule": only private peer addresses (IPv4, IPv6, IPv4-mapped) are allowed, never the internet.
+// The "Network rule": only private peer addresses (IPv4, IPv6, IPv4-mapped) and `.local` / `.ts.net` names are allowed, never the internet.
 export const isPrivateAddress = (address: string): boolean => {
   const ip = address.trim().toLowerCase().replace(/^\[|\]$/g, '').replace(/%.*$/, '');
   const v4 = /^(?:::ffff:)?(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
@@ -14,6 +14,6 @@ export const isPrivateAddress = (address: string): boolean => {
       (a === 100 && b >= 64 && b <= 127) // 100.64/10, Tailscale CGNAT
     );
   }
-  if (!ip.includes(':')) return false;
+  if (!ip.includes(':')) return /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+(?:local|ts\.net)$/.test(ip); // mDNS and Tailscale MagicDNS names
   return ip === '::1' || /^f[cd][0-9a-f]{2}:/.test(ip) || /^fe[89ab][0-9a-f]:/.test(ip); // loopback, ULA, link-local
 };

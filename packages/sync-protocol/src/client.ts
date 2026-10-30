@@ -47,10 +47,10 @@ export class Client {
     this.attempt();
   }
   stop() {
+    this.set('off'); // first, so closing the session does not schedule a reconnect
     this.cancelRetry?.();
     this.session?.close('turned off');
     this.session = null;
-    this.set('off');
   }
   // Try now instead of waiting.
   nudge() {
