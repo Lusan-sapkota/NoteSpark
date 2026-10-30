@@ -42,3 +42,17 @@ test('device locales map to a supported language', () => {
   for (const [locale, code] of Object.entries(cases)) assert.equal(resolveLanguage(locale), code, locale);
   assert.equal(resolveLanguage(undefined), 'en');
 });
+
+test('an engine without Intl.PluralRules or Intl.NumberFormat still translates counts', () => {
+  setLanguage('en');
+  const saved = { p: Intl.PluralRules, n: Intl.NumberFormat };
+  (Intl as any).PluralRules = undefined;
+  (Intl as any).NumberFormat = undefined;
+  try {
+    assert.equal(translate('n', { count: 1 }), '1 note');
+    assert.equal(translate('n', { count: 3 }), '3 notes');
+  } finally {
+    (Intl as any).PluralRules = saved.p;
+    (Intl as any).NumberFormat = saved.n;
+  }
+});

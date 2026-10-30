@@ -42,8 +42,12 @@ export const translate = (key: string, params?: Params): string => {
   const own = catalogs.get(current);
   const base = catalogs.get('en');
   if (params && typeof params.count === 'number') {
-    const rule = new Intl.PluralRules(current).select(params.count);
-    const shown = { ...params, count: new Intl.NumberFormat(current).format(params.count) };
+    // Some JavaScript engines (Hermes without Intl support) have no Intl.PluralRules or Intl.NumberFormat.
+    let rule: string = params.count === 1 ? 'one' : 'other';
+    let count = String(params.count);
+    try { rule = new Intl.PluralRules(current).select(params.count); } catch {}
+    try { count = new Intl.NumberFormat(current).format(params.count); } catch {}
+    const shown = { ...params, count };
     for (const c of [own, base]) for (const k of [`${key}_${rule}`, `${key}_other`]) if (c && k in c) return fill(c[k], shown);
   }
   for (const c of [own, base]) if (c && key in c) return fill(c[key], params);
