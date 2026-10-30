@@ -15,7 +15,7 @@ import { useNavigation } from './nav';
 import { fill, text } from './syncText';
 
 type Profile = { id: string; name: string; synced: boolean; isProtected: boolean; locked: boolean; mirror: { state: string; message: string } | null };
-type Status = { on: boolean; state: string; message: string | null; port: number | null; hosts: string[]; name: string; tunnelName: string; acceptNew: boolean; mirrorFolder: string | null; hubId: string | null; paired: string | null; profiles: Profile[] };
+type Status = { on: boolean; state: string; message: string | null; port: number | null; hosts: string[]; name: string; tunnelName: string; acceptNew: boolean; webLan: boolean; mirrorFolder: string | null; hubId: string | null; paired: string | null; profiles: Profile[] };
 type Device = { key: string; id: string; name: string; lastSeen: string | null };
 type Pair = { uri: string; code: string; hubId: string; expiresAt: number };
 
@@ -158,6 +158,7 @@ const SyncScreen = () => {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const seeded = useRef(false);
+  const alert = useAlert();
 
   const load = useCallback(async () => {
     try {
@@ -175,6 +176,15 @@ const SyncScreen = () => {
   }, [load]);
 
   const run = async (op: string, args?: unknown) => { setError(''); try { setSt(await sync<Status>(op, args)); } catch (e) { setError((e as Error).message); } void load(); };
+
+  // Turning it on warns every time; turning it off just does it.
+  const webLan = (on: boolean) => {
+    if (!on) return void run('update', { webLan: false });
+    alert(text.webLanWarnTitle, text.webLanWarnBody, [
+      { text: text.cancel, style: 'cancel' },
+      { text: text.webLanWarnConfirm, style: 'destructive', onPress: () => void run('update', { webLan: true }) },
+    ]);
+  };
 
   const statusText = !st ? '' : !st.on ? text.off : st.state === 'problem' ? `${st.message ?? ''} ${text.problemTail}`.trim() : st.state === 'restarting' ? text.restarting : st.state === 'running' ? text.ready : text.starting;
   const hosts = (st?.hosts ?? []).filter(h => h !== '127.0.0.1');
@@ -240,6 +250,8 @@ const SyncScreen = () => {
           </View>
 
           <Text variant="titleMedium">{text.network}</Text>
+          <GroupedRow title={text.webLan} description={text.webLanHelp} icon="wifi-alert" isFirst isLast
+            right={<M3Switch value={!!st?.webLan} onValueChange={v => webLan(v)} accessibilityLabel={text.webLan} />} onPress={() => webLan(!st?.webLan)} />
           <View style={styles.row}>
             <TextInput mode="outlined" label={text.tunnelName} value={tunnel} onChangeText={setTunnel} autoCapitalize="none" style={{ flex: 1 }} />
             <Button mode="contained-tonal" disabled={tunnel === st?.tunnelName} onPress={() => void run('update', { tunnelName: tunnel })}>{text.save}</Button>

@@ -33,6 +33,7 @@ import ProfileUnlockScreen from '../../../../mobile/src/screens/ProfileUnlockScr
 import AboutScreen from '../../../../mobile/src/screens/AboutScreen';
 import PrivacyScreen from '../../../../mobile/src/screens/PrivacyScreen';
 import SyncScreen from './SyncScreen';
+import { text as syncText } from './syncText';
 import OnboardingScreen from '../../../../mobile/src/screens/OnboardingScreen';
 
 const screens = {
@@ -193,6 +194,7 @@ const TopBar = () => {
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('desktop.openLinks')}</Text>
               {web?.links.map(l => <Text key={l} variant="bodyMedium" selectable style={{ color: theme.colors.onSurface }}>{l.replace(/\?t=.*/, '')}</Text>)}
             </View>
+            {web?.lan && <Text variant="labelLarge" style={{ color: theme.colors.error }}>{syncText.notEncrypted}</Text>}
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{t('desktop.anyoneWithLink')}</Text>
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: space.sm }}>
               <Button mode="text" onPress={toggle}>{t('desktop.stopWebView')}</Button>

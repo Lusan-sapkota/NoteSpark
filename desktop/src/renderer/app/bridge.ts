@@ -31,7 +31,7 @@ const call = async <T,>(channel: string, args?: unknown): Promise<T> => {
   return body.result as T;
 };
 
-export type WebStatus = { on: boolean; port: number; links: string[] };
+export type WebStatus = { on: boolean; port: number; lan?: boolean; links: string[] };
 
 // The phone's storage modules run in the main process; these proxies call them by name.
 export const storageProxy = <M extends Record<string, any>>(module: string, names: readonly (keyof M & string)[], onDone?: (name: string) => void) =>

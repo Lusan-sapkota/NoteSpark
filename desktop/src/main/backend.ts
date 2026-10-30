@@ -30,7 +30,10 @@ const handlers: Record<string, Handler> = {
       const hub = (await import('./sync')).syncHub();
       // Copying goes through the main process so a pairing code or the diagnostics never pass through the page.
       if (args?.op === 'copy') { clipboard.writeText((await hub.call('copyText', args.args)) as string); return null; }
-      return hub.call(String(args?.op), args?.args);
+      const result = await hub.call(String(args?.op), args?.args);
+      // The Wi-Fi switch changes what the web view listens on: a running view restarts so it follows.
+      if (args?.op === 'update' && typeof args.args?.webLan === 'boolean' && webViewStatus().on) { await stopWebView(); await startWebView(invoke); }
+      return result;
     },
   },
   'web:status': { local: true, run: () => webViewStatus() },
