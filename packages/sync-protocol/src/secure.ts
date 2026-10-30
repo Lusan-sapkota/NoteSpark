@@ -30,6 +30,7 @@ export class SecureChannel implements Channel {
   peer: PeerInfo | null = null;
   ready = false;
   closed = false;
+  private confirmed = false; // hub: the device has proved it is alive (message 1 alone can be replayed)
   private hs: Handshake | null;
   private t: Transport | null = null;
   private raw: RawSocket;
@@ -89,16 +90,25 @@ export class SecureChannel implements Channel {
     this.t?.recv.wipe();
     this.early = [];
     this.parts = [];
-    this.raw.close(graceful && !drop);
-    this.onClose();
+    try { this.raw.close(graceful && !drop); } finally { try { this.onClose(); } catch { /* the owner's handler must not break the socket callback */ } }
   }
 
   private receive(data: Uint8Array) {
     if (this.closed) return;
     if (!this.ready) return this.handshake(data);
     try {
+      if (data.length > MAX_NOISE_MESSAGE) throw new NoiseError('message too long');
       const plain = this.t!.recv.decrypt(NONE, data);
-      if (plain.length < 1 || plain[0] > 1) throw new NoiseError('bad fragment');
+      if (plain.length < 1 || plain[0] > 2) throw new NoiseError('bad fragment');
+      if (plain[0] === 2) { // the device's first message: "I hold the keys". Hub only; nothing is delivered.
+        if (this.confirmed || !this.authorize || plain.length !== 1) throw new NoiseError('unexpected confirm');
+        this.confirmed = true;
+        const cb = this.onReady!;
+        this.onReady = null;
+        return cb(this);
+      }
+      if (this.authorize && !this.confirmed) throw new NoiseError('not confirmed');
+      if (plain[0] === 1 && plain.length - 1 !== FRAGMENT) throw new NoiseError('short fragment'); // no endless empty fragments
       this.partBytes += plain.length - 1;
       if (this.partBytes > MAX_FRAME) throw new NoiseError('frame too large');
       this.parts.push(plain.subarray(1));
@@ -123,13 +133,12 @@ export class SecureChannel implements Channel {
         this.raw.send(reply);
         this.finish(theirs);
         if (!compatible(theirs)) { this.send(encodeFrame({ type: T.ERROR, code: 409, message: 'update NoteSpark' })); this.shut(false, true); return; }
-        const cb = this.onReady!;
-        this.onReady = null;
-        cb(this);
+        // The engine only gets the channel once the device's confirm message arrives (see receive).
       } else {
         const theirs = decodePayload(hs.readMessage(data));
         this.finish(theirs);
         if (!compatible(theirs)) { this.onMessage(encodeFrame({ type: T.ERROR, code: 409, message: 'update NoteSpark' })); this.shut(true); return; }
+        this.raw.send(this.t!.send.encrypt(NONE, Uint8Array.of(2))); // confirm: proves this side holds its keys
         this.flush();
       }
     } catch { this.shut(true); }

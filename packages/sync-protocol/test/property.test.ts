@@ -48,6 +48,7 @@ const run = async (seed: number) => {
   const stamp = (i: number) => new Date(Date.UTC(2026, 0, 1) + w.clock.time + skew[i]).toISOString();
   const stores = (): (MemoryStore | null)[] => [w.hubStore, ...w.devices.map(d => (d.store.profilesById.has(syncId) ? d.store : null))];
 
+  const made = new Set<string>();
   const steps = 30 + Math.floor(r() * 90);
   for (let s = 0; s < steps; s++) {
     const op = r();
@@ -68,6 +69,7 @@ const run = async (seed: number) => {
           const size = r() < 0.3 ? CHUNK + 17 + Math.floor(r() * 4000) : 32 + Math.floor(r() * 512);
           const blob = makeBlob(size, counter++);
           await store.putBlob(syncId, blob.hash, blob.bytes);
+          made.add(blob.hash);
           insert = ` [file-${counter}.bin](attachment:${blob.hash}) `;
         }
         next.content = cur.content.slice(0, i) + insert + cur.content.slice(edge(cur.content, i + Math.floor(r() * 3)));
@@ -105,7 +107,8 @@ const run = async (seed: number) => {
   for (const d of w.devices) d.online = true;
   const view = (st: MemoryStore) => JSON.stringify([st.notes(syncId), st.erasedSet(syncId)]);
   const refBlobsMatch = async () => {
-    const refs = w.hubStore.referencedBlobs(syncId);
+    // Only blobs the test made: two devices editing inside one `attachment:<hash>` text at once can merge into a different, valid-looking hash that no file has (a dangling reference, not an engine fault).
+    const refs = w.hubStore.referencedBlobs(syncId).filter(h => made.has(h));
     for (const h of refs) {
       const hubBytes = await w.hubStore.getBlob(syncId, h);
       if (!hubBytes) return false;

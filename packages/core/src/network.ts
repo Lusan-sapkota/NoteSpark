@@ -1,7 +1,9 @@
 // The "Network rule": only private peer addresses (IPv4, IPv6, IPv4-mapped) and `.local` / `.ts.net` names are allowed, never the internet.
 export const isPrivateAddress = (address: string): boolean => {
   const ip = address.trim().toLowerCase().replace(/^\[|\]$/g, '').replace(/%.*$/, '');
-  const v4 = /^(?:::ffff:)?(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.exec(ip);
+  // No leading zeros: `010.1.1.1` is octal 8.1.1.1 to some resolvers.
+  const oct = '(0|[1-9]\\d{0,2})';
+  const v4 = new RegExp(`^(?:::ffff:)?${oct}\\.${oct}\\.${oct}\\.${oct}$`).exec(ip);
   if (v4) {
     const [a, b, c, d] = v4.slice(1).map(Number);
     if ([a, b, c, d].some(n => n > 255)) return false;

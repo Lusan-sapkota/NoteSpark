@@ -24,6 +24,7 @@ export interface ServerOptions {
   name: string;
   hub: Hub;
   authorize: (clientKey: Uint8Array, hello: HelloPayload) => boolean; // false: unknown device, closed with no reply
+  stillKnown?: (clientKey: Uint8Array) => boolean; // asked again when the device confirms, so a revoke in between wins
   clock?: Clock;
   limits?: Partial<Limits>;
   peerAddress?: (socket: Socket) => string; // a test seam
@@ -37,7 +38,7 @@ export class HubServer {
   private limits: Limits;
   private clock: Clock;
   private http: Server;
-  private wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_MESSAGE, perMessageDeflate: false });
+  private wss = new WebSocketServer({ noServer: true, maxPayload: MAX_WS_MESSAGE, perMessageDeflate: false, handleProtocols: () => SUBPROTOCOL });
   private sockets = new Set<Socket>();
   private perIp = new Map<string, number>();
   private attempts = new Map<string, number[]>();
@@ -119,6 +120,7 @@ export class HubServer {
         },
         onReady: channel => {
           stop?.();
+          if (this.o.stillKnown && !this.o.stillKnown(channel.peer!.staticKey)) return channel.close();
           const id = hex(channel.peer!.staticKey);
           if (!this.byDevice.has(id)) this.byDevice.set(id, new Set());
           this.byDevice.get(id)!.add(channel);

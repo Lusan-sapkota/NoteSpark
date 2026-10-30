@@ -86,7 +86,7 @@ test('a damaged device list stops the hub from starting, with a clear message', 
 const paired = async () => {
   const pairing = new PairingMode(realClock);
   const devices = DeviceList.open(join(dir(), 'devices.json'), realClock);
-  const w = await setup({ authorize: authorizer(devices, pairing) });
+  const w = await setup({ authorize: authorizer(devices, pairing), stillKnown: k => devices.has(k) });
   devices.onRevoke = k => w.server.closeDevice(k);
   const phone = (name: string, token?: Uint8Array, key = generateKeypair(), hubKey = w.hubKey.pub, link = { syncId: '', name: 'Personal' }) => {
     const client = new Client({
@@ -215,4 +215,28 @@ test('two devices pair and sync with each other through the hub', async () => {
   await until(() => (b.client as unknown as { o: { store: MemoryStore } }).o.store.peek(syncId, '00000000-0000-4000-8000-000000000001')?.content === 'from A');
   a.client.stop(); b.client.stop();
   await w.stop();
+});
+
+test('revoke closes the open connection even if the disk write fails, and a failed add leaves no unsaved device', async () => {
+  const d = dir();
+  const list = DeviceList.open(join(d, 'devices.json'), realClock);
+  const k = generateKeypair().pub;
+  list.add(k, 'P');
+  let closed = false;
+  list.onRevoke = () => { closed = true; };
+  chmodSync(d, 0o500); // read-only directory: the atomic write cannot create its temporary file
+  try {
+    if (process.getuid?.() !== 0) {
+      assert.throws(() => list.revoke(k));
+      assert.ok(closed);
+      assert.throws(() => list.add(generateKeypair().pub, 'Q'));
+      assert.equal(list.list().length, 0, 'the failed add was rolled back');
+    }
+  } finally { chmodSync(d, 0o700); }
+});
+
+test('the connector returns null for a host string the URL parser refuses, instead of throwing', () => {
+  const connect = wsConnector({ deviceKey: generateKeypair(), hubKey: generateKeypair().pub, name: 'P', addresses: [{ host: '10.0.0.1%x', port: 1 }, { host: '8.8.8.8', port: 1 }] });
+  assert.equal(connect(), null);
+  assert.equal(connect(), null);
 });

@@ -93,3 +93,32 @@ test('an unknown device: no reply, and the work done is the same as for a known 
   for (let i = 0; i < 10; i++) await tick();
   assert.equal(heard, 0);
 });
+
+test('a replayed message 1 never reaches the engine: the hub waits for the device to prove it holds its keys', async () => {
+  const hub = generateKeypair(), dev = generateKeypair();
+  const sent: Uint8Array[] = [];
+  const first = SecureChannel.client({ send: d => sent.push(d), close: () => {}, onMessage: () => {}, onClose: () => {} } as RawSocket, { s: dev, hubKey: hub.pub, name: 'P' });
+  void first;
+  const message1 = sent[0];
+  let ready = 0, replies = 0;
+  const raw: RawSocket = { send: () => { replies++; }, close: () => {}, onMessage: () => {}, onClose: () => {} };
+  const ch = SecureChannel.hub(raw, { s: hub, name: 'H', authorize: () => true, onReady: () => { ready++; } });
+  raw.onMessage(message1); // the attacker replays what it recorded
+  for (let i = 0; i < 5; i++) await tick();
+  assert.equal(ready, 0);
+  assert.equal(replies, 1, 'only the handshake reply');
+  raw.onMessage(new Uint8Array(40).fill(3)); // anything but a valid confirm closes it
+  assert.ok(ch.closed);
+  assert.equal(ready, 0);
+});
+
+test('endless empty continuation fragments close the channel', async () => {
+  const { c, server } = await connect();
+  let closed = false;
+  server!.onClose = () => { closed = true; };
+  const t = (c as unknown as { t: { send: { encrypt: (a: Uint8Array, p: Uint8Array) => Uint8Array } } }).t;
+  const raw = (c as unknown as { raw: RawSocket }).raw;
+  raw.send(t.send.encrypt(new Uint8Array(0), Uint8Array.of(1)));
+  for (let i = 0; i < 5; i++) await tick();
+  assert.ok(closed);
+});

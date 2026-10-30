@@ -64,8 +64,10 @@ export const wsConnector = (o: ConnectorOptions): (() => Channel | null) => {
   return () => {
     const target = o.addresses[turn++ % o.addresses.length];
     if (!target || !isPrivateAddress(target.host)) return null;
-    const host = target.host.includes(':') && !target.host.startsWith('[') ? `[${target.host}]` : target.host;
-    const ws = new WebSocket(`ws://${host}:${target.port}`, SUBPROTOCOL, { maxPayload: MAX_WS_MESSAGE, perMessageDeflate: false, handshakeTimeout: 10_000 });
+    const bare = target.host.replace(/^\[|\]$/g, '');
+    const host = bare.includes(':') ? `[${bare.replace('%', '%25')}]` : bare;
+    let ws: WebSocket;
+    try { ws = new WebSocket(`ws://${host}:${target.port}`, SUBPROTOCOL, { maxPayload: MAX_WS_MESSAGE, perMessageDeflate: false, handshakeTimeout: 10_000 }); } catch { return null; } // a host string the URL parser refuses
     const channel = SecureChannel.client(rawFromWs(ws, o.clock), { s: o.deviceKey, hubKey: o.hubKey, name: o.name, token: o.token?.() });
     o.onChannel?.(channel, target);
     return channel;

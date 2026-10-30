@@ -1,6 +1,7 @@
 // The hub's list of paired devices: public key, name, added-at, last-seen. One JSON file, written atomically with mode 0600.
 // A file that cannot be trusted stops the hub from starting; it never means "allow everyone".
 import { chmodSync, closeSync, existsSync, fsyncSync, mkdirSync, openSync, readFileSync, renameSync, statSync, writeSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { dirname } from 'node:path';
 import type { Clock, HelloPayload, PairingMode } from '@notespark/sync-protocol';
 
@@ -50,7 +51,7 @@ export class DeviceList {
     const k = hex(key);
     if (this.devices.has(k)) return;
     this.devices.set(k, { key: k, name: name.slice(0, 64), addedAt: new Date(this.clock.now()).toISOString(), lastSeen: null });
-    this.save();
+    try { this.save(); } catch (e) { this.devices.delete(k); throw e; } // never keep a device that is not on disk
   }
   rename(key: Uint8Array, name: string) {
     const d = this.devices.get(hex(key));
@@ -62,8 +63,7 @@ export class DeviceList {
   // Removes the key, then every open connection of that device is closed by `onRevoke`.
   revoke(key: Uint8Array) {
     if (!this.devices.delete(hex(key))) return false;
-    this.save();
-    this.onRevoke(key);
+    try { this.save(); } finally { this.onRevoke(key); } // connections close even if the disk write failed
     return true;
   }
   // Last seen is written at most once a minute per list, so a reconnect loop does not hammer the disk.
@@ -78,9 +78,9 @@ export class DeviceList {
 
   private save() {
     const body = JSON.stringify({ format: FORMAT, devices: [...this.devices.values()] }, null, 1);
-    mkdirSync(dirname(this.path), { recursive: true });
-    const tmp = `${this.path}.${process.pid}.tmp`;
-    const fd = openSync(tmp, 'w', 0o600);
+    mkdirSync(dirname(this.path), { recursive: true, mode: 0o700 });
+    const tmp = `${this.path}.${randomBytes(6).toString('hex')}.tmp`;
+    const fd = openSync(tmp, 'wx', 0o600); // wx: never follow or reuse an existing file
     try { writeSync(fd, body); fsyncSync(fd); } finally { closeSync(fd); }
     renameSync(tmp, this.path);
     if (process.platform !== 'win32') chmodSync(this.path, 0o600);

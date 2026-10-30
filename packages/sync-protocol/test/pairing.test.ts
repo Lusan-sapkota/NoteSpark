@@ -124,3 +124,9 @@ test('a wrong-length token counts as wrong and never matches', () => {
   assert.equal(m.check(new Uint8Array(0)), false);
   assert.equal(m.check(new Uint8Array(15)), false);
 });
+
+test('isPrivateAddress: leading zeros are refused (octal look-alikes of public addresses)', () => {
+  for (const no of ['010.1.1.1', '172.016.0.1', '100.064.0.1', '192.168.001.1', '0127.0.0.1']) assert.ok(!isPrivateAddress(no), no);
+  assert.ok(isPrivateAddress('10.0.0.1'));
+  assert.ok(isPrivateAddress('0.0.0.0') === false);
+});
