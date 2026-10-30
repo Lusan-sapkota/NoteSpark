@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Chip, Dialog, IconButton, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import { addDays, formatDue, today } from '@notespark/core';
@@ -21,6 +21,7 @@ const Calendar: React.FC<{ value: string | null; onPick: (due: string | null) =>
   const first = new Date(view.y, view.m, 1).getDay();
   const days = new Date(view.y, view.m + 1, 0).getDate();
   const cells = [...Array(first).fill(0), ...Array.from({ length: days }, (_, i) => i + 1)];
+  while (cells.length % 7) cells.push(0);
   const step = (by: number) => setView(v => { const d = new Date(v.y, v.m + by, 1); return { y: d.getFullYear(), m: d.getMonth() }; });
   const title = new Date(view.y, view.m, 1).toLocaleDateString([], { month: 'long', year: 'numeric' });
 
@@ -31,33 +32,37 @@ const Calendar: React.FC<{ value: string | null; onPick: (due: string | null) =>
         <Text variant="titleSmall" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{title}</Text>
         <IconButton icon="chevron-right" onPress={() => step(1)} accessibilityLabel="Next month" />
       </View>
-      <View style={styles.grid}>
+      <View style={styles.week}>
         {WEEKDAYS.map((w, i) => (
           <Text key={i} variant="labelMedium" style={[styles.cell, styles.weekday, { color: theme.colors.onSurfaceVariant }]}>{w}</Text>
         ))}
-        {cells.map((d, i) => {
-          if (!d) return <View key={i} style={styles.cell} />;
-          const k = key(view.y, view.m, d);
-          const selected = k === value;
-          return (
-            <View key={i} style={styles.cell}>
-              <TouchableRipple
-                onPress={() => onPick(selected ? null : k)}
-                accessibilityRole="button"
-                accessibilityLabel={formatDue(k) + (k === now ? ', today' : '')}
-                accessibilityState={{ selected }}
-                style={[
-                  styles.day,
-                  k === now && { borderWidth: 1, borderColor: theme.colors.outline },
-                  selected && { backgroundColor: theme.colors.primary },
-                ]}
-              >
-                <Text variant="bodyMedium" style={{ color: selected ? theme.colors.onPrimary : theme.colors.onSurface }}>{d}</Text>
-              </TouchableRipple>
-            </View>
-          );
-        })}
       </View>
+      {Array.from({ length: cells.length / 7 }, (_, row) => (
+        <View key={row} style={styles.week}>
+          {cells.slice(row * 7, row * 7 + 7).map((d, i) => {
+            if (!d) return <View key={i} style={styles.cell} />;
+            const k = key(view.y, view.m, d);
+            const selected = k === value;
+            return (
+              <View key={i} style={styles.cell}>
+                <TouchableRipple
+                  onPress={() => onPick(selected ? null : k)}
+                  accessibilityRole="button"
+                  accessibilityLabel={formatDue(k) + (k === now ? ', today' : '')}
+                  accessibilityState={{ selected }}
+                  style={[
+                    styles.day,
+                    k === now && { borderWidth: 1, borderColor: theme.colors.outline },
+                    selected && { backgroundColor: theme.colors.primary },
+                  ]}
+                >
+                  <Text variant="bodyMedium" style={{ color: selected ? theme.colors.onPrimary : theme.colors.onSurface }}>{d}</Text>
+                </TouchableRipple>
+              </View>
+            );
+          })}
+        </View>
+      ))}
     </View>
   );
 };
@@ -67,7 +72,10 @@ const Calendar: React.FC<{ value: string | null; onPick: (due: string | null) =>
 const AddTaskDialog: React.FC<{ visible: boolean; task?: { text: string; due?: string }; onDismiss: () => void; onAdd: (text: string, due: string | null) => void }> = ({ visible, task, onDismiss, onAdd }) => {
   const [text, setText] = useState('');
   const [due, setDue] = useState<string | null>(null);
-  useEffect(() => { if (visible) { setText(task?.text ?? ''); setDue(task?.due ?? null); } }, [visible]);
+  const [picking, setPicking] = useState(false); // the calendar stays closed until asked for, so the keyboard and the dialog fit together
+  const input = useRef<any>(null);
+  useEffect(() => { if (visible) { setText(task?.text ?? ''); setDue(task?.due ?? null); setPicking(false); } }, [visible]);
+  const custom = !!due && due !== today() && due !== addDays(1);
   const submit = () => text.trim() && onAdd(text.trim(), due);
 
   return (
@@ -76,13 +84,16 @@ const AddTaskDialog: React.FC<{ visible: boolean; task?: { text: string; due?: s
         <Dialog.Title>{task ? 'Edit task' : 'Add task'}</Dialog.Title>
         <Dialog.ScrollArea style={styles.area}>
           <View style={styles.body}>
-            <TextInput mode="outlined" label="Task" value={text} onChangeText={setText} autoFocus maxLength={200} onSubmitEditing={submit} />
+            <TextInput ref={input} mode="outlined" label="Task" value={text} onChangeText={setText} autoFocus maxLength={200} onSubmitEditing={submit} />
             <View style={styles.chips}>
-              <Chip selected={due === today()} showSelectedCheck onPress={() => setDue(today())}>Today</Chip>
-              <Chip selected={due === addDays(1)} showSelectedCheck onPress={() => setDue(addDays(1))}>Tomorrow</Chip>
-              <Chip selected={!due} showSelectedCheck onPress={() => setDue(null)}>No date</Chip>
+              <Chip selected={due === today()} showSelectedCheck onPress={() => { setDue(today()); setPicking(false); }}>Today</Chip>
+              <Chip selected={due === addDays(1)} showSelectedCheck onPress={() => { setDue(addDays(1)); setPicking(false); }}>Tomorrow</Chip>
+              <Chip icon="calendar-month-outline" selected={custom || picking} showSelectedCheck={false} onPress={() => { input.current?.blur?.(); setPicking(p => !p); }}>
+                {custom ? formatDue(due!) : 'Pick a date'}
+              </Chip>
+              <Chip selected={!due} showSelectedCheck onPress={() => { setDue(null); setPicking(false); }}>No date</Chip>
             </View>
-            <Calendar key={String(visible)} value={due} onPick={setDue} />
+            {picking && <Calendar value={due} onPick={setDue} />}
           </View>
         </Dialog.ScrollArea>
         <Dialog.Actions>
@@ -99,8 +110,8 @@ const styles = StyleSheet.create({
   body: { paddingVertical: space.sm },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginVertical: space.md },
   monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  grid: { flexDirection: 'row', flexWrap: 'wrap' },
-  cell: { width: `${100 / 7}%`, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
+  week: { flexDirection: 'row' },
+  cell: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
   weekday: { textAlign: 'center', minHeight: 32 },
   day: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center' },
 });
