@@ -3,7 +3,7 @@ import * as SQLite from 'expo-sqlite';
 import { Asset } from 'expo-asset';
 import * as FileSystem from 'expo-file-system/legacy';
 import { db, isDatabaseReady, withDatabaseLock } from './database';
-import { createTokenizer, meanPoolNormalize } from '@notespark/core';
+import { createTokenizer, linksTo, meanPoolNormalize } from '@notespark/core';
 
 const DIMS = 384;
 // ponytail: cut-off picked from a few test sentences; tune with real notes.
@@ -164,23 +164,28 @@ const RELATED_MAX_DISTANCE = 0.55;
 const TEXT_RELATED_MAX_DISTANCE = 0.5; // stricter than a whole note: a paragraph typed a moment ago is a sharp query
 const RELATED_CHUNKS = 8; // the note's first chunks, each searched; long notes find what their later parts are about
 
-// From the note's stored vectors, so no model run. Empty when the note isn't indexed yet or search by meaning is missing.
+// The notes closest to a note, from its stored vectors (no model run), with their distances, closest first.
+const closeNotes = async (noteId: number, limit: number): Promise<{ id: number; distance: number }[]> => {
+  const chunks = await db.getAllAsync<{ id: number }>(
+    `SELECT id FROM note_chunks WHERE noteId = ? ORDER BY id LIMIT ${RELATED_CHUNKS}`,
+    [noteId]
+  );
+  const best = new Map<number, number>();
+  for (const { id } of chunks) {
+    const row = await db.getFirstAsync<{ embedding: Uint8Array }>('SELECT embedding FROM chunk_vectors WHERE rowid = CAST(? AS INTEGER)', [id]);
+    if (!row) continue;
+    for (const r of await nearestNotes(row.embedding, limit * 4)) {
+      if (r.id !== noteId && r.distance <= RELATED_MAX_DISTANCE && r.distance < (best.get(r.id) ?? Infinity)) best.set(r.id, r.distance);
+    }
+  }
+  return [...best].sort((a, b) => a[1] - b[1]).slice(0, limit).map(([id, distance]) => ({ id, distance }));
+};
+
+// Empty when the note isn't indexed yet or search by meaning is missing.
 export const relatedNotes = async (noteId: number, limit = 5): Promise<number[]> => {
   if (!isMeaningSearchAvailable()) return [];
   try {
-    const chunks = await db.getAllAsync<{ id: number }>(
-      `SELECT id FROM note_chunks WHERE noteId = ? ORDER BY id LIMIT ${RELATED_CHUNKS}`,
-      [noteId]
-    );
-    const best = new Map<number, number>();
-    for (const { id } of chunks) {
-      const row = await db.getFirstAsync<{ embedding: Uint8Array }>('SELECT embedding FROM chunk_vectors WHERE rowid = CAST(? AS INTEGER)', [id]);
-      if (!row) continue;
-      for (const r of await nearestNotes(row.embedding, limit * 4)) {
-        if (r.id !== noteId && r.distance <= RELATED_MAX_DISTANCE && r.distance < (best.get(r.id) ?? Infinity)) best.set(r.id, r.distance);
-      }
-    }
-    return [...best].sort((a, b) => a[1] - b[1]).slice(0, limit).map(([id]) => id);
+    return (await closeNotes(noteId, limit)).map(r => r.id);
   } catch (error) {
     console.warn('Related notes failed:', error);
     return [];
@@ -270,6 +275,42 @@ export const searchPassages = async (query: string, limit = 20): Promise<Passage
     return passages.sort((a, b) => a.distance - b.distance).slice(0, limit);
   } catch (error) {
     console.warn('Passage search failed:', error);
+    return null;
+  }
+};
+
+export interface NotePair {
+  a: { id: number; title: string; words: number };
+  b: { id: number; title: string; words: number };
+  distance: number;
+  linked: boolean; // one already links to the other with [[Title]]
+}
+
+const PAIR_SOURCES = 120; // the most recently edited notes are each checked against the rest; bounds the work on a big library
+
+// Pairs of notes close in meaning, closest first, for suggesting links and finding duplicates. null when unavailable.
+export const notePairs = async (limit = 60): Promise<NotePair[] | null> => {
+  if (!isMeaningSearchAvailable()) return null;
+  try {
+    const notes = await db.getAllAsync<{ id: number; title: string; content: string }>(
+      'SELECT id, title, content FROM notes WHERE deletedAt IS NULL AND isArchived = 0 ORDER BY updatedAt DESC'
+    );
+    const byId = new Map(notes.map(n => [n.id, n]));
+    const pairs = new Map<string, NotePair>();
+    for (const source of notes.slice(0, PAIR_SOURCES)) {
+      for (const { id, distance } of await closeNotes(source.id, 4)) {
+        const other = byId.get(id);
+        if (!other) continue;
+        const [a, b] = source.id < id ? [source, other] : [other, source];
+        const key = `${a.id}-${b.id}`;
+        if (distance >= (pairs.get(key)?.distance ?? Infinity)) continue;
+        const ref = (n: typeof a) => ({ id: n.id, title: n.title, words: n.content.split(/\s+/).filter(Boolean).length });
+        pairs.set(key, { a: ref(a), b: ref(b), distance, linked: linksTo(a.content, b.title) || linksTo(b.content, a.title) });
+      }
+    }
+    return [...pairs.values()].sort((x, y) => x.distance - y.distance).slice(0, limit);
+  } catch (error) {
+    console.warn('Note pairs failed:', error);
     return null;
   }
 };

@@ -775,6 +775,11 @@ const HomeScreen: React.FC = () => {
                 leadingIcon="comment-search-outline"
                 onPress={() => { setOptionsVisible(false); navigation.navigate('Ask'); }}
               />
+              <Menu.Item
+                title="Tidy up notes"
+                leadingIcon="broom"
+                onPress={() => { setOptionsVisible(false); navigation.navigate('Tidy'); }}
+              />
             </Menu>
           )}
         />
