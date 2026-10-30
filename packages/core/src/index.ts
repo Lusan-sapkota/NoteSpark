@@ -11,3 +11,4 @@ export * from './reminders';
 export * from './attachments';
 export * from './search';
 export * from './mermaid';
+export * from './related';

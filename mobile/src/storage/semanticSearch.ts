@@ -161,6 +161,7 @@ export const searchByMeaning = async (query: string): Promise<number[] | null> =
 };
 
 const RELATED_MAX_DISTANCE = 0.55;
+const TEXT_RELATED_MAX_DISTANCE = 0.5; // stricter than a whole note: a paragraph typed a moment ago is a sharp query
 const RELATED_CHUNKS = 8; // the note's first chunks, each searched; long notes find what their later parts are about
 
 // From the note's stored vectors, so no model run. Empty when the note isn't indexed yet or search by meaning is missing.
@@ -182,6 +183,22 @@ export const relatedNotes = async (noteId: number, limit = 5): Promise<number[]>
     return [...best].sort((a, b) => a[1] - b[1]).slice(0, limit).map(([id]) => id);
   } catch (error) {
     console.warn('Related notes failed:', error);
+    return [];
+  }
+};
+
+// Notes close in meaning to a paragraph being written, closest first, leaving out the note being edited.
+// Runs the model once, so call it after typing pauses. Empty when search by meaning is missing.
+export const relatedToText = async (text: string, excludeNoteId?: number, limit = 5): Promise<number[]> => {
+  if (!isMeaningSearchAvailable()) return [];
+  try {
+    const vector = await (await getEmbedder())(text);
+    return (await nearestNotes(asBlob(vector), limit * 4 + 4))
+      .filter(r => r.id !== excludeNoteId && r.distance <= TEXT_RELATED_MAX_DISTANCE)
+      .slice(0, limit)
+      .map(r => r.id);
+  } catch (error) {
+    console.warn('Related to text failed:', error);
     return [];
   }
 };

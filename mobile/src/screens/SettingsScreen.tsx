@@ -7,6 +7,8 @@ import M3Switch from '../components/M3Switch';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, getShareTarget, moveAllNotesToBin, restoreBatch, setShareTarget, ShareTarget } from '../storage/notes';
 import { isRediscoverOn, setRediscoverOn } from '../utils/rediscover';
+import { isLiveRelatedOn, setLiveRelatedOn } from '../utils/liveRelated';
+import { isMeaningSearchAvailable } from '../storage/semanticSearch';
 import { getStartScreen, setStartScreen, START_SCREENS, startScreenLabel, StartScreen } from '../utils/startScreen';
 import { formatHour, getReminderHour, REMINDER_HOURS, setReminderHour } from '../utils/taskReminders';
 import { AUTO_LOCK_MINUTES, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
@@ -50,6 +52,7 @@ const SettingsScreen: React.FC = () => {
   const [autoLock, setAutoLock] = useState(1);
   const [rediscover, setRediscover] = useState(true);
   const [shareTarget, setShareTargetState] = useState<ShareTarget>('scratchpad');
+  const [liveRelated, setLiveRelated] = useState(false);
   const [startScreen, setStartScreenState] = useState<StartScreen>('Home');
   // A pick-one dialog (reminder time, auto-lock); kept after closing so it doesn't change while fading.
   const [choice, setChoice] = useState<{ title: string; options: { label: string; value: number }[]; value: number; onPick: (value: number) => void; open: boolean } | null>(null);
@@ -76,6 +79,7 @@ const SettingsScreen: React.FC = () => {
     setRediscover(await isRediscoverOn());
     setShareTargetState(await getShareTarget());
     setStartScreenState(await getStartScreen());
+    setLiveRelated(await isLiveRelatedOn());
   }, []);
 
   const lockLabel = (minutes: number) => (minutes === 0 ? 'Right away' : `After ${minutes} minute${minutes === 1 ? '' : 's'}`);
@@ -427,6 +431,23 @@ const SettingsScreen: React.FC = () => {
             isFirst={false}
             isLast={false}
           />
+          {isMeaningSearchAvailable() && (
+            <GroupedRow
+              title="Related notes while writing"
+              description="Suggests notes close to the paragraph you're writing"
+              icon="lightbulb-outline"
+              right={
+                <M3Switch
+                  value={liveRelated}
+                  onValueChange={on => { setLiveRelated(on); setLiveRelatedOn(on).catch(() => {}); }}
+                  accessibilityLabel="Related notes while writing"
+                />
+              }
+              onPress={() => { setLiveRelated(!liveRelated); setLiveRelatedOn(!liveRelated).catch(() => {}); }}
+              isFirst={false}
+              isLast={false}
+            />
+          )}
           <GroupedRow
             title="Text shared to NoteSpark"
             description={shareLabel(shareTarget)}

@@ -15,7 +15,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, usePreventRemove, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Chip, Dialog, IconButton, List, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
+import { Button, Chip, Dialog, IconButton, List, Modal, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import { Note, RootStackParamList } from '../types';
 import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, saveNote, updateNote } from '../storage/notes';
 import { getActiveProfile } from '../storage/profiles';
@@ -27,7 +27,10 @@ import {
   removeAttachmentLink,
 } from '../storage/attachments';
 import { keepDeviceImage } from '../utils/imageCache';
-import { addDays, setLineDue } from '@notespark/core';
+import { addDays, paragraphToMatch, setLineDue } from '@notespark/core';
+import { isMeaningSearchAvailable, relatedToText } from '../storage/semanticSearch';
+import { isLiveRelatedOn } from '../utils/liveRelated';
+import { toPreview } from '../components/NoteItem';
 import { extractTags } from '@notespark/core';
 import { continueList, titleFromText } from '@notespark/core';
 import { sendAppNotification } from '../utils/notifications';
@@ -38,7 +41,7 @@ import NoteAttachments from '../components/NoteAttachments';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { controlTheme, readingWidth, space } from '../theme/theme';
+import { controlTheme, readingWidth, shape, space } from '../theme/theme';
 
 type EditorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Editor'>;
 type EditorScreenRouteProp = RouteProp<RootStackParamList, 'Editor'>;
@@ -80,6 +83,10 @@ const EditorScreen: React.FC = () => {
   // "Link a note" picker: inserts [[Title]] at the cursor.
   const [notePicker, setNotePicker] = useState<{ query: string; notes: Note[] } | null>(null);
   const [showDueDialog, setShowDueDialog] = useState(false);
+  // Related notes while writing (opt-in in Settings): notes close to the paragraph at the cursor, found 1.5 s after typing stops.
+  const [liveRelated, setLiveRelated] = useState(false);
+  const [related, setRelated] = useState<Note[]>([]);
+  const [showRelated, setShowRelated] = useState(false);
   // For suggestions while typing #tags and [[links]]: the profile's tags and other notes' titles.
   const [known, setKnown] = useState<{ tags: string[]; titles: string[] }>({ tags: [], titles: [] });
   // The note as last loaded or saved; anything different is unsaved and kept as a draft.
@@ -144,6 +151,28 @@ const EditorScreen: React.FC = () => {
       })
       .catch(() => {});
   }, [noteId]);
+
+  useEffect(() => {
+    isLiveRelatedOn().then(on => setLiveRelated(on && isMeaningSearchAvailable()), () => {});
+  }, []);
+  const paragraph = liveRelated && loaded ? paragraphToMatch(content, selection.start) : '';
+  useEffect(() => {
+    if (!paragraph) {
+      setRelated(r => (r.length ? [] : r));
+      return;
+    }
+    let current = true;
+    const timer = setTimeout(async () => {
+      try {
+        const ids = await relatedToText(paragraph, noteId ? Number(noteId) : undefined);
+        const notes = await Promise.all(ids.map(id => getNoteById(id).catch(() => null)));
+        if (current) setRelated(notes.filter((n): n is Note => !!n && !n.isArchived));
+      } catch {
+        if (current) setRelated([]);
+      }
+    }, 1500);
+    return () => { current = false; clearTimeout(timer); };
+  }, [paragraph, noteId]);
 
   // Keeps unsaved text as a draft a second after typing stops; Home offers it back after a restart.
   useEffect(() => {
@@ -497,6 +526,20 @@ const EditorScreen: React.FC = () => {
               </ScrollView>
             )}
             <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.toolbarContent}>
+              {related.length > 0 && (
+                <Chip
+                  compact
+                  icon="lightbulb-outline"
+                  onPress={() => setShowRelated(true)}
+                  hitSlop={8}
+                  style={[styles.relatedChip, { backgroundColor: theme.colors.tertiaryContainer }]}
+                  textStyle={{ color: theme.colors.onTertiaryContainer }}
+                  maxFontSizeMultiplier={1.5}
+                  accessibilityLabel={`${related.length} related ${related.length === 1 ? 'note' : 'notes'}. Opens the list`}
+                >
+                  {related.length} related
+                </Chip>
+              )}
               <IconButton icon="undo" disabled={!canUndo} onPress={handleUndo} accessibilityLabel="Undo" />
               <IconButton icon="redo" disabled={!canRedo} onPress={handleRedo} accessibilityLabel="Redo" />
               {isMarkdown && (
@@ -524,6 +567,39 @@ const EditorScreen: React.FC = () => {
           </KeyboardStickyView>
         )}
 
+        <Portal>
+          <Modal
+            visible={showRelated}
+            onDismiss={() => setShowRelated(false)}
+            style={styles.sheetWrap}
+            contentContainerStyle={[styles.sheet, { backgroundColor: theme.colors.surfaceContainerLow, paddingBottom: space.lg + insets.bottom }]}
+          >
+            <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>Related notes</Text>
+            <Text variant="bodySmall" style={[styles.sheetHelp, { color: theme.colors.onSurfaceVariant }]}>
+              Close in meaning to the paragraph you're writing. Found on this device.
+            </Text>
+            <ScrollView style={styles.sheetList}>
+              {related.map(n => (
+                <List.Item
+                  key={n.id}
+                  title={n.title || 'Untitled note'}
+                  titleNumberOfLines={2}
+                  description={toPreview(n.content)}
+                  descriptionNumberOfLines={2}
+                  onPress={() => { setShowRelated(false); navigation.navigate('NoteView', { noteId: String(n.id) }); }}
+                  accessibilityHint="Opens the note. Your changes here are saved."
+                  right={() => (
+                    <IconButton
+                      icon="link-variant"
+                      accessibilityLabel={`Link to ${n.title || 'Untitled note'}`}
+                      onPress={() => { insert(`[[${n.title.trim()}]]`); setShowRelated(false); }}
+                    />
+                  )}
+                />
+              ))}
+            </ScrollView>
+          </Modal>
+        </Portal>
         <KeyboardSafePortal>
           <Dialog visible={showLinkDialog} onDismiss={() => setShowLinkDialog(false)}>
             <Dialog.Title>Add link</Dialog.Title>
@@ -648,6 +724,25 @@ const styles = StyleSheet.create({
     gap: space.sm,
     minHeight: 48,
     paddingHorizontal: space.sm,
+  },
+  relatedChip: {
+    marginHorizontal: space.sm,
+  },
+  sheetWrap: {
+    justifyContent: 'flex-end',
+  },
+  sheet: {
+    borderTopLeftRadius: shape.extraLarge,
+    borderTopRightRadius: shape.extraLarge,
+    padding: space.lg,
+    maxHeight: '70%',
+  },
+  sheetHelp: {
+    marginTop: space.xs,
+    marginBottom: space.sm,
+  },
+  sheetList: {
+    flexGrow: 0,
   },
   dialogContent: {
     gap: space.md,
