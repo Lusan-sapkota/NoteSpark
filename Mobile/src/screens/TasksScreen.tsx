@@ -4,11 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Appbar, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
+import { Appbar, FAB, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
+import AddTaskDialog from '../components/AddTaskDialog';
 import { RootStackParamList } from '../types';
-import { getNotes, getScratchpadNote, restoreTaskLine, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
-import { dueLabel, extractTasks, formatDue, repeatLabel, Task, today as getToday } from '@notespark/core';
+import { getNotes, getScratchpad, getScratchpadNote, restoreTaskLine, saveScratchpad, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
+import { dueLabel, extractTasks, formatDue, repeatLabel, setLineDue, Task, today as getToday } from '@notespark/core';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -61,6 +62,8 @@ const TasksScreen: React.FC = () => {
   // The last tick, for Undo: the task before, the line after, and a repeating task's next date.
   const [lastDone, setLastDone] = useState<{ task: Task; raw: string; next?: string } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [added, setAdded] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -106,6 +109,19 @@ const TasksScreen: React.FC = () => {
       }
     } catch {
       alert("Couldn't undo", 'Try again. If it keeps failing, restart the app.');
+    }
+    load();
+  };
+
+  // New tasks go on the end of the scratchpad, which the list already reads.
+  const addTask = async (text: string, due: string | null) => {
+    setAdding(false);
+    try {
+      const pad = await getScratchpad();
+      await saveScratchpad(`${pad}${pad && !pad.endsWith('\n') ? '\n' : ''}${setLineDue(text.replace(/\s+/g, ' '), due)}\n`);
+      setAdded(true);
+    } catch {
+      alert("Couldn't add the task", 'Try again. If it keeps failing, restart the app.');
     }
     load();
   };
@@ -234,11 +250,14 @@ const TasksScreen: React.FC = () => {
           <View style={styles.empty}>
             <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{showDone ? 'No tasks yet' : 'No open tasks'}</Text>
             <Text variant="bodyMedium" style={[styles.emptyBody, { color: theme.colors.onSurfaceVariant }]}>
-              Start a line in any note with "- [ ] " to add a task. Add "due:2026-11-01" to give it a due date.
+              Tap Add task and pick a date, or start a line in any note with "- [ ] ".
             </Text>
           </View>
         }
       />
+      <FAB icon="plus" label="Add task" onPress={() => setAdding(true)} accessibilityLabel="Add task" style={styles.fab} />
+      <AddTaskDialog visible={adding} onDismiss={() => setAdding(false)} onAdd={addTask} />
+      <Snackbar visible={added} onDismiss={() => setAdded(false)} duration={3000}>Task added to Scratchpad</Snackbar>
       <Snackbar
         visible={!!lastDone}
         onDismiss={() => setLastDone(null)}
@@ -260,10 +279,15 @@ const styles = StyleSheet.create({
     maxWidth: readingWidth,
     alignSelf: 'center',
   },
+  fab: {
+    position: 'absolute',
+    right: space.lg,
+    bottom: space.lg,
+  },
   listContent: {
     flexGrow: 1,
+    paddingBottom: 96,
     paddingHorizontal: space.lg,
-    paddingBottom: space.xxl,
   },
   sort: {
     marginTop: space.xs,
