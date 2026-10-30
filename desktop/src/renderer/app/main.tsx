@@ -15,6 +15,7 @@ import { ThemeProvider, useTheme } from '../../../../mobile/src/theme/ThemeConte
 import { readingWidth, shape, space } from '../../../../mobile/src/theme/theme';
 import { DialogProvider, useAlert } from '../../../../mobile/src/components/DialogProvider';
 import { getStartScreen, StartScreen, startRoutes } from '../../../../mobile/src/utils/startScreen';
+import AskScreen from '../../../../mobile/src/screens/AskScreen';
 import HomeScreen from '../../../../mobile/src/screens/HomeScreen';
 import NoteViewScreen from '../../../../mobile/src/screens/NoteViewScreen';
 import TasksScreen from '../../../../mobile/src/screens/TasksScreen';
@@ -34,6 +35,7 @@ const screens = {
   NoteView: NoteViewScreen,
   Tasks: TasksScreen,
   Bin: BinScreen,
+  Ask: AskScreen,
   Scratchpad: ScratchpadScreen,
   Editor: EditorScreen,
   ImportExport: ImportExportScreen,

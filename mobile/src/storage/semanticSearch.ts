@@ -202,3 +202,74 @@ export const relatedToText = async (text: string, excludeNoteId?: number, limit 
     return [];
   }
 };
+
+export interface Passage {
+  noteId: number;
+  title: string;
+  excerpt: string; // the matching chunk, shortened
+  find: string; // a few words from it that the note page can search for ('' if none appear in the note as written)
+  createdAt: string;
+  updatedAt: string;
+  distance: number;
+}
+
+const EXCERPT_CHARS = 280;
+
+// The closest passages to a question, one per note, closest first. Not the answer written out: the notes' own words,
+// so nothing is made up. null when search by meaning is missing or fails.
+export const searchPassages = async (query: string, limit = 20): Promise<Passage[] | null> => {
+  if (!isMeaningSearchAvailable()) return null;
+  try {
+    const vector = await (await getEmbedder())(query);
+    const rows = (
+      await db.getAllAsync<{ id: number; distance: number }>(
+        'SELECT rowid AS id, distance FROM chunk_vectors WHERE embedding MATCH ? AND k = 80 ORDER BY distance',
+        [asBlob(vector)]
+      )
+    ).filter(r => r.distance <= MAX_DISTANCE);
+    if (!rows.length) return [];
+    const marks = (n: number) => Array(n).fill('?').join(',');
+    const owners = await db.getAllAsync<{ id: number; noteId: number }>(
+      `SELECT id, noteId FROM note_chunks WHERE id IN (${marks(rows.length)})`,
+      rows.map(r => r.id)
+    );
+    const noteOf = new Map(owners.map(o => [o.id, o.noteId]));
+    const best = new Map<number, { chunkId: number; distance: number }>();
+    for (const r of rows) {
+      const noteId = noteOf.get(r.id);
+      if (noteId !== undefined && !best.has(noteId)) best.set(noteId, { chunkId: r.id, distance: r.distance });
+    }
+    const ids = [...best.keys()];
+    const notes = await db.getAllAsync<{ id: number; title: string; content: string; createdAt: string; updatedAt: string; indexedAt: string | null }>(
+      `SELECT n.id, n.title, n.content, n.createdAt, n.updatedAt, s.updatedAt AS indexedAt
+       FROM notes n LEFT JOIN chunk_state s ON s.noteId = n.id
+       WHERE n.deletedAt IS NULL AND n.isArchived = 0 AND n.id IN (${marks(ids.length)})`,
+      ids
+    );
+    const siblings = await db.getAllAsync<{ id: number; noteId: number }>(
+      `SELECT id, noteId FROM note_chunks WHERE noteId IN (${marks(ids.length)}) ORDER BY id`,
+      ids
+    );
+    const order = new Map<number, number[]>();
+    for (const s of siblings) order.set(s.noteId, [...(order.get(s.noteId) ?? []), s.id]);
+
+    const passages: Passage[] = [];
+    for (const n of notes) {
+      const hit = best.get(n.id)!;
+      const clean = cleanText(n.content);
+      // Chunks come back the way they were cut when indexed; if the note changed since, show its start instead.
+      const index = order.get(n.id)?.indexOf(hit.chunkId) ?? -1;
+      const chunk = n.indexedAt === n.updatedAt && index >= 0 ? chunkText(clean)[index] : undefined;
+      const text = (chunk ?? clean).replace(/\s+/g, ' ').trim();
+      const excerpt = text.length > EXCERPT_CHARS ? `${text.slice(0, EXCERPT_CHARS).trimEnd()}...` : text;
+      const lower = n.content.toLowerCase();
+      const words = text.split(' ');
+      const find = [5, 3, 2].map(k => words.slice(0, k).join(' ')).find(s => s.length >= 6 && lower.includes(s.toLowerCase())) ?? '';
+      passages.push({ noteId: n.id, title: n.title, excerpt, find, createdAt: n.createdAt, updatedAt: n.updatedAt, distance: hit.distance });
+    }
+    return passages.sort((a, b) => a.distance - b.distance).slice(0, limit);
+  } catch (error) {
+    console.warn('Passage search failed:', error);
+    return null;
+  }
+};

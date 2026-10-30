@@ -104,6 +104,11 @@ const AppNavigator: React.FC<{ onReady?: () => void; start?: StartScreen }> = ({
           options={{ headerShown: false }}
         />
         <Stack.Screen
+          name="Ask"
+          component={require('../screens/AskScreen').default}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="Bin"
           component={BinScreen}
           options={{ headerShown: false }}

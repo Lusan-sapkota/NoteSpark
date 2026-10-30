@@ -15,4 +15,6 @@ export type RootStackParamList = {
   Tasks: undefined;
   Scratchpad: { append?: string } | undefined; // append: shared text to add at the end
   Bin: undefined;
+  Ask: undefined; // passages from your notes for a question
+  Tidy: undefined; // link suggestions and possible duplicates
 };

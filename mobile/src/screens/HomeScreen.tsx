@@ -770,6 +770,11 @@ const HomeScreen: React.FC = () => {
                 trailingIcon={searchType === 'content' ? 'check' : undefined}
                 onPress={() => { setSearchType('content'); setOptionsVisible(false); }}
               />
+              <Menu.Item
+                title="Ask your notes"
+                leadingIcon="comment-search-outline"
+                onPress={() => { setOptionsVisible(false); navigation.navigate('Ask'); }}
+              />
             </Menu>
           )}
         />
