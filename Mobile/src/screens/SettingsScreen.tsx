@@ -7,6 +7,7 @@ import M3Switch from '../components/M3Switch';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, getShareTarget, moveAllNotesToBin, restoreBatch, setShareTarget, ShareTarget } from '../storage/notes';
 import { isRediscoverOn, setRediscoverOn } from '../utils/rediscover';
+import { getStartScreen, setStartScreen, START_SCREENS, startScreenLabel, StartScreen } from '../utils/startScreen';
 import { formatHour, getReminderHour, REMINDER_HOURS, setReminderHour } from '../utils/taskReminders';
 import { AUTO_LOCK_MINUTES, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { BIN_DAYS } from '../storage/database';
@@ -49,6 +50,7 @@ const SettingsScreen: React.FC = () => {
   const [autoLock, setAutoLock] = useState(1);
   const [rediscover, setRediscover] = useState(true);
   const [shareTarget, setShareTargetState] = useState<ShareTarget>('scratchpad');
+  const [startScreen, setStartScreenState] = useState<StartScreen>('Home');
   // A pick-one dialog (reminder time, auto-lock); kept after closing so it doesn't change while fading.
   const [choice, setChoice] = useState<{ title: string; options: { label: string; value: number }[]; value: number; onPick: (value: number) => void; open: boolean } | null>(null);
   // Kept after closing so the text doesn't change while the dialog fades out.
@@ -73,6 +75,7 @@ const SettingsScreen: React.FC = () => {
     setAutoLock(await getAutoLockMinutes());
     setRediscover(await isRediscoverOn());
     setShareTargetState(await getShareTarget());
+    setStartScreenState(await getStartScreen());
   }, []);
 
   const lockLabel = (minutes: number) => (minutes === 0 ? 'Right away' : `After ${minutes} minute${minutes === 1 ? '' : 's'}`);
@@ -97,6 +100,17 @@ const SettingsScreen: React.FC = () => {
       onPick: i => {
         setShareTargetState(shareTargets[i]);
         setShareTarget(shareTargets[i]).catch(() => {});
+      },
+      open: true,
+    });
+  const pickStartScreen = () =>
+    setChoice({
+      title: 'Open the app on',
+      options: START_SCREENS.map((t, i) => ({ label: startScreenLabel(t), value: i })),
+      value: START_SCREENS.indexOf(startScreen),
+      onPick: i => {
+        setStartScreenState(START_SCREENS[i]);
+        setStartScreen(START_SCREENS[i]).catch(() => alert("Couldn't save the start screen", 'Try again. If it keeps failing, restart the app.'));
       },
       open: true,
     });
@@ -390,6 +404,15 @@ const SettingsScreen: React.FC = () => {
 
           {sectionTitle('Notes and tasks')}
           <GroupedRow
+            title="Open the app on"
+            description={startScreenLabel(startScreen)}
+            icon="home-outline"
+            right={chevron}
+            onPress={pickStartScreen}
+            isFirst
+            isLast={false}
+          />
+          <GroupedRow
             title="Rediscover on Home"
             description="One older note a day at the top of your list"
             icon="history"
@@ -401,7 +424,7 @@ const SettingsScreen: React.FC = () => {
               />
             }
             onPress={() => { setRediscover(!rediscover); setRediscoverOn(!rediscover).catch(() => {}); }}
-            isFirst
+            isFirst={false}
             isLast={false}
           />
           <GroupedRow

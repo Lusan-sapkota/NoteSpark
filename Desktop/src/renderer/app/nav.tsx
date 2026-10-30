@@ -59,8 +59,8 @@ export const useFocusEffect = (effect: () => void | (() => void)) => {
   useEffect(() => ref.current(), []);
 };
 
-export const Navigator: React.FC<{ initial: string; screens: Record<string, React.ComponentType<any>> }> = ({ initial, screens }) => {
-  const [stack, setStack] = useState<Route[]>(() => [route(initial)]);
+export const Navigator: React.FC<{ initial: string | string[]; screens: Record<string, React.ComponentType<any>> }> = ({ initial, screens }) => {
+  const [stack, setStack] = useState<Route[]>(() => [initial].flat().map(name => route(name)));
   const top = stack[stack.length - 1];
   const listeners = useRef(new Map<string, Set<Listener>>());
   const guard = useRef<Guard | null>(null);

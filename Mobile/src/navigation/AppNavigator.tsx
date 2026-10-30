@@ -15,6 +15,7 @@ import BinScreen from '../screens/BinScreen';
 import { useTheme } from '../theme/ThemeContext';
 import { navDarkTheme, navLightTheme } from '../theme/theme';
 import { Notifications } from '../utils/notifications';
+import { StartScreen, startRoutes } from '../utils/startScreen';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 
@@ -30,13 +31,12 @@ const openLaunchNotification = () => {
 };
 
 // onReady: lets App.tsx open the editor for text shared from another app once navigation can take it.
-const AppNavigator: React.FC<{ onReady?: () => void }> = ({ onReady }) => {
+const AppNavigator: React.FC<{ onReady?: () => void; start?: StartScreen }> = ({ onReady, start = 'Home' }) => {
   const { theme, isDarkMode } = useTheme();
 
   return (
-    <NavigationContainer ref={navigationRef} onReady={() => { openLaunchNotification(); onReady?.(); }} theme={isDarkMode ? navDarkTheme : navLightTheme}>
+    <NavigationContainer ref={navigationRef} initialState={{ routes: startRoutes(start).map(name => ({ name })) }} onReady={() => { openLaunchNotification(); onReady?.(); }} theme={isDarkMode ? navDarkTheme : navLightTheme}>
       <Stack.Navigator
-        initialRouteName="Home"
         screenOptions={{
           contentStyle: { backgroundColor: theme.colors.background },
         }}

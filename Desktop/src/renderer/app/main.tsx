@@ -14,6 +14,7 @@ import { setMeaningSearchAvailable } from './overrides/storage/semanticSearch';
 import { ThemeProvider, useTheme } from '../../../../Mobile/src/theme/ThemeContext';
 import { readingWidth, shape, space } from '../../../../Mobile/src/theme/theme';
 import { DialogProvider, useAlert } from '../../../../Mobile/src/components/DialogProvider';
+import { getStartScreen, StartScreen, startRoutes } from '../../../../Mobile/src/utils/startScreen';
 import HomeScreen from '../../../../Mobile/src/screens/HomeScreen';
 import NoteViewScreen from '../../../../Mobile/src/screens/NoteViewScreen';
 import TasksScreen from '../../../../Mobile/src/screens/TasksScreen';
@@ -242,6 +243,7 @@ const Shell = () => {
   const [error, setError] = useState<string | null>(null);
   const [onboarding, setOnboarding] = useState<boolean | null>(null);
   const [searchKnown, setSearchKnown] = useState(false); // Home reads the answer when it first draws
+  const [startScreen, setStartScreen] = useState<StartScreen | null>(null);
   const opened = useRef(false); // once the notes have been open, a lock covers them instead of replacing them
 
   const refresh = useCallback(() => {
@@ -250,6 +252,7 @@ const Shell = () => {
   useEffect(() => {
     refresh();
     invoke<boolean>('search:available').then(setMeaningSearchAvailable, () => setMeaningSearchAvailable(false)).finally(() => setSearchKnown(true));
+    getStartScreen().then(setStartScreen);
     invoke<string | null>('settings', { op: 'get', key: 'onboarded' }).then(v => setOnboarding(v !== 'true'), () => setOnboarding(false));
     // Re-check whenever the window comes back, a call finds the profile locked, or the app locks it.
     window.addEventListener('focus', refresh);
@@ -286,7 +289,7 @@ const Shell = () => {
         <Button mode="contained" onPress={refresh} style={{ alignSelf: 'flex-start', marginTop: space.xl }}>Try again</Button>
       </View>
     );
-  } else if (!lock || onboarding === null || !searchKnown) {
+  } else if (!lock || onboarding === null || !searchKnown || !startScreen) {
     body = <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}><ActivityIndicator size="large" /></View>;
   } else if (lock.phase === 'unreadable' && lock.profile) {
     body = <UnreadableProfile profileName={lock.profile.name} onRetry={() => invoke('lock:retry').then(refresh)} onErase={erase} />;
@@ -297,7 +300,7 @@ const Shell = () => {
   } else {
     body = (
       <>
-        <Navigator initial="Home" screens={screens} />
+        <Navigator initial={startRoutes(startScreen)} screens={screens} />
         {lock.phase === 'locked' && <View style={[StyleSheet.absoluteFill, { backgroundColor: theme.colors.background }]}>{unlockScreen}</View>}
       </>
     );
