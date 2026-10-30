@@ -4,7 +4,7 @@ import { firefly } from '@notespark/core';
 import { serveAsset } from './assets';
 import { setWindowFocused } from './activity';
 import { invoke } from './backend';
-import { saveClipboard, startReminders } from './notify';
+import { dueTasks, saveClipboard, startReminders } from './notify';
 import { buildAppMenu, MenuAction } from './menu';
 import AsyncStorage from '@notespark/node-shims/async-storage';
 import { startWebView, stopWebView, webViewStatus } from './web';
@@ -135,12 +135,24 @@ else {
 
     tray = new Tray(icon.resize({ width: 22, height: 22 }));
     tray.setToolTip('NoteSpark');
+    // Filled a few seconds after start (it opens the notes), then every few minutes; null until then and for a profile with a PIN.
+    let due: Awaited<ReturnType<typeof dueTasks>> = null;
     const refreshTray = async () => {
       refreshMenuFn?.();
       const web = webViewStatus();
+      const openTasks = () => deliver({ type: 'go', routes: ['Home', 'Tasks'] });
       tray?.setContextMenu(Menu.buildFromTemplate([
         { label: 'Open NoteSpark', click: showWindow },
         { type: 'separator' },
+        // The phone's "Tasks due" widget: what is due today or overdue, a click opens Tasks.
+        ...(due === null ? [] : due.length === 0
+          ? [{ label: 'No tasks due', enabled: false } as const]
+          : [
+              { label: `Tasks due (${due.length})`, enabled: false } as const,
+              ...due.slice(0, 5).map(t => ({ label: `${t.text.length > 40 ? `${t.text.slice(0, 40)}...` : t.text} (${t.when})`, click: openTasks })),
+              ...(due.length > 5 ? [{ label: `${due.length - 5} more...`, click: openTasks }] : []),
+            ]),
+        ...(due === null ? [] : [{ type: 'separator' } as const]),
         web.on
           ? { label: 'Stop web view', click: () => stopWebView().then(refreshTray).then(quitIfIdle) }
           : { label: 'Start web view', click: () => startWebView(invoke).then(refreshTray, () => {}) },
@@ -187,5 +199,9 @@ else {
     nativeTheme.on('updated', refreshMenu);
     createWindow();
     startReminders(() => deliver({ type: 'go', routes: ['Home', 'Tasks'] }));
+    // Due tasks change as notes do; a few minutes late is fine for a menu.
+    const refreshDue = async () => { due = await dueTasks().catch(() => null); await refreshTray(); };
+    setTimeout(() => void refreshDue(), 12_000).unref();
+    setInterval(() => void refreshDue(), 5 * 60_000).unref();
   });
 }
