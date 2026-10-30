@@ -6,10 +6,11 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Appbar, FAB, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
+import Menu from '../components/Menu';
 import AddTaskDialog from '../components/AddTaskDialog';
 import { RootStackParamList } from '../types';
-import { getNotes, getScratchpad, getScratchpadNote, restoreTaskLine, saveScratchpad, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
-import { dueLabel, extractTasks, formatDue, repeatLabel, setLineDue, Task, today as getToday } from '@notespark/core';
+import { deleteTaskLine, getNotes, getScratchpad, getScratchpadNote, insertTaskLine, restoreTaskLine, saveScratchpad, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
+import { dueLabel, extractTasks, formatDue, editTaskLine, repeatLabel, setLineDue, Task, today as getToday } from '@notespark/core';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -51,6 +52,24 @@ const buildRows = (all: Task[], sortBy: 'due' | 'note', today: string): Row[] =>
   return rows;
 };
 
+// The row's "more" menu; each row keeps its own open state.
+const TaskMenu: React.FC<{ title: string; onEdit: () => void; onOpen: () => void; onDelete: () => void }> = ({ title, onEdit, onOpen, onDelete }) => {
+  const { theme } = useTheme();
+  const [visible, setVisible] = useState(false);
+  const pick = (fn: () => void) => () => { setVisible(false); fn(); };
+  return (
+    <Menu
+      visible={visible}
+      onDismiss={() => setVisible(false)}
+      anchor={<IconButton icon="dots-vertical" accessibilityLabel={`More options for ${title}`} onPress={() => setVisible(true)} />}
+    >
+      <Menu.Item leadingIcon="pencil-outline" title="Edit task" onPress={pick(onEdit)} />
+      <Menu.Item leadingIcon="open-in-new" title="Open note" onPress={pick(onOpen)} />
+      <Menu.Item leadingIcon="delete-outline" title="Delete task" titleStyle={{ color: theme.colors.error }} onPress={pick(onDelete)} />
+    </Menu>
+  );
+};
+
 const TasksScreen: React.FC = () => {
   const navigation = useNavigation<TasksScreenNavigationProp>();
   const { theme } = useTheme();
@@ -63,6 +82,8 @@ const TasksScreen: React.FC = () => {
   const [lastDone, setLastDone] = useState<{ task: Task; raw: string; next?: string } | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [adding, setAdding] = useState(false);
+  const [editing, setEditing] = useState<Task | null>(null);
+  const [deleted, setDeleted] = useState<Task | null>(null);
   const [added, setAdded] = useState(false);
 
   const load = useCallback(async () => {
@@ -126,6 +147,46 @@ const TasksScreen: React.FC = () => {
     load();
   };
 
+  const saveEdit = async (text: string, due: string | null) => {
+    const task = editing;
+    setEditing(null);
+    if (!task) return;
+    try {
+      if (!(await restoreTaskLine(task.noteId, task.line, task.raw, editTaskLine(task.raw, text, due)))) {
+        alert('This task changed', 'Its note was edited. The list has been refreshed.');
+      }
+    } catch {
+      alert("Couldn't save the task", 'Try again. If it keeps failing, restart the app.');
+    }
+    load();
+  };
+
+  const removeTask = async (task: Task) => {
+    try {
+      if (await deleteTaskLine(task.noteId, task.line, task.raw)) {
+        setLastDone(null);
+        setDeleted(task);
+      } else {
+        alert('This task changed', 'Its note was edited. The list has been refreshed.');
+      }
+    } catch {
+      alert("Couldn't delete the task", 'Try again. If it keeps failing, restart the app.');
+    }
+    load();
+  };
+
+  const undoDelete = async () => {
+    const task = deleted;
+    setDeleted(null);
+    if (!task) return;
+    try {
+      await insertTaskLine(task.noteId, task.line, task.raw);
+    } catch {
+      alert("Couldn't undo", 'Open the note to add the task again.');
+    }
+    load();
+  };
+
   const openNote = (noteId: number) =>
     noteId === SCRATCHPAD_ID ? navigation.navigate('Scratchpad') : navigation.navigate('NoteView', { noteId: String(noteId) });
 
@@ -182,17 +243,9 @@ const TasksScreen: React.FC = () => {
           }
           titleStyle={task.done && styles.doneTitle}
           left={props => <List.Icon {...props} icon={task.done ? 'checkbox-marked' : 'checkbox-blank-outline'} color={theme.colors.onSurfaceVariant} />}
-          right={
-            sortBy === 'due'
-              ? () => (
-                  <IconButton
-                    icon="open-in-new"
-                    accessibilityLabel={`Open note ${task.noteTitle}`}
-                    onPress={() => openNote(task.noteId)}
-                  />
-                )
-              : undefined
-          }
+          right={() => (
+            <TaskMenu title={task.text} onEdit={() => setEditing(task)} onOpen={() => openNote(task.noteId)} onDelete={() => removeTask(task)} />
+          )}
           onPress={() => toggle(task)}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: task.done }}
@@ -257,6 +310,8 @@ const TasksScreen: React.FC = () => {
       />
       <FAB icon="plus" label="Add task" onPress={() => setAdding(true)} accessibilityLabel="Add task" style={styles.fab} />
       <AddTaskDialog visible={adding} onDismiss={() => setAdding(false)} onAdd={addTask} />
+      <AddTaskDialog visible={!!editing} task={editing ?? undefined} onDismiss={() => setEditing(null)} onAdd={saveEdit} />
+      <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={4000} action={{ label: 'Undo', onPress: undoDelete }}>Task deleted</Snackbar>
       <Snackbar visible={added} onDismiss={() => setAdded(false)} duration={3000}>Task added to Scratchpad</Snackbar>
       <Snackbar
         visible={!!lastDone}

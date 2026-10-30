@@ -276,6 +276,25 @@ export const restoreTaskLine = async (noteId: number, line: number, current: str
   return true;
 };
 
+// Delete a task's line if it's still as listed; insertTaskLine puts it back (Undo).
+export const deleteTaskLine = async (noteId: number, line: number, current: string): Promise<boolean> => {
+  const note = await readTaskSource(noteId);
+  const lines = note?.content.split('\n');
+  if (!note || !lines || lines[line] !== current) return false;
+  lines.splice(line, 1);
+  await writeTaskSource(note, lines.join('\n'));
+  return true;
+};
+
+export const insertTaskLine = async (noteId: number, line: number, raw: string): Promise<boolean> => {
+  const note = await readTaskSource(noteId);
+  if (!note) return false;
+  const lines = note.content.split('\n');
+  lines.splice(Math.min(line, lines.length), 0, raw);
+  await writeTaskSource(note, lines.join('\n'));
+  return true;
+};
+
 const idsWhere = async (where: string, params: unknown[] = []) =>
   (await db.getAllAsync<{ id: number }>(`SELECT id FROM notes WHERE ${where}`, params as any)).map(r => r.id);
 

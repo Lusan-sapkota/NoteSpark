@@ -63,16 +63,17 @@ const Calendar: React.FC<{ value: string | null; onPick: (due: string | null) =>
 };
 
 // Asks for the task text and an optional due date picked from a calendar; tapping the chosen day again clears it.
-const AddTaskDialog: React.FC<{ visible: boolean; onDismiss: () => void; onAdd: (text: string, due: string | null) => void }> = ({ visible, onDismiss, onAdd }) => {
+// With `task`, it edits that task instead of adding one.
+const AddTaskDialog: React.FC<{ visible: boolean; task?: { text: string; due?: string }; onDismiss: () => void; onAdd: (text: string, due: string | null) => void }> = ({ visible, task, onDismiss, onAdd }) => {
   const [text, setText] = useState('');
   const [due, setDue] = useState<string | null>(null);
-  useEffect(() => { if (visible) { setText(''); setDue(null); } }, [visible]);
+  useEffect(() => { if (visible) { setText(task?.text ?? ''); setDue(task?.due ?? null); } }, [visible]);
   const submit = () => text.trim() && onAdd(text.trim(), due);
 
   return (
     <KeyboardSafePortal>
       <Dialog visible={visible} onDismiss={onDismiss}>
-        <Dialog.Title>Add task</Dialog.Title>
+        <Dialog.Title>{task ? 'Edit task' : 'Add task'}</Dialog.Title>
         <Dialog.ScrollArea style={styles.area}>
           <View style={styles.body}>
             <TextInput mode="outlined" label="Task" value={text} onChangeText={setText} autoFocus maxLength={200} onSubmitEditing={submit} />
@@ -81,12 +82,12 @@ const AddTaskDialog: React.FC<{ visible: boolean; onDismiss: () => void; onAdd: 
               <Chip selected={due === addDays(1)} showSelectedCheck onPress={() => setDue(addDays(1))}>Tomorrow</Chip>
               <Chip selected={!due} showSelectedCheck onPress={() => setDue(null)}>No date</Chip>
             </View>
-            <Calendar value={due} onPick={setDue} />
+            <Calendar key={String(visible)} value={due} onPick={setDue} />
           </View>
         </Dialog.ScrollArea>
         <Dialog.Actions>
           <Button onPress={onDismiss}>Cancel</Button>
-          <Button onPress={submit} disabled={!text.trim()}>Add task</Button>
+          <Button onPress={submit} disabled={!text.trim()}>{task ? 'Save task' : 'Add task'}</Button>
         </Dialog.Actions>
       </Dialog>
     </KeyboardSafePortal>

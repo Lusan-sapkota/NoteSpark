@@ -1,4 +1,4 @@
-import { Note } from './types';
+import type { Note } from './types';
 
 export interface Task {
   noteId: number;
@@ -103,6 +103,14 @@ export const setLineDue = (line: string, due: string | null): string => {
   const base = line.replace(new RegExp(`\\s*${dueDate.source}`), '').trimEnd();
   const task = taskLine.test(`${base} `) ? base : base.replace(/^(\s*)(?:[-*+]\s+)?/, '$1- [ ] ').trimEnd();
   return due ? `${task} due:${due}` : task;
+};
+
+// A task line with new text and due date (null clears it); keeps its indent, marker, box and repeat.
+export const editTaskLine = (raw: string, text: string, due: string | null): string => {
+  const m = taskLine.exec(raw);
+  if (!m) return raw;
+  const { every } = splitDue(m[3]);
+  return `${m[1]}[${m[2]}] ${text}${every ? ` every:${every}` : ''}${due ? ` due:${due}` : ''}`;
 };
 
 // `next` is set when a repeating task was ticked: it stays open with that new due date.
