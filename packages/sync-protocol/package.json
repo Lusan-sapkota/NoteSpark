@@ -8,5 +8,10 @@
   "types": "src/index.ts",
   "scripts": {
     "test": "node --import ../node-shims/test/loader/register.mjs --test test/*.test.ts"
+  },
+  "dependencies": {
+    "@noble/ciphers": "2.4.0",
+    "@noble/curves": "2.4.0",
+    "@noble/hashes": "2.4.0"
   }
 }
