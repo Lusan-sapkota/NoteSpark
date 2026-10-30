@@ -4,7 +4,7 @@ import { Button, Chip, Dialog, IconButton, Text, TextInput, TouchableRipple } fr
 import { addDays, formatDue, today } from '@notespark/core';
 import KeyboardSafePortal from './KeyboardSafePortal';
 import { useTheme } from '../theme/ThemeContext';
-import { space } from '../theme/theme';
+import { shape, space } from '../theme/theme';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const key = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`;
@@ -67,6 +67,27 @@ const Calendar: React.FC<{ value: string | null; onPick: (due: string | null) =>
   );
 };
 
+// Same look as Home's filter chips: filled when chosen, outlined otherwise, no check mark so widths don't change.
+const DateChip: React.FC<{ label: string; selected: boolean; icon?: string; onPress: () => void }> = ({ label, selected, icon, onPress }) => {
+  const { theme } = useTheme();
+  return (
+    <Chip
+      mode={selected ? 'flat' : 'outlined'}
+      icon={icon}
+      selected={selected}
+      showSelectedCheck={false}
+      showSelectedOverlay={false}
+      onPress={onPress}
+      accessibilityState={{ selected }}
+      style={[styles.chipShape, selected && { backgroundColor: theme.colors.secondaryContainer }]}
+      textStyle={[theme.fonts.labelMedium, { color: selected ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant }]}
+      maxFontSizeMultiplier={1.5}
+    >
+      {label}
+    </Chip>
+  );
+};
+
 // Asks for the task text and an optional due date picked from a calendar; tapping the chosen day again clears it.
 // With `task`, it edits that task instead of adding one.
 const AddTaskDialog: React.FC<{ visible: boolean; task?: { text: string; due?: string }; onDismiss: () => void; onAdd: (text: string, due: string | null) => void }> = ({ visible, task, onDismiss, onAdd }) => {
@@ -86,12 +107,15 @@ const AddTaskDialog: React.FC<{ visible: boolean; task?: { text: string; due?: s
           <View style={styles.body}>
             <TextInput ref={input} mode="outlined" label="Task" value={text} onChangeText={setText} autoFocus maxLength={200} onSubmitEditing={submit} />
             <View style={styles.chips}>
-              <Chip selected={due === today()} showSelectedCheck onPress={() => { setDue(today()); setPicking(false); }}>Today</Chip>
-              <Chip selected={due === addDays(1)} showSelectedCheck onPress={() => { setDue(addDays(1)); setPicking(false); }}>Tomorrow</Chip>
-              <Chip icon="calendar-month-outline" selected={custom || picking} showSelectedCheck={false} onPress={() => { input.current?.blur?.(); setPicking(p => !p); }}>
-                {custom ? formatDue(due!) : 'Pick a date'}
-              </Chip>
-              <Chip selected={!due} showSelectedCheck onPress={() => { setDue(null); setPicking(false); }}>No date</Chip>
+              <DateChip label="Today" selected={due === today()} onPress={() => { setDue(today()); setPicking(false); }} />
+              <DateChip label="Tomorrow" selected={due === addDays(1)} onPress={() => { setDue(addDays(1)); setPicking(false); }} />
+              <DateChip
+                label={custom ? formatDue(due!) : 'Pick a date'}
+                icon="calendar-month-outline"
+                selected={custom || picking}
+                onPress={() => { input.current?.blur?.(); setPicking(p => !p); }}
+              />
+              <DateChip label="No date" selected={!due} onPress={() => { setDue(null); setPicking(false); }} />
             </View>
             {picking && <Calendar value={due} onPick={setDue} />}
           </View>
@@ -108,7 +132,8 @@ const AddTaskDialog: React.FC<{ visible: boolean; task?: { text: string; due?: s
 const styles = StyleSheet.create({
   area: { maxHeight: 520 },
   body: { paddingVertical: space.sm },
-  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginVertical: space.md },
+  chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space.sm, marginTop: space.md, marginBottom: space.sm },
+  chipShape: { borderRadius: shape.small },
   monthRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   week: { flexDirection: 'row' },
   cell: { flex: 1, minHeight: 48, alignItems: 'center', justifyContent: 'center' },
