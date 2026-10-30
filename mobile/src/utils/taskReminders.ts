@@ -1,7 +1,7 @@
 // One local notification per profile and day for tasks due then; recomputed whenever Home loads.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Notifications } from './notifications';
-import { buildReminders, REMINDER_ID_PREFIX, type ProfileTasks } from '@notespark/core';
+import { buildReminders, getLanguage, REMINDER_ID_PREFIX, type ProfileTasks } from '@notespark/core';
 import { getProfiles, hasProfilePin, readProfileNotes } from '../storage/profiles';
 
 const HOUR_KEY = 'reminderHour';
@@ -17,7 +17,7 @@ export const setReminderHour = async (hour: number): Promise<void> => {
   await syncTaskReminders();
 };
 
-export const formatHour = (hour: number) => new Date(2000, 0, 1, hour).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+export const formatHour = (hour: number) => new Date(2000, 0, 1, hour).toLocaleTimeString(getLanguage(), { hour: 'numeric', minute: '2-digit' });
 let lastScheduled = '';
 
 export const syncTaskReminders = async (): Promise<void> => {

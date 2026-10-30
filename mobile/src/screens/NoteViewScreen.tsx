@@ -8,7 +8,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
-import { findTaskLines, formatDue, splitDue, toggleTaskLine } from '@notespark/core';
+import { findTaskLines, formatDue, getLanguage, splitDue, t as translate, toggleTaskLine } from '@notespark/core';
 import { extractTags, suggestTags } from '@notespark/core';
 import { findMention, findNoteByTitle, hasConnections, linkedTitles, linkMention, linksTo, noteLinkPattern, noteMap } from '@notespark/core';
 import MermaidDiagram from '../components/MermaidDiagram';
@@ -23,6 +23,7 @@ import { relatedNotes } from '../storage/semanticSearch';
 import NoteAttachments from '../components/NoteAttachments';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
+import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { NoteText, readingWidth, shape, space } from '../theme/theme';
 
@@ -46,12 +47,12 @@ const getPlainText = (markdown: string) =>
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return '';
-  const time = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const time = date.toLocaleTimeString(getLanguage(), { hour: 'numeric', minute: '2-digit' });
   const days = Math.round((new Date().setHours(0, 0, 0, 0) - new Date(date).setHours(0, 0, 0, 0)) / 86400000);
-  if (days === 0) return `today, ${time}`;
-  if (days === 1) return `yesterday, ${time}`;
+  if (days === 0) return translate('note.dateToday', { time });
+  if (days === 1) return translate('note.dateYesterday', { time });
   const sameYear = date.getFullYear() === new Date().getFullYear();
-  return `${date.toLocaleDateString([], { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) })}, ${time}`;
+  return translate('note.dateAt', { date: date.toLocaleDateString(getLanguage(), { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) }), time });
 };
 
 type Change = { text: string; type: 'same' | 'removed' | 'added' };
@@ -102,12 +103,13 @@ const NoteViewScreen: React.FC = () => {
   const { theme } = useTheme();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
+  const { t } = useI18n();
 
   const confirmOpenLink = (url: string) => {
     const openUrl = /^https?:\/\//.test(url) ? url : `https://${url}`;
-    alert('Open link?', `This opens ${url} in your browser.`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Open link', onPress: () => Linking.openURL(openUrl).catch(() => {}) },
+    alert(t('note.openLinkTitle'), t('note.openLinkMessage', { url }), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('note.openLink'), onPress: () => Linking.openURL(openUrl).catch(() => {}) },
     ]);
   };
   const insets = useSafeAreaInsets();
@@ -146,7 +148,7 @@ const NoteViewScreen: React.FC = () => {
     if (note) {
       const text = note.isMarkdown && showRaw ? getPlainText(note.content) : note.content;
       Clipboard.setString(text);
-      setSnackbar('Copied to clipboard');
+      setSnackbar(t('note.copied'));
     }
   };
 
@@ -161,7 +163,7 @@ const NoteViewScreen: React.FC = () => {
           const linking = await getNotesWithLinks();
           setBacklinks(linking.filter(n => n.id !== fetchedNote.id && linksTo(n.content, fetchedNote.title)));
           const all = await getNotes();
-          setOutgoing([...new Set(linkedTitles(fetchedNote.content))].filter(t => findNoteByTitle(all, t)));
+          setOutgoing([...new Set(linkedTitles(fetchedNote.content))].filter(title => findNoteByTitle(all, title)));
           const others = all.filter(n => n.id !== fetchedNote.id && !linksTo(n.content, fetchedNote.title));
           setMentions(others.filter(n => findMention(n.content, fetchedNote.title) >= 0).slice(0, 10));
           const ids = await relatedNotes(fetchedNote.id);
@@ -169,7 +171,7 @@ const NoteViewScreen: React.FC = () => {
           setRelated(notes.filter((n): n is Note => !!n));
         }
       } catch (error) {
-        alert("Couldn't load the note", 'Pull down to try again.');
+        alert(t('note.loadFailedTitle'), t('note.loadFailedMessage'));
       }
     }
     setRefreshing(false);
@@ -187,7 +189,7 @@ const NoteViewScreen: React.FC = () => {
       await moveNoteToBin(note!.id);
       navigation.popTo('Home', { binnedNoteId: note!.id });
     } catch (error) {
-      alert("Couldn't move the note to the bin", 'Try again. If it keeps failing, restart the app.');
+      alert(t('note.binFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -201,10 +203,10 @@ const NoteViewScreen: React.FC = () => {
     setNote(updated);
     try {
       await updateNote(updated, { keepVersion: false });
-      if (result.next) setSnackbar(`Next due ${formatDue(result.next)}`);
+      if (result.next) setSnackbar(t('note.nextDue', { date: formatDue(result.next) }));
     } catch (error) {
       setNote(note);
-      alert("Couldn't update the task", 'Try again. If it keeps failing, restart the app.');
+      alert(t('note.taskFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -213,10 +215,10 @@ const NoteViewScreen: React.FC = () => {
     setNote({ ...note, isPinned: !note.isPinned });
     try {
       await setNotePinned(note.id, !note.isPinned);
-      setSnackbar(note.isPinned ? 'Note unpinned' : 'Note pinned');
+      setSnackbar(note.isPinned ? t('note.unpinned') : t('note.pinned'));
     } catch (error) {
       setNote(note);
-      alert("Couldn't pin the note", 'Try again. If it keeps failing, restart the app.');
+      alert(t('note.pinFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -226,9 +228,9 @@ const NoteViewScreen: React.FC = () => {
     try {
       await setNoteArchived(note.id, !note.isArchived);
       setNote({ ...note, isArchived: !note.isArchived, isPinned: note.isArchived && note.isPinned });
-      setSnackbar(note.isArchived ? 'Note unarchived' : 'Note archived');
+      setSnackbar(note.isArchived ? t('note.unarchived') : t('note.archived'));
     } catch (error) {
-      alert(note.isArchived ? "Couldn't unarchive the note" : "Couldn't archive the note", 'Try again. If it keeps failing, restart the app.');
+      alert(note.isArchived ? t('note.unarchiveFailedTitle') : t('note.archiveFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -239,9 +241,9 @@ const NoteViewScreen: React.FC = () => {
     try {
       await updateNote(updated, { keepVersion: false });
       setNote({ ...updated, updatedAt: new Date().toISOString() });
-      setSnackbar(`Tag #${tag} added`);
+      setSnackbar(t('note.tagAdded', { tag }));
     } catch (error) {
-      alert("Couldn't add the tag", 'Try again. If it keeps failing, restart the app.');
+      alert(t('note.addTagFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -253,12 +255,12 @@ const NoteViewScreen: React.FC = () => {
         navigation.push('NoteView', { noteId: String(target.id) });
         return;
       }
-      alert(`No note called "${title}"`, 'Start a new note with this title?', [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'New note', onPress: () => navigation.navigate('Editor', { title }) },
+      alert(t('note.noNoteCalled', { title }), t('note.startNewNote'), [
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('editor.newNote'), onPress: () => navigation.navigate('Editor', { title }) },
       ]);
     } catch (error) {
-      alert("Couldn't open the linked note", 'Try again. If it keeps failing, restart the app.');
+      alert(t('note.openLinkedFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -267,9 +269,9 @@ const NoteViewScreen: React.FC = () => {
     try {
       await updateNote({ ...other, content: linkMention(other.content, note.title) });
       await reloadNote();
-      setSnackbar('Link added');
+      setSnackbar(t('note.linkAdded'));
     } catch (error) {
-      alert("Couldn't add the link", 'Try again. If it keeps failing, restart the app.');
+      alert(t('note.addLinkFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -278,7 +280,7 @@ const NoteViewScreen: React.FC = () => {
     try {
       setHistory({ versions: await getNoteVersions(note.id), viewing: null, open: true });
     } catch (error) {
-      alert("Couldn't load the version history", 'Try again. If it keeps failing, restart the app.');
+      alert(t('note.historyFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -289,9 +291,9 @@ const NoteViewScreen: React.FC = () => {
       await updateNote({ id: note.id, title: version.title, content: version.content, isMarkdown: version.isMarkdown });
       closeHistory();
       await reloadNote();
-      setSnackbar('Version restored');
+      setSnackbar(t('note.versionRestored'));
     } catch (error) {
-      alert("Couldn't restore the version", 'Try again. If it keeps failing, restart the app.');
+      alert(t('note.restoreFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -450,52 +452,52 @@ const NoteViewScreen: React.FC = () => {
             <Appbar.Action
               icon={note.isPinned ? 'pin' : 'pin-outline'}
               onPress={handlePinToggle}
-              accessibilityLabel={note.isPinned ? 'Unpin note' : 'Pin note'}
+              accessibilityLabel={note.isPinned ? t('note.unpinNote') : t('note.pinNote')}
             />
-            <Appbar.Action icon="content-copy" onPress={handleCopyAll} accessibilityLabel="Copy note text" />
+            <Appbar.Action icon="content-copy" onPress={handleCopyAll} accessibilityLabel={t('note.copyText')} />
             <Menu
               visible={menuVisible}
               onDismiss={() => setMenuVisible(false)}
-              anchor={<Appbar.Action icon="dots-vertical" onPress={() => setMenuVisible(true)} accessibilityLabel="More options" />}
+              anchor={<Appbar.Action icon="dots-vertical" onPress={() => setMenuVisible(true)} accessibilityLabel={t('note.moreOptions')} />}
             >
               {!!note.isMarkdown && (
                 <Menu.Item
                   leadingIcon={showRaw ? 'language-markdown' : 'format-text'}
-                  title={showRaw ? 'Show formatted text' : 'Show plain text'}
+                  title={showRaw ? t('note.showFormatted') : t('note.showPlain')}
                   onPress={() => { setMenuVisible(false); setShowRaw(v => !v); }}
                 />
               )}
               <Menu.Item
                 leadingIcon="export-variant"
-                title={note.isMarkdown ? 'Export as Markdown (no attachments)' : 'Export as text file (no attachments)'}
+                title={note.isMarkdown ? t('note.exportMarkdown') : t('note.exportText')}
                 onPress={() => {
                   setMenuVisible(false);
-                  shareNoteAsMarkdown(note).catch(() => alert("Couldn't export the note", 'Try again. If it keeps failing, restart the app.'));
+                  shareNoteAsMarkdown(note).catch(() => alert(t('note.exportFailedTitle'), t('common.tryAgainRestart')));
                 }}
               />
               <Menu.Item
                 leadingIcon="magnify"
-                title="Find in note"
+                title={t('note.findInNote')}
                 onPress={() => { setMenuVisible(false); setFind({ query: '', index: 0 }); }}
               />
               <Menu.Item
                 leadingIcon="graph-outline"
-                title="Show map"
+                title={t('note.showMap')}
                 onPress={() => { setMenuVisible(false); setShowMap(true); }}
               />
               <Menu.Item
                 leadingIcon="history"
-                title="Version history"
+                title={t('note.versionHistory')}
                 onPress={() => { setMenuVisible(false); openHistory(); }}
               />
               <Menu.Item
                 leadingIcon={note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
-                title={note.isArchived ? 'Unarchive' : 'Archive'}
+                title={note.isArchived ? t('note.unarchive') : t('note.archive')}
                 onPress={() => { setMenuVisible(false); handleArchiveToggle(); }}
               />
               <Menu.Item
                 leadingIcon="delete-outline"
-                title="Move to bin"
+                title={t('note.moveToBin')}
                 titleStyle={{ color: theme.colors.error }}
                 onPress={() => { setMenuVisible(false); handleDelete(); }}
               />
@@ -507,23 +509,23 @@ const NoteViewScreen: React.FC = () => {
         <View style={[styles.findBar, { backgroundColor: elevated ? theme.colors.elevation.level2 : theme.colors.background }]}>
           <Searchbar
             autoFocus
-            placeholder="Find in note"
+            placeholder={t('note.findInNote')}
             value={find.query}
             onChangeText={text => setFind({ query: text, index: 0 })}
             icon="close"
             onIconPress={() => setFind(null)}
-            searchAccessibilityLabel="Close find"
+            searchAccessibilityLabel={t('note.closeFind')}
             style={{ backgroundColor: theme.colors.surfaceContainerHigh, borderRadius: shape.control }}
             inputStyle={styles.findInput}
             right={() => (
               <View style={styles.findActions}>
                 {!!query && (
                   <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} accessibilityLiveRegion="polite">
-                    {matches.length ? `${(find.index % matches.length) + 1} of ${matches.length}` : 'No matches'}
+                    {matches.length ? t('note.matchOf', { current: (find.index % matches.length) + 1, total: matches.length }) : t('note.noMatches')}
                   </Text>
                 )}
-                <IconButton icon="chevron-up" disabled={!matches.length} onPress={() => stepFind(-1)} accessibilityLabel="Previous match" />
-                <IconButton icon="chevron-down" disabled={!matches.length} onPress={() => stepFind(1)} accessibilityLabel="Next match" />
+                <IconButton icon="chevron-up" disabled={!matches.length} onPress={() => stepFind(-1)} accessibilityLabel={t('note.previousMatch')} />
+                <IconButton icon="chevron-down" disabled={!matches.length} onPress={() => stepFind(1)} accessibilityLabel={t('note.nextMatch')} />
               </View>
             )}
           />
@@ -546,15 +548,15 @@ const NoteViewScreen: React.FC = () => {
             </NoteText>
           </View>
           <View style={styles.infoRow}>
-            {note.isMarkdown ? infoLabel('language-markdown', 'Markdown') : infoLabel('text', 'Text')}
-            {infoLabel('pencil-outline', `Edited ${formatDate(note.updatedAt)}`)}
-            {note.isArchived && infoLabel('archive-outline', 'Archived')}
+            {note.isMarkdown ? infoLabel('language-markdown', 'Markdown') : infoLabel('text', t('note.plainTextLabel'))}
+            {infoLabel('pencil-outline', t('note.edited', { date: formatDate(note.updatedAt) }))}
+            {note.isArchived && infoLabel('archive-outline', t('note.archivedLabel'))}
             {extractTags(content).map(tag => (
               <TouchableRipple
                 key={tag}
                 onPress={() => navigation.popTo('Home', { tag })}
                 accessibilityRole="button"
-                accessibilityLabel={`Show notes tagged ${tag}`}
+                accessibilityLabel={t('note.showTagged', { tag })}
                 hitSlop={12}
                 borderless
                 style={[styles.info, { backgroundColor: theme.colors.tertiaryContainer }]}
@@ -567,7 +569,7 @@ const NoteViewScreen: React.FC = () => {
                 key={`suggest-${tag}`}
                 onPress={() => addTag(tag)}
                 accessibilityRole="button"
-                accessibilityLabel={`Add tag ${tag}, used by related notes`}
+                accessibilityLabel={t('note.addTagHint', { tag })}
                 hitSlop={12}
                 borderless
                 style={[styles.info, { borderWidth: 1, borderColor: theme.colors.outlineVariant }]}
@@ -584,7 +586,7 @@ const NoteViewScreen: React.FC = () => {
                 style={[styles.progressBar, { backgroundColor: theme.colors.surfaceContainerHighest }]}
               />
               <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                {doneCount} of {taskLines.length} done
+                {t('note.tasksDone', { done: doneCount, total: taskLines.length })}
               </Text>
             </View>
           )}
@@ -615,11 +617,11 @@ const NoteViewScreen: React.FC = () => {
           {backlinks.length > 0 && (
             <View>
               <Divider style={styles.divider} />
-              <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Linked from</Text>
+              <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>{t('note.linkedFrom')}</Text>
               {backlinks.map((b, i) => (
                 <GroupedRow
                   key={b.id}
-                  title={b.title || 'Untitled note'}
+                  title={b.title || t('common.untitledNote')}
                   description={toPreview(b.content) || undefined}
                   icon="link-variant"
                   onPress={() => navigation.push('NoteView', { noteId: String(b.id) })}
@@ -633,17 +635,17 @@ const NoteViewScreen: React.FC = () => {
           {mentions.length > 0 && (
             <View>
               <Divider style={styles.divider} />
-              <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Mentioned in</Text>
+              <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>{t('note.mentionedIn')}</Text>
               {mentions.map((m, i) => (
                 <GroupedRow
                   key={m.id}
-                  title={m.title || 'Untitled note'}
+                  title={m.title || t('common.untitledNote')}
                   description={toPreview(m.content) || undefined}
                   icon="text-search"
                   onPress={() => navigation.push('NoteView', { noteId: String(m.id) })}
                   right={
-                    <Button compact onPress={() => linkFromMention(m)} accessibilityLabel={`Link this note from ${m.title || 'Untitled note'}`}>
-                      Link
+                    <Button compact onPress={() => linkFromMention(m)} accessibilityLabel={t('note.linkFrom', { title: m.title || t('common.untitledNote') })}>
+                      {t('note.link')}
                     </Button>
                   }
                   isFirst={i === 0}
@@ -656,11 +658,11 @@ const NoteViewScreen: React.FC = () => {
           {related.length > 0 && (
             <View>
               <Divider style={styles.divider} />
-              <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>Related notes</Text>
+              <Text variant="titleSmall" style={[styles.sectionTitle, { color: theme.colors.primary }]}>{t('editor.relatedNotes')}</Text>
               {related.map((r, i) => (
                 <GroupedRow
                   key={r.id}
-                  title={r.title || 'Untitled note'}
+                  title={r.title || t('common.untitledNote')}
                   description={toPreview(r.content) || undefined}
                   icon="note-text-outline"
                   onPress={() => navigation.push('NoteView', { noteId: String(r.id) })}
@@ -675,9 +677,9 @@ const NoteViewScreen: React.FC = () => {
 
       <FAB
         icon="pencil-outline"
-        label="Edit"
+        label={t('common.edit')}
         onPress={handleEdit}
-        accessibilityLabel="Edit note"
+        accessibilityLabel={t('editor.editNote')}
         style={[styles.fab, { bottom: space.lg + insets.bottom }]}
       />
 
@@ -688,7 +690,7 @@ const NoteViewScreen: React.FC = () => {
           style={styles.sheetWrap}
           contentContainerStyle={[styles.sheet, { backgroundColor: theme.colors.surfaceContainerLow, paddingBottom: space.lg + insets.bottom }]}
         >
-          <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>Note map</Text>
+          <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('note.map')}</Text>
           {note && (() => {
             const groups = {
               links: outgoing,
@@ -702,23 +704,23 @@ const NoteViewScreen: React.FC = () => {
               </ScrollView>
             ) : (
               <Text variant="bodyMedium" style={[styles.sheetEmpty, { color: theme.colors.onSurfaceVariant }]}>
-                Nothing connects to this note yet. Link a note with [[Title]] and it shows up here.
+                {t('note.mapEmpty')}
               </Text>
             );
           })()}
         </Modal>
         <Dialog visible={!!history?.open} onDismiss={closeHistory}>
-          <Dialog.Title>{history?.viewing ? history.viewing.title || 'Untitled note' : 'Version history'}</Dialog.Title>
+          <Dialog.Title>{history?.viewing ? history.viewing.title || t('common.untitledNote') : t('note.versionHistory')}</Dialog.Title>
           {history?.viewing ? (
             <>
               <Dialog.ScrollArea style={styles.historyArea}>
                 <ScrollView contentContainerStyle={styles.historyText}>
                   <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                    Saved until {formatDate(history.viewing.savedAt)}
+                    {t('note.savedUntil', { date: formatDate(history.viewing.savedAt) })}
                   </Text>
                   {showChanges && (
                     <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                      Changes made after this version: removed text is struck through, added text is underlined.
+                      {t('note.changesHelp')}
                     </Text>
                   )}
                   <NoteText variant="noteBody" style={{ color: theme.colors.onSurface }} selectable>
@@ -739,9 +741,9 @@ const NoteViewScreen: React.FC = () => {
                 </ScrollView>
               </Dialog.ScrollArea>
               <Dialog.Actions>
-                <Button onPress={() => setHistory(h => h && { ...h, viewing: null })}>Back</Button>
-                <Button onPress={() => setShowChanges(v => !v)}>{showChanges ? 'Hide changes' : 'Show changes'}</Button>
-                <Button onPress={() => history.viewing && restoreVersion(history.viewing)}>Restore</Button>
+                <Button onPress={() => setHistory(h => h && { ...h, viewing: null })}>{t('common.back')}</Button>
+                <Button onPress={() => setShowChanges(v => !v)}>{showChanges ? t('note.hideChanges') : t('note.showChanges')}</Button>
+                <Button onPress={() => history.viewing && restoreVersion(history.viewing)}>{t('common.restore')}</Button>
               </Dialog.Actions>
             </>
           ) : (
@@ -751,7 +753,7 @@ const NoteViewScreen: React.FC = () => {
                   {history?.versions.length ? history.versions.map(v => (
                     <List.Item
                       key={v.id}
-                      title={`Before ${formatDate(v.savedAt)}`}
+                      title={t('note.versionBefore', { date: formatDate(v.savedAt) })}
                       description={toPreview(v.content) || v.title}
                       descriptionNumberOfLines={2}
                       left={props => <List.Icon {...props} icon="history" />}
@@ -759,13 +761,13 @@ const NoteViewScreen: React.FC = () => {
                     />
                   )) : (
                     <Text variant="bodyMedium" style={[styles.historyText, { color: theme.colors.onSurfaceVariant }]}>
-                      No earlier versions yet. Each time you save changes, the version before is kept here (the last 20).
+                      {t('note.noVersions')}
                     </Text>
                   )}
                 </ScrollView>
               </Dialog.ScrollArea>
               <Dialog.Actions>
-                <Button onPress={() => closeHistory()}>Close</Button>
+                <Button onPress={() => closeHistory()}>{t('common.close')}</Button>
               </Dialog.Actions>
             </>
           )}

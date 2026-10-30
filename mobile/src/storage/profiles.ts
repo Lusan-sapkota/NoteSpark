@@ -6,6 +6,7 @@ import * as SQLite from 'expo-sqlite';
 import { UUID_SQL, transact, uuidsWhere } from './crdt';
 import { changesNotes, scratchpadAsNote, toNote } from './notes';
 import type { Note } from '../types';
+import { t } from '@notespark/core';
 import { copyAttachmentsForTransfer, deleteProfileAttachments, referencedHashes } from './attachments';
 import { BIN_DAYS, db, dbName, deleteProfileDatabase, forgetProfileKey, getOpenProfileId, getProfileKey, initDatabase, isProfileDatabaseOpen, isProfileEncrypted, openProfileConnection, openProfileDatabase, restoreProfileKey, setProfileEncryption, withDatabaseLock } from './database';
 
@@ -145,9 +146,9 @@ export const getPinLockout = async (id: string): Promise<number> =>
 
 export const wrongPinMessage = async (id: string): Promise<string> => {
   const wait = await getPinLockout(id);
-  if (!wait) return 'Enter the four-digit PIN for this profile.';
+  if (!wait) return t('profiles.enterPinPrompt');
   const seconds = Math.ceil(wait / 1000);
-  return `Too many wrong PINs. Try again in ${seconds < 90 ? `${seconds} seconds` : `${Math.ceil(seconds / 60)} minutes`}.`;
+  return seconds < 90 ? t('profiles.tooManyPinsSeconds', { count: seconds }) : t('profiles.tooManyPinsMinutes', { count: Math.ceil(seconds / 60) });
 };
 
 // Only a four-digit attempt counts as a try: screens pass '' just to ask whether a profile has a PIN.
@@ -197,8 +198,8 @@ export const unlockWithBiometrics = async (profile: Profile): Promise<boolean> =
   // After a phone transfer, SecureStore is empty until the PIN is entered once to unwrap the key.
   if (!(await isProfileEncrypted(profile.id)) && (await getPinBackups())[profile.id]?.wrappedKey) return false;
   const result = await LocalAuthentication.authenticateAsync({
-    promptMessage: `Open ${profile.name}`,
-    cancelLabel: 'Use PIN',
+    promptMessage: t('profiles.biometricPrompt', { name: profile.name }),
+    cancelLabel: t('profiles.biometricCancel'),
     disableDeviceFallback: true,
   });
   if (result.success) biometricGrant = { id: profile.id, until: Date.now() + 60000 };

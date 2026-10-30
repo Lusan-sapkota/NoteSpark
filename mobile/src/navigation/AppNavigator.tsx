@@ -31,11 +31,11 @@ const openLaunchNotification = () => {
 };
 
 // onReady: lets App.tsx open the editor for text shared from another app once navigation can take it.
-const AppNavigator: React.FC<{ onReady?: () => void; start?: StartScreen }> = ({ onReady, start = 'Home' }) => {
+const AppNavigator: React.FC<{ onReady?: () => void; start?: StartScreen; reopenSettings?: boolean }> = ({ onReady, start = 'Home', reopenSettings }) => {
   const { theme, isDarkMode } = useTheme();
 
   return (
-    <NavigationContainer ref={navigationRef} initialState={{ routes: startRoutes(start).map(name => ({ name })) }} onReady={() => { openLaunchNotification(); onReady?.(); }} theme={isDarkMode ? navDarkTheme : navLightTheme}>
+    <NavigationContainer ref={navigationRef} initialState={{ routes: (reopenSettings ? ['Home', 'Settings'] : startRoutes(start)).map(name => ({ name })) }} onReady={() => { openLaunchNotification(); onReady?.(); }} theme={isDarkMode ? navDarkTheme : navLightTheme}>
       <Stack.Navigator
         screenOptions={{
           contentStyle: { backgroundColor: theme.colors.background },

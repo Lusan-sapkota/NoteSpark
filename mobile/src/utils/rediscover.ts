@@ -1,7 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Note } from '../types';
 import { relatedNotes } from '../storage/semanticSearch';
-import { linksTo } from '@notespark/core';
+import { linksTo, t } from '@notespark/core';
 import { today } from '@notespark/core';
 
 // "Rediscover" on Home: one older note a day; on unless switched off in Settings.
@@ -29,7 +29,7 @@ export const onThisDay = (notes: Note[], now = new Date()): Rediscovery | null =
   if (!matches.length) return null;
   const note = matches[Math.floor(now.getTime() / DAY_MS) % matches.length];
   const years = now.getFullYear() - new Date(note.createdAt).getFullYear();
-  return { note, reason: `Written ${years === 1 ? 'a year' : `${years} years`} ago today` };
+  return { note, reason: years === 1 ? t('home.rediscoverWrittenYearAgo') : t('home.rediscoverWrittenYearsAgo', { count: years }) };
 };
 
 // Else, with search by meaning: a month-old note close to one edited this week and not linked to it.
@@ -51,7 +51,7 @@ export const pickRediscovery = async (notes: Note[], now = new Date()): Promise<
         !linksTo(fresh.content, old.title) &&
         !linksTo(old.content, fresh.title)
       ) {
-        return { note: old, reason: `Close to "${fresh.title}", which you edited this week` };
+        return { note: old, reason: t('home.rediscoverClose', { title: fresh.title }) };
       }
     }
   }

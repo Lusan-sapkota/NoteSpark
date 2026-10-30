@@ -3,6 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import GroupedRow from '../../../../mobile/src/components/GroupedRow';
 import M3Switch from '../../../../mobile/src/components/M3Switch';
 import { useAlert } from '../../../../mobile/src/components/DialogProvider';
+import { useI18n } from '../../../../mobile/src/i18n/I18nContext';
 import { isDesktop } from './bridge';
 
 // Desktop-only Settings rows; the settings channel refuses keys containing pin/key/secret/token/backup, so not "keepInTray".
@@ -10,6 +11,7 @@ export const MENU_BUTTON_CHANGED = 'notespark:menu-button';
 export const canShowMenuButton = isDesktop && !/Mac/.test(navigator.userAgent);
 
 const MenuButtonRow = () => {
+  const { t } = useI18n();
   const [on, setOn] = useState(true);
   useEffect(() => {
     AsyncStorage.getItem('menuButton').then(value => setOn(value !== 'false'), () => {});
@@ -23,17 +25,17 @@ const MenuButtonRow = () => {
   // Hiding it can leave no way to the menu, so it asks first.
   const change = (next: boolean) => {
     if (next) return save(true);
-    alert('Hide the menu button?', "If your desktop doesn't show the menu at the top of the screen, you won't be able to open it from the window. You can turn the button back on in Settings.", [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Hide button', onPress: () => save(false) },
+    alert(t('desktop.hideMenuTitle'), t('desktop.hideMenuMessage'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('desktop.hideButton'), onPress: () => save(false) },
     ]);
   };
   return (
     <GroupedRow
-      title="Show menu button in the header"
-      description="Turn off if your desktop already shows the menu at the top of the screen."
+      title={t('desktop.showMenuButton')}
+      description={t('desktop.showMenuButtonHelp')}
       icon="menu"
-      right={<M3Switch value={on} onValueChange={change} accessibilityLabel="Show menu button in the header" />}
+      right={<M3Switch value={on} onValueChange={change} accessibilityLabel={t('desktop.showMenuButton')} />}
       onPress={() => change(!on)}
       isFirst={false}
       isLast
@@ -42,6 +44,7 @@ const MenuButtonRow = () => {
 };
 
 const TrayRow = ({ isLast }: { isLast: boolean }) => {
+  const { t } = useI18n();
   const [on, setOn] = useState(true);
   useEffect(() => {
     AsyncStorage.getItem('trayOnClose').then(value => setOn(value !== 'false'), () => {});
@@ -52,10 +55,10 @@ const TrayRow = ({ isLast }: { isLast: boolean }) => {
   };
   return (
     <GroupedRow
-      title="Keep running in the tray"
-      description="Closing the window keeps NoteSpark running. Quit from the tray icon."
+      title={t('desktop.keepInTray')}
+      description={t('desktop.keepInTrayHelp')}
       icon="tray-full"
-      right={<M3Switch value={on} onValueChange={change} accessibilityLabel="Keep running in the tray" />}
+      right={<M3Switch value={on} onValueChange={change} accessibilityLabel={t('desktop.keepInTray')} />}
       onPress={() => change(!on)}
       isFirst={false}
       isLast={isLast}

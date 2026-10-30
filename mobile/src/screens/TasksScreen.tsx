@@ -11,10 +11,12 @@ import AddTaskDialog, { TaskTarget } from '../components/AddTaskDialog';
 import { updateWidgets } from '../widget/widgets';
 import { RootStackParamList } from '../types';
 import { addTaskToNote, deleteTaskLine, getNotes, getScratchpadNote, insertTaskLine, restoreTaskLine, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
+import type { t as translate } from '@notespark/core';
 import { dueLabel, extractTasks, formatDue, editTaskLine, repeatLabel, Repeat, Task, today as getToday } from '@notespark/core';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 import { controlTheme, groupCorners, readingWidth, space } from '../theme/theme';
 
 type TasksScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Tasks'>;
@@ -24,7 +26,7 @@ type Row =
   | { kind: 'task'; key: string; task: Task; isFirst: boolean; isLast: boolean };
 
 // Flat list of section headers and task rows, so the list keeps its spring layout animation.
-const buildRows = (all: Task[], sortBy: 'due' | 'note', today: string): Row[] => {
+const buildRows = (all: Task[], sortBy: 'due' | 'note', today: string, t: typeof translate): Row[] => {
   const tasks = sortBy === 'due' ? all.filter(t => !t.done) : all;
   const rows: Row[] = [];
   const addSection = (header: Omit<Extract<Row, { kind: 'header' }>, 'kind'>, items: Task[]) => {
@@ -36,18 +38,18 @@ const buildRows = (all: Task[], sortBy: 'due' | 'note', today: string): Row[] =>
   };
   if (sortBy === 'due') {
     const byDue = [...tasks].sort((a, b) => (a.due ?? '').localeCompare(b.due ?? '') || a.noteId - b.noteId || a.line - b.line);
-    addSection({ key: 'overdue', title: 'Overdue', tone: 'error' }, byDue.filter(t => t.due && t.due < today));
-    addSection({ key: 'today', title: 'Today' }, byDue.filter(t => t.due === today));
-    addSection({ key: 'upcoming', title: 'Upcoming' }, byDue.filter(t => t.due && t.due > today));
-    addSection({ key: 'none', title: 'No due date' }, byDue.filter(t => !t.due));
-    addSection({ key: 'done', title: 'Done' }, all.filter(t => t.done));
+    addSection({ key: 'overdue', title: t('tasks.overdue'), tone: 'error' }, byDue.filter(t => t.due && t.due < today));
+    addSection({ key: 'today', title: t('common.today') }, byDue.filter(t => t.due === today));
+    addSection({ key: 'upcoming', title: t('tasks.upcoming') }, byDue.filter(t => t.due && t.due > today));
+    addSection({ key: 'none', title: t('tasks.noDueDate') }, byDue.filter(t => !t.due));
+    addSection({ key: 'done', title: t('common.done') }, all.filter(t => t.done));
   } else {
     const notes = new Map<number, Task[]>();
     [...tasks]
       .sort((a, b) => b.noteUpdatedAt.localeCompare(a.noteUpdatedAt) || a.noteId - b.noteId || Number(a.done) - Number(b.done) || a.line - b.line)
       .forEach(t => notes.set(t.noteId, [...(notes.get(t.noteId) ?? []), t]));
     notes.forEach((items, noteId) =>
-      addSection({ key: `note:${noteId}`, title: items[0].noteTitle || 'Untitled note', noteId }, items)
+      addSection({ key: `note:${noteId}`, title: items[0].noteTitle || t('common.untitledNote'), noteId }, items)
     );
   }
   return rows;
@@ -56,17 +58,18 @@ const buildRows = (all: Task[], sortBy: 'due' | 'note', today: string): Row[] =>
 // The row's "more" menu; each row keeps its own open state.
 const TaskMenu: React.FC<{ title: string; onEdit: () => void; onOpen: () => void; onDelete: () => void }> = ({ title, onEdit, onOpen, onDelete }) => {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const [visible, setVisible] = useState(false);
   const pick = (fn: () => void) => () => { setVisible(false); fn(); };
   return (
     <Menu
       visible={visible}
       onDismiss={() => setVisible(false)}
-      anchor={<IconButton icon="dots-vertical" accessibilityLabel={`More options for ${title}`} onPress={() => setVisible(true)} />}
+      anchor={<IconButton icon="dots-vertical" accessibilityLabel={t('tasks.moreOptionsFor', { title })} onPress={() => setVisible(true)} />}
     >
-      <Menu.Item leadingIcon="pencil-outline" title="Edit task" onPress={pick(onEdit)} />
-      <Menu.Item leadingIcon="open-in-new" title="Open note" onPress={pick(onOpen)} />
-      <Menu.Item leadingIcon="delete-outline" title="Delete task" titleStyle={{ color: theme.colors.error }} onPress={pick(onDelete)} />
+      <Menu.Item leadingIcon="pencil-outline" title={t('tasks.editTask')} onPress={pick(onEdit)} />
+      <Menu.Item leadingIcon="open-in-new" title={t('tasks.openNote')} onPress={pick(onOpen)} />
+      <Menu.Item leadingIcon="delete-outline" title={t('tasks.deleteTask')} titleStyle={{ color: theme.colors.error }} onPress={pick(onDelete)} />
     </Menu>
   );
 };
@@ -74,6 +77,7 @@ const TaskMenu: React.FC<{ title: string; onEdit: () => void; onOpen: () => void
 const TasksScreen: React.FC = () => {
   const navigation = useNavigation<TasksScreenNavigationProp>();
   const { theme, isDarkMode } = useTheme();
+  const { t, language } = useI18n();
   const { elevated, onScroll: onHeaderScroll } = useHeaderElevation();
   // Same as Home: the extended FAB collapses while scrolling down and expands on scroll up or at the top.
   const [fabExtended, setFabExtended] = useState(true);
@@ -102,9 +106,9 @@ const TasksScreen: React.FC = () => {
       const [notes, pad] = await Promise.all([getNotes(), getScratchpadNote().catch(() => null)]);
       setTasks([...notes.filter(n => !n.isArchived), ...(pad ? [pad] : [])].flatMap(n => extractTasks(n, { done: showDone })));
     } catch {
-      alert("Couldn't load tasks", 'Pull down on the list to try again.');
+      alert(t('tasks.loadFailedTitle'), t('tasks.loadFailedMessage'));
     }
-  }, [alert, showDone]);
+  }, [alert, showDone, t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -115,18 +119,18 @@ const TasksScreen: React.FC = () => {
   };
 
   const today = getToday();
-  const rows = useMemo(() => buildRows(tasks, sortBy, today), [tasks, sortBy, today]);
+  const rows = useMemo(() => buildRows(tasks, sortBy, today, t), [tasks, sortBy, today, t, language]);
 
   const toggle = async (task: Task) => {
     try {
       const result = await toggleTaskInNote(task.noteId, task);
       if (!result) {
-        alert('This task changed', 'Its note was edited. The list has been refreshed.');
+        alert(t('tasks.changedTitle'), t('tasks.changedMessage'));
       } else {
         setLastDone(task.done ? null : { task, ...result });
       }
     } catch {
-      alert("Couldn't update the task", 'Try again. If it keeps failing, restart the app.');
+      alert(t('tasks.updateFailedTitle'), t('common.tryAgainRestart'));
     }
     updateWidgets().catch(() => {}); // the Tasks due widget
     load();
@@ -138,10 +142,10 @@ const TasksScreen: React.FC = () => {
     setLastDone(null);
     try {
       if (!(await restoreTaskLine(task.noteId, task.line, raw, task.raw))) {
-        alert("Couldn't undo", 'The note was edited since. Open it to change the task.');
+        alert(t('tasks.undoFailedTitle'), t('tasks.undoEditedMessage'));
       }
     } catch {
-      alert("Couldn't undo", 'Try again. If it keeps failing, restart the app.');
+      alert(t('tasks.undoFailedTitle'), t('common.tryAgainRestart'));
     }
     updateWidgets().catch(() => {}); // the Tasks due widget
     load();
@@ -155,7 +159,7 @@ const TasksScreen: React.FC = () => {
       if (!(await addTaskToNote(target.id, line))) throw new Error('missing');
       setAdded(target.title);
     } catch {
-      alert("Couldn't add the task", 'Try again. If it keeps failing, restart the app.');
+      alert(t('tasks.addFailedTitle'), t('common.tryAgainRestart'));
     }
     updateWidgets().catch(() => {}); // the Tasks due widget
     load();
@@ -167,10 +171,10 @@ const TasksScreen: React.FC = () => {
     if (!task) return;
     try {
       if (!(await restoreTaskLine(task.noteId, task.line, task.raw, editTaskLine(task.raw, text, due, every)))) {
-        alert('This task changed', 'Its note was edited. The list has been refreshed.');
+        alert(t('tasks.changedTitle'), t('tasks.changedMessage'));
       }
     } catch {
-      alert("Couldn't save the task", 'Try again. If it keeps failing, restart the app.');
+      alert(t('tasks.saveFailedTitle'), t('common.tryAgainRestart'));
     }
     updateWidgets().catch(() => {}); // the Tasks due widget
     load();
@@ -182,10 +186,10 @@ const TasksScreen: React.FC = () => {
         setLastDone(null);
         setDeleted(task);
       } else {
-        alert('This task changed', 'Its note was edited. The list has been refreshed.');
+        alert(t('tasks.changedTitle'), t('tasks.changedMessage'));
       }
     } catch {
-      alert("Couldn't delete the task", 'Try again. If it keeps failing, restart the app.');
+      alert(t('tasks.deleteFailedTitle'), t('common.tryAgainRestart'));
     }
     updateWidgets().catch(() => {}); // the Tasks due widget
     load();
@@ -198,7 +202,7 @@ const TasksScreen: React.FC = () => {
     try {
       await insertTaskLine(task.noteId, task.line, task.raw);
     } catch {
-      alert("Couldn't undo", 'Open the note to add the task again.');
+      alert(t('tasks.undoFailedTitle'), t('tasks.undoDeleteMessage'));
     }
     updateWidgets().catch(() => {}); // the Tasks due widget
     load();
@@ -219,14 +223,14 @@ const TasksScreen: React.FC = () => {
             {item.title}
           </Text>
           {item.noteId !== undefined && (
-            <IconButton icon="open-in-new" accessibilityLabel={`Open note ${item.title}`} onPress={() => openNote(item.noteId!)} />
+            <IconButton icon="open-in-new" accessibilityLabel={t('tasks.openNoteTitled', { title: item.title })} onPress={() => openNote(item.noteId!)} />
           )}
         </View>
       );
     }
     const { task } = item;
     const overdue = !task.done && !!task.due && task.due < today;
-    const dueText = [task.due && (overdue || !task.done ? dueLabel(task.due, today) : `Due ${formatDue(task.due)}`), task.every && repeatLabel(task.every)]
+    const dueText = [task.due && (overdue || !task.done ? dueLabel(task.due, today) : t('tasks.dueOn', { date: formatDue(task.due) })), task.every && repeatLabel(task.every)]
       .filter(Boolean)
       .join(', ');
     return (
@@ -247,7 +251,7 @@ const TasksScreen: React.FC = () => {
                   <View>
                     {sortBy === 'due' && (
                       <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={1}>
-                        {task.noteTitle || 'Untitled note'}
+                        {task.noteTitle || t('common.untitledNote')}
                       </Text>
                     )}
                     {!!dueText && (
@@ -266,7 +270,7 @@ const TasksScreen: React.FC = () => {
           onPress={() => toggle(task)}
           accessibilityRole="checkbox"
           accessibilityState={{ checked: task.done }}
-          accessibilityHint={task.done ? 'Marks the task not done in its note' : 'Marks the task done in its note'}
+          accessibilityHint={task.done ? t('tasks.markNotDoneHint') : t('tasks.markDoneHint')}
         />
       </View>
     );
@@ -276,7 +280,7 @@ const TasksScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header
         elevated={elevated}
-        title="Tasks"
+        title={t('common.tasks')}
         showBackButton
         onBackPress={() => navigation.goBack()}
         rightActions={
@@ -284,7 +288,7 @@ const TasksScreen: React.FC = () => {
             icon={showDone ? 'checkbox-marked-outline' : 'checkbox-blank-off-outline'}
             selected={showDone}
             onPress={() => setShowDone(v => !v)}
-            accessibilityLabel={showDone ? 'Hide done tasks' : 'Show done tasks'}
+            accessibilityLabel={showDone ? t('tasks.hideDone') : t('tasks.showDone')}
           />
         }
       />
@@ -311,41 +315,41 @@ const TasksScreen: React.FC = () => {
             onValueChange={v => setSortBy(v as 'due' | 'note')}
             style={styles.sort}
             buttons={[
-              { value: 'due', label: 'By due date', icon: 'calendar' },
-              { value: 'note', label: 'By note', icon: 'note-text-outline' },
+              { value: 'due', label: t('tasks.byDueDate'), icon: 'calendar' },
+              { value: 'note', label: t('tasks.byNote'), icon: 'note-text-outline' },
             ]}
           />
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{showDone ? 'No tasks yet' : 'No open tasks'}</Text>
+            <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{showDone ? t('tasks.emptyAll') : t('tasks.emptyOpen')}</Text>
             <Text variant="bodyMedium" style={[styles.emptyBody, { color: theme.colors.onSurfaceVariant }]}>
-              Tap Add task and pick a date, or start a line in any note with "- [ ] ".
+              {t('tasks.emptyHelp')}
             </Text>
           </View>
         }
       />
       <AnimatedFAB
         icon="star-four-points"
-        label="Add task"
+        label={t('tasks.addTask')}
         extended={fabExtended}
         onPress={() => setAdding(true)}
         animateFrom="right"
-        accessibilityLabel="Add task"
+        accessibilityLabel={t('tasks.addTask')}
         // The firefly glow in dark mode, as on Home's New note button.
         style={[styles.fab, isDarkMode && { shadowColor: theme.colors.primary }]}
       />
       <AddTaskDialog visible={adding} onDismiss={() => setAdding(false)} onAdd={addTask} />
       <AddTaskDialog visible={!!editing} task={editing ?? undefined} onDismiss={() => setEditing(null)} onAdd={saveEdit} />
-      <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={4000} action={{ label: 'Undo', onPress: undoDelete }}>Task deleted</Snackbar>
-      <Snackbar visible={!!added} onDismiss={() => setAdded('')} duration={3000}>Task added to {added}</Snackbar>
+      <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={4000} action={{ label: t('common.undo'), onPress: undoDelete }}>{t('tasks.deleted')}</Snackbar>
+      <Snackbar visible={!!added} onDismiss={() => setAdded('')} duration={3000}>{t('tasks.addedTo', { name: added })}</Snackbar>
       <Snackbar
         visible={!!lastDone}
         onDismiss={() => setLastDone(null)}
         duration={4000}
-        action={{ label: 'Undo', onPress: undoLastDone }}
+        action={{ label: t('common.undo'), onPress: undoLastDone }}
       >
-        {lastDone?.next ? `Next due ${formatDue(lastDone.next)}` : 'Task done'}
+        {lastDone?.next ? t('tasks.nextDue', { date: formatDue(lastDone.next) }) : t('tasks.doneSnack')}
       </Snackbar>
     </SafeAreaView>
   );

@@ -1,4 +1,5 @@
 import { Note } from './types';
+import { t } from './i18n';
 
 // The JSON backup format: the stored note fields, with isMarkdown as a boolean.
 export const notesToJson = (notes: Note[]) =>
@@ -16,7 +17,7 @@ export const noteToMarkdown = (note: Note) => {
 };
 
 export const fileBase = (title: string) =>
-  title.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').replace(/\s+/g, ' ').trim().slice(0, 80) || 'Untitled note';
+  title.replace(/[\\/:*?"<>|\u0000-\u001f]/g, '-').replace(/\s+/g, ' ').trim().slice(0, 80) || t('common.untitledNote');
 
 export const fileName = (note: Note, taken: Set<string>) => {
   const ext = note.isMarkdown ? 'md' : 'txt';
@@ -43,7 +44,7 @@ export const markdownToNote = (fileName: string, text: string) => {
   }
   const date = (value?: string) => (value && !isNaN(Date.parse(value)) ? new Date(value).toISOString() : new Date().toISOString());
   return {
-    title: base.replace(/\.[^.]+$/, '').trim() || 'Untitled note',
+    title: base.replace(/\.[^.]+$/, '').trim() || t('common.untitledNote'),
     content: body.replace(/\n$/, ''),
     isMarkdown: ext !== 'txt',
     createdAt: date(meta.created),

@@ -8,14 +8,16 @@ import { RootStackParamList } from '../types';
 import Header, { useHeaderElevation } from '../components/Header';
 import { isMeaningSearchAvailable, Passage, searchPassages } from '../storage/semanticSearch';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
+import { getLanguage } from '@notespark/core';
 import { controlTheme, groupCorners, readingWidth, shape, space } from '../theme/theme';
 
 type Row =
   | { kind: 'month'; key: string; title: string }
   | { kind: 'passage'; key: string; passage: Passage; isFirst: boolean; isLast: boolean };
 
-const monthOf = (iso: string) => new Date(iso).toLocaleDateString([], { month: 'long', year: 'numeric' });
-const dayOf = (iso: string) => new Date(iso).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' });
+const monthOf = (iso: string) => new Date(iso).toLocaleDateString(getLanguage(), { month: 'long', year: 'numeric' });
+const dayOf = (iso: string) => new Date(iso).toLocaleDateString(getLanguage(), { month: 'short', day: 'numeric', year: 'numeric' });
 
 // Best match: closest first, as one group. Timeline: oldest first under month headings, to see how a topic grew.
 const buildRows = (passages: Passage[], timeline: boolean): Row[] => {
@@ -37,6 +39,7 @@ const buildRows = (passages: Passage[], timeline: boolean): Row[] => {
 const AskScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Ask'>>();
   const { theme } = useTheme();
+  const { t } = useI18n();
   const { elevated, onScroll } = useHeaderElevation();
   const [query, setQuery] = useState('');
   const [asked, setAsked] = useState('');
@@ -70,15 +73,15 @@ const AskScreen: React.FC = () => {
         <TouchableRipple
           onPress={() => navigation.navigate('NoteView', { noteId: String(passage.noteId), find: passage.find || undefined })}
           accessibilityRole="button"
-          accessibilityLabel={`${passage.title || 'Untitled note'}. ${passage.excerpt}`}
-          accessibilityHint="Opens the note at this passage"
+          accessibilityLabel={t('ask.passageLabel', { title: passage.title || t('common.untitledNote'), excerpt: passage.excerpt })}
+          accessibilityHint={t('ask.passageHint')}
           style={styles.cardPress}
         >
           <View>
-            <Text variant="titleMedium" numberOfLines={2} style={{ color: theme.colors.onSurface }}>{passage.title || 'Untitled note'}</Text>
+            <Text variant="titleMedium" numberOfLines={2} style={{ color: theme.colors.onSurface }}>{passage.title || t('common.untitledNote')}</Text>
             <Text variant="bodyMedium" numberOfLines={6} style={[styles.excerpt, { color: theme.colors.onSurfaceVariant }]}>{passage.excerpt}</Text>
             <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-              {timeline ? 'Written' : 'Edited'} {dayOf(timeline ? passage.createdAt : passage.updatedAt)}
+              {timeline ? t('ask.written', { date: dayOf(passage.createdAt) }) : t('ask.edited', { date: dayOf(passage.updatedAt) })}
             </Text>
           </View>
         </TouchableRipple>
@@ -87,14 +90,14 @@ const AskScreen: React.FC = () => {
   };
 
   let empty: { title: string; body: string };
-  if (!available) empty = { title: 'Needs search by meaning', body: "This build doesn't have the search model. Use a build that includes it to ask your notes." };
-  else if (failed) empty = { title: "Couldn't search", body: 'Try again. If it keeps failing, restart the app.' };
-  else if (passages && !busy) empty = { title: 'No passages found', body: 'Try other words, or say it the way you would write it in a note.' };
-  else empty = { title: 'Ask in your own words', body: 'NoteSpark shows the passages from your notes that say it, never made-up answers. Everything is found on this device.' };
+  if (!available) empty = { title: t('ask.unavailableTitle'), body: t('ask.unavailableBody') };
+  else if (failed) empty = { title: t('ask.failedTitle'), body: t('common.tryAgainRestart') };
+  else if (passages && !busy) empty = { title: t('ask.noResultsTitle'), body: t('ask.noResultsBody') };
+  else empty = { title: t('ask.introTitle'), body: t('ask.introBody') };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-      <Header elevated={elevated} title="Ask your notes" showBackButton onBackPress={() => navigation.goBack()} />
+      <Header elevated={elevated} title={t('ask.title')} showBackButton onBackPress={() => navigation.goBack()} />
       <FlatList
         data={passages ? buildRows(passages, timeline) : []}
         keyExtractor={r => r.key}
@@ -107,14 +110,14 @@ const AskScreen: React.FC = () => {
         ListHeaderComponent={
           <View>
             <Searchbar
-              placeholder="Ask a question or name a topic"
+              placeholder={t('ask.placeholder')}
               value={query}
               onChangeText={setQuery}
               onSubmitEditing={ask}
               returnKeyType="search"
               editable={available}
               style={{ backgroundColor: theme.colors.surfaceContainerHigh, borderRadius: shape.control }}
-              accessibilityLabel="Ask your notes"
+              accessibilityLabel={t('ask.title')}
             />
             <SegmentedButtons
               theme={controlTheme}
@@ -122,14 +125,14 @@ const AskScreen: React.FC = () => {
               onValueChange={v => setTimeline(v === 'timeline')}
               style={styles.mode}
               buttons={[
-                { value: 'best', label: 'Best match', icon: 'target' },
-                { value: 'timeline', label: 'Timeline', icon: 'timeline-clock-outline' },
+                { value: 'best', label: t('ask.bestMatch'), icon: 'target' },
+                { value: 'timeline', label: t('ask.timeline'), icon: 'timeline-clock-outline' },
               ]}
             />
-            {busy && <ActivityIndicator style={styles.busy} accessibilityLabel={`Searching for ${query}`} />}
+            {busy && <ActivityIndicator style={styles.busy} accessibilityLabel={t('ask.searching', { query })} />}
             {!!passages?.length && !busy && (
               <Text variant="bodySmall" style={[styles.count, { color: theme.colors.onSurfaceVariant }]}>
-                {passages.length} {passages.length === 1 ? 'passage' : 'passages'} for "{asked}"
+                {t('ask.resultCount', { count: passages.length, query: asked })}
               </Text>
             )}
           </View>

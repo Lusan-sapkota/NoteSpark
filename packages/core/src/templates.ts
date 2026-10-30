@@ -1,3 +1,5 @@
+import { t } from './i18n';
+
 // Starting points for a new note. The words come in as `labels`, so the apps can pass translated ones.
 export type TemplateKind = 'meeting' | 'checklist' | 'daily';
 
@@ -14,10 +16,23 @@ export const TEMPLATE_LABELS = {
 };
 export type TemplateLabels = typeof TEMPLATE_LABELS;
 
+// The labels in the current language: template notes start in the person's language.
+const templateLabels = (): TemplateLabels => ({
+  meeting: t('core.templateMeeting'),
+  checklist: t('core.templateChecklist'),
+  attendees: t('core.templateAttendees'),
+  agenda: t('core.templateAgenda'),
+  notes: t('core.templateNotes'),
+  decisions: t('core.templateDecisions'),
+  actions: t('core.templateActions'),
+  plan: t('core.templatePlan'),
+  done: t('core.templateDone'),
+});
+
 // `day` is YYYY-MM-DD. A daily note is titled by its date (YYYY-MM-DD): it sorts, and the same day always finds the same note.
 export const isDayTitle = (title: string) => /^\d{4}-\d{2}-\d{2}$/.test(title.trim());
 
-export const templateNote = (kind: TemplateKind, day: string, l: TemplateLabels = TEMPLATE_LABELS): { title: string; content: string } => {
+export const templateNote = (kind: TemplateKind, day: string, l: TemplateLabels = templateLabels()): { title: string; content: string } => {
   if (kind === 'meeting') {
     return {
       title: `${l.meeting} ${day}`,

@@ -13,7 +13,9 @@ import { List, Text } from 'react-native-paper';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 import { readingWidth, space } from '../theme/theme';
+import { t as tCore } from '@notespark/core';
 
 const GITHUB_URL = 'https://github.com/Lusan-sapkota/NoteSpark';
 const DEVELOPER_EMAIL = 'contact@lusansapkota.com.np';
@@ -22,7 +24,7 @@ const WEBSITE = 'https://notespark.lusansapkota.com.np';
 const getAppVersion = () => {
   const version = Application.nativeApplicationVersion;
   const build = Application.nativeBuildVersion;
-  if (!version) return 'Unknown';
+  if (!version) return tCore('about.versionUnknown');
   return build ? `${version} (${build})` : version;
 };
 const LICENSE = 'GPLv3';
@@ -30,6 +32,7 @@ const LICENSE = 'GPLv3';
 const AboutScreen = () => {
   const navigation = useNavigation();
   const { theme } = useTheme();
+  const { t } = useI18n();
   const { elevated, onScroll } = useHeaderElevation();
   const appVersion = getAppVersion();
 
@@ -47,7 +50,7 @@ const AboutScreen = () => {
       edges={['left', 'right', 'bottom']}
     >
       <Header elevated={elevated}
-        title="About"
+        title={t('about.title')}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
@@ -59,21 +62,21 @@ const AboutScreen = () => {
               source={require('../../assets/icon.png')}
               style={styles.appIcon}
               accessibilityIgnoresInvertColors
-              accessibilityLabel="NoteSpark logo"
+              accessibilityLabel={t('about.logo')}
             />
             <View style={styles.identityText}>
               <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>NoteSpark</Text>
-              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>Version {appVersion}</Text>
+              <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('about.version', { version: appVersion })}</Text>
             </View>
           </View>
 
           <Text variant="bodyLarge" style={[styles.description, { color: theme.colors.onSurfaceVariant }]}>
-            A private notes app that works offline. No account, no cloud, no ads. Write in plain text or Markdown, and back up your notes as a JSON file whenever you like.
+            {t('about.description')}
           </Text>
 
-          <GroupedRow title="Developer" description="Lusan Sapkota" icon="account-outline" isFirst isLast={false} />
+          <GroupedRow title={t('about.developer')} description="Lusan Sapkota" icon="account-outline" isFirst isLast={false} />
           <GroupedRow
-            title="Email"
+            title={t('about.email')}
             description={DEVELOPER_EMAIL}
             icon="email-outline"
             right={external}
@@ -82,7 +85,7 @@ const AboutScreen = () => {
             isLast={false}
           />
           <GroupedRow
-            title="Website"
+            title={t('about.website')}
             description="notespark.lusansapkota.com.np"
             icon="web"
             right={external}
@@ -91,7 +94,7 @@ const AboutScreen = () => {
             isLast={false}
           />
           <GroupedRow
-            title="Source code on GitHub"
+            title={t('about.sourceCode')}
             description="github.com/Lusan-sapkota/NoteSpark"
             icon="github"
             right={external}
@@ -99,7 +102,7 @@ const AboutScreen = () => {
             isFirst={false}
             isLast={false}
           />
-          <GroupedRow title="License" description={LICENSE} icon="scale-balance" isFirst={false} isLast />
+          <GroupedRow title={t('about.license')} description={LICENSE} icon="scale-balance" isFirst={false} isLast />
         </View>
       </ScrollView>
     </SafeAreaView>

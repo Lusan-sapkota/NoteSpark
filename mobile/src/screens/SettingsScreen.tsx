@@ -13,6 +13,8 @@ import { getStartScreen, setStartScreen, START_SCREENS, startScreenLabel, StartS
 import { formatHour, getReminderHour, REMINDER_HOURS, setReminderHour } from '../utils/taskReminders';
 import { AUTO_LOCK_MINUTES, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { BIN_DAYS } from '../storage/database';
+import { LANGUAGES } from '@notespark/core';
+import { useI18n } from '../i18n/I18nContext';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
@@ -25,17 +27,17 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 
-const profileTimeLeft = (deletedAt: string) => {
-  const days = BIN_DAYS - Math.floor((Date.now() - Date.parse(deletedAt)) / 86400000);
-  if (days <= 0) return 'Erased the next time the app opens';
-  if (days === 1) return 'Erased tomorrow';
-  return `Erased in ${days} days`;
-};
-
 const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'Settings'>>();
   const { theme, themeType, setThemeType } = useTheme();
+  const { t, language, preference, setPreference } = useI18n();
+  const profileTimeLeft = (deletedAt: string) => {
+    const days = BIN_DAYS - Math.floor((Date.now() - Date.parse(deletedAt)) / 86400000);
+    if (days <= 0) return t('settings.erasedNextOpen');
+    if (days === 1) return t('settings.erasedTomorrow');
+    return t('settings.erasedInDays', { count: days });
+  };
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [profiles, setProfiles] = useState<Profile[]>([]);
@@ -55,7 +57,7 @@ const SettingsScreen: React.FC = () => {
   const [liveRelated, setLiveRelated] = useState(false);
   const [startScreen, setStartScreenState] = useState<StartScreen>('Home');
   // A pick-one dialog (reminder time, auto-lock); kept after closing so it doesn't change while fading.
-  const [choice, setChoice] = useState<{ title: string; options: { label: string; value: number }[]; value: number; onPick: (value: number) => void; open: boolean } | null>(null);
+  const [choice, setChoice] = useState<{ title: string; options: { label: string; value: string | number }[]; value: string | number; onPick: (value: any) => void; open: boolean } | null>(null);
   // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ profile: Profile; name: string; open: boolean } | null>(null);
   const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; mode: 'unlock' | 'makeDefault' | 'delete'; open: boolean } | null>(null);
@@ -82,24 +84,24 @@ const SettingsScreen: React.FC = () => {
     setLiveRelated(await isLiveRelatedOn());
   }, []);
 
-  const lockLabel = (minutes: number) => (minutes === 0 ? 'Right away' : `After ${minutes} minute${minutes === 1 ? '' : 's'}`);
+  const lockLabel = (minutes: number) => (minutes === 0 ? t('settings.lockRightAway') : t('settings.lockAfterMinutes', { count: minutes }));
   const pickReminderHour = () =>
     setChoice({
-      title: 'Task reminders',
+      title: t('settings.taskReminders'),
       options: REMINDER_HOURS.map(h => ({ label: formatHour(h), value: h })),
       value: reminderHour,
       onPick: hour => {
         setReminderHourState(hour);
-        setReminderHour(hour).catch(() => alert("Couldn't update reminders", 'Try again. If it keeps failing, restart the app.'));
+        setReminderHour(hour).catch(() => alert(t('settings.remindersFailed'), t('common.tryAgainRestart')));
       },
       open: true,
     });
   const shareTargets: ShareTarget[] = ['scratchpad', 'note'];
-  const shareLabel = (target: ShareTarget) => (target === 'scratchpad' ? 'Add to scratchpad' : 'Open a new note');
+  const shareLabel = (target: ShareTarget) => (target === 'scratchpad' ? t('settings.shareScratchpad') : t('settings.shareNote'));
   const pickShareTarget = () =>
     setChoice({
-      title: 'Text shared to NoteSpark',
-      options: shareTargets.map((t, i) => ({ label: shareLabel(t), value: i })),
+      title: t('settings.sharedText'),
+      options: shareTargets.map((target, i) => ({ label: shareLabel(target), value: i })),
       value: shareTargets.indexOf(shareTarget),
       onPick: i => {
         setShareTargetState(shareTargets[i]);
@@ -109,18 +111,31 @@ const SettingsScreen: React.FC = () => {
     });
   const pickStartScreen = () =>
     setChoice({
-      title: 'Open the app on',
-      options: START_SCREENS.map((t, i) => ({ label: startScreenLabel(t), value: i })),
+      title: t('settings.openAppOn'),
+      options: START_SCREENS.map((screen, i) => ({ label: startScreenLabel(screen), value: i })),
       value: START_SCREENS.indexOf(startScreen),
       onPick: i => {
         setStartScreenState(START_SCREENS[i]);
-        setStartScreen(START_SCREENS[i]).catch(() => alert("Couldn't save the start screen", 'Try again. If it keeps failing, restart the app.'));
+        setStartScreen(START_SCREENS[i]).catch(() => alert(t('settings.startScreenFailed'), t('common.tryAgainRestart')));
+      },
+      open: true,
+    });
+  const languageName = LANGUAGES.find(l => l.code === language)?.name ?? '';
+  const pickLanguage = () =>
+    setChoice({
+      title: t('settings.language'),
+      options: [{ label: t('settings.languageSystem'), value: 'system' }, ...LANGUAGES.map(l => ({ label: l.name, value: l.code }))],
+      value: preference,
+      onPick: value => {
+        setPreference(value as typeof preference)
+          .then(restart => { if (restart) alert(t('settings.languageRestartTitle'), t('settings.languageRestartBody')); })
+          .catch(() => {});
       },
       open: true,
     });
   const pickAutoLock = () =>
     setChoice({
-      title: 'Lock again when away',
+      title: t('settings.lockAgain'),
       options: AUTO_LOCK_MINUTES.map(m => ({ label: lockLabel(m), value: m })),
       value: autoLock,
       onPick: minutes => {
@@ -150,18 +165,18 @@ const SettingsScreen: React.FC = () => {
       closeNameDialog();
       await loadProfiles();
     } catch (error) {
-      alert("Couldn't rename the profile", 'Try again. If it keeps failing, restart the app.');
+      alert(t('settings.renameFailed'), t('common.tryAgainRestart'));
     }
   };
 
   const confirmMakeDefault = (profile: Profile) => {
     if (profile.id === defaultId) return;
     alert(
-      'Change default profile?',
-      `NoteSpark will open ${profile.name} when it starts.`,
+      t('settings.changeDefaultTitle'),
+      t('settings.changeDefaultBody', { name: profile.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Make default', onPress: () => handleMakeDefault(profile) },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('settings.makeDefault'), onPress: () => handleMakeDefault(profile) },
       ]
     );
   };
@@ -174,20 +189,20 @@ const SettingsScreen: React.FC = () => {
         return;
       }
       if (pin !== undefined && !(await verifyProfilePin(profile.id, pin))) {
-        alert('Incorrect PIN', await wrongPinMessage(profile.id));
+        alert(t('profiles.incorrectPin'), await wrongPinMessage(profile.id));
         return;
       }
       await setDefaultProfile(profile.id, pin ?? '');
       await loadProfiles();
       closePinDialog();
-      setSnackbar(`${profile.name} is now the default profile`);
+      setSnackbar(t('settings.nowDefault', { name: profile.name }));
     } catch (error) {
       alert(
-        `Couldn't open ${profile.name}`,
-        "This profile's database couldn't be read. If this phone was restored from a backup, a locked profile's encryption key isn't included in backups.",
+        t('profiles.cantOpenTitle', { name: profile.name }),
+        t('profiles.cantOpenBody'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Erase profile', style: 'destructive', onPress: () => handleForgotPin(profile) },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('profiles.eraseAction'), style: 'destructive', onPress: () => handleForgotPin(profile) },
         ]
       );
     }
@@ -199,20 +214,20 @@ const SettingsScreen: React.FC = () => {
   const handleForgotPin = (profile: Profile) => {
     closePinDialog();
     alert(
-      'Erase this profile?',
-      `A forgotten PIN can't be recovered. ${profile.name} and all its notes will be erased from this device. This can't be undone.`,
+      t('profiles.eraseTitle'),
+      t('profiles.eraseBody', { name: profile.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Erase profile',
+          text: t('profiles.eraseAction'),
           style: 'destructive',
           onPress: async () => {
             try {
               await eraseForgottenProfile(profile.id);
               await loadProfiles();
-              setSnackbar(`${profile.name} erased`);
+              setSnackbar(t('profiles.erased', { name: profile.name }));
             } catch (error) {
-              alert("Couldn't erase the profile", 'Try again. If it keeps failing, restart the app.');
+              alert(t('profiles.eraseFailed'), t('common.tryAgainRestart'));
             }
           },
         },
@@ -229,7 +244,7 @@ const SettingsScreen: React.FC = () => {
       }
       const enteredPin = pin ?? '';
       if (pin !== undefined && !(await verifyProfilePin(profile.id, enteredPin))) {
-        alert('Incorrect PIN', await wrongPinMessage(profile.id));
+        alert(t('profiles.incorrectPin'), await wrongPinMessage(profile.id));
         return;
       }
       closePinDialog();
@@ -237,11 +252,11 @@ const SettingsScreen: React.FC = () => {
       await loadProfiles();
     } catch (error) {
       alert(
-        `Couldn't open ${profile.name}`,
-        "This profile's database couldn't be read. If this phone was restored from a backup, a locked profile's encryption key isn't included in backups.",
+        t('profiles.cantOpenTitle', { name: profile.name }),
+        t('profiles.cantOpenBody'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Erase profile', style: 'destructive', onPress: () => handleForgotPin(profile) },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('profiles.eraseAction'), style: 'destructive', onPress: () => handleForgotPin(profile) },
         ]
       );
     }
@@ -253,25 +268,25 @@ const SettingsScreen: React.FC = () => {
       return;
     }
     if (pin !== undefined && !(await verifyProfilePin(profile.id, pin))) {
-      alert('Incorrect PIN', await wrongPinMessage(profile.id));
+      alert(t('profiles.incorrectPin'), await wrongPinMessage(profile.id));
       return;
     }
     closePinDialog();
     alert(
-      'Delete profile?',
-      `${profile.name} and its notes move to the bin. You can restore it from Settings for ${BIN_DAYS} days.`,
+      t('settings.deleteProfileTitle'),
+      t('settings.deleteProfileBody', { name: profile.name, days: BIN_DAYS }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete profile',
+          text: t('settings.deleteProfile'),
           style: 'destructive',
           onPress: async () => {
             try {
               await moveProfileToBin(profile.id, pin);
               await loadProfiles();
-              setSnackbar('Profile deleted');
+              setSnackbar(t('settings.profileDeleted'));
             } catch (error) {
-              alert("Couldn't delete the profile", 'Try again. If it keeps failing, restart the app.');
+              alert(t('settings.deleteProfileFailed'), t('common.tryAgainRestart'));
             }
           },
         },
@@ -283,28 +298,28 @@ const SettingsScreen: React.FC = () => {
     try {
       await restoreProfile(profile.id);
       await loadProfiles();
-      setSnackbar('Profile restored');
+      setSnackbar(t('settings.profileRestored'));
     } catch (error) {
-      alert("Couldn't restore the profile", 'Try again. If it keeps failing, restart the app.');
+      alert(t('settings.restoreProfileFailed'), t('common.tryAgainRestart'));
     }
   };
 
   const handleDeleteProfileForever = (profile: Profile) => {
     alert(
-      'Delete profile forever?',
-      `${profile.name} and all its notes are erased now. This can't be undone.`,
+      t('settings.deleteForeverTitle'),
+      t('settings.deleteForeverBody', { name: profile.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete forever',
+          text: t('settings.deleteForeverAction'),
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteProfileForever(profile.id);
               await loadProfiles();
-              setSnackbar('Profile deleted forever');
+              setSnackbar(t('settings.profileDeletedForever'));
             } catch (error) {
-              alert("Couldn't delete the profile", 'Try again. If it keeps failing, restart the app.');
+              alert(t('settings.deleteProfileFailed'), t('common.tryAgainRestart'));
             }
           },
         },
@@ -314,19 +329,19 @@ const SettingsScreen: React.FC = () => {
 
   const handleMoveAllToBin = () => {
     alert(
-      'Move all notes to bin?',
-      `Every note in the ${activeName} profile moves to the bin. You can restore them from Bin for 30 days.`,
+      t('settings.moveAllTitle'),
+      t('settings.moveAllBody', { name: activeName }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Move all to bin',
+          text: t('settings.moveAllAction'),
           style: 'destructive',
           onPress: async () => {
             try {
               setUndoBatch(await moveAllNotesToBin());
-              setSnackbar('All notes moved to bin');
+              setSnackbar(t('settings.allMovedToBin'));
             } catch (error) {
-              alert("Couldn't move your notes to the bin", 'Try again. If it keeps failing, restart the app.');
+              alert(t('settings.moveAllFailed'), t('common.tryAgainRestart'));
             }
           },
         },
@@ -336,20 +351,20 @@ const SettingsScreen: React.FC = () => {
 
   const handleDeleteAllForever = () => {
     alert(
-      'Delete all notes forever?',
-      `Every note in the ${activeName} profile is erased now, without going to the bin. Notes already in the bin stay there. This can't be undone.`,
+      t('settings.deleteAllTitle'),
+      t('settings.deleteAllBody', { name: activeName }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Delete forever',
+          text: t('settings.deleteForeverAction'),
           style: 'destructive',
           onPress: async () => {
             try {
               await deleteAllNotesForever();
               setUndoBatch(null);
-              setSnackbar('All notes deleted forever');
+              setSnackbar(t('settings.allDeletedForever'));
             } catch (error) {
-              alert("Couldn't delete your notes", 'Try again. If it keeps failing, restart the app.');
+              alert(t('settings.deleteAllFailed'), t('common.tryAgainRestart'));
             }
           },
         },
@@ -362,15 +377,15 @@ const SettingsScreen: React.FC = () => {
     try {
       await restoreBatch(undoBatch);
     } catch (error) {
-      alert("Couldn't restore your notes", 'Open Bin to restore them.');
+      alert(t('settings.restoreNotesFailed'), t('settings.restoreNotesFailedBody'));
     }
   };
 
   const pinName = pinDialog?.profile.name ?? '';
   const { pinTitle, pinMessage, pinAction } = {
-    unlock: { pinTitle: 'Enter profile PIN', pinMessage: `Enter the four-digit PIN for ${pinName}.`, pinAction: 'Unlock' },
-    makeDefault: { pinTitle: 'Enter PIN to make default', pinMessage: `Enter the four-digit PIN for ${pinName} to open it at start.`, pinAction: 'Open at start' },
-    delete: { pinTitle: 'Enter PIN to delete', pinMessage: `Enter the four-digit PIN for ${pinName} to delete it.`, pinAction: 'Delete profile' },
+    unlock: { pinTitle: t('settings.pinUnlockTitle'), pinMessage: t('settings.pinUnlockBody', { name: pinName }), pinAction: t('profiles.unlock') },
+    makeDefault: { pinTitle: t('settings.pinDefaultTitle'), pinMessage: t('settings.pinDefaultBody', { name: pinName }), pinAction: t('settings.openAtStart') },
+    delete: { pinTitle: t('settings.pinDeleteTitle'), pinMessage: t('settings.pinDeleteBody', { name: pinName }), pinAction: t('settings.deleteProfile') },
   }[pinDialog?.mode ?? 'unlock'];
   const submitPin = () => {
     if (!pinDialog) return;
@@ -388,27 +403,36 @@ const SettingsScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header elevated={elevated}
-        title="Settings"
+        title={t('common.settings')}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
 
       <ScrollView contentContainerStyle={styles.scrollContent} onScroll={onScroll} scrollEventThrottle={16}>
         <View style={styles.column}>
-          {sectionTitle('Appearance')}
+          {sectionTitle(t('settings.appearance'))}
           <SegmentedButtons theme={controlTheme}
             value={themeType}
             onValueChange={value => setThemeType(value as 'light' | 'dark' | 'system')}
             buttons={[
-              { value: 'light', label: 'Light', icon: 'white-balance-sunny' },
-              { value: 'dark', label: 'Dark', icon: 'weather-night' },
-              { value: 'system', label: 'System', icon: 'theme-light-dark' },
+              { value: 'light', label: t('settings.themeLight'), icon: 'white-balance-sunny' },
+              { value: 'dark', label: t('settings.themeDark'), icon: 'weather-night' },
+              { value: 'system', label: t('settings.themeSystem'), icon: 'theme-light-dark' },
             ]}
           />
-
-          {sectionTitle('Notes and tasks')}
           <GroupedRow
-            title="Open the app on"
+            title={t('settings.language')}
+            description={preference === 'system' ? t('settings.languageSystemNamed', { system: t('settings.languageSystem'), name: languageName }) : languageName}
+            icon="translate"
+            right={chevron}
+            onPress={pickLanguage}
+            isFirst
+            isLast
+          />
+
+          {sectionTitle(t('settings.notesAndTasks'))}
+          <GroupedRow
+            title={t('settings.openAppOn')}
             description={startScreenLabel(startScreen)}
             icon="home-outline"
             right={chevron}
@@ -417,14 +441,14 @@ const SettingsScreen: React.FC = () => {
             isLast={false}
           />
           <GroupedRow
-            title="Rediscover on Home"
-            description="One older note a day at the top of your list"
+            title={t('settings.rediscover')}
+            description={t('settings.rediscoverDescription')}
             icon="history"
             right={
               <M3Switch
                 value={rediscover}
                 onValueChange={on => { setRediscover(on); setRediscoverOn(on).catch(() => {}); }}
-                accessibilityLabel="Rediscover on Home"
+                accessibilityLabel={t('settings.rediscover')}
               />
             }
             onPress={() => { setRediscover(!rediscover); setRediscoverOn(!rediscover).catch(() => {}); }}
@@ -432,16 +456,16 @@ const SettingsScreen: React.FC = () => {
             isLast={false}
           />
           <GroupedRow
-            title="Related notes while writing"
+            title={t('settings.relatedWhileWriting')}
             description={isMeaningSearchAvailable()
-              ? "Suggests notes close to the paragraph you're writing"
-              : "Needs search by meaning, which this build doesn't have"}
+              ? t('settings.relatedDescription')
+              : t('settings.relatedUnavailable')}
             icon="lightbulb-outline"
             right={
               <M3Switch
                 value={liveRelated}
                 onValueChange={on => { setLiveRelated(on); setLiveRelatedOn(on).catch(() => {}); }}
-                accessibilityLabel="Related notes while writing"
+                accessibilityLabel={t('settings.relatedWhileWriting')}
                 disabled={!isMeaningSearchAvailable()}
               />
             }
@@ -451,7 +475,7 @@ const SettingsScreen: React.FC = () => {
             isLast={false}
           />
           <GroupedRow
-            title="Text shared to NoteSpark"
+            title={t('settings.sharedText')}
             description={shareLabel(shareTarget)}
             icon="share-variant-outline"
             right={chevron}
@@ -460,8 +484,8 @@ const SettingsScreen: React.FC = () => {
             isLast={false}
           />
           <GroupedRow
-            title="Task reminders"
-            description={`${formatHour(reminderHour)} on the day a task is due`}
+            title={t('settings.taskReminders')}
+            description={t('settings.taskRemindersDescription', { time: formatHour(reminderHour) })}
             icon="bell-outline"
             right={chevron}
             onPress={pickReminderHour}
@@ -469,12 +493,12 @@ const SettingsScreen: React.FC = () => {
             isLast
           />
 
-          {sectionTitle('Profiles')}
+          {sectionTitle(t('settings.profiles'))}
           {profiles.map((p, i) => {
             const current = p.id === activeId;
             const isDefault = p.id === defaultId;
             const lockIcon = fingerprintProfileIds.includes(p.id) ? 'fingerprint' : isProtected(p) ? 'lock-outline' : null;
-            const status = current ? (isDefault ? 'Open now, and opens at start' : 'Open now') : isDefault ? 'Opens at start, tap to switch' : 'Tap to switch';
+            const status = current ? (isDefault ? t('settings.statusCurrentDefault') : t('settings.statusCurrent')) : isDefault ? t('settings.statusDefault') : t('settings.statusOther');
             return (
               <GroupedRow
                 key={p.id}
@@ -491,28 +515,28 @@ const SettingsScreen: React.FC = () => {
                 right={
                   <View style={styles.rowActions}>
                     {lockIcon && (
-                      <View accessible accessibilityLabel={lockIcon === 'fingerprint' ? 'Locked with fingerprint and PIN' : 'Locked with a PIN'}>
+                      <View accessible accessibilityLabel={lockIcon === 'fingerprint' ? t('settings.lockedFingerprint') : t('settings.lockedPin')}>
                         <Icon source={lockIcon} size={18} color={theme.colors.onSurfaceVariant} />
                       </View>
                     )}
                     <Menu
                       visible={menuFor === p.id}
                       onDismiss={() => setMenuFor(null)}
-                      anchor={<IconButton icon="dots-vertical" accessibilityLabel={`Options for ${p.name}`} onPress={() => setMenuFor(p.id)} />}
+                      anchor={<IconButton icon="dots-vertical" accessibilityLabel={t('settings.optionsFor', { name: p.name })} onPress={() => setMenuFor(p.id)} />}
                     >
                       {!current && (
-                        <Menu.Item leadingIcon="swap-horizontal" title="Switch to this profile" onPress={() => { setMenuFor(null); handleSwitch(p); }} />
+                        <Menu.Item leadingIcon="swap-horizontal" title={t('settings.switchToProfile')} onPress={() => { setMenuFor(null); handleSwitch(p); }} />
                       )}
-                      <Menu.Item leadingIcon="pencil-outline" title="Rename" onPress={() => { setMenuFor(null); setNameDialog({ profile: p, name: p.name, open: true }); }} />
-                      <Menu.Item leadingIcon="lock-outline" title="Lock" onPress={() => { setMenuFor(null); navigation.navigate('ProfileLock', { profileId: p.id }); }} />
+                      <Menu.Item leadingIcon="pencil-outline" title={t('common.rename')} onPress={() => { setMenuFor(null); setNameDialog({ profile: p, name: p.name, open: true }); }} />
+                      <Menu.Item leadingIcon="lock-outline" title={t('settings.menuLock')} onPress={() => { setMenuFor(null); navigation.navigate('ProfileLock', { profileId: p.id }); }} />
                       {!isDefault && (
-                        <Menu.Item leadingIcon="star-outline" title="Open at start" onPress={() => { setMenuFor(null); confirmMakeDefault(p); }} />
+                        <Menu.Item leadingIcon="star-outline" title={t('settings.openAtStart')} onPress={() => { setMenuFor(null); confirmMakeDefault(p); }} />
                       )}
                       {/* The open and default profiles can't be deleted. */}
                       {!current && !isDefault && (
                         <Menu.Item
                           leadingIcon="delete-outline"
-                          title="Delete profile"
+                          title={t('settings.deleteProfile')}
                           titleStyle={{ color: theme.colors.error }}
                           onPress={() => { setMenuFor(null); handleDeleteProfile(p); }}
                         />
@@ -526,7 +550,7 @@ const SettingsScreen: React.FC = () => {
             );
           })}
           <GroupedRow
-            title="Add profile"
+            title={t('settings.addProfile')}
             left={
               <View style={[styles.avatar, { borderWidth: 1, borderColor: theme.colors.outlineVariant }]}>
                 <Icon source="plus" size={22} color={theme.colors.onSurfaceVariant} />
@@ -538,8 +562,8 @@ const SettingsScreen: React.FC = () => {
           />
           {protectedProfileIds.length > 0 && (
             <GroupedRow
-              title="Lock again when away"
-              description={`${lockLabel(autoLock)} in the background, ask for the PIN`}
+              title={t('settings.lockAgain')}
+              description={t('settings.lockAgainDescription', { when: lockLabel(autoLock) })}
               icon="lock-clock"
               right={chevron}
               onPress={pickAutoLock}
@@ -548,7 +572,7 @@ const SettingsScreen: React.FC = () => {
             />
           )}
 
-          {binnedProfiles.length > 0 && sectionTitle('Deleted profiles')}
+          {binnedProfiles.length > 0 && sectionTitle(t('settings.deletedProfiles'))}
           {binnedProfiles.map((p, i) => (
             <GroupedRow
               key={p.id}
@@ -557,8 +581,8 @@ const SettingsScreen: React.FC = () => {
               icon="account-remove-outline"
               right={
                 <View style={styles.rowActions}>
-                  <IconButton icon="restore" accessibilityLabel={`Restore ${p.name}`} onPress={() => handleRestoreProfile(p)} />
-                  <IconButton icon="delete-forever-outline" accessibilityLabel={`Delete ${p.name} forever`} onPress={() => handleDeleteProfileForever(p)} />
+                  <IconButton icon="restore" accessibilityLabel={t('settings.restoreProfile', { name: p.name })} onPress={() => handleRestoreProfile(p)} />
+                  <IconButton icon="delete-forever-outline" accessibilityLabel={t('settings.deleteProfileForever', { name: p.name })} onPress={() => handleDeleteProfileForever(p)} />
                 </View>
               }
               isFirst={i === 0}
@@ -566,10 +590,10 @@ const SettingsScreen: React.FC = () => {
             />
           ))}
 
-          {sectionTitle('Backup and storage')}
+          {sectionTitle(t('settings.backupAndStorage'))}
           <GroupedRow
-            title="Import and export"
-            description="Back up your notes or restore a backup"
+            title={t('settings.importExport')}
+            description={t('settings.importExportDescription')}
             icon="swap-vertical"
             right={chevron}
             onPress={() => navigation.navigate('ImportExport')}
@@ -577,8 +601,8 @@ const SettingsScreen: React.FC = () => {
             isLast={false}
           />
           <GroupedRow
-            title="Bin"
-            description="Restore deleted notes for 30 days"
+            title={t('settings.bin')}
+            description={t('settings.binDescription')}
             icon="delete-restore"
             right={chevron}
             onPress={() => navigation.navigate('Bin')}
@@ -587,8 +611,8 @@ const SettingsScreen: React.FC = () => {
           />
           {/* The swap button flips this row between moving to the bin and erasing without it. */}
           <GroupedRow
-            title={deleteMode === 'bin' ? 'Move all notes to bin' : 'Delete all notes forever'}
-            description={deleteMode === 'bin' ? 'Restorable from Bin for 30 days' : "Skips the bin. Can't be undone."}
+            title={deleteMode === 'bin' ? t('settings.moveAllToBin') : t('settings.deleteAllForever')}
+            description={deleteMode === 'bin' ? t('settings.moveAllToBinDescription') : t('settings.deleteAllForeverDescription')}
             icon={deleteMode === 'bin' ? 'delete-sweep-outline' : 'delete-forever-outline'}
             danger
             onPress={deleteMode === 'bin' ? handleMoveAllToBin : handleDeleteAllForever}
@@ -596,7 +620,7 @@ const SettingsScreen: React.FC = () => {
               <IconButton
                 icon="swap-horizontal"
                 iconColor={theme.colors.onSurfaceVariant}
-                accessibilityLabel={deleteMode === 'bin' ? 'Switch to delete all forever' : 'Switch to move all to bin'}
+                accessibilityLabel={deleteMode === 'bin' ? t('settings.switchToDeleteForever') : t('settings.switchToMoveToBin')}
                 onPress={() => setDeleteMode(m => (m === 'bin' ? 'forever' : 'bin'))}
               />
             }
@@ -604,10 +628,10 @@ const SettingsScreen: React.FC = () => {
             isLast
           />
 
-          {sectionTitle('App')}
+          {sectionTitle(t('settings.app'))}
           <GroupedRow
-            title="About NoteSpark"
-            description="Version, license and source code"
+            title={t('settings.about')}
+            description={t('settings.aboutDescription')}
             icon="information-outline"
             right={chevron}
             onPress={() => navigation.navigate('About')}
@@ -615,8 +639,8 @@ const SettingsScreen: React.FC = () => {
             isLast={false}
           />
           <GroupedRow
-            title="Privacy policy"
-            description="Your notes never leave your phone"
+            title={t('settings.privacy')}
+            description={t('settings.privacyDescription')}
             icon="shield-lock-outline"
             right={chevron}
             onPress={() => navigation.navigate('Privacy')}
@@ -630,18 +654,18 @@ const SettingsScreen: React.FC = () => {
         visible={!!snackbar}
         onDismiss={() => { setSnackbar(''); setUndoBatch(null); }}
         duration={5000}
-        action={undoBatch ? { label: 'Undo', onPress: handleUndoMoveAll } : undefined}
+        action={undoBatch ? { label: t('common.undo'), onPress: handleUndoMoveAll } : undefined}
       >
         {snackbar}
       </Snackbar>
 
       <KeyboardSafePortal>
         <Dialog visible={!!nameDialog?.open} onDismiss={closeNameDialog}>
-          <Dialog.Title>Rename profile</Dialog.Title>
+          <Dialog.Title>{t('settings.renameProfile')}</Dialog.Title>
           <Dialog.Content>
             <TextInput
               mode="outlined"
-              label="Profile name"
+              label={t('profiles.profileName')}
               value={nameDialog?.name ?? ''}
               onChangeText={name => setNameDialog(d => d && { ...d, name })}
               autoFocus
@@ -650,8 +674,8 @@ const SettingsScreen: React.FC = () => {
             />
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={closeNameDialog}>Cancel</Button>
-            <Button onPress={handleRename} disabled={!nameDialog?.name.trim()}>Rename</Button>
+            <Button onPress={closeNameDialog}>{t('common.cancel')}</Button>
+            <Button onPress={handleRename} disabled={!nameDialog?.name.trim()}>{t('common.rename')}</Button>
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={!!choice?.open} onDismiss={() => setChoice(c => c && { ...c, open: false })}>
@@ -660,15 +684,16 @@ const SettingsScreen: React.FC = () => {
             <RadioButton.Group
               value={String(choice?.value)}
               onValueChange={value => {
-                choice?.onPick(Number(value));
-                setChoice(c => c && { ...c, value: Number(value), open: false });
+                const picked = typeof choice?.value === 'number' ? Number(value) : value;
+                choice?.onPick(picked);
+                setChoice(c => c && { ...c, value: picked, open: false });
               }}
             >
               {choice?.options.map(o => <RadioButton.Item key={o.value} label={o.label} value={String(o.value)} />)}
             </RadioButton.Group>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setChoice(c => c && { ...c, open: false })}>Cancel</Button>
+            <Button onPress={() => setChoice(c => c && { ...c, open: false })}>{t('common.cancel')}</Button>
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={!!pinDialog?.open} onDismiss={closePinDialog}>
@@ -677,7 +702,7 @@ const SettingsScreen: React.FC = () => {
             <Text variant="bodyMedium">{pinMessage}</Text>
             <TextInput
               mode="outlined"
-              label="PIN"
+              label={t('profiles.pin')}
               value={pinDialog?.pin ?? ''}
               onChangeText={pin => setPinDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
               keyboardType="number-pad"
@@ -687,11 +712,11 @@ const SettingsScreen: React.FC = () => {
               style={styles.dialogInput}
             />
             {pinDialog && pinDialog.profile.id !== activeId && (
-              <Button onPress={() => handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>Forgot PIN?</Button>
+              <Button onPress={() => handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>{t('profiles.forgotPin')}</Button>
             )}
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={closePinDialog}>Cancel</Button>
+            <Button onPress={closePinDialog}>{t('common.cancel')}</Button>
             <Button onPress={submitPin} disabled={pinDialog?.pin.length !== 4}>{pinAction}</Button>
           </Dialog.Actions>
         </Dialog>

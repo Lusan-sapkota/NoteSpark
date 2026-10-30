@@ -1,4 +1,5 @@
 // The application menu and keyboard shortcuts; items that open a place send an action to the window.
+import { t } from '@notespark/core';
 import { app, Menu, MenuItemConstructorOptions, nativeTheme, shell } from 'electron';
 
 export type MenuAction =
@@ -19,9 +20,9 @@ export const buildAppMenu = ({ send, webOn, toggleWeb, zoom }: { send(action: Me
     ...(isMac ? [{
       label: app.name,
       submenu: [
-        { label: 'About NoteSpark', click: () => send(go('Settings', 'About')) },
+        { label: t('desktop.about'), click: () => send(go('Settings', 'About')) },
         { type: 'separator' },
-        { label: 'Settings…', accelerator: 'Cmd+,', click: () => send(go('Settings')) },
+        { label: t('desktop.settingsMenu'), accelerator: 'Cmd+,', click: () => send(go('Settings')) },
         { type: 'separator' },
         { role: 'services' }, { type: 'separator' },
         { role: 'hide' }, { role: 'hideOthers' }, { role: 'unhide' }, { type: 'separator' },
@@ -29,12 +30,12 @@ export const buildAppMenu = ({ send, webOn, toggleWeb, zoom }: { send(action: Me
       ],
     } as MenuItemConstructorOptions] : []),
     {
-      label: 'File',
+      label: t('desktop.fileMenu'),
       submenu: [
-        place('New note', 'CmdOrCtrl+N', go('Editor')),
-        place('Import and export…', 'CmdOrCtrl+Shift+E', go('Settings', 'ImportExport')),
+        place(t('desktop.newNote'), 'CmdOrCtrl+N', go('Editor')),
+        place(t('desktop.importExportMenu'), 'CmdOrCtrl+Shift+E', go('Settings', 'ImportExport')),
         { type: 'separator' },
-        { label: webOn ? 'Stop web view' : 'Start web view', click: toggleWeb },
+        { label: webOn ? t('desktop.stopWebView') : t('desktop.startWebView'), click: toggleWeb },
         { type: 'separator' },
         { role: 'close' },
         ...(isMac ? [] : [{ type: 'separator' } as MenuItemConstructorOptions, { role: 'quit' } as MenuItemConstructorOptions]),
@@ -42,43 +43,43 @@ export const buildAppMenu = ({ send, webOn, toggleWeb, zoom }: { send(action: Me
     },
     // The standard roles are what make copy, paste and undo work in text fields (on macOS they do not work without them).
     {
-      label: 'Edit',
+      label: t('desktop.editMenu'),
       submenu: [{ role: 'undo' }, { role: 'redo' }, { type: 'separator' }, { role: 'cut' }, { role: 'copy' }, { role: 'paste' }, { role: 'selectAll' }],
     },
     {
-      label: 'Go',
+      label: t('desktop.goMenu'),
       submenu: [
-        place('Notes', 'CmdOrCtrl+1', go()),
-        place('Scratchpad', 'CmdOrCtrl+2', go('Scratchpad')),
-        place('Tasks', 'CmdOrCtrl+3', go('Tasks')),
-        place('Settings', 'CmdOrCtrl+4', go('Settings')),
-        place('Ask your notes', 'CmdOrCtrl+5', go('Ask')),
-        place('Tidy up notes', 'CmdOrCtrl+6', go('Tidy')),
+        place(t('common.notes'), 'CmdOrCtrl+1', go()),
+        place(t('common.scratchpad'), 'CmdOrCtrl+2', go('Scratchpad')),
+        place(t('common.tasks'), 'CmdOrCtrl+3', go('Tasks')),
+        place(t('common.settings'), 'CmdOrCtrl+4', go('Settings')),
+        place(t('desktop.askNotes'), 'CmdOrCtrl+5', go('Ask')),
+        place(t('desktop.tidyNotes'), 'CmdOrCtrl+6', go('Tidy')),
         { type: 'separator' },
-        place('Bin', 'CmdOrCtrl+Shift+Backspace', go('Settings', 'Bin')),
+        place(t('desktop.bin'), 'CmdOrCtrl+Shift+Backspace', go('Settings', 'Bin')),
       ],
     },
     {
-      label: 'View',
+      label: t('desktop.viewMenu'),
       submenu: [
-        { label: 'Appearance', submenu: [theme('Match system', 'system'), theme('Light', 'light'), theme('Dark', 'dark')] },
+        { label: t('desktop.appearance'), submenu: [theme(t('desktop.matchSystem'), 'system'), theme(t('desktop.light'), 'light'), theme(t('desktop.dark'), 'dark')] },
         { type: 'separator' },
         // Own items instead of the roles, so the size is remembered (and starts suited to the screen).
-        { label: 'Zoom in', accelerator: 'CmdOrCtrl+=', click: () => zoom(1) },
-        { label: 'Zoom out', accelerator: 'CmdOrCtrl+-', click: () => zoom(-1) },
-        { label: 'Actual size', accelerator: 'CmdOrCtrl+0', click: () => zoom(0) },
+        { label: t('desktop.zoomIn'), accelerator: 'CmdOrCtrl+=', click: () => zoom(1) },
+        { label: t('desktop.zoomOut'), accelerator: 'CmdOrCtrl+-', click: () => zoom(-1) },
+        { label: t('desktop.actualSize'), accelerator: 'CmdOrCtrl+0', click: () => zoom(0) },
         { type: 'separator' },
         { role: 'togglefullscreen' },
       ],
     },
-    { label: 'Window', submenu: [{ role: 'minimize' }, ...(isMac ? [{ role: 'zoom' } as MenuItemConstructorOptions] : []), { role: 'close' }] },
+    { label: t('desktop.windowMenu'), submenu: [{ role: 'minimize' }, ...(isMac ? [{ role: 'zoom' } as MenuItemConstructorOptions] : []), { role: 'close' }] },
     {
       role: 'help',
       submenu: [
-        ...(isMac ? [] : [{ label: 'About NoteSpark', click: () => send(go('Settings', 'About')) } as MenuItemConstructorOptions]),
-        { label: 'Privacy policy', click: () => send(go('Settings', 'Privacy')) },
+        ...(isMac ? [] : [{ label: t('desktop.about'), click: () => send(go('Settings', 'About')) } as MenuItemConstructorOptions]),
+        { label: t('desktop.privacyPolicy'), click: () => send(go('Settings', 'Privacy')) },
         // Opens in the person's own browser, like links in notes; the app itself never loads it.
-        { label: 'Source code', click: () => { void shell.openExternal(SOURCE_URL); } },
+        { label: t('desktop.sourceCode'), click: () => { void shell.openExternal(SOURCE_URL); } },
       ],
     },
   ];

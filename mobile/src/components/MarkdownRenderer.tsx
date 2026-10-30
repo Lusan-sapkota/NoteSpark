@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text } from 'react-native';
 import Markdown, { ASTNode, renderRules } from 'react-native-markdown-display';
 import { useAlert } from './DialogProvider';
+import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { shape } from '../theme/theme';
 import NoteImages from './NoteImages';
@@ -32,6 +33,7 @@ const NOTE_LINK = 'notespark-note:';
 const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTask, onOpenNoteLink }) => {
   const { theme } = useTheme();
   const alert = useAlert();
+  const { t: tr } = useI18n();
 
   // Replace <br> tags with newlines so markdown treats them as line breaks
   const tasks = findTaskLines(content);
@@ -188,18 +190,18 @@ const MarkdownRenderer: React.FC<MarkdownRendererProps> = ({ content, onToggleTa
             return;
           }
           if (attachmentHash !== null) {
-            const label = typeof children === 'string' ? children : 'attachment';
+            const label = typeof children === 'string' ? children : tr('note.attachmentFallbackName');
             openAttachmentInViewer(attachmentHash, label).catch(() => {
-              alert('Downloading attachment', 'This file is still syncing from your other device. Try again in a moment.');
+              alert(tr('note.attachmentSyncingTitle'), tr('note.attachmentSyncingMessage'));
             });
             return;
           }
           alert(
-            'Open link?',
-            `This opens ${url} in your browser.`,
+            tr('note.openLinkTitle'),
+            tr('note.openLinkMessage', { url }),
             [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Open link', style: 'default', onPress: () => {
+              { text: tr('common.cancel'), style: 'cancel' },
+              { text: tr('note.openLink'), style: 'default', onPress: () => {
                 try {
                   require('react-native').Linking.openURL(openUrl);
                 } catch {}

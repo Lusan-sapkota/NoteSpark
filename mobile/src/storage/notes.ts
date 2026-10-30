@@ -3,7 +3,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './database';
 import { UUID_SQL, transact, uuidsWhere } from './crdt';
 import type { Note, NoteVersion } from '../types';
-import { TaskLine, toggleTaskLine } from '@notespark/core';
+import { t, TaskLine, toggleTaskLine } from '@notespark/core';
 import { renameLinks } from '@notespark/core';
 
 // Bumped after every write finishes, so screens can skip reloading when nothing changed. After, not before:
@@ -105,7 +105,7 @@ export const setShareTarget = (target: ShareTarget) => AsyncStorage.setItem('sha
 export const SCRATCHPAD_ID = 0;
 export const scratchpadAsNote = (content: string, updatedAt: string): Note => ({
   id: SCRATCHPAD_ID,
-  title: 'Scratchpad',
+  title: t('common.scratchpad'),
   content,
   isMarkdown: false,
   isPinned: false,
@@ -354,7 +354,7 @@ const noteKey = (note: { title: string; content: string }) => `${note.title}\u00
 export const importNotes = changesNotes(async (notes: any[], mode: ImportMode): Promise<{ imported: number; skipped: number }> => {
   const valid = notes.filter(isImportable);
   if (valid.length === 0) {
-    throw new Error('No valid notes found in import data.');
+    throw new Error(t('settings.noValidNotes'));
   }
   let imported = 0;
   await transact(db, async sync => {

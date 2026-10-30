@@ -1,6 +1,7 @@
 import React, { useCallback, useState } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { Appbar } from 'react-native-paper';
+import { useI18n } from '../i18n/I18nContext';
 
 interface HeaderProps {
   title: string;
@@ -17,13 +18,16 @@ const Header: React.FC<HeaderProps> = ({
   onBackPress,
   rightActions,
   elevated = false,
-}) => (
-  <Appbar.Header mode="small" elevated={elevated}>
-    {showBackButton && <Appbar.BackAction onPress={onBackPress} accessibilityLabel="Back" />}
-    <Appbar.Content title={title} />
-    {rightActions}
-  </Appbar.Header>
-);
+}) => {
+  const { t } = useI18n();
+  return (
+    <Appbar.Header mode="small" elevated={elevated}>
+      {showBackButton && <Appbar.BackAction onPress={onBackPress} accessibilityLabel={t('common.back')} />}
+      <Appbar.Content title={title} />
+      {rightActions}
+    </Appbar.Header>
+  );
+};
 
 // Pass `onScroll` to the screen's scroll view and `elevated` to its Header.
 export const useHeaderElevation = () => {

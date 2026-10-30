@@ -1,10 +1,11 @@
 // Desktop notifications: task reminders (work with the window closed) and "Save clipboard text".
 import { execFile } from 'node:child_process';
 import { clipboard, Notification } from 'electron';
-import { buildReminders, REMINDER_ID_PREFIX, type ProfileTasks } from '@notespark/core';
+import { buildReminders, getLanguage, REMINDER_ID_PREFIX, t, type ProfileTasks } from '@notespark/core';
 import * as notes from '../../../mobile/src/storage/notes';
 import * as profiles from '../../../mobile/src/storage/profiles';
 import AsyncStorage from '@notespark/node-shims/async-storage';
+import { syncLanguage } from './language';
 
 const say = (title: string, body: string, onClick?: () => void) => {
   if (!Notification.isSupported()) return;
@@ -23,15 +24,18 @@ const RECHECK_MS = 30 * 60_000;
 export const startReminders = (open: () => void) => {
   let version = -1;
   let hour = -1;
+  let language = '';
   let readAt = 0;
   let reminders = buildReminders([]);
   const tick = async () => {
+    await syncLanguage();
     await (await import('./storage')).lockStatus(); // storage has started: profiles converted and the default one open
     const stored = Number(await AsyncStorage.getItem('reminderHour'));
     const chosen = HOURS.includes(stored) ? stored : 9;
-    if (notes.getNotesVersion() !== version || chosen !== hour || Date.now() - readAt > RECHECK_MS) {
+    if (notes.getNotesVersion() !== version || chosen !== hour || getLanguage() !== language || Date.now() - readAt > RECHECK_MS) {
       version = notes.getNotesVersion();
       hour = chosen;
+      language = getLanguage(); // titles are in the chosen language
       readAt = Date.now();
       const all: ProfileTasks[] = [];
       for (const p of await profiles.getProfiles()) {
@@ -58,18 +62,18 @@ export const startReminders = (open: () => void) => {
 // The clipboard text goes where the "Text shared to NoteSpark" setting says: the scratchpad, or a new note.
 export const saveClipboard = async (call: (fn: string, ...args: unknown[]) => Promise<any>) => {
   const text = (await clipboard.readText()).trim();
-  if (!text) return say('Nothing to save', 'Copy some text first.');
+  if (!text) return say(t('desktop.nothingToSave'), t('desktop.copyTextFirst'));
   try {
     if ((await call('getShareTarget')) === 'scratchpad') {
       const pad = (await call('getScratchpad')) as string;
       await call('saveScratchpad', pad.trimEnd() ? `${pad.trimEnd()}\n\n${text}` : text);
-      say('Added to scratchpad', text.slice(0, 120));
+      say(t('desktop.addedToScratchpad'), text.slice(0, 120));
     } else {
       const now = new Date().toISOString();
       await call('saveNote', { title: text.split('\n')[0].slice(0, 60), content: text, isMarkdown: false, createdAt: now, updatedAt: now });
-      say('Note saved', text.slice(0, 120));
+      say(t('desktop.noteSaved'), text.slice(0, 120));
     }
   } catch (error) {
-    say("Couldn't save the text", error instanceof Error && error.message === 'PROFILE_LOCKED' ? 'Unlock NoteSpark, then try again.' : 'Try again.');
+    say(t('desktop.saveTextFailed'), error instanceof Error && error.message === 'PROFILE_LOCKED' ? t('desktop.unlockThenTryAgain') : t('desktop.tryAgainShort'));
   }
 };

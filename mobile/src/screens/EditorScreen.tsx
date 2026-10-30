@@ -27,7 +27,7 @@ import {
   removeAttachmentLink,
 } from '../storage/attachments';
 import { keepDeviceImage } from '../utils/imageCache';
-import { addDays, paragraphToMatch, setLineDue } from '@notespark/core';
+import { addDays, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
 import { isMeaningSearchAvailable, relatedToText } from '../storage/semanticSearch';
 import { isLiveRelatedOn } from '../utils/liveRelated';
 import { toPreview } from '../components/NoteItem';
@@ -40,6 +40,7 @@ import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteAttachments from '../components/NoteAttachments';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
 import { useAlert } from '../components/DialogProvider';
+import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, readingWidth, shape, space } from '../theme/theme';
 
@@ -50,7 +51,7 @@ type EditorScreenRouteProp = RouteProp<RootStackParamList, 'Editor'>;
 const TOOLBAR_HEIGHT = 56;
 
 const formatDate = (iso: string | null) =>
-  iso ? new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
+  iso ? new Date(iso).toLocaleString(getLanguage(), { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
 const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
@@ -58,6 +59,7 @@ const EditorScreen: React.FC = () => {
   const { theme } = useTheme();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
+  const { t } = useI18n();
   const [saving, setSaving] = useState(false);
 
   const { noteId, title: titleParam, text: textParam, draft: fromDraft, template, markdown: markdownParam } = route.params ?? {};
@@ -131,11 +133,11 @@ const EditorScreen: React.FC = () => {
           setCreatedAt(note.createdAt);
           setUpdatedAt(note.updatedAt);
         } else {
-          alert('Note not found', 'It may have been deleted.');
+          alert(t('editor.noteNotFoundTitle'), t('editor.noteNotFoundMessage'));
         }
       } catch (error) {
         console.error('Failed to load note:', error);
-        alert("Couldn't open the note", 'Go back and try again.');
+        alert(t('editor.openFailedTitle'), t('editor.openFailedMessage'));
       }
     };
     loadNote();
@@ -227,7 +229,7 @@ const EditorScreen: React.FC = () => {
         try {
           const notes = await getNotes();
           if (notes.length === 1) {
-            await sendAppNotification('First note saved', 'Your note is saved on this device.');
+            await sendAppNotification(t('editor.firstNoteSavedTitle'), t('editor.firstNoteSavedBody'));
           }
         } catch (e) {}
       }
@@ -241,7 +243,7 @@ const EditorScreen: React.FC = () => {
     } catch (error) {
       setSaving(false);
       console.error('Failed to save note:', error);
-      alert("Couldn't save the note", 'Your text is still here. Try saving again.');
+      alert(t('editor.saveFailedTitle'), t('editor.saveFailedMessage'));
     }
   };
 
@@ -339,7 +341,7 @@ const EditorScreen: React.FC = () => {
         const uri = await keepDeviceImage(result.assets[0].uri);
         insert(isMarkdown ? `![Image](${uri})` : `[Image: ${uri}]`);
       } catch {
-        alert("Couldn't add the image", 'Your phone may be low on storage. Free some space and try again.');
+        alert(t('editor.addImageFailedTitle'), t('editor.addImageFailedMessage'));
       }
     }
   };
@@ -349,7 +351,7 @@ const EditorScreen: React.FC = () => {
     if (result.canceled || !result.assets?.[0]) return;
     const asset = result.assets[0];
     if (typeof asset.size === 'number' && asset.size > MAX_ATTACHMENT_BYTES) {
-      alert("Couldn't attach the file", ATTACHMENT_TOO_LARGE_MESSAGE);
+      alert(t('editor.attachFailedTitle'), t('core.attachmentTooLarge'));
       return;
     }
     try {
@@ -357,9 +359,9 @@ const EditorScreen: React.FC = () => {
       setContent(prev => appendAttachmentLink(prev, added.name, added.hash));
     } catch (error: any) {
       if (error?.message === ATTACHMENT_TOO_LARGE_MESSAGE) {
-        alert("Couldn't attach the file", ATTACHMENT_TOO_LARGE_MESSAGE);
+        alert(t('editor.attachFailedTitle'), t('core.attachmentTooLarge'));
       } else {
-        alert("Couldn't attach the file", 'Check your available storage space and try again.');
+        alert(t('editor.attachFailedTitle'), t('editor.attachFailedMessage'));
       }
     }
   };
@@ -382,7 +384,7 @@ const EditorScreen: React.FC = () => {
       const notes = (await getNotes()).filter(n => String(n.id) !== String(noteId) && n.title.trim());
       setNotePicker({ query: '', notes });
     } catch (error) {
-      alert("Couldn't load your notes", 'Try again. If it keeps failing, restart the app.');
+      alert(t('editor.loadNotesFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -398,9 +400,9 @@ const EditorScreen: React.FC = () => {
   const typingTag = !hasSelection && !typingLink ? /(?:^|\s)#([\p{L}\p{N}_][\p{L}\p{N}_/-]*)$/u.exec(typed) : null;
   const partial = (typingLink ?? typingTag)?.[1] ?? '';
   const suggestions = typingLink
-    ? known.titles.filter(t => t.toLowerCase().includes(partial.trim().toLowerCase())).slice(0, 8)
+    ? known.titles.filter(w => w.toLowerCase().includes(partial.trim().toLowerCase())).slice(0, 8)
     : typingTag
-      ? known.tags.filter(t => t.startsWith(partial.toLowerCase()) && t !== partial.toLowerCase()).slice(0, 8)
+      ? known.tags.filter(w => w.startsWith(partial.toLowerCase()) && w !== partial.toLowerCase()).slice(0, 8)
       : [];
   const completeWith = (word: string) => {
     const start = selection.start - partial.length;
@@ -416,12 +418,12 @@ const EditorScreen: React.FC = () => {
     <View style={styles.flex}>
       <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
         <Header elevated={elevated}
-          title={isEditing ? 'Edit note' : 'New note'}
+          title={isEditing ? t('editor.editNote') : t('editor.newNote')}
           showBackButton
           onBackPress={() => navigation.goBack()}
           rightActions={
             <Button mode="contained" onPress={() => handleSave()} theme={controlTheme} loading={saving} disabled={saving} style={styles.save}>
-              Save
+              {t('common.save')}
             </Button>
           }
         />
@@ -441,7 +443,7 @@ const EditorScreen: React.FC = () => {
                 value={isMarkdown ? 'markdown' : 'text'}
                 onValueChange={value => setIsMarkdown(value === 'markdown')}
                 buttons={[
-                  { value: 'text', label: 'Plain text' },
+                  { value: 'text', label: t('editor.plainText') },
                   { value: 'markdown', label: 'Markdown' },
                 ]}
                 style={styles.flex}
@@ -452,24 +454,24 @@ const EditorScreen: React.FC = () => {
                   selected={isPreview}
                   mode={isPreview ? 'contained-tonal' : undefined}
                   onPress={() => setIsPreview(v => !v)}
-                  accessibilityLabel={isPreview ? 'Hide preview' : 'Show preview'}
+                  accessibilityLabel={isPreview ? t('editor.hidePreview') : t('editor.showPreview')}
                 />
               )}
             </View>
 
             <TextInput
               style={[styles.titleInput, theme.fonts.noteTitle, { color: theme.colors.onSurface }]}
-              placeholder="Title"
+              placeholder={t('editor.titlePlaceholder')}
               placeholderTextColor={theme.colors.onSurfaceVariant}
               value={typeof title === 'string' ? title : String(title)}
               onChangeText={setTitle}
               selectionColor={theme.colors.primary}
-              accessibilityLabel="Note title"
+              accessibilityLabel={t('editor.noteTitleLabel')}
             />
 
             {isEditing && (
               <Text variant="bodySmall" style={[styles.meta, { color: theme.colors.onSurfaceVariant }]}>
-                Created {formatDate(createdAt)}, edited {formatDate(updatedAt)}
+                {t('editor.createdEdited', { created: formatDate(createdAt), edited: formatDate(updatedAt) })}
               </Text>
             )}
 
@@ -489,13 +491,13 @@ const EditorScreen: React.FC = () => {
                   multiline
                   textAlignVertical="top"
                   selectionColor={theme.colors.primary}
-                  placeholder={isMarkdown ? 'Start writing. Markdown works here.' : 'Start writing'}
+                  placeholder={isMarkdown ? t('editor.placeholderMarkdown') : t('editor.placeholderPlain')}
                   placeholderTextColor={theme.colors.onSurfaceVariant}
                   autoCorrect
                   autoCapitalize="sentences"
                   onSelectionChange={e => setSelection(e.nativeEvent.selection)}
                   scrollEnabled={false}
-                  accessibilityLabel="Note text"
+                  accessibilityLabel={t('editor.noteTextLabel')}
                 />
                 <NoteAttachments content={content} onRemove={handleRemoveAttachment} />
               </View>
@@ -519,7 +521,7 @@ const EditorScreen: React.FC = () => {
                     style={{ backgroundColor: theme.colors.tertiaryContainer }}
                     textStyle={{ color: theme.colors.onTertiaryContainer }}
                     maxFontSizeMultiplier={1.5}
-                    accessibilityLabel={typingLink ? `Link to ${word}` : `Tag ${word}`}
+                    accessibilityLabel={typingLink ? t('editor.linkTo', { title: word }) : t('editor.tagWord', { tag: word })}
                   >
                     {typingLink ? word : `#${word}`}
                   </Chip>
@@ -536,32 +538,32 @@ const EditorScreen: React.FC = () => {
                   style={[styles.relatedChip, { backgroundColor: theme.colors.tertiaryContainer }]}
                   textStyle={{ color: theme.colors.onTertiaryContainer }}
                   maxFontSizeMultiplier={1.5}
-                  accessibilityLabel={`${related.length} related ${related.length === 1 ? 'note' : 'notes'}. Opens the list`}
+                  accessibilityLabel={t('editor.relatedA11y', { count: related.length })}
                 >
-                  {related.length} related
+                  {t('editor.relatedChip', { count: related.length })}
                 </Chip>
               )}
-              <IconButton icon="undo" disabled={!canUndo} onPress={handleUndo} accessibilityLabel="Undo" />
-              <IconButton icon="redo" disabled={!canRedo} onPress={handleRedo} accessibilityLabel="Redo" />
+              <IconButton icon="undo" disabled={!canUndo} onPress={handleUndo} accessibilityLabel={t('common.undo')} />
+              <IconButton icon="redo" disabled={!canRedo} onPress={handleRedo} accessibilityLabel={t('editor.redo')} />
               {isMarkdown && (
                 <>
-                  <IconButton icon="format-bold" onPress={() => wrapSelection('**')} accessibilityLabel="Bold" />
-                  <IconButton icon="format-italic" onPress={() => wrapSelection('_')} accessibilityLabel="Italic" />
-                  <IconButton icon="format-header-pound" onPress={() => prefixLines('## ')} accessibilityLabel="Heading" />
-                  <IconButton icon="format-list-bulleted" onPress={() => prefixLines('- ')} accessibilityLabel="Bulleted list" />
-                  <IconButton icon="link-variant" onPress={() => setShowLinkDialog(true)} accessibilityLabel="Add link" />
+                  <IconButton icon="format-bold" onPress={() => wrapSelection('**')} accessibilityLabel={t('editor.bold')} />
+                  <IconButton icon="format-italic" onPress={() => wrapSelection('_')} accessibilityLabel={t('editor.italic')} />
+                  <IconButton icon="format-header-pound" onPress={() => prefixLines('## ')} accessibilityLabel={t('editor.heading')} />
+                  <IconButton icon="format-list-bulleted" onPress={() => prefixLines('- ')} accessibilityLabel={t('editor.bulletedList')} />
+                  <IconButton icon="link-variant" onPress={() => setShowLinkDialog(true)} accessibilityLabel={t('editor.addLink')} />
                 </>
               )}
-              <IconButton icon="checkbox-marked-outline" onPress={() => prefixLines('- [ ] ')} accessibilityLabel="Task" />
-              <IconButton icon="calendar-outline" onPress={() => setShowDueDialog(true)} accessibilityLabel="Due date" />
-              <IconButton icon="note-multiple-outline" onPress={openNotePicker} accessibilityLabel="Link a note" />
-              <IconButton icon="image-outline" onPress={handleAddImage} accessibilityLabel="Add image" />
-              <IconButton icon="paperclip" onPress={handleAttachFile} accessibilityLabel="Attach file" />
+              <IconButton icon="checkbox-marked-outline" onPress={() => prefixLines('- [ ] ')} accessibilityLabel={t('editor.task')} />
+              <IconButton icon="calendar-outline" onPress={() => setShowDueDialog(true)} accessibilityLabel={t('editor.dueDate')} />
+              <IconButton icon="note-multiple-outline" onPress={openNotePicker} accessibilityLabel={t('editor.linkANote')} />
+              <IconButton icon="image-outline" onPress={handleAddImage} accessibilityLabel={t('editor.addImage')} />
+              <IconButton icon="paperclip" onPress={handleAttachFile} accessibilityLabel={t('editor.attachFile')} />
               <IconButton
                 icon="selection-remove"
                 disabled={!hasSelection}
                 onPress={() => insert('')}
-                accessibilityLabel="Delete selected text"
+                accessibilityLabel={t('editor.deleteSelected')}
               />
             </ScrollView>
           </View>
@@ -575,24 +577,24 @@ const EditorScreen: React.FC = () => {
             style={styles.sheetWrap}
             contentContainerStyle={[styles.sheet, { backgroundColor: theme.colors.surfaceContainerLow, paddingBottom: space.lg + insets.bottom }]}
           >
-            <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>Related notes</Text>
+            <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('editor.relatedNotes')}</Text>
             <Text variant="bodySmall" style={[styles.sheetHelp, { color: theme.colors.onSurfaceVariant }]}>
-              Close in meaning to the paragraph you're writing. Found on this device.
+              {t('editor.relatedHelp')}
             </Text>
             <ScrollView style={styles.sheetList}>
               {related.map(n => (
                 <List.Item
                   key={n.id}
-                  title={n.title || 'Untitled note'}
+                  title={n.title || t('common.untitledNote')}
                   titleNumberOfLines={2}
                   description={toPreview(n.content)}
                   descriptionNumberOfLines={2}
                   onPress={() => { setShowRelated(false); navigation.navigate('NoteView', { noteId: String(n.id) }); }}
-                  accessibilityHint="Opens the note. Your changes here are saved."
+                  accessibilityHint={t('editor.relatedOpenHint')}
                   right={() => (
                     <IconButton
                       icon="link-variant"
-                      accessibilityLabel={`Link to ${n.title || 'Untitled note'}`}
+                      accessibilityLabel={t('editor.linkTo', { title: n.title || t('common.untitledNote') })}
                       onPress={() => { insert(`[[${n.title.trim()}]]`); setShowRelated(false); }}
                     />
                   )}
@@ -603,12 +605,12 @@ const EditorScreen: React.FC = () => {
         </Portal>
         <KeyboardSafePortal>
           <Dialog visible={showLinkDialog} onDismiss={() => setShowLinkDialog(false)}>
-            <Dialog.Title>Add link</Dialog.Title>
+            <Dialog.Title>{t('editor.addLink')}</Dialog.Title>
             <Dialog.Content style={styles.dialogContent}>
-              <PaperTextInput mode="outlined" label="Link text" value={linkText} onChangeText={setLinkText} />
+              <PaperTextInput mode="outlined" label={t('editor.linkText')} value={linkText} onChangeText={setLinkText} />
               <PaperTextInput
                 mode="outlined"
-                label="URL"
+                label={t('editor.url')}
                 placeholder="https://"
                 value={linkUrl}
                 onChangeText={setLinkUrl}
@@ -618,33 +620,33 @@ const EditorScreen: React.FC = () => {
               />
             </Dialog.Content>
             <Dialog.Actions>
-              <Button onPress={() => setShowLinkDialog(false)}>Cancel</Button>
-              <Button onPress={handleInsertLink} disabled={!linkUrl.trim()}>Add link</Button>
+              <Button onPress={() => setShowLinkDialog(false)}>{t('common.cancel')}</Button>
+              <Button onPress={handleInsertLink} disabled={!linkUrl.trim()}>{t('editor.addLink')}</Button>
             </Dialog.Actions>
           </Dialog>
           <Dialog visible={showDueDialog} onDismiss={() => setShowDueDialog(false)}>
-            <Dialog.Title>Due date</Dialog.Title>
+            <Dialog.Title>{t('editor.dueDate')}</Dialog.Title>
             <Dialog.Content>
               <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                For the task on the cursor's line. You can also type a date like due:{addDays(3)}.
+                {t('editor.dueHelp', { example: `due:${addDays(3)}` })}
               </Text>
             </Dialog.Content>
             <Dialog.ScrollArea style={styles.dueList}>
-              <List.Item title="Today" left={props => <List.Icon {...props} icon="calendar-today" />} onPress={() => setDue(addDays(0))} />
-              <List.Item title="Tomorrow" left={props => <List.Icon {...props} icon="calendar-arrow-right" />} onPress={() => setDue(addDays(1))} />
-              <List.Item title="Next week" left={props => <List.Icon {...props} icon="calendar-week" />} onPress={() => setDue(addDays(7))} />
-              <List.Item title="No due date" left={props => <List.Icon {...props} icon="calendar-remove-outline" />} onPress={() => setDue(null)} />
+              <List.Item title={t('common.today')} left={props => <List.Icon {...props} icon="calendar-today" />} onPress={() => setDue(addDays(0))} />
+              <List.Item title={t('common.tomorrow')} left={props => <List.Icon {...props} icon="calendar-arrow-right" />} onPress={() => setDue(addDays(1))} />
+              <List.Item title={t('editor.nextWeek')} left={props => <List.Icon {...props} icon="calendar-week" />} onPress={() => setDue(addDays(7))} />
+              <List.Item title={t('editor.noDueDate')} left={props => <List.Icon {...props} icon="calendar-remove-outline" />} onPress={() => setDue(null)} />
             </Dialog.ScrollArea>
             <Dialog.Actions>
-              <Button onPress={() => setShowDueDialog(false)}>Cancel</Button>
+              <Button onPress={() => setShowDueDialog(false)}>{t('common.cancel')}</Button>
             </Dialog.Actions>
           </Dialog>
           <Dialog visible={!!notePicker} onDismiss={() => setNotePicker(null)}>
-            <Dialog.Title>Link a note</Dialog.Title>
+            <Dialog.Title>{t('editor.linkANote')}</Dialog.Title>
             <Dialog.Content style={styles.dialogContent}>
               <PaperTextInput
                 mode="outlined"
-                label="Search note titles"
+                label={t('editor.searchTitles')}
                 value={notePicker?.query ?? ''}
                 onChangeText={query => setNotePicker(p => p && { ...p, query })}
                 autoFocus
@@ -660,12 +662,12 @@ const EditorScreen: React.FC = () => {
               ))}
               {notePicker && pickerMatches.length === 0 && (
                 <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-                  {notePicker.notes.length ? 'No note titles match. Try another word.' : 'Save another note first, then link to it here.'}
+                  {notePicker.notes.length ? t('editor.noTitleMatch') : t('editor.saveAnotherFirst')}
                 </Text>
               )}
             </Dialog.Content>
             <Dialog.Actions>
-              <Button onPress={() => setNotePicker(null)}>Cancel</Button>
+              <Button onPress={() => setNotePicker(null)}>{t('common.cancel')}</Button>
             </Dialog.Actions>
           </Dialog>
         </KeyboardSafePortal>

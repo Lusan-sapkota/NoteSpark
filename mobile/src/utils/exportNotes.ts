@@ -16,6 +16,7 @@ import {
   parseAttachmentLinks,
   referencedHashes,
   sanitizeAttachmentName,
+  t,
 } from '@notespark/core';
 import { addAttachment, hasAttachment, readAttachment } from '../storage/attachments';
 
@@ -23,13 +24,13 @@ import { addAttachment, hasAttachment, readAttachment } from '../storage/attachm
 export const shareNotesAsJson = async (notes: Note[]): Promise<void> => {
   const uri = `${FileSystem.cacheDirectory}notespark-export-${Date.now()}.json`;
   await FileSystem.writeAsStringAsync(uri, notesToJson(notes), { encoding: FileSystem.EncodingType.UTF8 });
-  await Sharing.shareAsync(uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: 'Save or share your notes' });
+  await Sharing.shareAsync(uri, { mimeType: 'application/json', UTI: 'public.json', dialogTitle: t('importExport.saveOrShareNotes') });
 };
 
 export const shareNoteAsMarkdown = async (note: Note): Promise<void> => {
   const file = new File(Paths.cache, fileName(note, new Set()));
   await file.write(noteToMarkdown(note));
-  await Sharing.shareAsync(file.uri, { mimeType: note.isMarkdown ? 'text/markdown' : 'text/plain', dialogTitle: 'Save or share this note' });
+  await Sharing.shareAsync(file.uri, { mimeType: note.isMarkdown ? 'text/markdown' : 'text/plain', dialogTitle: t('importExport.saveOrShareNote') });
 };
 
 export const notesToZip = (notes: Note[], attachmentEntries: Record<string, Uint8Array> = {}): Uint8Array => {
@@ -74,7 +75,7 @@ export const shareNotesAsZip = async (
 ): Promise<void> => {
   const file = new File(Paths.cache, `notespark-markdown-${Date.now()}.zip`);
   await file.write(await buildNotesZip(notes, options));
-  await Sharing.shareAsync(file.uri, { mimeType: 'application/zip', UTI: 'public.zip-archive', dialogTitle: 'Save or share your notes' });
+  await Sharing.shareAsync(file.uri, { mimeType: 'application/zip', UTI: 'public.zip-archive', dialogTitle: t('importExport.saveOrShareNotes') });
 };
 
 // Notes from one picked .json backup, .md or .txt note, or .zip of those; throws on anything else.

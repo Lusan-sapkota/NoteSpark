@@ -3,66 +3,30 @@ import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from 'react-native-paper';
+import type { TKey } from '@notespark/core';
 import Header, { useHeaderElevation } from '../components/Header';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 import { readingWidth, space } from '../theme/theme';
 
 const CONTACT_EMAIL = 'contact@lusansapkota.com.np';
-const EFFECTIVE_DATE = 'October 25, 2026';
 
 // Keep this in step with what the app actually does; update EFFECTIVE_DATE on every change.
-const sections: { heading: string; intro?: string; bullets?: string[]; outro?: string }[] = [
-  {
-    heading: 'What NoteSpark stores',
-    bullets: [
-      'Your notes: the title, text, format, whether they are pinned, and the dates they were created and edited, and your scratchpad. They are kept in a database on your device, one for each profile.',
-      'A search index: for search by meaning, each note is turned into a list of numbers by a small model that is part of the app and runs on your device. The index is kept in the same database as your notes.',
-      "Images you add from your phone are copied into NoteSpark's own storage on your device, so they keep showing if the original is moved or your phone clears its cache. They aren't uploaded. A copy is deleted once no note uses it.",
-      "Your profile names, which profile is open, your theme choice, whether you've finished the welcome screens, and a list of your last 20 imports and exports. These are also kept on your device.",
-      "Profile PINs: only a scrambled form of each PIN (a salted hash) is kept, in Android's secure storage. The PIN itself isn't stored, so it can't be recovered if you forget it. A profile with a PIN also has its notes encrypted on your phone, with a key kept in Android's secure storage.",
-      'A deleted profile stays on your device for 30 days so you can restore it, then it and its notes are erased.',
-    ],
-    outro: 'None of this is sent to the developer or anyone else.',
-  },
-  {
-    heading: 'Nothing leaves your device',
-    intro: "NoteSpark makes no network requests of its own: no sync, no analytics, no crash reporting and no update checks. App updates come only through the store you installed it from.",
-    bullets: [
-      "If you add an image from a web address to a note, it's downloaded from that website the first time you view the note, then kept on your phone so it shows offline, even if the website removes it. A saved copy is deleted once no note uses it and it hasn't been viewed for 30 days.",
-      'When you export or share notes, the file goes only where you choose in the share sheet.',
-      "Automatic backups, if you turn them on, are saved only to the folder you pick. Profiles with a PIN are left out unless you include them; backup files can be read without the PIN.",
-      "Android's own backup: if backup is turned on in your phone's settings, Android may copy NoteSpark's data, including your notes, to your Google account, so it can be restored on a new phone. This is a feature of Android that you control in your phone's settings; NoteSpark doesn't send anything itself.",
-    ],
-  },
-  {
-    heading: 'Permissions',
-    bullets: [
-      "Notifications: to tell you things like an export finishing, and to remind you of tasks on their due date. These notifications are created and scheduled on your device; NoteSpark doesn't use push notifications. Reminders for profiles with a PIN don't show the task text.",
-      'Photos: only the images you pick when adding an image to a note.',
-      'Files: only the backup or note files you pick when importing notes, and the folder you pick for automatic backups.',
-      "Fingerprint: only if you turn on fingerprint unlock for a profile. Android checks your fingerprint; NoteSpark never sees or stores it.",
-      'Internet: only to show images from web addresses that you add to notes.',
-    ],
-  },
-  {
-    heading: 'Your control over your data',
-    bullets: [
-      'Move a note to the bin from its menu, or every note from Settings. Notes in the bin are erased for good 30 days later, or straight away if you delete them forever or empty the bin in Settings, under Bin.',
-      'Export a copy of your notes at any time in Settings, under Import and export.',
-      "Uninstalling NoteSpark deletes all of its data from your device. The developer has no copy, so deleted notes can't be recovered unless you exported them or Android's backup restores them.",
-    ],
-  },
-  {
-    heading: 'Children',
-    intro: "NoteSpark doesn't collect personal information from anyone, including children under 13.",
-  },
-  {
-    heading: 'Changes to this policy',
-    intro: 'If this policy changes, the new version will appear here and on notespark.lusansapkota.com.np with a new effective date.',
-  },
+const sections: { heading: TKey; intro?: TKey; bullets?: TKey[]; outro?: TKey }[] = [
+  { heading: 'privacy.storesHeading',
+    bullets: ['privacy.storesM1', 'privacy.storesM2', 'privacy.storesM3', 'privacy.storesM4', 'privacy.storesM5', 'privacy.storesM6'], outro: 'privacy.storesOutro' },
+  { heading: 'privacy.leavesHeadingM', intro: 'privacy.leavesIntroM',
+    bullets: ['privacy.leavesM1', 'privacy.leavesM2', 'privacy.leavesBackups', 'privacy.leavesM4'] },
+  { heading: 'privacy.permHeading',
+    bullets: ['privacy.permM1', 'privacy.permM2', 'privacy.permM3', 'privacy.permM4', 'privacy.permM5'] },
+  { heading: 'privacy.controlHeading',
+    bullets: ['privacy.controlBin', 'privacy.controlExport', 'privacy.controlM3'] },
+  { heading: 'privacy.childrenHeading', intro: 'privacy.childrenText' },
+  { heading: 'privacy.changesHeading', intro: 'privacy.changesM' },
 ];
 
 const PrivacyScreen: React.FC = () => {
+  const { t } = useI18n();
   const navigation = useNavigation();
   const { theme } = useTheme();
   const { elevated, onScroll } = useHeaderElevation();
@@ -70,34 +34,34 @@ const PrivacyScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-      <Header elevated={elevated} title="Privacy policy" showBackButton onBackPress={() => navigation.goBack()} />
+      <Header elevated={elevated} title={t('privacy.title')} showBackButton onBackPress={() => navigation.goBack()} />
       <ScrollView contentContainerStyle={styles.scrollContent} onScroll={onScroll} scrollEventThrottle={16}>
         <View style={styles.column}>
-          <Text variant="bodySmall" style={body}>Effective {EFFECTIVE_DATE}</Text>
+          <Text variant="bodySmall" style={body}>{t('privacy.effective', { date: t('privacy.dateM') })}</Text>
           <Text variant="bodyLarge" style={[styles.lead, { color: theme.colors.onSurface }]}>
-            NoteSpark is an offline notes app. It has no account, no ads, no analytics and no tracking. Everything you write stays on your phone. This policy explains what the app stores and where.
+            {t('privacy.leadM')}
           </Text>
 
           {sections.map(section => (
             <View key={section.heading} style={styles.section}>
               <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>
-                {section.heading}
+                {t(section.heading)}
               </Text>
-              {!!section.intro && <Text variant="bodyLarge" style={body}>{section.intro}</Text>}
+              {!!section.intro && <Text variant="bodyLarge" style={body}>{t(section.intro)}</Text>}
               {section.bullets?.map(item => (
                 <View key={item} style={styles.bullet}>
                   <Text variant="bodyLarge" style={body} accessibilityElementsHidden importantForAccessibility="no">•</Text>
-                  <Text variant="bodyLarge" style={[body, styles.bulletText]}>{item}</Text>
+                  <Text variant="bodyLarge" style={[body, styles.bulletText]}>{t(item)}</Text>
                 </View>
               ))}
-              {!!section.outro && <Text variant="bodyLarge" style={body}>{section.outro}</Text>}
+              {!!section.outro && <Text variant="bodyLarge" style={body}>{t(section.outro)}</Text>}
             </View>
           ))}
 
           <View style={styles.section}>
-            <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>Contact</Text>
+            <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('privacy.contactHeading')}</Text>
             <Text variant="bodyLarge" style={body}>
-              Questions about privacy:{' '}
+              {t('privacy.contactLead')}{' '}
               <Text
                 style={{ color: theme.colors.primary, textDecorationLine: 'underline' }}
                 onPress={() => Linking.openURL(`mailto:${CONTACT_EMAIL}`).catch(() => {})}

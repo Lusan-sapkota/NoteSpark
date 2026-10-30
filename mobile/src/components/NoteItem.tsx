@@ -3,9 +3,10 @@ import { StyleSheet, View } from 'react-native';
 import { Icon, IconButton, Text, TouchableRipple } from 'react-native-paper';
 import Swipeable, { SwipeableMethods, SwipeDirection } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Menu from './Menu';
-import { markTaskBoxes } from '@notespark/core';
+import { getLanguage, markTaskBoxes, t as translate } from '@notespark/core';
 import { Note } from '../types';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 import { groupCorners, shape, space } from '../theme/theme';
 
 interface NoteItemProps {
@@ -42,16 +43,16 @@ const relativeDate = (dateStr: string) => {
   const date = new Date(dateStr);
   if (isNaN(date.getTime())) return '';
   const minutes = Math.round((Date.now() - date.getTime()) / 60000);
-  if (minutes < 1) return 'just now';
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return translate('home.justNow');
+  if (minutes < 60) return translate('home.minutesAgo', { count: minutes });
   const today = new Date();
   if (date.toDateString() === today.toDateString()) {
-    return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    return date.toLocaleTimeString(getLanguage(), { hour: 'numeric', minute: '2-digit' });
   }
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (date.toDateString() === yesterday.toDateString()) return 'yesterday';
-  return date.toLocaleDateString([], {
+  if (date.toDateString() === yesterday.toDateString()) return translate('home.yesterday');
+  return date.toLocaleDateString(getLanguage(), {
     month: 'short',
     day: 'numeric',
     ...(date.getFullYear() !== today.getFullYear() && { year: 'numeric' }),
@@ -75,10 +76,11 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   showCreated = false,
 }) => {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const [menuVisible, setMenuVisible] = useState(false);
   const swipe = useRef<SwipeableMethods>(null);
   const preview = useMemo(() => toPreview(note.content), [note.content]);
-  const title = note.title || 'Untitled note';
+  const title = note.title || t('common.untitledNote');
   const date = relativeDate(showCreated ? note.createdAt : note.updatedAt);
   const onColor = selected ? theme.colors.onSecondaryContainer : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
   const onColorVariant = selected ? theme.colors.onSecondaryContainer : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant;
@@ -104,15 +106,15 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
         onLongPress={() => onSelect(note.id)}
         accessibilityRole={selecting ? 'checkbox' : 'button'}
         accessibilityState={selecting ? { checked: selected } : undefined}
-        accessibilityLabel={isPinned ? `${title}, pinned` : title}
-        accessibilityHint={selecting ? undefined : 'Long press to select'}
+        accessibilityLabel={isPinned ? t('home.pinnedTitle', { title }) : title}
+        accessibilityHint={selecting ? undefined : t('home.longPressSelect')}
         style={styles.row}
       >
         <View>
           {isPinned && isFirst && (
             <View style={styles.pinnedLabel}>
               <Icon source="pin" size={14} color={onColorVariant} />
-              <Text variant="labelMedium" style={{ color: onColorVariant }}>Pinned</Text>
+              <Text variant="labelMedium" style={{ color: onColorVariant }}>{t('home.pinned')}</Text>
             </View>
           )}
           <Text variant="titleMedium" numberOfLines={2} style={{ color: onColor }}>{title}</Text>
@@ -130,7 +132,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
               </View>
             )}
             <Text variant="bodySmall" style={[styles.date, { color: onColorVariant }]}>
-              {showCreated ? 'Created' : 'Edited'} {date}
+              {showCreated ? t('home.created', { date }) : t('home.edited', { date })}
             </Text>
             {selecting ? (
               // A check, not just the color, shows what's selected. The row itself is the touch target.
@@ -144,7 +146,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                   iconColor={onColorVariant}
                   size={20}
                   onPress={() => onPinToggle(note.id)}
-                  accessibilityLabel={isPinned ? `Unpin ${title}` : `Pin ${title}`}
+                  accessibilityLabel={isPinned ? t('home.unpinNote', { title }) : t('home.pinNote', { title })}
                   style={styles.action}
                 />
                 <Menu
@@ -156,31 +158,31 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                       iconColor={onColorVariant}
                       size={20}
                       onPress={() => setMenuVisible(true)}
-                      accessibilityLabel={`More options for ${title}`}
+                      accessibilityLabel={t('home.moreOptionsFor', { title })}
                       style={styles.action}
                     />
                   }
                 >
                   <Menu.Item
                     leadingIcon="pencil-outline"
-                    title="Edit note"
+                    title={t('home.editNote')}
                     onPress={() => { setMenuVisible(false); onEdit(note.id); }}
                   />
                   <Menu.Item
                     leadingIcon={note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
-                    title={note.isArchived ? 'Unarchive' : 'Archive'}
+                    title={note.isArchived ? t('home.unarchive') : t('home.archive')}
                     onPress={() => { setMenuVisible(false); onArchiveToggle(note.id); }}
                   />
                   {onTransfer && (
                     <Menu.Item
                       leadingIcon="account-arrow-right-outline"
-                      title="Move to profile"
+                      title={t('home.moveToProfile')}
                       onPress={() => { setMenuVisible(false); onTransfer(note.id); }}
                     />
                   )}
                   <Menu.Item
                     leadingIcon="delete-outline"
-                    title="Move to bin"
+                    title={t('home.moveToBin')}
                     titleStyle={{ color: theme.colors.error }}
                     onPress={() => { setMenuVisible(false); onDelete(note.id); }}
                   />
@@ -203,10 +205,10 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
       overshootRight={false}
       onSwipeableOpen={onSwipeOpen}
       renderLeftActions={() =>
-        swipeAction(note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline', note.isArchived ? 'Unarchive' : 'Archive', theme.colors.secondaryContainer, theme.colors.onSecondaryContainer, 'flex-start')
+        swipeAction(note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline', note.isArchived ? t('home.unarchive') : t('home.archive'), theme.colors.secondaryContainer, theme.colors.onSecondaryContainer, 'flex-start')
       }
       renderRightActions={() =>
-        swipeAction('delete-outline', 'Move to bin', theme.colors.errorContainer, theme.colors.onErrorContainer, 'flex-end')
+        swipeAction('delete-outline', t('home.moveToBin'), theme.colors.errorContainer, theme.colors.onErrorContainer, 'flex-end')
       }
     >
       {body}

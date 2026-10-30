@@ -3,7 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { deleteAsync, StorageAccessFramework as SAF, writeAsStringAsync } from 'expo-file-system/legacy';
 import { getProfiles, hasProfilePin, readProfileNotes } from './profiles';
-import { notesToJson } from '@notespark/core';
+import { notesToJson, t } from '@notespark/core';
 
 export interface AutoBackupSettings {
   folderUri: string;
@@ -31,7 +31,7 @@ export const pickBackupFolder = async (): Promise<string | null> => {
 };
 
 // The folder's name for display, from a tree URI like content://…/tree/primary%3ADocuments%2FNoteSpark.
-export const folderName = (uri: string) => decodeURIComponent(uri).split(/[:/]/).filter(Boolean).pop() ?? 'Backup folder';
+export const folderName = (uri: string) => decodeURIComponent(uri).split(/[:/]/).filter(Boolean).pop() ?? t('settings.backupFolder');
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const stamp = (d: Date) =>

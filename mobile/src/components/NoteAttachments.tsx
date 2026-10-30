@@ -16,6 +16,8 @@ import {
 import { useTheme } from '../theme/ThemeContext';
 import { shape, space } from '../theme/theme';
 import { useAlert } from './DialogProvider';
+import { useI18n } from '../i18n/I18nContext';
+
 
 interface NoteAttachmentsProps {
   content: string;
@@ -34,6 +36,7 @@ const iconForFile = (name: string): string => {
 const NoteAttachments: React.FC<NoteAttachmentsProps> = ({ content, onRemove }) => {
   const { theme } = useTheme();
   const alert = useAlert();
+  const { t } = useI18n();
   const links = parseAttachmentLinks(content);
   const [sizes, setSizes] = useState<Record<string, number | null>>({});
   const [openingHash, setOpeningHash] = useState<string | null>(null);
@@ -78,7 +81,7 @@ const NoteAttachments: React.FC<NoteAttachmentsProps> = ({ content, onRemove }) 
     const meta = await getAttachmentMeta(link.hash).catch(() => null);
     if (!meta) {
       setSizes(prev => ({ ...prev, [link.hash]: null }));
-      alert('Downloading attachment', 'This file is still syncing from your other device. Try again in a moment.');
+      alert(t('note.attachmentSyncingTitle'), t('note.attachmentSyncingMessage'));
       return;
     }
     setSizes(prev => ({ ...prev, [link.hash]: meta.size }));
@@ -93,7 +96,7 @@ const NoteAttachments: React.FC<NoteAttachmentsProps> = ({ content, onRemove }) 
         await Sharing.shareAsync(temp.uri, { dialogTitle: link.name });
       }
     } catch {
-      alert("Couldn't open the file", 'No app on this device could open this file.');
+      alert(t('note.openFileFailedTitle'), t('note.openFileFailedMessage'));
     } finally {
       setOpeningHash(null);
     }
@@ -110,7 +113,7 @@ const NoteAttachments: React.FC<NoteAttachmentsProps> = ({ content, onRemove }) 
         const isMissing = size === null;
         const isOpening = openingHash === link.hash;
         const subtitle = isMissing
-          ? 'Downloading attachment'
+          ? t('note.attachmentSyncingTitle')
           : typeof size === 'number'
             ? formatAttachmentSize(size)
             : '';
@@ -129,7 +132,7 @@ const NoteAttachments: React.FC<NoteAttachmentsProps> = ({ content, onRemove }) 
             <TouchableRipple
               onPress={() => handleOpen(link)}
               accessibilityRole="button"
-              accessibilityLabel={`Open attachment ${link.name}${subtitle ? `, ${subtitle}` : ''}`}
+              accessibilityLabel={subtitle ? t('note.openAttachmentSized', { name: link.name, detail: subtitle }) : t('note.openAttachment', { name: link.name })}
               borderless
               style={styles.mainAction}
             >
@@ -137,7 +140,7 @@ const NoteAttachments: React.FC<NoteAttachmentsProps> = ({ content, onRemove }) 
                 {isOpening || isMissing ? (
                   <View style={styles.iconBox}>
                     {isOpening ? (
-                      <ActivityIndicator size={20} accessibilityLabel="Opening attachment" />
+                      <ActivityIndicator size={20} accessibilityLabel={t('note.openingAttachment')} />
                     ) : (
                       <Icon source="cloud-download-outline" size={22} color={theme.colors.onSurfaceVariant} />
                     )}
@@ -164,7 +167,7 @@ const NoteAttachments: React.FC<NoteAttachmentsProps> = ({ content, onRemove }) 
                 icon="close"
                 size={20}
                 onPress={() => onRemove(link.hash, occurrence)}
-                accessibilityLabel={`Remove ${link.name}`}
+                accessibilityLabel={t('note.removeAttachment', { name: link.name })}
                 style={styles.removeButton}
               />
             )}

@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import { Icon, Text } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
 import { shape, space } from '../theme/theme';
-import { dueLabel, Repeat, repeatLabel, today } from '@notespark/core';
+import { dueLabel, formatDue, Repeat, repeatLabel, t, today } from '@notespark/core';
 
 interface TaskRowProps {
   done: boolean;
@@ -42,7 +42,7 @@ const TaskRow: React.FC<TaskRowProps> = ({ done, due, every, onPress, children }
               maxFontSizeMultiplier={1.5}
               style={{ color: overdue ? theme.colors.onErrorContainer : theme.colors.onSurfaceVariant }}
             >
-              {[due && (done ? dueLabel(due).replace('Overdue, due', 'Due') : dueLabel(due)), every && repeatLabel(every)].filter(Boolean).join(', ')}
+              {[due && (done && due < today() ? t('core.due', { date: formatDue(due) }) : dueLabel(due)), every && repeatLabel(every)].filter(Boolean).join(', ')}
             </Text>
           </View>
         )}

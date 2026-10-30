@@ -6,7 +6,8 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { Button, PaperProvider, Portal, Text } from 'react-native-paper';
 import { ThemeProvider, useTheme } from './src/theme/ThemeContext';
-import { I18nProvider } from './src/i18n/I18nContext';
+import { t } from '@notespark/core';
+import { I18nProvider, useI18n } from './src/i18n/I18nContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { getShareTarget } from './src/storage/notes';
 import { eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, getDefaultProfile, syncProfileEncryption, getAllProfilesNoteContents, hasProfilePin, purgeProfileBin, switchProfile } from './src/storage/profiles';
@@ -39,17 +40,18 @@ const UnreadableProfileScreen = ({
   onErase: () => Promise<void>;
 }) => {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const alert = useAlert();
   const confirmErase = () => {
     alert(
-      'Erase this profile?',
-      `To use NoteSpark again, ${profileName} and all its notes will be erased from this device. Your other profiles stay as they are. This can't be undone.`,
+      t('app.eraseProfileTitle'),
+      t('app.eraseProfileBody', { name: profileName }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Erase profile',
+          text: t('app.eraseProfile'),
           style: 'destructive',
-          onPress: () => onErase().catch(() => alert("Couldn't erase the profile", 'Restart the app and try again.')),
+          onPress: () => onErase().catch(() => alert(t('app.eraseFailed'), t('app.eraseFailedBody'))),
         },
       ]
     );
@@ -58,16 +60,16 @@ const UnreadableProfileScreen = ({
     <SafeAreaView style={[styles.root, { backgroundColor: theme.colors.background }]}>
       <View style={styles.errorColumn}>
         <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
-          Couldn't open {profileName}
+          {t('app.cantOpenProfile', { name: profileName })}
         </Text>
         <Text variant="bodyLarge" style={[styles.errorBody, { color: theme.colors.onSurfaceVariant }]}>
-          This profile's database couldn't be read. If this phone was restored from a backup, a locked profile's encryption key isn't included in backups. You can try again, or erase this profile to use NoteSpark.
+          {t('app.cantOpenProfileBody')}
         </Text>
         <View style={styles.errorActions}>
           <Button mode="contained" onPress={() => onRetry().catch(() => {})}>
-            Try again
+            {t('common.tryAgain')}
           </Button>
-          <Button onPress={confirmErase}>Erase profile</Button>
+          <Button onPress={confirmErase}>{t('app.eraseProfile')}</Button>
         </View>
       </View>
     </SafeAreaView>
@@ -75,6 +77,10 @@ const UnreadableProfileScreen = ({
 };
 
 const AppContent = () => {
+  const { t: tr, language } = useI18n();
+  // A language change redraws every screen from scratch (lists keep rows they drew), so the person lands back in Settings.
+  const firstLanguage = useRef(language);
+  const languageChanged = language !== firstLanguage.current;
   const { theme, isDarkMode } = useTheme();
   const navigationRef = React.useRef<any>(null);
   const [dbInitialized, setDbInitialized] = useState(false);
@@ -163,10 +169,10 @@ const AppContent = () => {
   // Long-press the app icon: "New note". `initial` is the shortcut that launched the app, if any.
   const [quickAction, setQuickAction] = useState<QuickActions.Action | null>(QuickActions.initial ?? null);
   useEffect(() => {
-    QuickActions.setItems([{ id: 'new-note', title: 'New note', icon: 'new_note' }]).catch(() => {});
+    QuickActions.setItems([{ id: 'new-note', title: tr('app.quickActionNewNote'), icon: 'new_note' }]).catch(() => {});
     const sub = QuickActions.addListener(setQuickAction);
     return () => sub.remove();
-  }, []);
+  }, [language]);
   useEffect(() => {
     if (quickAction?.id !== 'new-note' || !navReady || !appNavigation.isReady()) return;
     appNavigation.dispatch(StackActions.push('Editor'));
@@ -250,7 +256,7 @@ const AppContent = () => {
     try {
       await AsyncStorage.setItem('onboarded', 'true');
       try {
-        await sendAppNotification('Welcome to NoteSpark', 'Tap New note to write your first note.');
+        await sendAppNotification(t('app.welcomeTitle'), t('app.welcomeBody'));
       } catch (notifErr) {
         console.error('Notification error:', notifErr);
       }
@@ -328,7 +334,7 @@ const AppContent = () => {
           ) : showOnboarding ? (
             <OnboardingScreen onFinish={handleFinishOnboarding} />
           ) : (
-            <AppNavigator start={startScreen} onReady={() => setNavReady(true)} />
+            <AppNavigator key={language} start={startScreen} reopenSettings={languageChanged} onReady={() => setNavReady(true)} />
           )}
           {relocked && (
             <Portal>

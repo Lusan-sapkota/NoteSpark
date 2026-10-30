@@ -1,5 +1,6 @@
 // Pure reminders for tasks with a due date: one per profile and day, at the chosen hour.
 import { extractTasks } from './tasks';
+import { t } from './i18n';
 import { Note } from './types';
 
 // The phone keeps this well under Android's limit on scheduled alarms.
@@ -21,7 +22,7 @@ export interface ProfileTasks {
 }
 
 const list = (texts: string[]) =>
-  texts.length <= 3 ? texts.join(', ') : `${texts.slice(0, 3).join(', ')} and ${texts.length - 3} more`;
+  texts.length <= 3 ? texts.join(', ') : t('core.reminderMore', { list: texts.slice(0, 3).join(', '), count: texts.length - 3 });
 
 export const buildReminders = (profiles: ProfileTasks[], hour = 9, now = new Date()): Reminder[] => {
   const latest = now.getTime() + DAYS_AHEAD * 86400000;
@@ -35,12 +36,11 @@ export const buildReminders = (profiles: ProfileTasks[], hour = 9, now = new Dat
     for (const [due, texts] of byDay) {
       const date = new Date(`${due}T${String(hour).padStart(2, '0')}:00`);
       if (isNaN(date.getTime()) || date.getTime() <= now.getTime() || date.getTime() > latest) continue;
-      const where = profiles.length > 1 ? ` in ${profile.name}` : '';
       reminders.push({
         id: `${REMINDER_ID_PREFIX}${profile.id}-${due}`,
         date,
-        title: `${texts.length === 1 ? 'A task is' : `${texts.length} tasks are`} due today${where}`,
-        body: profile.locked ? 'Open NoteSpark to see it.' : list(texts),
+        title: profiles.length > 1 ? t('core.reminderTitleIn', { count: texts.length, profile: profile.name }) : t('core.reminderTitle', { count: texts.length }),
+        body: profile.locked ? t('core.reminderLocked') : list(texts),
       });
     }
   }

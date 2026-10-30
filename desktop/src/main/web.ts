@@ -1,7 +1,7 @@
 import { createServer, IncomingMessage, Server, ServerResponse } from 'node:http';
 import { randomBytes, timingSafeEqual } from 'node:crypto';
 import { networkInterfaces } from 'node:os';
-import { isPrivateAddress } from '@notespark/core';
+import { isPrivateAddress, t } from '@notespark/core';
 import { serveAsset } from './assets';
 
 // The web view: the desktop UI bundle plus the same backend API, for a browser on your own network.
@@ -65,19 +65,19 @@ const handle = (invoke: Invoke) => async (req: IncomingMessage, res: ServerRespo
   const ip = req.socket.remoteAddress ?? '';
   if (!isPrivateAddress(ip)) return send(res, 403, 'Forbidden');
   if (!hosts.includes((req.headers.host ?? '').toLowerCase())) return send(res, 403, 'Forbidden'); // DNS rebinding
-  if (tooManyFailures(ip)) return send(res, 429, 'Too many attempts, wait a minute');
+  if (tooManyFailures(ip)) return send(res, 429, t('desktop.tooManyAttempts'));
   const url = new URL(req.url ?? '/', `http://${req.headers.host}`);
 
   // Opening the link with the token starts a session, then the token leaves the address bar.
   if (req.method === 'GET' && url.pathname === '/' && url.searchParams.has('t')) {
-    if (!equal(url.searchParams.get('t') ?? '', token)) { recordFailure(ip); return send(res, 401, 'Wrong or expired link'); }
+    if (!equal(url.searchParams.get('t') ?? '', token)) { recordFailure(ip); return send(res, 401, t('desktop.wrongLink')); }
     const session = random();
     sessions.add(session);
     return send(res, 303, '', { Location: '/', 'Set-Cookie': `ns_session=${session}; HttpOnly; SameSite=Strict; Path=/` });
   }
 
   const session = cookieOf(req);
-  if (!session || !sessions.has(session)) { recordFailure(ip); return send(res, 401, 'Open the link from NoteSpark on your computer'); }
+  if (!session || !sessions.has(session)) { recordFailure(ip); return send(res, 401, t('desktop.openLinkFromApp')); }
 
   if (req.method === 'POST' && url.pathname === '/api/invoke') {
     const origin = req.headers.origin;

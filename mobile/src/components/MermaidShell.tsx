@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Text } from 'react-native-paper';
+import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { shape, space } from '../theme/theme';
 
@@ -8,23 +9,24 @@ import { shape, space } from '../theme/theme';
 // its source, and on a mistake the source with a one-line reason. The note view never crashes on a bad diagram.
 const MermaidShell: React.FC<{ code: string; mistake: string | null; children?: React.ReactNode }> = ({ code, mistake, children }) => {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const [source, setSource] = useState(false);
   const showSource = source || mistake !== null;
   return (
     <View style={styles.block}>
       {mistake !== null && (
-        <Text variant="bodyMedium" style={{ color: theme.colors.error }}>This diagram has a mistake: {mistake}</Text>
+        <Text variant="bodyMedium" style={{ color: theme.colors.error }}>{t('note.diagramMistake', { reason: mistake })}</Text>
       )}
       {showSource ? (
         <Text selectable style={[theme.fonts.noteCode, styles.source, { color: theme.colors.onSurface, backgroundColor: theme.colors.surfaceContainerHigh }]}>
           {code}
         </Text>
       ) : (
-        <View accessible accessibilityLabel="Diagram">{children}</View>
+        <View accessible accessibilityLabel={t('note.diagram')}>{children}</View>
       )}
       {mistake === null && (
         <Button compact icon={source ? 'chart-timeline-variant' : 'code-tags'} onPress={() => setSource(s => !s)} style={styles.toggle}>
-          {source ? 'Show diagram' : 'Show source'}
+          {source ? t('note.showDiagram') : t('note.showSource')}
         </Button>
       )}
     </View>

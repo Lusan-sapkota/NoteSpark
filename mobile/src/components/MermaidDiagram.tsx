@@ -6,6 +6,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { ActivityIndicator } from 'react-native-paper';
 import { mermaidMistake } from '@notespark/core';
 import MermaidShell from './MermaidShell';
+import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { space } from '../theme/theme';
 
@@ -51,12 +52,13 @@ const prepareViewer = () =>
 // A ```mermaid block drawn in a small local web view. Wide diagrams scroll sideways.
 const MermaidDiagram: React.FC<{ code: string }> = ({ code }) => {
   const { theme, isDarkMode } = useTheme();
+  const { t } = useI18n();
   const [page, setPage] = useState<string | null>(null);
   const [height, setHeight] = useState(120);
   const [mistake, setMistake] = useState<string | null>(null);
   useEffect(() => {
     let live = true;
-    prepareViewer().then(p => live && setPage(p), e => live && setMistake(`the diagram viewer didn't start (${mermaidMistake(e)})`));
+    prepareViewer().then(p => live && setPage(p), e => live && setMistake(t('note.diagramViewerFailed', { reason: mermaidMistake(e) })));
     return () => { live = false; };
   }, []);
   useEffect(() => setMistake(null), [code]);

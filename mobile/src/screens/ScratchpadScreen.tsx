@@ -7,11 +7,12 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Appbar, Text } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { getScratchpad, saveNote, saveScratchpad } from '../storage/notes';
-import { continueList, titleFromText } from '@notespark/core';
+import { continueList, getLanguage, titleFromText } from '@notespark/core';
 import Header, { useHeaderElevation } from '../components/Header';
 import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 import { readingWidth, space } from '../theme/theme';
 
 type ScratchpadNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Scratchpad'>;
@@ -21,6 +22,7 @@ const ScratchpadScreen: React.FC = () => {
   const navigation = useNavigation<ScratchpadNavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'Scratchpad'>>();
   const { theme } = useTheme();
+  const { t } = useI18n();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [text, setText] = useState('');
@@ -41,9 +43,9 @@ const ScratchpadScreen: React.FC = () => {
     saved.current = content;
     saveScratchpad(content).catch(() => {
       saved.current = before;
-      alert("Couldn't save the scratchpad", 'Your text is still here. Keep typing to try again.');
+      alert(t('scratchpad.saveFailedTitle'), t('scratchpad.saveFailedMessage'));
     });
-  }, [alert]);
+  }, [alert, t]);
 
   // Saves half a second after typing stops, when the app goes to the background, and on leaving.
   useEffect(() => {
@@ -74,9 +76,9 @@ const ScratchpadScreen: React.FC = () => {
           }
           setLoaded(true);
         })
-        .catch(() => alert("Couldn't open the scratchpad", 'Go back and try again.'));
+        .catch(() => alert(t('scratchpad.openFailedTitle'), t('scratchpad.openFailedMessage')));
       return flush;
-    }, [append, flush])
+    }, [append, flush, t])
   );
 
   // Opens the keyboard once the pad has loaded (the field is read-only before, so autoFocus would do nothing).
@@ -104,20 +106,20 @@ const ScratchpadScreen: React.FC = () => {
     if (!piece.trim()) return;
     try {
       const now = new Date().toISOString();
-      const title = titleFromText(piece) || new Date().toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+      const title = titleFromText(piece) || new Date().toLocaleString(getLanguage(), { dateStyle: 'medium', timeStyle: 'short' });
       const noteId = await saveNote({ title, content: piece.trim(), isMarkdown: false, createdAt: now, updatedAt: now });
       const rest = hasSelection ? text.slice(0, selection.start) + text.slice(selection.end) : '';
       setText(rest);
       setPendingSelection({ start: hasSelection ? selection.start : 0, end: hasSelection ? selection.start : 0 });
-      setSnackbar({ message: 'Filed as a note', noteId });
+      setSnackbar({ message: t('scratchpad.filed'), noteId });
     } catch {
-      alert("Couldn't file the note", 'Your text is still in the scratchpad. Try again.');
+      alert(t('scratchpad.fileFailedTitle'), t('scratchpad.fileFailedMessage'));
     }
   };
 
   const clear = () => {
     if (!text) return;
-    setSnackbar({ message: 'Scratchpad cleared', cleared: text });
+    setSnackbar({ message: t('scratchpad.cleared'), cleared: text });
     setText('');
   };
 
@@ -125,7 +127,7 @@ const ScratchpadScreen: React.FC = () => {
     <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header
         elevated={elevated}
-        title="Scratchpad"
+        title={t('common.scratchpad')}
         showBackButton
         onBackPress={() => navigation.goBack()}
         rightActions={
@@ -134,9 +136,9 @@ const ScratchpadScreen: React.FC = () => {
               icon="note-plus-outline"
               disabled={!(hasSelection ? text.slice(selection.start, selection.end) : text).trim()}
               onPress={fileAsNote}
-              accessibilityLabel={hasSelection ? 'File selected text as a note' : 'File as a note'}
+              accessibilityLabel={hasSelection ? t('scratchpad.fileSelection') : t('scratchpad.fileAll')}
             />
-            <Appbar.Action icon="eraser" disabled={!text} onPress={clear} accessibilityLabel="Clear scratchpad" />
+            <Appbar.Action icon="eraser" disabled={!text} onPress={clear} accessibilityLabel={t('scratchpad.clear')} />
           </>
         }
       />
@@ -150,7 +152,7 @@ const ScratchpadScreen: React.FC = () => {
       >
         <View style={styles.column}>
           <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
-            Saved as you type. Select text to file just that part as a note.
+            {t('scratchpad.helper')}
           </Text>
           <TextInput
             ref={inputRef}
@@ -163,9 +165,9 @@ const ScratchpadScreen: React.FC = () => {
             textAlignVertical="top"
             scrollEnabled={false}
             selectionColor={theme.colors.primary}
-            placeholder="Jot it down. File it as a note later, or clear it."
+            placeholder={t('scratchpad.placeholder')}
             placeholderTextColor={theme.colors.onSurfaceVariant}
-            accessibilityLabel="Scratchpad text"
+            accessibilityLabel={t('scratchpad.textLabel')}
           />
         </View>
       </KeyboardAwareScrollView>
@@ -175,9 +177,9 @@ const ScratchpadScreen: React.FC = () => {
         duration={4000}
         action={
           snackbar?.noteId !== undefined
-            ? { label: 'Open', onPress: () => navigation.navigate('NoteView', { noteId: String(snackbar.noteId) }) }
+            ? { label: t('common.open'), onPress: () => navigation.navigate('NoteView', { noteId: String(snackbar.noteId) }) }
             : snackbar?.cleared !== undefined
-              ? { label: 'Undo', onPress: () => setText(snackbar.cleared!) }
+              ? { label: t('common.undo'), onPress: () => setText(snackbar.cleared!) }
               : undefined
         }
       >

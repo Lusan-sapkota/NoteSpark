@@ -3,12 +3,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Text, TextInput } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
 import { useAlert } from '../components/DialogProvider';
+import { useI18n } from '../i18n/I18nContext';
 import { canUseBiometrics, getPinLockout, unlockWithBiometrics, usesBiometrics, wrongPinMessage } from '../storage/profiles';
 import { readingWidth, space } from '../theme/theme';
 import { StyleSheet, View } from 'react-native';
 
 const ProfileUnlockScreen = ({ profileId, profileName, onUnlock, onForgotPin }: { profileId: string; profileName: string; onUnlock: (pin: string) => Promise<boolean>; onForgotPin: () => Promise<void> }) => {
   const { theme } = useTheme();
+  const { t } = useI18n();
   const alert = useAlert();
   const [pin, setPin] = useState('');
   // Shown under the field after a refused PIN: wrong, or locked after too many tries.
@@ -30,21 +32,21 @@ const ProfileUnlockScreen = ({ profileId, profileName, onUnlock, onForgotPin }: 
 
   const unlock = async () => {
     const success = await onUnlock(pin);
-    setError(success ? '' : (await getPinLockout(profileId)) ? await wrongPinMessage(profileId) : 'Incorrect PIN. Try again.');
+    setError(success ? '' : (await getPinLockout(profileId)) ? await wrongPinMessage(profileId) : t('profiles.incorrectPinTryAgain'));
     setPin('');
   };
 
   // The PIN can't be recovered, so the only way back in is erasing this profile.
   const forgotPin = () => {
     alert(
-      'Erase this profile?',
-      `A forgotten PIN can't be recovered. To use NoteSpark again, ${profileName} and all its notes will be erased from this device. Your other profiles stay as they are. This can't be undone.`,
+      t('profiles.eraseTitle'),
+      t('profiles.eraseBodyUnlock', { name: profileName }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Erase profile',
+          text: t('profiles.eraseAction'),
           style: 'destructive',
-          onPress: () => onForgotPin().catch(() => alert("Couldn't erase the profile", 'Restart the app and try again.')),
+          onPress: () => onForgotPin().catch(() => alert(t('profiles.eraseFailed'), t('profiles.eraseFailedRestart'))),
         },
       ]
     );
@@ -53,13 +55,13 @@ const ProfileUnlockScreen = ({ profileId, profileName, onUnlock, onForgotPin }: 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]}>
       <View style={styles.column}>
-        <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>Unlock {profileName}</Text>
+        <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>{t('profiles.unlockTitle', { name: profileName })}</Text>
         <Text variant="bodyLarge" style={[styles.body, { color: theme.colors.onSurfaceVariant }]}>
-          Enter the four-digit PIN for this profile.
+          {t('profiles.unlockBody')}
         </Text>
         <TextInput
           mode="outlined"
-          label="Profile PIN"
+          label={t('profiles.profilePin')}
           value={pin}
           onChangeText={value => { setPin(value.replace(/\D/g, '').slice(0, 4)); setError(''); }}
           keyboardType="number-pad"
@@ -70,9 +72,9 @@ const ProfileUnlockScreen = ({ profileId, profileName, onUnlock, onForgotPin }: 
         />
         {!!error && <Text variant="bodySmall" style={{ color: theme.colors.error }} accessibilityLiveRegion="polite">{error}</Text>}
         <View style={styles.actions}>
-          <Button mode="contained" onPress={unlock} disabled={pin.length !== 4}>Unlock</Button>
-          {fingerprint && <Button icon="fingerprint" onPress={() => unlockWithFingerprint().catch(() => {})}>Use fingerprint</Button>}
-          <Button onPress={forgotPin}>Forgot PIN?</Button>
+          <Button mode="contained" onPress={unlock} disabled={pin.length !== 4}>{t('profiles.unlock')}</Button>
+          {fingerprint && <Button icon="fingerprint" onPress={() => unlockWithFingerprint().catch(() => {})}>{t('profiles.useFingerprint')}</Button>}
+          <Button onPress={forgotPin}>{t('profiles.forgotPin')}</Button>
         </View>
       </View>
     </SafeAreaView>

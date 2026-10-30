@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
 import { Button, Dialog, Portal, Text } from 'react-native-paper';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 
 type DialogButton = { text: string; style?: 'default' | 'cancel' | 'destructive'; onPress?: () => void };
 type DialogOptions = { cancelable?: boolean };
@@ -14,14 +15,15 @@ export const useAlert = () => useContext(DialogContext);
 
 export const DialogProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { theme } = useTheme();
+  const { t } = useI18n();
   // A queue, because a button's onPress often opens the next dialog (confirm, then result).
   const [queue, setQueue] = useState<Queued[]>([]);
   const current = queue[0];
 
   const alert = useCallback<AlertFn>((title, message, buttons, options) => {
-    const list = buttons?.length ? buttons : [{ text: 'OK' }];
+    const list = buttons?.length ? buttons : [{ text: t('common.ok') }];
     setQueue(q => [...q, { title, message, buttons: list, cancelable: options?.cancelable !== false }]);
-  }, []);
+  }, [t]);
 
   const close = (button?: DialogButton) => {
     setQueue(q => q.slice(1));

@@ -1,9 +1,10 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { t } from '@notespark/core';
 
 // The screen the app opens on; Notes (Home) unless changed in Settings.
 export type StartScreen = 'Home' | 'Tasks' | 'Scratchpad';
 export const START_SCREENS: StartScreen[] = ['Home', 'Tasks', 'Scratchpad'];
-export const startScreenLabel = (screen: StartScreen) => (screen === 'Home' ? 'Notes' : screen);
+export const startScreenLabel = (screen: StartScreen) => (screen === 'Home' ? t('common.notes') : screen === 'Tasks' ? t('common.tasks') : t('common.scratchpad'));
 
 const KEY = 'startScreen';
 export const getStartScreen = async (): Promise<StartScreen> => {

@@ -5,7 +5,7 @@ import { darkTheme, lightTheme, shape, space } from '../theme/theme';
 import { getActiveProfile, hasProfilePin, readProfileNotes } from '../storage/profiles';
 import { toPreview } from '../components/NoteItem';
 import { Note } from '../types';
-import { dueLabel, extractTasks, Task, today } from '@notespark/core';
+import { dueLabel, extractTasks, t, Task, today } from '@notespark/core';
 
 export const WIDGET_NAME = 'PinnedNotes';
 const MAX_NOTES = 20;
@@ -27,14 +27,14 @@ const PinnedNotes = ({ c, state }: { c: Colors; state: State }) => (
     }}
   >
     <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center', marginBottom: space.sm }}>
-      <TextWidget text="Pinned notes" style={{ fontSize: 16, fontFamily: 'Figtree-SemiBold', color: hex(c.onSurface) }} />
+      <TextWidget text={t('tasks.widgetPinned')} style={{ fontSize: 16, fontFamily: 'Figtree-SemiBold', color: hex(c.onSurface) }} />
       <FlexWidget style={{ flex: 1 }} />
       <FlexWidget
         clickAction="OPEN_URI"
         clickActionData={{ uri: 'notespark://new' }}
         style={{ backgroundColor: hex(c.primaryContainer), borderRadius: shape.control, paddingHorizontal: space.lg, paddingVertical: space.md }}
       >
-        <TextWidget text="New note" style={{ fontSize: 14, fontFamily: 'Figtree-Medium', color: hex(c.onPrimaryContainer) }} />
+        <TextWidget text={t('tasks.widgetNewNote')} style={{ fontSize: 14, fontFamily: 'Figtree-Medium', color: hex(c.onPrimaryContainer) }} />
       </FlexWidget>
     </FlexWidget>
     {state.kind === 'notes' ? (
@@ -53,7 +53,7 @@ const PinnedNotes = ({ c, state }: { c: Colors; state: State }) => (
               marginBottom: space.xs,
             }}
           >
-            <TextWidget text={note.title || 'Untitled note'} maxLines={1} truncate="END" style={{ fontSize: 16, fontFamily: 'Figtree-SemiBold', color: hex(c.onSurface) }} />
+            <TextWidget text={note.title || t('common.untitledNote')} maxLines={1} truncate="END" style={{ fontSize: 16, fontFamily: 'Figtree-SemiBold', color: hex(c.onSurface) }} />
             {!!toPreview(note.content) && (
               <TextWidget text={toPreview(note.content)} maxLines={1} truncate="END" style={{ fontSize: 14, fontFamily: 'Figtree-Regular', color: hex(c.onSurfaceVariant) }} />
             )}
@@ -62,7 +62,7 @@ const PinnedNotes = ({ c, state }: { c: Colors; state: State }) => (
       </ListWidget>
     ) : (
       <TextWidget
-        text={state.kind === 'locked' ? 'This profile is locked. Open NoteSpark to see your notes.' : 'Pin a note in NoteSpark to see it here.'}
+        text={state.kind === 'locked' ? t('tasks.widgetPinnedLocked') : t('tasks.widgetPinnedEmpty')}
         style={{ fontSize: 14, fontFamily: 'Figtree-Regular', color: hex(c.onSurfaceVariant) }}
       />
     )}
@@ -81,14 +81,14 @@ const DueTasks = ({ c, state }: { c: Colors; state: DueState }) => (
     }}
   >
     <FlexWidget style={{ width: 'match_parent', flexDirection: 'row', alignItems: 'center', marginBottom: space.sm }}>
-      <TextWidget text="Tasks due" style={{ fontSize: 16, fontFamily: 'Figtree-SemiBold', color: hex(c.onSurface) }} />
+      <TextWidget text={t('tasks.widgetDue')} style={{ fontSize: 16, fontFamily: 'Figtree-SemiBold', color: hex(c.onSurface) }} />
       <FlexWidget style={{ flex: 1 }} />
       <FlexWidget
         clickAction="OPEN_URI"
         clickActionData={{ uri: 'notespark://tasks' }}
         style={{ backgroundColor: hex(c.primaryContainer), borderRadius: shape.control, paddingHorizontal: space.lg, paddingVertical: space.md }}
       >
-        <TextWidget text="All tasks" style={{ fontSize: 14, fontFamily: 'Figtree-Medium', color: hex(c.onPrimaryContainer) }} />
+        <TextWidget text={t('tasks.widgetAllTasks')} style={{ fontSize: 14, fontFamily: 'Figtree-Medium', color: hex(c.onPrimaryContainer) }} />
       </FlexWidget>
     </FlexWidget>
     {state.kind === 'tasks' ? (
@@ -118,7 +118,7 @@ const DueTasks = ({ c, state }: { c: Colors; state: DueState }) => (
       </ListWidget>
     ) : (
       <TextWidget
-        text={state.kind === 'locked' ? 'This profile is locked. Open NoteSpark to see your tasks.' : 'Nothing is due today.'}
+        text={state.kind === 'locked' ? t('tasks.widgetDueLocked') : t('tasks.widgetDueEmpty')}
         style={{ fontSize: 14, fontFamily: 'Figtree-Regular', color: hex(c.onSurfaceVariant) }}
       />
     )}

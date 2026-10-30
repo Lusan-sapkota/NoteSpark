@@ -13,20 +13,23 @@ import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
+import { t as translate } from '@notespark/core';
 import { readingWidth, space } from '../theme/theme';
 
 type BinScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Bin'>;
 
 const timeLeft = (deletedAt: string) => {
   const days = BIN_DAYS - Math.floor((Date.now() - Date.parse(deletedAt)) / 86400000);
-  if (days <= 0) return 'Deleted for good the next time the app opens';
-  if (days === 1) return 'Deleted for good tomorrow';
-  return `Deleted for good in ${days} days`;
+  if (days <= 0) return translate('bin.deletedNextOpen');
+  if (days === 1) return translate('bin.deletedTomorrow');
+  return translate('bin.deletedInDays', { count: days });
 };
 
 const BinScreen: React.FC = () => {
   const navigation = useNavigation<BinScreenNavigationProp>();
   const { theme } = useTheme();
+  const { t } = useI18n();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -37,9 +40,9 @@ const BinScreen: React.FC = () => {
     try {
       setNotes(await getBinNotes());
     } catch {
-      alert("Couldn't load the bin", 'Pull down on the list to try again.');
+      alert(t('bin.loadFailedTitle'), t('bin.loadFailedMessage'));
     }
-  }, [alert]);
+  }, [alert, t]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
 
@@ -52,26 +55,26 @@ const BinScreen: React.FC = () => {
   const handleRestore = async (note: Note) => {
     try {
       await restoreNote(note.id);
-      setSnackbar('Note restored');
+      setSnackbar(t('bin.restored'));
       load();
     } catch {
-      alert("Couldn't restore the note", 'Try again. If it keeps failing, restart the app.');
+      alert(t('bin.restoreFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
   const handleDeleteForever = (note: Note) => {
-    alert('Delete forever?', `"${note.title || 'Untitled note'}" will be erased from this device. This can't be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
+    alert(t('bin.deleteForeverTitle'), t('bin.deleteForeverMessage', { title: note.title || t('common.untitledNote') }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Delete forever',
+        text: t('bin.deleteForever'),
         style: 'destructive',
         onPress: async () => {
           try {
             await deleteNote(note.id);
-            setSnackbar('Note deleted forever');
+            setSnackbar(t('bin.deletedForever'));
             load();
           } catch {
-            alert("Couldn't delete the note", 'Try again. If it keeps failing, restart the app.');
+            alert(t('bin.deleteFailedTitle'), t('common.tryAgainRestart'));
           }
         },
       },
@@ -79,18 +82,18 @@ const BinScreen: React.FC = () => {
   };
 
   const handleEmpty = () => {
-    alert('Empty bin?', `All ${notes.length} notes in the bin will be erased from this device. This can't be undone.`, [
-      { text: 'Cancel', style: 'cancel' },
+    alert(t('bin.emptyTitle'), t('bin.emptyMessage', { count: notes.length }), [
+      { text: t('common.cancel'), style: 'cancel' },
       {
-        text: 'Empty bin',
+        text: t('bin.emptyAction'),
         style: 'destructive',
         onPress: async () => {
           try {
             await emptyBin();
-            setSnackbar('Bin emptied');
+            setSnackbar(t('bin.emptied'));
             load();
           } catch {
-            alert("Couldn't empty the bin", 'Try again. If it keeps failing, restart the app.');
+            alert(t('bin.emptyFailedTitle'), t('common.tryAgainRestart'));
           }
         },
       },
@@ -101,11 +104,11 @@ const BinScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header
         elevated={elevated}
-        title="Bin"
+        title={t('bin.title')}
         showBackButton
         onBackPress={() => navigation.goBack()}
         rightActions={
-          notes.length > 0 ? <Appbar.Action icon="delete-sweep-outline" accessibilityLabel="Empty bin" onPress={handleEmpty} /> : undefined
+          notes.length > 0 ? <Appbar.Action icon="delete-sweep-outline" accessibilityLabel={t('bin.emptyAction')} onPress={handleEmpty} /> : undefined
         }
       />
       <Animated.FlatList
@@ -127,22 +130,22 @@ const BinScreen: React.FC = () => {
         ListHeaderComponent={
           notes.length > 0 ? (
             <Text variant="bodyMedium" style={[styles.intro, { color: theme.colors.onSurfaceVariant }]}>
-              Notes stay here for {BIN_DAYS} days after you delete them, then they're erased.
+              {t('bin.intro', { days: BIN_DAYS })}
             </Text>
           ) : undefined
         }
         renderItem={({ item, index }) => (
           <GroupedRow
-            title={item.title || 'Untitled note'}
+            title={item.title || t('common.untitledNote')}
             description={timeLeft(item.deletedAt!)}
             icon="note-text-outline"
             right={
               <View style={styles.actions}>
-                <IconButton icon="restore" accessibilityLabel={`Restore ${item.title}`} onPress={() => handleRestore(item)} />
+                <IconButton icon="restore" accessibilityLabel={t('bin.restoreNote', { title: item.title })} onPress={() => handleRestore(item)} />
                 <IconButton
                   icon="delete-forever-outline"
                   iconColor={theme.colors.error}
-                  accessibilityLabel={`Delete ${item.title} forever`}
+                  accessibilityLabel={t('bin.deleteNoteForever', { title: item.title })}
                   onPress={() => handleDeleteForever(item)}
                 />
               </View>
@@ -153,9 +156,9 @@ const BinScreen: React.FC = () => {
         )}
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>Bin is empty</Text>
+            <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('bin.emptyState')}</Text>
             <Text variant="bodyMedium" style={[styles.emptyBody, { color: theme.colors.onSurfaceVariant }]}>
-              Notes you delete stay here for {BIN_DAYS} days, so you can restore them.
+              {t('bin.emptyStateBody', { days: BIN_DAYS })}
             </Text>
           </View>
         }

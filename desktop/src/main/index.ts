@@ -1,12 +1,13 @@
 import { join } from 'node:path';
 import { app, BrowserWindow, clipboard, Menu, nativeImage, nativeTheme, protocol, screen, session, shell, Tray, ipcMain } from 'electron';
-import { firefly } from '@notespark/core';
+import { firefly, t } from '@notespark/core';
 import { serveAsset } from './assets';
 import { setWindowFocused } from './activity';
 import { invoke } from './backend';
 import { saveClipboard, startReminders } from './notify';
 import { buildAppMenu, MenuAction } from './menu';
 import AsyncStorage from '@notespark/node-shims/async-storage';
+import { syncLanguage } from './language';
 import { startWebView, stopWebView, webViewStatus } from './web';
 
 // The app stays offline and the renderer loads only local content or the development server.
@@ -115,7 +116,8 @@ else {
     contents.on('will-attach-webview', e => e.preventDefault());
   });
 
-  app.whenReady().then(() => {
+  app.whenReady().then(async () => {
+    await syncLanguage(); // before the menu and tray are built
     protocol.handle('app', async request => {
       const url = new URL(request.url);
       const asset = url.host === 'notespark' ? await serveAsset(url.pathname) : null;
@@ -136,24 +138,25 @@ else {
     tray = new Tray(icon.resize({ width: 22, height: 22 }));
     tray.setToolTip('NoteSpark');
     const refreshTray = async () => {
+      await syncLanguage();
       refreshMenuFn?.();
       const web = webViewStatus();
       tray?.setContextMenu(Menu.buildFromTemplate([
-        { label: 'Open NoteSpark', click: showWindow },
-        { label: 'New note', click: () => deliver({ type: 'go', routes: ['Home', 'Editor'] }) },
-        { label: 'Save clipboard text', click: () => void saveClipboard((fn, ...args) => invoke('storage', { module: 'notes', fn, args }, 'ipc')) },
+        { label: t('desktop.openNoteSpark'), click: showWindow },
+        { label: t('desktop.newNote'), click: () => deliver({ type: 'go', routes: ['Home', 'Editor'] }) },
+        { label: t('desktop.saveClipboard'), click: () => void saveClipboard((fn, ...args) => invoke('storage', { module: 'notes', fn, args }, 'ipc')) },
         { type: 'separator' },
         web.on
           ? {
-              label: 'Web view (on)',
+              label: t('desktop.webViewOnMenu'),
               submenu: [
-                { label: 'Copy link', click: () => clipboard.writeText(webViewStatus().links.at(-1) ?? '') },
-                { label: 'Stop', click: () => stopWebView().then(refreshTray).then(quitIfIdle) },
+                { label: t('desktop.copyLink'), click: () => clipboard.writeText(webViewStatus().links.at(-1) ?? '') },
+                { label: t('desktop.stop'), click: () => stopWebView().then(refreshTray).then(quitIfIdle) },
               ],
             }
-          : { label: 'Start web view', click: () => startWebView(invoke).then(refreshTray, () => {}) },
+          : { label: t('desktop.startWebView'), click: () => startWebView(invoke).then(refreshTray, () => {}) },
         { type: 'separator' },
-        { label: 'Quit', click: () => app.quit() },
+        { label: t('desktop.quit'), click: () => app.quit() },
       ]));
     };
     void refreshTray();

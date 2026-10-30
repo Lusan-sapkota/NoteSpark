@@ -13,6 +13,7 @@ import { getNoteById, moveNoteToBin, restoreNote, updateNote } from '../storage/
 import { getActiveProfile } from '../storage/profiles';
 import { isMeaningSearchAvailable, NotePair, notePairs } from '../storage/semanticSearch';
 import { useTheme } from '../theme/ThemeContext';
+import { useI18n } from '../i18n/I18nContext';
 import { controlTheme, readingWidth, shape, space } from '../theme/theme';
 
 // Two notes this close, of about the same length, are the same note written twice.
@@ -25,6 +26,7 @@ const hiddenKey = (profileId: string) => `tidyHidden:${profileId}`;
 const TidyScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Tidy'>>();
   const { theme } = useTheme();
+  const { t } = useI18n();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [pairs, setPairs] = useState<NotePair[] | null>(null);
@@ -56,7 +58,7 @@ const TidyScreen: React.FC = () => {
     AsyncStorage.setItem(hiddenKey(profileId), JSON.stringify(next)).catch(() => {});
   };
   const drop = (p: NotePair) => setPairs(list => list && list.filter(x => pairKey(x) !== pairKey(p)));
-  const fail = (what: string) => alert(`Couldn't ${what}`, 'Try again. If it keeps failing, restart the app.');
+  const fail = (title: string) => alert(title, t('common.tryAgainRestart'));
 
   // The link goes in the note edited more recently, as a line at its end.
   const addLink = async (p: NotePair) => {
@@ -67,11 +69,11 @@ const TidyScreen: React.FC = () => {
       await updateNote({ ...from, content: `${from.content.trimEnd()}\n\nSee also [[${to.title.trim()}]]\n` });
       drop(p);
       setDone({
-        message: `Linked ${from.title || 'the note'} to ${to.title}`,
+        message: t('ask.tidyLinked', { from: from.title || t('ask.tidyTheNote'), to: to.title }),
         undo: async () => { await updateNote({ ...from, content: from.content }); await load(); },
       });
     } catch {
-      fail('add the link');
+      fail(t('ask.tidyAddLinkFailed'));
     }
   };
 
@@ -86,18 +88,18 @@ const TidyScreen: React.FC = () => {
       await moveNoteToBin(other.id);
       drop(p);
       setDone({
-        message: 'Notes merged',
+        message: t('ask.tidyMerged'),
         undo: async () => { await updateNote({ ...keep, content: keep.content }); await restoreNote(other.id); await load(); },
       });
     } catch {
-      fail('merge the notes');
+      fail(t('ask.tidyMergeFailed'));
     }
   };
 
   const undo = async () => {
     const last = done;
     setDone(null);
-    try { await last?.undo(); } catch { alert("Couldn't undo", 'Open the Bin in Settings to restore a merged note.'); }
+    try { await last?.undo(); } catch { alert(t('ask.tidyUndoFailedTitle'), t('ask.tidyUndoFailedMessage')); }
   };
 
   const visible = (pairs ?? []).filter(p => !hidden.includes(pairKey(p)) && p.a.title.trim() && p.b.title.trim());
@@ -109,7 +111,7 @@ const TidyScreen: React.FC = () => {
     <TouchableRipple
       onPress={() => navigation.navigate('NoteView', { noteId: String(note.id) })}
       accessibilityRole="button"
-      accessibilityLabel={`Open ${note.title}`}
+      accessibilityLabel={t('ask.tidyOpenNote', { title: note.title })}
       style={styles.noteLine}
     >
       <View style={styles.noteLineInner}>
@@ -125,27 +127,27 @@ const TidyScreen: React.FC = () => {
       {noteLine(p.b)}
       <Text variant="bodySmall" style={[styles.reason, { color: theme.colors.onSurfaceVariant }]}>
         {mode === 'links'
-          ? 'Close in meaning, and neither links to the other.'
-          : `Almost the same text (${p.a.words} and ${p.b.words} words). Merging keeps the one edited last and moves the other to the bin.`}
+          ? t('ask.tidyReasonLinks')
+          : t('ask.tidyReasonDuplicates', { a: p.a.words, b: p.b.words })}
       </Text>
       <View style={styles.actions}>
-        <Button onPress={() => hide(p)}>Hide</Button>
+        <Button onPress={() => hide(p)}>{t('common.hide')}</Button>
         <Button mode="contained-tonal" onPress={() => (mode === 'links' ? addLink(p) : merge(p))}>
-          {mode === 'links' ? 'Add link' : 'Merge'}
+          {mode === 'links' ? t('ask.tidyAddLink') : t('ask.tidyMerge')}
         </Button>
       </View>
     </View>
   );
 
   let empty: { title: string; body: string };
-  if (!available) empty = { title: 'Needs search by meaning', body: "This build doesn't have the search model. Use a build that includes it to tidy up your notes." };
-  else if (failed) empty = { title: "Couldn't look through your notes", body: 'Pull back to this screen to try again, or restart the app.' };
-  else if (mode === 'links') empty = { title: 'No link suggestions', body: 'Notes that are close in meaning but not linked show up here.' };
-  else empty = { title: 'No duplicates found', body: 'Notes that say almost the same thing show up here.' };
+  if (!available) empty = { title: t('ask.unavailableTitle'), body: t('ask.tidyUnavailableBody') };
+  else if (failed) empty = { title: t('ask.tidyFailedTitle'), body: t('ask.tidyFailedBody') };
+  else if (mode === 'links') empty = { title: t('ask.tidyNoLinksTitle'), body: t('ask.tidyNoLinksBody') };
+  else empty = { title: t('ask.tidyNoDuplicatesTitle'), body: t('ask.tidyNoDuplicatesBody') };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-      <Header elevated={elevated} title="Tidy up notes" showBackButton onBackPress={() => navigation.goBack()} />
+      <Header elevated={elevated} title={t('ask.tidyTitle')} showBackButton onBackPress={() => navigation.goBack()} />
       <FlatList
         data={list}
         keyExtractor={pairKey}
@@ -162,14 +164,14 @@ const TidyScreen: React.FC = () => {
             onValueChange={v => setMode(v as 'links' | 'duplicates')}
             style={styles.mode}
             buttons={[
-              { value: 'links', label: pairs ? `Links (${links.length})` : 'Links', icon: 'link-variant' },
-              { value: 'duplicates', label: pairs ? `Duplicates (${duplicates.length})` : 'Duplicates', icon: 'content-copy' },
+              { value: 'links', label: pairs ? t('ask.tidyLinksCount', { count: links.length }) : t('ask.tidyLinks'), icon: 'link-variant' },
+              { value: 'duplicates', label: pairs ? t('ask.tidyDuplicatesCount', { count: duplicates.length }) : t('ask.tidyDuplicates'), icon: 'content-copy' },
             ]}
           />
         }
         ListEmptyComponent={
           available && pairs === null ? (
-            <ActivityIndicator style={styles.busy} accessibilityLabel="Looking through your notes" />
+            <ActivityIndicator style={styles.busy} accessibilityLabel={t('ask.tidyLooking')} />
           ) : (
             <View style={styles.empty}>
               <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{empty.title}</Text>
@@ -178,7 +180,7 @@ const TidyScreen: React.FC = () => {
           )
         }
       />
-      <Snackbar visible={!!done} onDismiss={() => setDone(null)} duration={5000} action={{ label: 'Undo', onPress: undo }}>
+      <Snackbar visible={!!done} onDismiss={() => setDone(null)} duration={5000} action={{ label: t('common.undo'), onPress: undo }}>
         {done?.message}
       </Snackbar>
     </SafeAreaView>

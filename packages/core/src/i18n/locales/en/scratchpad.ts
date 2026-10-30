@@ -1,1 +1,16 @@
-export default {} as const;
+export default {
+  'scratchpad.saveFailedTitle': "Couldn't save the scratchpad",
+  'scratchpad.saveFailedMessage': 'Your text is still here. Keep typing to try again.',
+  'scratchpad.openFailedTitle': "Couldn't open the scratchpad",
+  'scratchpad.openFailedMessage': 'Go back and try again.',
+  'scratchpad.filed': 'Filed as a note',
+  'scratchpad.fileFailedTitle': "Couldn't file the note",
+  'scratchpad.fileFailedMessage': 'Your text is still in the scratchpad. Try again.',
+  'scratchpad.cleared': 'Scratchpad cleared',
+  'scratchpad.fileSelection': 'File selected text as a note',
+  'scratchpad.fileAll': 'File as a note',
+  'scratchpad.clear': 'Clear scratchpad',
+  'scratchpad.helper': 'Saved as you type. Select text to file just that part as a note.',
+  'scratchpad.placeholder': 'Jot it down. File it as a note later, or clear it.',
+  'scratchpad.textLabel': 'Scratchpad text',
+} as const;

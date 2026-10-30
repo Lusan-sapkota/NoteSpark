@@ -22,6 +22,8 @@ import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, lightTheme, readingWidth, shape, space } from '../theme/theme';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getLanguage } from '@notespark/core';
+import { useI18n } from '../i18n/I18nContext';
 
 // Wavy indeterminate progress indicator; holds still under reduced motion.
 const WAVE = { amplitude: 3, wavelength: 22, stroke: 4, step: 4 };
@@ -63,16 +65,17 @@ const WavyProgress: React.FC<{ color: string; label: string }> = ({ color, label
   );
 };
 
-const importModes: { value: ImportMode; label: string; description: string }[] = [
-  { value: 'merge', label: 'Skip duplicates', description: "Adds only notes you don't already have" },
-  { value: 'append', label: 'Add everything', description: 'Adds every note, including copies' },
-  { value: 'replace', label: 'Replace all notes', description: 'Deletes your current notes first' },
-];
 
 type ImportExportScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ImportExport'>;
 
 const ImportExportScreen: React.FC = () => {
   const navigation = useNavigation<ImportExportScreenNavigationProp>();
+  const { t } = useI18n();
+  const importModes: { value: ImportMode; label: string; description: string }[] = [
+    { value: 'merge', label: t('importExport.modeMerge'), description: t('importExport.modeMergeBody') },
+    { value: 'append', label: t('importExport.modeAppend'), description: t('importExport.modeAppendBody') },
+    { value: 'replace', label: t('importExport.modeReplace'), description: t('importExport.modeReplaceBody') },
+  ];
   const { theme } = useTheme();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
@@ -91,35 +94,35 @@ const ImportExportScreen: React.FC = () => {
   const [autoBackup, setAutoBackupState] = useState<AutoBackupSettings | null>(null);
   const [backingUp, setBackingUp] = useState(false);
   const [includeAttachments, setIncludeAttachments] = useState(true);
-  const formatDate = (iso: string) => new Date(iso).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' });
+  const formatDate = (iso: string) => new Date(iso).toLocaleString(getLanguage(), { dateStyle: 'medium', timeStyle: 'short' });
   const handleExportHistoryPDF = async () => {
     alert(
-      'Export history as PDF?',
-      'Creates a PDF of your import and export history that you can save or share.',
+      t('importExport.exportHistoryPdfTitle'),
+      t('importExport.exportHistoryPdfBody'),
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel'),
           style: 'cancel',
           onPress: () => {},
         },
         {
-          text: 'Export PDF',
+          text: t('importExport.exportPdf'),
           onPress: async () => {
             setPdfExporting(true);
             try {
               // Printed on white, so the PDF uses the light scheme.
               const c = lightTheme.colors;
               let html = `<html><head><style>body{font-family:sans-serif;color:${c.onSurface};}h2{color:${c.primary};}table{width:100%;border-collapse:collapse;}th,td{border:1px solid ${c.outlineVariant};padding:8px;text-align:left;}th{background:${c.surfaceContainer};}tr:nth-child(even){background:${c.surfaceContainerLow};}</style></head><body>`;
-              html += `<h2>NoteSpark import and export history</h2><table><tr><th>Date</th><th>Type</th><th>Count</th><th>Note</th></tr>`;
+              html += `<h2>${t('importExport.pdfHeading')}</h2><table><tr><th>${t('importExport.pdfDate')}</th><th>${t('importExport.pdfType')}</th><th>${t('importExport.pdfCount')}</th><th>${t('importExport.pdfNote')}</th></tr>`;
               history.forEach(h => {
-                html += `<tr><td>${new Date(h.date).toLocaleString()}</td><td>${h.type}</td><td>${typeof h.count === 'number' ? h.count : 0}</td><td>${h.error && h.error.trim() ? h.error : 'No error'}</td></tr>`;
+                html += `<tr><td>${new Date(h.date).toLocaleString(getLanguage())}</td><td>${h.type === 'import' ? t('importExport.typeImport') : t('importExport.typeExport')}</td><td>${typeof h.count === 'number' ? h.count : 0}</td><td>${h.error && h.error.trim() ? h.error : t('importExport.pdfNoError')}</td></tr>`;
               });
               html += `</table></body></html>`;
               const Print = require('expo-print');
               const { uri } = await Print.printToFileAsync({ html });
               await Sharing.shareAsync(uri);
             } catch (err) {
-              alert("Couldn't create the PDF", 'Try again.');
+              alert(t('importExport.pdfFailed'), t('importExport.tryAgain'));
             }
             setPdfExporting(false);
           },
@@ -165,16 +168,16 @@ const ImportExportScreen: React.FC = () => {
 
   const clearHistory = async () => {
     alert(
-      'Clear history?',
-      'Your import and export history will be cleared. Your notes stay as they are.',
+      t('importExport.clearHistoryTitle'),
+      t('importExport.clearHistoryBody'),
       [
         {
-          text: 'Cancel',
+          text: t('common.cancel'),
           style: 'cancel',
           onPress: () => {},
         },
         {
-          text: 'Clear history',
+          text: t('importExport.clearHistory'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -194,13 +197,13 @@ const ImportExportScreen: React.FC = () => {
     try {
       const notes = await getNotes();
       if (!notes.length) {
-        alert('No notes to export', 'Write a note first, then export it here.');
+        alert(t('importExport.noNotesToExport'), t('importExport.noNotesToExportBody'));
         return;
       }
       await shareNotesAsZip(notes, { includeAttachments });
       await addHistory({ type: 'export', format: 'markdown', date: new Date().toISOString(), count: notes.length, error: '' });
     } catch (error) {
-      alert("Couldn't export as Markdown", 'Try again. If it keeps failing, restart the app.');
+      alert(t('importExport.markdownExportFailed'), t('common.tryAgainRestart'));
     }
   };
 
@@ -215,10 +218,10 @@ const ImportExportScreen: React.FC = () => {
     try {
       const { error } = await runBackup(settings);
       await saveAutoBackup({ ...settings, lastRun: new Date().toISOString(), lastError: error });
-      if (error) alert("Couldn't back up every profile", 'One or more profiles could not be read.');
+      if (error) alert(t('importExport.backupProfilesFailed'), t('importExport.backupProfilesFailedBody'));
     } catch (error) {
       await saveAutoBackup({ ...settings, lastError: error instanceof Error ? error.message : String(error) });
-      alert("Couldn't back up to the folder", 'Choose the folder again, or pick another one, then try again.');
+      alert(t('importExport.backupFolderFailed'), t('importExport.backupFolderFailedBody'));
     } finally {
       setBackingUp(false);
     }
@@ -230,7 +233,7 @@ const ImportExportScreen: React.FC = () => {
       if (!folderUri) return;
       await backUpNow({ frequency: 'weekly', includeProtected: false, ...autoBackup, folderUri, lastError: undefined });
     } catch (error) {
-      alert("Couldn't open the folder picker", 'Try again. If it keeps failing, restart the app.');
+      alert(t('importExport.folderPickerFailed'), t('common.tryAgainRestart'));
     }
   };
 
@@ -242,11 +245,11 @@ const ImportExportScreen: React.FC = () => {
       return;
     }
     alert(
-      'Back up protected profiles too?',
-      "Backup files are ordinary files. Anyone who can open the backup folder can read every note in them, without the profile's PIN.",
+      t('importExport.protectedTitle'),
+      t('importExport.protectedBody'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Include them', onPress: () => saveAutoBackup({ ...autoBackup, includeProtected: true }) },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('importExport.includeThem'), onPress: () => saveAutoBackup({ ...autoBackup, includeProtected: true }) },
       ]
     );
   };
@@ -254,10 +257,10 @@ const ImportExportScreen: React.FC = () => {
   const backupStatus = !autoBackup
     ? ''
     : autoBackup.lastError
-    ? "The last backup didn't finish. Choose the folder again or tap to try now."
+    ? t('importExport.lastBackupFailed')
     : autoBackup.lastRun
-    ? `Last backup ${formatDate(autoBackup.lastRun)}`
-    : 'No backup yet';
+    ? t('importExport.lastBackup', { date: formatDate(autoBackup.lastRun) })
+    : t('importExport.noBackupYet');
 
   const handleExport = async () => {
     setIsExporting(true);
@@ -292,65 +295,65 @@ const ImportExportScreen: React.FC = () => {
       }
 
       alert(
-        'Export notes?',
-        'Next, choose where to save or share the file.',
+        t('importExport.exportNotesTitle'),
+        t('importExport.exportNotesBody'),
         [
           {
-            text: 'Cancel',
+            text: t('common.cancel'),
             style: 'cancel',
             onPress: async () => {
               await addHistory({
                 type: 'export',
                 date: new Date().toISOString(),
                 count: 0,
-                error: 'Export cancelled by user.'
+                error: t('importExport.exportCancelled')
               });
               setIsExporting(false);
             }
           },
           {
-            text: 'Continue',
+            text: t('common.continue'),
             onPress: async () => {
               if (fileSaved) {
                 // expo-sharing sends the actual file; React Native's Share only sends text on Android.
                 await Sharing.shareAsync(fileUri, {
                   mimeType: 'application/json',
                   UTI: 'public.json',
-                  dialogTitle: 'Save or share your notes',
+                  dialogTitle: t('importExport.saveOrShareNotes'),
                 });
-                await sendAppNotification('Notes exported', `${notesArr.length} notes exported.`);
+                await sendAppNotification(t('importExport.notesExported'), t('importExport.notesExportedCount', { count: notesArr.length }));
                 await addHistory({
                   type: 'export',
                   date: new Date().toISOString(),
                   count: notesArr.length,
                   error: '',
                 });
-                alert('Notes exported', `${notesArr.length} notes exported.`, [
-                  { text: 'OK' }
+                alert(t('importExport.notesExported'), t('importExport.notesExportedCount', { count: notesArr.length }), [
+                  { text: t('common.ok') }
                 ]);
               } else {
                 if (jsonString.length > 50000) {
-                  alert('Export is too large to share as text', 'Save the export with a file manager app instead.');
+                  alert(t('importExport.exportTooLarge'), t('importExport.exportTooLargeBody'));
                   await addHistory({
                     type: 'export',
                     date: new Date().toISOString(),
                     count: 0,
-                    error: 'Export too large to share as text.'
+                    error: t('importExport.exportTooLargeHistory')
                   });
                 } else {
                   await Share.share({
-                    title: 'Exported Notes',
+                    title: t('importExport.exportedNotesShareTitle'),
                     message: jsonString,
                   });
-                  await sendAppNotification('Notes exported', `${notesArr.length} notes exported.`);
+                  await sendAppNotification(t('importExport.notesExported'), t('importExport.notesExportedCount', { count: notesArr.length }));
                   await addHistory({
                     type: 'export',
                     date: new Date().toISOString(),
                     count: notesArr.length,
                     error: '',
                   });
-                  alert('Notes exported', `${notesArr.length} notes exported.`, [
-                    { text: 'OK' }
+                  alert(t('importExport.notesExported'), t('importExport.notesExportedCount', { count: notesArr.length }), [
+                    { text: t('common.ok') }
                   ]);
                 }
               }
@@ -364,8 +367,8 @@ const ImportExportScreen: React.FC = () => {
       const errorMessage =
         typeof error === 'object' && error !== null && 'message' in error
           ? String((error as { message?: string }).message)
-          : 'Failed to export notes. Please try again.';
-      alert("Couldn't export notes", errorMessage);
+          : t('importExport.exportFailedFallback');
+      alert(t('importExport.exportFailed'), errorMessage);
       await addHistory({
         type: 'export',
         date: new Date().toISOString(),
@@ -382,12 +385,15 @@ const ImportExportScreen: React.FC = () => {
   // Writes the notes with the chosen mode and reports the result. Returns the success message.
   const runImport = async (notes: any[], incomplete: number) => {
     const { imported, skipped } = await importNotes(notes, importMode);
-    let msg = imported === 1 ? '1 note imported.' : `${imported} notes imported.`;
-    if (skipped > 0) msg += ` ${skipped} already on this device, so skipped.`;
-    if (incomplete > 0) msg += ` ${incomplete} incomplete notes skipped.`;
-    await sendAppNotification('Notes imported', msg);
-    const notesLine = [skipped > 0 && `${skipped} duplicates skipped.`, incomplete > 0 && `${incomplete} incomplete notes skipped.`].filter(Boolean).join(' ');
-    await logImport(imported, imported === 0 ? 'All notes were already on this device.' : notesLine);
+    // One sentence per part, joined with spaces.
+    const msg = [
+      t('importExport.noteImported', { count: imported }),
+      skipped > 0 && t('importExport.alreadyOnDevice', { count: skipped }),
+      incomplete > 0 && t('importExport.incompleteSkipped', { count: incomplete }),
+    ].filter(Boolean).join(' ');
+    await sendAppNotification(t('importExport.notesImported'), msg);
+    const notesLine = [skipped > 0 && t('importExport.duplicatesSkipped', { count: skipped }), incomplete > 0 && t('importExport.incompleteSkipped', { count: incomplete })].filter(Boolean).join(' ');
+    await logImport(imported, imported === 0 ? t('importExport.allAlreadyOnDevice') : notesLine);
     await loadHistory();
     return msg;
   };
@@ -399,18 +405,18 @@ const ImportExportScreen: React.FC = () => {
       return;
     }
     alert(
-      'Replace all notes?',
-      'Every note on this device will be deleted and replaced with the notes in the backup. Export your current notes first if you want to keep them.',
+      t('importExport.replaceTitle'),
+      t('importExport.replaceBody'),
       [
-        { text: 'Cancel', style: 'cancel', onPress: () => { logImport(0, 'Import cancelled.'); } },
-        { text: 'Replace notes', style: 'destructive', onPress: action },
+        { text: t('common.cancel'), style: 'cancel', onPress: () => { logImport(0, t('importExport.importCancelled')); } },
+        { text: t('importExport.replaceNotes'), style: 'destructive', onPress: action },
       ]
     );
   };
 
   const handleImport = () => {
     if (!importData.trim()) {
-      alert('Paste your backup first', 'Paste the JSON from a NoteSpark export, or choose a file instead.');
+      alert(t('importExport.pasteFirst'), t('importExport.pasteFirstBody'));
       return;
     }
     confirmIfReplacing(async () => {
@@ -421,26 +427,26 @@ const ImportExportScreen: React.FC = () => {
           parsed = JSON.parse(importData);
           if (!Array.isArray(parsed)) throw new Error('Not an array');
         } catch (e) {
-          alert("That isn't valid JSON", 'Check that you pasted the whole export file.');
-          await logImport(0, 'Invalid JSON format.');
+          alert(t('importExport.invalidJson'), t('importExport.invalidJsonBody'));
+          await logImport(0, t('importExport.invalidJsonHistory'));
           return;
         }
         const validNotes = parsed.filter((note: any) =>
           note && note.title && note.content && !isNaN(Date.parse(note.createdAt)) && !isNaN(Date.parse(note.updatedAt))
         ).map((note: any) => ({ ...note, isMarkdown: !!note.isMarkdown }));
         if (validNotes.length === 0) {
-          alert('No notes found', "The backup doesn't contain any notes NoteSpark can read.");
-          await logImport(0, 'No valid notes found.');
+          alert(t('importExport.noNotesFound'), t('importExport.noNotesFoundBody'));
+          await logImport(0, t('importExport.noValidNotes'));
           return;
         }
         const msg = await runImport(validNotes, parsed.length - validNotes.length);
         setImportData('');
         setPasteOpen(false);
-        alert('Notes imported', msg);
+        alert(t('importExport.notesImported'), msg);
       } catch (error) {
         console.error('Failed to import notes:', error);
-        alert("Couldn't import notes", 'Your existing notes are unchanged. Check that the data is a NoteSpark export.');
-        await logImport(0, 'Import failed.');
+        alert(t('importExport.importFailed'), t('importExport.importFailedBody'));
+        await logImport(0, t('importExport.importFailedHistory'));
       } finally {
         setIsImporting(false);
       }
@@ -465,16 +471,16 @@ const ImportExportScreen: React.FC = () => {
           }
         }
         if (!parsed.length) {
-          alert("Couldn't read those files", 'Choose a NoteSpark .json backup, or Markdown (.md), text (.txt) or .zip files of them.');
-          await logImport(0, 'Files were not backups or notes.');
+          alert(t('importExport.filesUnreadable'), t('importExport.filesUnreadableBody'));
+          await logImport(0, t('importExport.filesNotBackups'));
           return;
         }
         let msg = await runImport(parsed, 0);
-        if (unreadable.length) msg += ` Couldn't read ${unreadable.join(', ')}.`;
-        alert('Notes imported', msg, [{ text: 'OK', onPress: () => navigation.goBack() }]);
+        if (unreadable.length) msg += ` ${t('importExport.couldntRead', { names: unreadable.join(', ') })}`;
+        alert(t('importExport.notesImported'), msg, [{ text: t('common.ok'), onPress: () => navigation.goBack() }]);
       } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : 'Import failed.';
-        alert("Couldn't import notes", `Your existing notes are unchanged. ${errorMessage}`);
+        const errorMessage = error instanceof Error ? error.message : t('importExport.importFailedHistory');
+        alert(t('importExport.importFailed'), t('importExport.importFailedWith', { error: errorMessage }));
         await logImport(0, errorMessage);
       } finally {
         setFileImporting(false);
@@ -489,10 +495,11 @@ const ImportExportScreen: React.FC = () => {
   }, []);
 
   const historyTitle = (h: any) => {
-    const kind = h.type === 'import' ? 'Import' : 'Export';
+    const isImport = h.type === 'import';
     const count = typeof h.count === 'number' ? h.count : 0;
-    if (count > 0 && h.format === 'markdown') return `Exported ${count} notes as Markdown`;
-    return count > 0 ? `${kind}ed ${count} notes` : `${kind} didn't finish`;
+    if (count > 0 && h.format === 'markdown') return t('importExport.markdownExported', { count });
+    if (count > 0) return isImport ? t('importExport.imported', { count }) : t('importExport.exported', { count });
+    return isImport ? t('importExport.importDidntFinish') : t('importExport.exportDidntFinish');
   };
   // Markdown exports can't be restored, so they don't count as a backup.
   const lastBackup = history.find(h => h.type === 'export' && h.format !== 'markdown' && typeof h.count === 'number' && h.count > 0);
@@ -530,7 +537,7 @@ const ImportExportScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header elevated={elevated}
-        title="Import and export"
+        title={t('importExport.title')}
         showBackButton
         onBackPress={() => navigation.goBack()}
       />
@@ -551,19 +558,19 @@ const ImportExportScreen: React.FC = () => {
         <View style={styles.column}>
           <View style={styles.summary}>
             <Text variant="headlineSmall" style={{ color: theme.colors.onSurface }}>
-              {noteCount === null ? ' ' : noteCount === 1 ? '1 note' : `${noteCount} notes`}
+              {noteCount === null ? ' ' : t('importExport.noteCount', { count: noteCount })}
             </Text>
             <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>
-              {lastBackup ? `Last backup ${formatDate(lastBackup.date)}` : 'Not backed up yet'}
+              {lastBackup ? t('importExport.lastBackup', { date: formatDate(lastBackup.date) }) : t('importExport.notBackedUp')}
             </Text>
           </View>
 
           <View style={styles.tiles}>
             {tile({
               icon: 'export-variant',
-              title: 'Back up',
-              body: 'Save all notes as a JSON file (attachments are not included)',
-              busyBody: 'Exporting notes',
+              title: t('importExport.backUp'),
+              body: t('importExport.backUpBody'),
+              busyBody: t('importExport.exportingNotes'),
               busy: isExporting,
               onPress: handleExport,
               background: theme.colors.primaryContainer,
@@ -571,9 +578,9 @@ const ImportExportScreen: React.FC = () => {
             })}
             {tile({
               icon: 'file-restore-outline',
-              title: 'Restore',
-              body: 'Bring notes in from a backup or Markdown files',
-              busyBody: 'Importing notes',
+              title: t('common.restore'),
+              body: t('importExport.restoreBody'),
+              busyBody: t('importExport.importingNotes'),
               busy: importing,
               onPress: () => setImportDialogVisible(true),
               background: theme.colors.secondaryContainer,
@@ -583,23 +590,23 @@ const ImportExportScreen: React.FC = () => {
 
           <View style={styles.rows}>
             <GroupedRow
-              title="Export as Markdown"
-              description="Every note as a Markdown file, in one zip, for other notes apps"
+              title={t('importExport.exportMarkdown')}
+              description={t('importExport.exportMarkdownBody')}
               icon="language-markdown-outline"
               onPress={handleExportMarkdown}
               isFirst
               isLast={false}
             />
             <GroupedRow
-              title="Include attachments"
-              description={includeAttachments ? 'Attached files are included in the zip' : 'Only note text is included in the zip'}
+              title={t('importExport.includeAttachments')}
+              description={includeAttachments ? t('importExport.attachmentsIncluded') : t('importExport.attachmentsExcluded')}
               icon="paperclip"
               onPress={() => setIncludeAttachments(v => !v)}
               right={
                 <M3Switch
                   value={includeAttachments}
                   onValueChange={setIncludeAttachments}
-                  accessibilityLabel="Include attachments"
+                  accessibilityLabel={t('importExport.includeAttachments')}
                 />
               }
               isFirst={false}
@@ -608,20 +615,20 @@ const ImportExportScreen: React.FC = () => {
           </View>
 
           <Text variant="titleSmall" accessibilityRole="header" style={[styles.sectionTitle, { color: theme.colors.primary }]}>
-            Automatic backups
+            {t('importExport.automaticBackups')}
           </Text>
           <GroupedRow
-            title="Back up automatically"
+            title={t('importExport.backUpAutomatically')}
             description={autoBackup
-              ? `To ${folderName(autoBackup.folderUri)}. Keeps the last ${BACKUPS_KEPT} of each profile.`
-              : `Save a backup to a folder you choose, every day or week. Keeps the last ${BACKUPS_KEPT}.`}
+              ? t('importExport.autoBackupTo', { folder: folderName(autoBackup.folderUri), count: BACKUPS_KEPT })
+              : t('importExport.autoBackupOff', { count: BACKUPS_KEPT })}
             icon="folder-sync-outline"
             onPress={autoBackup ? () => saveAutoBackup(null) : chooseBackupFolder}
             right={
               <M3Switch
                 value={!!autoBackup}
                 onValueChange={on => (on ? chooseBackupFolder() : saveAutoBackup(null))}
-                accessibilityLabel="Back up automatically"
+                accessibilityLabel={t('importExport.backUpAutomatically')}
               />
             }
             isFirst
@@ -630,8 +637,8 @@ const ImportExportScreen: React.FC = () => {
           {autoBackup && (
             <>
               <GroupedRow
-                title="Back up now"
-                description={backingUp ? 'Backing up' : backupStatus}
+                title={t('importExport.backUpNow')}
+                description={backingUp ? t('importExport.backingUp') : backupStatus}
                 icon={autoBackup.lastError ? 'alert-circle-outline' : 'backup-restore'}
                 danger={!!autoBackup.lastError}
                 onPress={() => backUpNow(autoBackup)}
@@ -640,7 +647,7 @@ const ImportExportScreen: React.FC = () => {
                 isLast={false}
               />
               <GroupedRow
-                title="Backup folder"
+                title={t('importExport.backupFolder')}
                 description={folderName(autoBackup.folderUri)}
                 icon="folder-outline"
                 onPress={chooseBackupFolder}
@@ -648,15 +655,15 @@ const ImportExportScreen: React.FC = () => {
                 isLast={false}
               />
               <GroupedRow
-                title="Include protected profiles"
-                description="Off: profiles with a PIN aren't backed up automatically"
+                title={t('importExport.includeProtected')}
+                description={t('importExport.includeProtectedOff')}
                 icon="lock-outline"
                 onPress={() => setIncludeProtected(!autoBackup.includeProtected)}
                 right={
                   <M3Switch
                     value={autoBackup.includeProtected}
                     onValueChange={setIncludeProtected}
-                    accessibilityLabel="Include protected profiles"
+                    accessibilityLabel={t('importExport.includeProtected')}
                   />
                 }
                 isFirst={false}
@@ -668,18 +675,18 @@ const ImportExportScreen: React.FC = () => {
                 onValueChange={value => saveAutoBackup({ ...autoBackup, frequency: value as 'daily' | 'weekly' })}
                 style={styles.frequency}
                 buttons={[
-                  { value: 'daily', label: 'Every day', icon: 'calendar-today' },
-                  { value: 'weekly', label: 'Every week', icon: 'calendar-week' },
+                  { value: 'daily', label: t('importExport.everyDay'), icon: 'calendar-today' },
+                  { value: 'weekly', label: t('importExport.everyWeek'), icon: 'calendar-week' },
                 ]}
               />
               <Text variant="bodySmall" style={[styles.backupHelp, { color: theme.colors.onSurfaceVariant }]}>
-                Backups run when you open NoteSpark and one is due. Restore one with Restore above.
+                {t('importExport.backupHelp')}
               </Text>
             </>
           )}
 
           <View style={styles.historyHeader}>
-            <Text variant="titleSmall" accessibilityRole="header" style={[styles.historyTitle, { color: theme.colors.primary }]}>History</Text>
+            <Text variant="titleSmall" accessibilityRole="header" style={[styles.historyTitle, { color: theme.colors.primary }]}>{t('importExport.history')}</Text>
             <Menu
               visible={historyMenuVisible}
               onDismiss={() => setHistoryMenuVisible(false)}
@@ -688,18 +695,18 @@ const ImportExportScreen: React.FC = () => {
                   icon="dots-vertical"
                   onPress={() => setHistoryMenuVisible(true)}
                   disabled={history.length === 0 || pdfExporting}
-                  accessibilityLabel="History options"
+                  accessibilityLabel={t('importExport.historyOptions')}
                 />
               }
             >
               <Menu.Item
                 leadingIcon="file-pdf-box"
-                title="Save as PDF"
+                title={t('importExport.saveAsPdf')}
                 onPress={() => { setHistoryMenuVisible(false); handleExportHistoryPDF(); }}
               />
               <Menu.Item
                 leadingIcon="delete-outline"
-                title="Clear history"
+                title={t('importExport.clearHistory')}
                 titleStyle={{ color: theme.colors.error }}
                 onPress={() => { setHistoryMenuVisible(false); clearHistory(); }}
               />
@@ -707,7 +714,7 @@ const ImportExportScreen: React.FC = () => {
           </View>
           {history.length === 0 ? (
             <Text variant="bodyMedium" style={[styles.emptyHistory, { color: theme.colors.onSurfaceVariant }]}>
-              Backups and imports will appear here.
+              {t('importExport.emptyHistory')}
             </Text>
           ) : (
             history.map((h, idx) => {
@@ -730,7 +737,7 @@ const ImportExportScreen: React.FC = () => {
 
       <KeyboardSafePortal>
         <Dialog visible={importDialogVisible} onDismiss={closeImportDialog}>
-          <Dialog.Title>Import notes</Dialog.Title>
+          <Dialog.Title>{t('importExport.importNotes')}</Dialog.Title>
           <Dialog.ScrollArea style={styles.dialogScroll}>
             <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.dialogContent}>
               <RadioButton.Group value={importMode} onValueChange={value => setImportMode(value as ImportMode)}>
@@ -758,7 +765,7 @@ const ImportExportScreen: React.FC = () => {
                 <View style={[styles.banner, { backgroundColor: theme.colors.errorContainer }]}>
                   <Icon source="alert-outline" size={20} color={theme.colors.onErrorContainer} />
                   <Text variant="bodyMedium" style={[styles.tileText, { color: theme.colors.onErrorContainer }]}>
-                    Every note on this device will be deleted. Back up first if you want to keep them.
+                    {t('importExport.replaceBanner')}
                   </Text>
                 </View>
               )}
@@ -766,7 +773,7 @@ const ImportExportScreen: React.FC = () => {
                 <>
                   <TextInput
                     mode="outlined"
-                    label="Paste JSON"
+                    label={t('importExport.pasteJson')}
                     value={importData}
                     onChangeText={setImportData}
                     multiline
@@ -779,23 +786,23 @@ const ImportExportScreen: React.FC = () => {
                     onPress={() => { closeImportDialog(); handleImport(); }}
                     disabled={!importData.trim()}
                   >
-                    Import pasted JSON
+                    {t('importExport.importPastedJson')}
                   </Button>
                 </>
               ) : (
                 <>
                   <Button mode="contained" icon="file-upload-outline" theme={controlTheme} onPress={() => { closeImportDialog(); handleFileImport(); }}>
-                    Choose files
+                    {t('importExport.chooseFiles')}
                   </Button>
                   <Button mode="text" icon="content-paste" onPress={() => setPasteOpen(true)}>
-                    Paste JSON instead
+                    {t('importExport.pasteInstead')}
                   </Button>
                 </>
               )}
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={closeImportDialog}>Cancel</Button>
+            <Button onPress={closeImportDialog}>{t('common.cancel')}</Button>
           </Dialog.Actions>
         </Dialog>
       </KeyboardSafePortal>

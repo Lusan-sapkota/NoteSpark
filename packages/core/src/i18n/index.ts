@@ -1,4 +1,5 @@
-import { Catalog, Params, registerCatalog, translate } from './translate';
+import type { Catalog, Params } from './translate';
+import { registerCatalog, translate } from './translate';
 import { en } from './locales/en';
 
 registerCatalog('en', en as Catalog);

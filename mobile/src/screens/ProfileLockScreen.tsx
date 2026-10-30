@@ -21,6 +21,7 @@ import {
   wrongPinMessage,
 } from '../storage/profiles';
 import { useAlert } from '../components/DialogProvider';
+import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, groupCorners, readingWidth, space } from '../theme/theme';
 
@@ -83,6 +84,7 @@ const ProfileLockScreen: React.FC = () => {
   const route = useRoute<RouteProp<RootStackParamList, 'ProfileLock'>>();
   const profileId = route.params?.profileId;
   const { theme } = useTheme();
+  const { t } = useI18n();
   const alert = useAlert();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [isOpen, setIsOpen] = useState(false);
@@ -107,7 +109,7 @@ const ProfileLockScreen: React.FC = () => {
         const hasPin = await hasProfilePin(profileId);
         setLocked(hasPin);
         if (hasPin && (await usesBiometrics(profileId))) setLock('fingerprint');
-      })().catch(() => alert("Couldn't load the profile", 'Go back and try again.'));
+      })().catch(() => alert(t('profiles.loadFailed'), t('profiles.loadFailedBody')));
     }
     // Back from the phone's settings after "Set up": check for a fingerprint again.
     const sub = AppState.addEventListener('change', state => state === 'active' && checkFingerprint());
@@ -134,26 +136,26 @@ const ProfileLockScreen: React.FC = () => {
       if (adding) {
         const created = await addProfile(name.trim(), lock === 'none' ? undefined : pin);
         if (lock === 'fingerprint' && fingerprintReady) await setUsesBiometrics(created.id, true);
-        done(`${created.name} added`);
+        done(t('profiles.added', { name: created.name }));
         return;
       }
       if (!profile) return;
       if (locked && !(await verifyProfilePin(profile.id, currentPin))) {
-        alert('Incorrect PIN', await wrongPinMessage(profile.id));
+        alert(t('profiles.incorrectPin'), await wrongPinMessage(profile.id));
         return;
       }
       if (lock === 'none') {
-        alert('Remove the lock?', `${profile.name} will open without a PIN, and its notes won't be encrypted any more.`, [
-          { text: 'Cancel', style: 'cancel' },
+        alert(t('profiles.removeLockTitle'), t('profiles.removeLockBody', { name: profile.name }), [
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Remove lock',
+            text: t('profiles.removeLockAction'),
             style: 'destructive',
             onPress: async () => {
               try {
                 await setProfilePin(profile.id, null, currentPin);
-                done(`Lock removed from ${profile.name}`);
+                done(t('profiles.lockRemoved', { name: profile.name }));
               } catch (error) {
-                alert("Couldn't remove the lock", 'Try again. If it keeps failing, restart the app.');
+                alert(t('profiles.removeLockFailed'), t('common.tryAgainRestart'));
               }
             },
           },
@@ -162,9 +164,9 @@ const ProfileLockScreen: React.FC = () => {
       }
       if (pin) await setProfilePin(profile.id, pin, currentPin);
       await setUsesBiometrics(profile.id, lock === 'fingerprint' && fingerprintReady);
-      done(`Lock saved for ${profile.name}`);
+      done(t('profiles.lockSaved', { name: profile.name }));
     } catch (error) {
-      alert(adding ? "Couldn't add the profile" : "Couldn't save the lock", 'Try again. If it keeps failing, restart the app.');
+      alert(adding ? t('profiles.addFailed') : t('profiles.saveLockFailed'), t('common.tryAgainRestart'));
     } finally {
       setSaving(false);
     }
@@ -174,19 +176,19 @@ const ProfileLockScreen: React.FC = () => {
   const forgotPin = () => {
     if (!profile) return;
     alert(
-      'Erase this profile?',
-      `A forgotten PIN can't be recovered. ${profile.name} and all its notes will be erased from this device. This can't be undone.`,
+      t('profiles.eraseTitle'),
+      t('profiles.eraseBody', { name: profile.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Erase profile',
+          text: t('profiles.eraseAction'),
           style: 'destructive',
           onPress: async () => {
             try {
               await eraseForgottenProfile(profile.id);
-              done(`${profile.name} erased`);
+              done(t('profiles.erased', { name: profile.name }));
             } catch (error) {
-              alert("Couldn't erase the profile", 'Try again. If it keeps failing, restart the app.');
+              alert(t('profiles.eraseFailed'), t('common.tryAgainRestart'));
             }
           },
         },
@@ -214,10 +216,10 @@ const ProfileLockScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Appbar.Header mode="small">
-        <Appbar.Action icon="close" accessibilityLabel="Close without saving" onPress={() => navigation.goBack()} />
-        <Appbar.Content title={adding ? 'New profile' : `Lock for ${profile?.name ?? ''}`} />
+        <Appbar.Action icon="close" accessibilityLabel={t('profiles.closeWithoutSaving')} onPress={() => navigation.goBack()} />
+        <Appbar.Content title={adding ? t('profiles.newProfile') : t('profiles.lockFor', { name: profile?.name ?? '' })} />
         <Button mode="contained" theme={controlTheme} onPress={save} disabled={!canSave} loading={saving} style={styles.save}>
-          Save
+          {t('common.save')}
         </Button>
       </Appbar.Header>
 
@@ -225,9 +227,9 @@ const ProfileLockScreen: React.FC = () => {
         <View style={styles.column}>
           {adding && (
             <>
-              <TextInput mode="outlined" label="Profile name" value={name} onChangeText={setName} autoFocus maxLength={40} />
+              <TextInput mode="outlined" label={t('profiles.profileName')} value={name} onChangeText={setName} autoFocus maxLength={40} />
               <Text variant="bodySmall" style={[styles.help, { color: theme.colors.onSurfaceVariant }]}>
-                A separate set of notes, for work or school.
+                {t('profiles.profileHelp')}
               </Text>
             </>
           )}
@@ -235,18 +237,18 @@ const ProfileLockScreen: React.FC = () => {
           {locked && (
             <>
               <Text variant="bodyLarge" style={{ color: theme.colors.onSurface }}>
-                Enter the current PIN for {profile?.name} to change how it locks.
+                {t('profiles.enterCurrentPin', { name: profile?.name ?? '' })}
               </Text>
-              {pinField('Current PIN', currentPin, setCurrentPin, { autoFocus: true })}
+              {pinField(t('profiles.currentPin'), currentPin, setCurrentPin, { autoFocus: true })}
             </>
           )}
 
-          {sectionTitle('Lock')}
+          {sectionTitle(t('profiles.lockSection'))}
           <View accessibilityRole="radiogroup">
             <LockChoice
               icon="lock-open-variant-outline"
-              title="No lock"
-              description="Anyone using this phone can open it"
+              title={t('profiles.noLock')}
+              description={t('profiles.noLockDescription')}
               selected={lock === 'none'}
               onPress={() => setLock('none')}
               isFirst
@@ -254,8 +256,8 @@ const ProfileLockScreen: React.FC = () => {
             />
             <LockChoice
               icon="dialpad"
-              title="PIN"
-              description="Four digits, and its notes are encrypted"
+              title={t('profiles.pin')}
+              description={t('profiles.pinDescription')}
               selected={lock === 'pin'}
               onPress={() => setLock('pin')}
               isFirst={false}
@@ -263,8 +265,8 @@ const ProfileLockScreen: React.FC = () => {
             />
             <LockChoice
               icon={fingerprintReady ? 'fingerprint' : 'fingerprint-off'}
-              title="Fingerprint"
-              description={fingerprintReady ? 'Your fingerprint, or the PIN as a backup' : 'Add a fingerprint in your phone settings first'}
+              title={t('profiles.fingerprint')}
+              description={fingerprintReady ? t('profiles.fingerprintReady') : t('profiles.fingerprintSetUp')}
               selected={lock === 'fingerprint'}
               setUp={!fingerprintReady}
               onPress={() =>
@@ -279,19 +281,19 @@ const ProfileLockScreen: React.FC = () => {
 
           {lock !== 'none' && (
             <>
-              {sectionTitle(locked ? 'New PIN' : 'PIN')}
-              {pinField(locked ? 'New PIN (optional)' : 'Four-digit PIN', pin, setPin)}
-              {pinField(locked ? 'Confirm new PIN' : 'Confirm PIN', pinConfirmation, setPinConfirmation, { onSubmitEditing: save })}
+              {sectionTitle(locked ? t('profiles.newPinSection') : t('profiles.pin'))}
+              {pinField(locked ? t('profiles.newPinOptional') : t('profiles.fourDigitPin'), pin, setPin)}
+              {pinField(locked ? t('profiles.confirmNewPin') : t('profiles.confirmPin'), pinConfirmation, setPinConfirmation, { onSubmitEditing: save })}
               <Text variant="bodySmall" style={[styles.help, { color: theme.colors.onSurfaceVariant }]}>
                 {locked
-                  ? 'Leave empty to keep the current PIN.'
-                  : "There's no way to recover a forgotten PIN. Forgetting it means erasing the profile."}
+                  ? t('profiles.keepCurrentPin')
+                  : t('profiles.noRecovery')}
               </Text>
             </>
           )}
 
           {locked && !isOpen && (
-            <Button onPress={forgotPin} style={styles.forgot}>Forgot PIN?</Button>
+            <Button onPress={forgotPin} style={styles.forgot}>{t('profiles.forgotPin')}</Button>
           )}
         </View>
       </KeyboardAwareScrollView>

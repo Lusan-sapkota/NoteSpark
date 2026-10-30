@@ -24,22 +24,24 @@ import { hideRediscoverToday, isRediscoverHiddenToday, isRediscoverOn, pickRedis
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { groupCorners, shape, space } from '../theme/theme';
+import { useI18n } from '../i18n/I18nContext';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
-const typeFilters = [
-  { value: 'all', label: 'All' },
-  { value: 'pinned', label: 'Pinned' },
-  { value: 'markdown', label: 'Markdown' },
-  { value: 'text', label: 'Text' },
-  { value: 'archived', label: 'Archived' },
-] as const;
-
-type Filter = typeof typeFilters[number]['value'] | `tag:${string}`;
+type TypeFilter = 'all' | 'pinned' | 'markdown' | 'text' | 'archived';
+type Filter = TypeFilter | `tag:${string}`;
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { theme, isDarkMode } = useTheme();
+  const { t } = useI18n();
+  const typeFilters: { value: TypeFilter; label: string }[] = [
+    { value: 'all', label: t('home.filterAll') },
+    { value: 'pinned', label: t('home.pinned') },
+    { value: 'markdown', label: 'Markdown' },
+    { value: 'text', label: t('home.filterText') },
+    { value: 'archived', label: t('home.filterArchived') },
+  ];
   const { elevated, onScroll: onHeaderScroll } = useHeaderElevation();
   const alert = useAlert();
   const [notes, setNotes] = useState<Note[]>([]);
@@ -123,7 +125,7 @@ const HomeScreen: React.FC = () => {
       setLoading(false);
       loadedKey.current = '';
       console.error('Failed to load notes:', error);
-      alert("Couldn't load notes", 'Pull down on the list to try again.');
+      alert(t('home.loadFailedTitle'), t('home.loadFailedMessage'));
     }
   };
 
@@ -132,10 +134,10 @@ const HomeScreen: React.FC = () => {
     (async () => {
       const [draft, active] = await Promise.all([getDraft(), getActiveProfile()]);
       if (!draft || draft.profileId !== active.id) return;
-      const name = draft.title.trim() || 'a new note';
-      alert('Keep your unsaved changes?', `NoteSpark closed before your changes to ${draft.title.trim() ? `"${name}"` : name} were saved.`, [
-        { text: 'Discard', style: 'destructive', onPress: () => clearDraft() },
-        { text: 'Open', onPress: () => navigation.navigate('Editor', { noteId: draft.noteId, draft: true }) },
+      const name = draft.title.trim();
+      alert(t('home.draftTitle'), name ? t('home.draftMessageTitled', { name }) : t('home.draftMessageNew'), [
+        { text: t('home.discard'), style: 'destructive', onPress: () => clearDraft() },
+        { text: t('common.open'), onPress: () => navigation.navigate('Editor', { noteId: draft.noteId, draft: true }) },
       ], { cancelable: false });
     })().catch(() => {});
   }, []);
@@ -162,7 +164,7 @@ const HomeScreen: React.FC = () => {
           return;
         }
       } else if (!(await verifyProfilePin(profile.id, enteredPin))) {
-        alert('Incorrect PIN', await wrongPinMessage(profile.id));
+        alert(t('home.incorrectPin'), await wrongPinMessage(profile.id));
         return;
       }
       setPinDialog(d => d && { ...d, open: false });
@@ -170,15 +172,15 @@ const HomeScreen: React.FC = () => {
       setSearchText('');
       setUndo(null);
       await loadNotes();
-      setSnackbar(`Switched to ${profile.name}`);
+      setSnackbar(t('home.switchedTo', { name: profile.name }));
     } catch (error) {
       console.error('Failed to switch profile:', error);
       alert(
-        `Couldn't open ${profile.name}`,
-        "This profile's database couldn't be read. If this phone was restored from a backup, a locked profile's encryption key isn't included in backups.",
+        t('home.openProfileFailedTitle', { name: profile.name }),
+        t('home.openProfileFailedMessage'),
         [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Erase profile', style: 'destructive', onPress: () => handleForgotPin(profile) },
+          { text: t('common.cancel'), style: 'cancel' },
+          { text: t('home.eraseProfile'), style: 'destructive', onPress: () => handleForgotPin(profile) },
         ]
       );
     }
@@ -188,21 +190,21 @@ const HomeScreen: React.FC = () => {
   const handleForgotPin = (profile: Profile) => {
     setPinDialog(d => d && { ...d, open: false });
     alert(
-      'Erase this profile?',
-      `A forgotten PIN can't be recovered. ${profile.name} and all its notes will be erased from this device. This can't be undone.`,
+      t('home.eraseProfileTitle'),
+      t('home.eraseProfileMessage', { name: profile.name }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Erase profile',
+          text: t('home.eraseProfile'),
           style: 'destructive',
           onPress: async () => {
             try {
               await eraseForgottenProfile(profile.id);
               setUndo(null);
               await loadNotes();
-              setSnackbar(`${profile.name} erased`);
+              setSnackbar(t('home.profileErased', { name: profile.name }));
             } catch (error) {
-              alert("Couldn't erase the profile", 'Try again. If it keeps failing, restart the app.');
+              alert(t('home.eraseProfileFailed'), t('common.tryAgainRestart'));
             }
           },
         },
@@ -237,7 +239,7 @@ const HomeScreen: React.FC = () => {
   const tagsByNote = useMemo(() => new Map(notes.map(n => [n.id, extractTags(n.content)])), [notes]);
   const tags = useMemo(() => {
     const counts = new Map<string, number>();
-    notes.filter(n => !n.isArchived).forEach(n => tagsByNote.get(n.id)!.forEach(t => counts.set(t, (counts.get(t) ?? 0) + 1)));
+    notes.filter(n => !n.isArchived).forEach(n => tagsByNote.get(n.id)!.forEach(tag => counts.set(tag, (counts.get(tag) ?? 0) + 1)));
     return [...counts.keys()].sort((a, b) => counts.get(b)! - counts.get(a)! || a.localeCompare(b));
   }, [notes, tagsByNote]);
 
@@ -294,7 +296,6 @@ const HomeScreen: React.FC = () => {
   useEffect(clearSelection, [filter, searchText, searchType]);
 
   const selectedNotes = notes.filter(n => selectedIds.includes(n.id));
-  const countLabel = (n: number) => (n === 1 ? '1 note' : `${n} notes`);
 
   // Runs `change` on every selected note, then offers Undo that runs `revert` on each.
   const changeSelected = async (
@@ -311,13 +312,13 @@ const HomeScreen: React.FC = () => {
         try {
           for (const note of targets) await revert(note);
         } catch (error) {
-          alert("Couldn't undo", 'Some notes may have changed. Check them and try again.');
+          alert(t('home.undoFailed'), t('home.undoFailedCheck'));
         }
         await loadNotes();
       });
       setSnackbar(done);
     } catch (error) {
-      alert(failed, 'Some notes may have changed. Try again.');
+      alert(failed, t('home.changeFailedMessage'));
     }
     await loadNotes();
   };
@@ -327,8 +328,8 @@ const HomeScreen: React.FC = () => {
     changeSelected(
       n => setNotePinned(n.id, pin),
       n => setNotePinned(n.id, n.isPinned),
-      `${countLabel(selectedNotes.length)} ${pin ? 'pinned' : 'unpinned'}`,
-      pin ? "Couldn't pin the notes" : "Couldn't unpin the notes",
+      pin ? t('home.notesPinned', { count: selectedNotes.length }) : t('home.notesUnpinned', { count: selectedNotes.length }),
+      pin ? t('home.pinNotesFailed') : t('home.unpinNotesFailed'),
     );
   };
 
@@ -340,25 +341,25 @@ const HomeScreen: React.FC = () => {
         await setNoteArchived(n.id, n.isArchived);
         if (n.isPinned) await setNotePinned(n.id, true);
       },
-      `${countLabel(selectedNotes.length)} ${archive ? 'archived' : 'unarchived'}`,
-      archive ? "Couldn't archive the notes" : "Couldn't unarchive the notes",
+      archive ? t('home.notesArchived', { count: selectedNotes.length }) : t('home.notesUnarchived', { count: selectedNotes.length }),
+      archive ? t('home.archiveNotesFailed') : t('home.unarchiveNotesFailed'),
     );
   };
 
   const handleBinSelected = () => {
     alert(
-      `Move ${countLabel(selectedNotes.length)} to bin?`,
-      'They stay in the bin for 30 days. You can restore them from Bin in Settings.',
+      t('home.moveNotesToBinTitle', { count: selectedNotes.length }),
+      t('home.moveNotesToBinMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Move to bin',
+          text: t('home.moveToBin'),
           style: 'destructive',
           onPress: () => changeSelected(
             n => moveNoteToBin(n.id),
             n => restoreNote(n.id),
-            `${countLabel(selectedNotes.length)} moved to bin`,
-            "Couldn't move the notes to the bin",
+            t('home.notesMovedToBin', { count: selectedNotes.length }),
+            t('home.moveNotesToBinFailed'),
           ),
         },
       ]
@@ -372,15 +373,15 @@ const HomeScreen: React.FC = () => {
         await share(targets);
         clearSelection();
       } catch (error) {
-        alert("Couldn't export the notes", 'Try again. If it keeps failing, use Import and export in Settings.');
+        alert(t('home.exportFailedTitle'), t('home.exportFailedMessage'));
       }
     };
     alert(
-      `Export ${countLabel(targets.length)}?`,
-      'A JSON backup can be restored into NoteSpark. Markdown files (in a zip) open in other notes apps.',
+      t('home.exportTitle', { count: targets.length }),
+      t('home.exportMessage'),
       [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'JSON backup', onPress: run(shareNotesAsJson) },
+        { text: t('common.cancel'), style: 'cancel' },
+        { text: t('home.jsonBackup'), onPress: run(shareNotesAsJson) },
         { text: 'Markdown', onPress: run(shareNotesAsZip) },
       ]
     );
@@ -394,15 +395,15 @@ const HomeScreen: React.FC = () => {
         try {
           await revert();
         } catch (error) {
-          alert("Couldn't undo", 'Some notes may have changed. Check them and try again.');
+          alert(t('home.undoFailed'), t('home.undoFailedCheck'));
         }
         await loadNotes();
       });
       await loadNotes();
-      setSnackbar(`${countLabel(targets.length)} moved to ${profile.name}`);
+      setSnackbar(t('home.notesMovedTo', { count: targets.length, name: profile.name }));
     } catch (error) {
       console.error('Failed to transfer notes:', error);
-      alert(`Couldn't move notes to ${profile.name}`, 'Try again. If it keeps failing, restart the app.');
+      alert(t('home.moveFailedTitle', { name: profile.name }), t('common.tryAgainRestart'));
     }
   };
 
@@ -412,14 +413,14 @@ const HomeScreen: React.FC = () => {
     const unlocked = await verifyProfilePin(profile.id, '');
     if (unlocked) {
       alert(
-        `Move ${countLabel(targets.length)} to ${profile.name}?`,
+        t('home.moveNotesToTitle', { count: targets.length, name: profile.name }),
         targets.length === 1
-          ? `"${targets[0].title || 'Untitled note'}" will be moved to ${profile.name}.`
-          : `${countLabel(targets.length)} will be moved to ${profile.name}.`,
+          ? t('home.noteWillMove', { title: targets[0].title || t('common.untitledNote'), name: profile.name })
+          : t('home.notesWillMove', { count: targets.length, name: profile.name }),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Move',
+            text: t('home.move'),
             onPress: () => { executeTransfer(profile, targets); },
           },
         ]
@@ -439,12 +440,12 @@ const HomeScreen: React.FC = () => {
     const otherProfiles = profiles.filter(p => p.id !== activeProfile?.id);
     if (otherProfiles.length === 0) {
       alert(
-        'No other profiles',
-        'Add another profile in Settings first, then move notes to it.',
+        t('home.noOtherProfilesTitle'),
+        t('home.noOtherProfilesMessage'),
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: t('common.cancel'), style: 'cancel' },
           {
-            text: 'Manage profiles',
+            text: t('home.manageProfiles'),
             onPress: () => {
               clearSelection();
               navigation.navigate('Settings');
@@ -469,7 +470,7 @@ const HomeScreen: React.FC = () => {
       return;
     }
     if (!(await verifyProfilePin(profile.id, pin))) {
-      alert('Incorrect PIN', await wrongPinMessage(profile.id));
+      alert(t('home.incorrectPin'), await wrongPinMessage(profile.id));
       return;
     }
     setPinDialog(d => d && { ...d, open: false });
@@ -488,10 +489,10 @@ const HomeScreen: React.FC = () => {
         await restoreNote(noteId);
         await loadNotes();
       } catch (error) {
-        alert("Couldn't restore the note", 'Open Bin in Settings to restore it.');
+        alert(t('home.restoreFailedTitle'), t('home.restoreFailedMessage'));
       }
     });
-    setSnackbar('Note moved to bin');
+    setSnackbar(t('home.noteMovedToBin'));
   };
 
   // The note page bins without asking and comes back here, so Undo is offered here.
@@ -512,14 +513,14 @@ const HomeScreen: React.FC = () => {
   }, [tagParam]);
 
   const handleDeleteNote = useCallback((noteId: number) => {
-    const title = notes.find(n => n.id === noteId)?.title || 'This note';
+    const title = notes.find(n => n.id === noteId)?.title || t('home.thisNote');
     alert(
-      'Move to bin?',
-      `"${title}" will stay in the bin for 30 days. You can restore it from Bin in Settings.`,
+      t('home.moveToBinQuestion'),
+      t('home.moveNoteToBinMessage', { title }),
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('common.cancel'), style: 'cancel' },
         {
-          text: 'Move to bin',
+          text: t('home.moveToBin'),
           style: 'destructive',
           onPress: async () => {
             try {
@@ -528,13 +529,13 @@ const HomeScreen: React.FC = () => {
               showBinned(noteId);
             } catch (error) {
               console.error('Failed to move note to bin:', error);
-              alert("Couldn't move the note to the bin", 'Try again. If it keeps failing, restart the app.');
+              alert(t('home.moveNoteToBinFailed'), t('common.tryAgainRestart'));
             }
           },
         },
       ]
     );
-  }, [notes, alert]);
+  }, [notes, alert, t]);
 
   const handleEditNote = useCallback((noteId: number) => {
     navigation.navigate('Editor', { noteId: noteId.toString() });
@@ -551,9 +552,9 @@ const HomeScreen: React.FC = () => {
       await setNotePinned(noteId, !note.isPinned);
     } catch (error) {
       setPin(note.isPinned);
-      alert("Couldn't pin the note", 'Try again. If it keeps failing, restart the app.');
+      alert(t('home.pinNoteFailed'), t('common.tryAgainRestart'));
     }
-  }, [notes, alert]);
+  }, [notes, alert, t]);
 
   const handleArchiveToggle = useCallback(async (noteId: number) => {
     const note = notes.find(n => n.id === noteId);
@@ -570,14 +571,14 @@ const HomeScreen: React.FC = () => {
           if (note.isPinned) await setNotePinned(noteId, true);
           await loadNotes();
         } catch (error) {
-          alert("Couldn't undo", 'Try again from the note menu.');
+          alert(t('home.undoFailed'), t('home.undoFailedMenu'));
         }
       });
-      setSnackbar(note.isArchived ? 'Note unarchived' : 'Note archived');
+      setSnackbar(note.isArchived ? t('home.noteUnarchived') : t('home.noteArchived'));
     } catch (error) {
-      alert(note.isArchived ? "Couldn't unarchive the note" : "Couldn't archive the note", 'Try again. If it keeps failing, restart the app.');
+      alert(note.isArchived ? t('home.unarchiveNoteFailed') : t('home.archiveNoteFailed'), t('common.tryAgainRestart'));
     }
-  }, [notes, alert]);
+  }, [notes, alert, t]);
 
   const handleTransferNote = useCallback((noteId: number) => {
     const note = notes.find(n => n.id === noteId);
@@ -611,13 +612,13 @@ const HomeScreen: React.FC = () => {
       return (
         <>
           <Text variant="titleSmall" accessibilityRole="header" style={[styles.relatedHeading, { color: theme.colors.onSurfaceVariant }]}>
-            Also related
+            {t('home.alsoRelated')}
           </Text>
           {row}
         </>
       );
     },
-    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, filteredNotes, sortType, relatedFrom, theme]
+    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, filteredNotes, sortType, relatedFrom, theme, t]
   );
 
   // A day's note: open it if it exists, else start it from the daily template (nothing is saved until it's edited).
@@ -653,7 +654,7 @@ const HomeScreen: React.FC = () => {
   const selectedTag = filter.startsWith('tag:') && !tags.includes(filter.slice(4)) ? [filter.slice(4)] : [];
   const chipFilters: { value: Filter; label: string }[] = [
     ...typeFilters.slice(0, 2),
-    ...[...tags, ...selectedTag].map(t => ({ value: `tag:${t}` as Filter, label: `#${t}` })),
+    ...[...tags, ...selectedTag].map(tag => ({ value: `tag:${tag}` as Filter, label: `#${tag}` })),
     ...typeFilters.slice(2),
   ];
 
@@ -663,31 +664,31 @@ const HomeScreen: React.FC = () => {
         <>
           <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>
             {searchText.trim()
-              ? `No notes match "${searchText.trim()}"`
-              : filter === 'pinned' ? 'No pinned notes' : filter === 'archived' ? 'No archived notes' : filter.startsWith('tag:') ? `No notes tagged #${filter.slice(4)}` : 'No notes of this type'}
+              ? t('home.emptyNoMatch', { query: searchText.trim() })
+              : filter === 'pinned' ? t('home.emptyPinned') : filter === 'archived' ? t('home.emptyArchived') : filter.startsWith('tag:') ? t('home.emptyTag', { tag: filter.slice(4) }) : t('home.emptyType')}
           </Text>
           <Text variant="bodyMedium" style={[styles.emptyBody, { color: theme.colors.onSurfaceVariant }]}>
             {searchText.trim()
-              ? 'Try another word or filter.'
+              ? t('home.emptyTryAnother')
               : filter === 'pinned'
-              ? 'Tap the pin on a note to keep it at the top and find it here.'
+              ? t('home.emptyPinnedHint')
               : filter === 'archived'
-              ? "Choose Archive in a note's menu to hide it from your list without deleting it."
-              : 'Try another word or filter.'}
+              ? t('home.emptyArchivedHint')
+              : t('home.emptyTryAnother')}
           </Text>
           <Button
             mode="text"
             onPress={() => { setSearchText(''); setFilter('all'); }}
             style={styles.emptyAction}
           >
-            Clear search and filters
+            {t('home.clearFilters')}
           </Button>
         </>
       ) : (
         <>
-          <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>No notes yet</Text>
+          <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('home.emptyNone')}</Text>
           <Text variant="bodyMedium" style={[styles.emptyBody, { color: theme.colors.onSurfaceVariant }]}>
-            Tap New note to write your first one.
+            {t('home.emptyNoneHint')}
           </Text>
         </>
       )}
@@ -698,25 +699,25 @@ const HomeScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       {selecting ? (
         <Appbar.Header mode="small" elevated>
-          <Appbar.Action icon="close" accessibilityLabel="Cancel selection" onPress={clearSelection} />
-          <Appbar.Content title={String(selectedIds.length)} accessibilityLabel={`${selectedIds.length} selected`} />
+          <Appbar.Action icon="close" accessibilityLabel={t('home.cancelSelection')} onPress={clearSelection} />
+          <Appbar.Content title={String(selectedIds.length)} accessibilityLabel={t('home.selectedCount', { count: selectedIds.length })} />
           <Appbar.Action
             icon={selectedNotes.some(n => !n.isPinned) ? 'pin-outline' : 'pin-off-outline'}
-            accessibilityLabel={selectedNotes.some(n => !n.isPinned) ? 'Pin selected notes' : 'Unpin selected notes'}
+            accessibilityLabel={selectedNotes.some(n => !n.isPinned) ? t('home.pinSelected') : t('home.unpinSelected')}
             onPress={handlePinSelected}
           />
           <Appbar.Action
             icon={filter === 'archived' ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline'}
-            accessibilityLabel={filter === 'archived' ? 'Unarchive selected notes' : 'Archive selected notes'}
+            accessibilityLabel={filter === 'archived' ? t('home.unarchiveSelected') : t('home.archiveSelected')}
             onPress={handleArchiveSelected}
           />
           <Appbar.Action
             icon="account-arrow-right-outline"
-            accessibilityLabel="Move selected notes to another profile"
+            accessibilityLabel={t('home.moveSelected')}
             onPress={() => startTransfer(selectedNotes)}
           />
-          <Appbar.Action icon="export-variant" accessibilityLabel="Export selected notes" onPress={handleExportSelected} />
-          <Appbar.Action icon="delete-outline" accessibilityLabel="Move selected notes to bin" onPress={handleBinSelected} />
+          <Appbar.Action icon="export-variant" accessibilityLabel={t('home.exportSelected')} onPress={handleExportSelected} />
+          <Appbar.Action icon="delete-outline" accessibilityLabel={t('home.binSelected')} onPress={handleBinSelected} />
         </Appbar.Header>
       ) : (
         <Header elevated={elevated}
@@ -725,22 +726,22 @@ const HomeScreen: React.FC = () => {
             <>
               <Appbar.Action
                 icon="account-circle-outline"
-                accessibilityLabel={`Switch profile, current profile ${activeProfile?.name ?? ''}`}
+                accessibilityLabel={t('home.switchProfileLabel', { name: activeProfile?.name ?? '' })}
                 onPress={() => setProfileDialogVisible(true)}
               />
-              <Appbar.Action icon="notebook-edit-outline" accessibilityLabel="Scratchpad" onPress={() => navigation.navigate('Scratchpad')} />
-              <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel="Tasks" onPress={() => navigation.navigate('Tasks')} />
+              <Appbar.Action icon="notebook-edit-outline" accessibilityLabel={t('common.scratchpad')} onPress={() => navigation.navigate('Scratchpad')} />
+              <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel={t('common.tasks')} onPress={() => navigation.navigate('Tasks')} />
               <Menu
                 visible={moreVisible}
                 onDismiss={() => setMoreVisible(false)}
-                anchor={<Appbar.Action icon="dots-vertical" accessibilityLabel="More" onPress={() => setMoreVisible(true)} />}
+                anchor={<Appbar.Action icon="dots-vertical" accessibilityLabel={t('home.more')} onPress={() => setMoreVisible(true)} />}
               >
-                <Menu.Item title="Daily note" leadingIcon="calendar-today" onPress={() => { setMoreVisible(false); setDailyVisible(true); }} />
-                <Menu.Item title="New from template" leadingIcon="file-document-plus-outline" onPress={() => { setMoreVisible(false); setTemplateVisible(true); }} />
-                <Menu.Item title="Ask your notes" leadingIcon="comment-search-outline" onPress={() => { setMoreVisible(false); navigation.navigate('Ask'); }} />
-                <Menu.Item title="Tidy up notes" leadingIcon="broom" onPress={() => { setMoreVisible(false); navigation.navigate('Tidy'); }} />
+                <Menu.Item title={t('home.dailyNote')} leadingIcon="calendar-today" onPress={() => { setMoreVisible(false); setDailyVisible(true); }} />
+                <Menu.Item title={t('home.newFromTemplate')} leadingIcon="file-document-plus-outline" onPress={() => { setMoreVisible(false); setTemplateVisible(true); }} />
+                <Menu.Item title={t('home.askYourNotes')} leadingIcon="comment-search-outline" onPress={() => { setMoreVisible(false); navigation.navigate('Ask'); }} />
+                <Menu.Item title={t('home.tidyUpNotes')} leadingIcon="broom" onPress={() => { setMoreVisible(false); navigation.navigate('Tidy'); }} />
               </Menu>
-              <Appbar.Action icon="cog-outline" accessibilityLabel="Settings" onPress={() => navigation.navigate('Settings')} />
+              <Appbar.Action icon="cog-outline" accessibilityLabel={t('common.settings')} onPress={() => navigation.navigate('Settings')} />
             </>
           }
         />
@@ -748,7 +749,7 @@ const HomeScreen: React.FC = () => {
 
       <View style={[styles.controls, { backgroundColor: elevated ? theme.colors.elevation.level2 : theme.colors.background }]}>
         <Searchbar
-          placeholder="Search notes"
+          placeholder={t('home.searchNotes')}
           value={searchText}
           onChangeText={setSearchText}
           style={{ backgroundColor: theme.colors.surfaceContainerHigh, borderRadius: shape.control }}
@@ -760,41 +761,41 @@ const HomeScreen: React.FC = () => {
               anchor={
                 <Appbar.Action
                   icon="sort"
-                  accessibilityLabel="Sort and search options"
+                  accessibilityLabel={t('home.sortAndSearchOptions')}
                   onPress={() => setOptionsVisible(true)}
                   color={theme.colors.onSurfaceVariant}
                 />
               }
             >
               <Menu.Item
-                title="Sort by last edited"
+                title={t('home.sortEdited')}
                 trailingIcon={sortType === 'edited' ? 'check' : undefined}
                 onPress={() => { setSortType('edited'); setOptionsVisible(false); }}
               />
               <Menu.Item
-                title="Sort by date created"
+                title={t('home.sortCreated')}
                 trailingIcon={sortType === 'created' ? 'check' : undefined}
                 onPress={() => { setSortType('created'); setOptionsVisible(false); }}
               />
               {isMeaningSearchAvailable() && (
                 <Menu.Item
-                  title="Words and meaning"
+                  title={t('home.searchBoth')}
                   trailingIcon={searchType === 'both' ? 'check' : undefined}
                   onPress={() => { setSearchType('both'); setOptionsVisible(false); }}
                 />
               )}
               <Menu.Item
-                title="Titles and text"
+                title={t('home.searchAll')}
                 trailingIcon={searchType === 'all' ? 'check' : undefined}
                 onPress={() => { setSearchType('all'); setOptionsVisible(false); }}
               />
               <Menu.Item
-                title="Titles only"
+                title={t('home.searchTitles')}
                 trailingIcon={searchType === 'title' ? 'check' : undefined}
                 onPress={() => { setSearchType('title'); setOptionsVisible(false); }}
               />
               <Menu.Item
-                title="Text only"
+                title={t('home.searchText')}
                 trailingIcon={searchType === 'content' ? 'check' : undefined}
                 onPress={() => { setSearchType('content'); setOptionsVisible(false); }}
               />
@@ -829,7 +830,7 @@ const HomeScreen: React.FC = () => {
 
       {loading ? (
         // Static placeholder cards shaped like NoteItem; no shimmer, since motion only follows user actions.
-        <View style={styles.listContent} accessible accessibilityLabel="Loading notes">
+        <View style={styles.listContent} accessible accessibilityLabel={t('home.loadingNotes')}>
           {[0, 1, 2, 3].map(i => (
             <View
               key={i}
@@ -854,7 +855,7 @@ const HomeScreen: React.FC = () => {
                   onPress={() => handleNotePress(rediscovery.note.id)}
                   style={styles.rediscoverBody}
                   accessibilityRole="button"
-                  accessibilityLabel={`${rediscovery.reason}: ${rediscovery.note.title || 'Untitled note'}`}
+                  accessibilityLabel={t('home.rediscoverLabel', { reason: rediscovery.reason, title: rediscovery.note.title || t('common.untitledNote') })}
                 >
                   <View style={styles.rediscoverText}>
                     <View style={styles.rediscoverReason}>
@@ -864,7 +865,7 @@ const HomeScreen: React.FC = () => {
                       </Text>
                     </View>
                     <Text variant="titleMedium" style={{ color: theme.colors.onSurface }} numberOfLines={2}>
-                      {rediscovery.note.title || 'Untitled note'}
+                      {rediscovery.note.title || t('common.untitledNote')}
                     </Text>
                     {!!toPreview(rediscovery.note.content) && (
                       <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }} numberOfLines={2}>
@@ -875,7 +876,7 @@ const HomeScreen: React.FC = () => {
                 </TouchableRipple>
                 <IconButton
                   icon="close"
-                  accessibilityLabel="Hide for today"
+                  accessibilityLabel={t('home.hideForToday')}
                   onPress={() => {
                     setRediscoverAllowed(false);
                     hideRediscoverToday().catch(() => {});
@@ -904,11 +905,11 @@ const HomeScreen: React.FC = () => {
       {!selecting && (
         <AnimatedFAB
           icon="star-four-points"
-          label="New note"
+          label={t('home.newNote')}
           extended={fabExtended}
           onPress={handleCreateNote}
           animateFrom="right"
-          accessibilityLabel="New note"
+          accessibilityLabel={t('home.newNote')}
           // The firefly: a soft primary glow under the FAB in dark mode (Android 9+ tints elevation shadows).
           style={[styles.fab, isDarkMode && { shadowColor: theme.colors.primary }]}
         />
@@ -922,7 +923,7 @@ const HomeScreen: React.FC = () => {
           onPick={kind => (kind === 'daily' ? openDailyNote(today()) : startTemplate(kind))}
         />
         <Dialog visible={profileDialogVisible} onDismiss={() => setProfileDialogVisible(false)}>
-          <Dialog.Title>Switch profile</Dialog.Title>
+          <Dialog.Title>{t('home.switchProfile')}</Dialog.Title>
           <Dialog.ScrollArea style={styles.profileList}>
             <ScrollView>
               {profiles.map(p => {
@@ -931,7 +932,7 @@ const HomeScreen: React.FC = () => {
                   <List.Item
                     key={p.id}
                     title={p.name}
-                    description={current ? 'Current profile' : undefined}
+                    description={current ? t('home.currentProfile') : undefined}
                     left={props => <List.Icon {...props} icon={current ? 'account-check' : 'account-outline'} />}
                     onPress={() => handleSwitchProfile(p)}
                     accessibilityRole="radio"
@@ -942,12 +943,12 @@ const HomeScreen: React.FC = () => {
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => { setProfileDialogVisible(false); navigation.navigate('Settings'); }}>Manage profiles</Button>
-            <Button onPress={() => setProfileDialogVisible(false)}>Cancel</Button>
+            <Button onPress={() => { setProfileDialogVisible(false); navigation.navigate('Settings'); }}>{t('home.manageProfiles')}</Button>
+            <Button onPress={() => setProfileDialogVisible(false)}>{t('common.cancel')}</Button>
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={!!transferDialog?.open} onDismiss={() => setTransferDialog(d => d && { ...d, open: false })}>
-          <Dialog.Title>Move {countLabel(transferDialog?.notes.length ?? 0)} to</Dialog.Title>
+          <Dialog.Title>{t('home.moveNotesTo', { count: transferDialog?.notes.length ?? 0 })}</Dialog.Title>
           <Dialog.ScrollArea style={styles.profileList}>
             <ScrollView>
               {profiles
@@ -963,22 +964,22 @@ const HomeScreen: React.FC = () => {
             </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
-            <Button onPress={() => setTransferDialog(d => d && { ...d, open: false })}>Cancel</Button>
+            <Button onPress={() => setTransferDialog(d => d && { ...d, open: false })}>{t('common.cancel')}</Button>
           </Dialog.Actions>
         </Dialog>
         <Dialog visible={!!pinDialog?.open} onDismiss={() => setPinDialog(d => d && { ...d, open: false })}>
           <Dialog.Title>
-            {pinDialog?.notesToMove ? `Move to ${pinDialog.profile.name}` : 'Enter profile PIN'}
+            {pinDialog?.notesToMove ? t('home.moveToProfile', { name: pinDialog.profile.name }) : t('home.enterPinTitle')}
           </Dialog.Title>
           <Dialog.Content>
             <Text variant="bodyMedium">
               {pinDialog?.notesToMove
-                ? `Enter the four-digit PIN for ${pinDialog.profile.name} to move ${countLabel(pinDialog.notesToMove.length)} to it.`
-                : `Enter the four-digit PIN for ${pinDialog?.profile.name}.`}
+                ? t('home.enterPinMove', { name: pinDialog.profile.name, count: pinDialog.notesToMove.length })
+                : t('home.enterPin', { name: pinDialog?.profile.name ?? '' })}
             </Text>
             <TextInput
               mode="outlined"
-              label="PIN"
+              label={t('home.pin')}
               value={pinDialog?.pin ?? ''}
               onChangeText={pin => setPinDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
               keyboardType="number-pad"
@@ -987,12 +988,12 @@ const HomeScreen: React.FC = () => {
               onSubmitEditing={handlePinDialogSubmit}
               style={styles.pinInput}
             />
-            <Button onPress={() => pinDialog && handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>Forgot PIN?</Button>
+            <Button onPress={() => pinDialog && handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>{t('home.forgotPin')}</Button>
           </Dialog.Content>
           <Dialog.Actions>
-            <Button onPress={() => setPinDialog(d => d && { ...d, open: false })}>Cancel</Button>
+            <Button onPress={() => setPinDialog(d => d && { ...d, open: false })}>{t('common.cancel')}</Button>
             <Button onPress={handlePinDialogSubmit} disabled={pinDialog?.pin.length !== 4}>
-              {pinDialog?.notesToMove ? 'Move' : 'Unlock'}
+              {pinDialog?.notesToMove ? t('home.move') : t('home.unlock')}
             </Button>
           </Dialog.Actions>
         </Dialog>
@@ -1003,7 +1004,7 @@ const HomeScreen: React.FC = () => {
         onDismiss={() => { setSnackbar(''); setUndo(null); }}
         duration={4000}
         wrapperStyle={styles.snackbar}
-        action={undo ? { label: 'Undo', onPress: undo } : undefined}
+        action={undo ? { label: t('common.undo'), onPress: undo } : undefined}
       >
         {snackbar}
       </Snackbar>

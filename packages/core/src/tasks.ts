@@ -1,4 +1,5 @@
 import type { Note } from './types';
+import { getLanguage, t } from './i18n';
 
 export interface Task {
   noteId: number;
@@ -35,7 +36,7 @@ export const splitDue = (text: string): { text: string; due?: string; every?: Re
   return { text: due || every ? rest || text : text, due, every };
 };
 
-export const repeatLabel = (every: Repeat) => ({ day: 'Repeats daily', week: 'Repeats weekly', month: 'Repeats monthly', year: 'Repeats yearly' })[every];
+export const repeatLabel = (every: Repeat) => ({ day: t('core.repeatsDay'), week: t('core.repeatsWeek'), month: t('core.repeatsMonth'), year: t('core.repeatsYear') })[every];
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const dayKey = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -66,11 +67,11 @@ export const nextDue = (due: string, every: Repeat, now = today()): string => {
 export const formatDue = (due: string) => {
   const date = new Date(`${due}T00:00`);
   const sameYear = date.getFullYear() === new Date().getFullYear();
-  return date.toLocaleDateString([], { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) });
+  return date.toLocaleDateString(getLanguage(), { month: 'short', day: 'numeric', ...(sameYear ? {} : { year: 'numeric' }) });
 };
 
 export const dueLabel = (due: string, now = today()) =>
-  due < now ? `Overdue, due ${formatDue(due)}` : due === now ? 'Due today' : `Due ${formatDue(due)}`;
+  due < now ? t('core.overdue', { date: formatDue(due) }) : due === now ? t('core.dueToday') : t('core.due', { date: formatDue(due) });
 
 export const findTaskLines = (content: string): TaskLine[] => {
   const tasks: TaskLine[] = [];
