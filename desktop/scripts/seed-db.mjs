@@ -12,7 +12,7 @@ if (!Array.isArray(notes)) throw new Error('Not a NoteSpark export');
 mkdirSync(dirname(output), { recursive: true });
 rmSync(output, { force: true });
 const db = new Database(output);
-// Same tables as Mobile/src/storage/database.ts (initDatabase).
+// Same tables as mobile/src/storage/database.ts (initDatabase).
 db.exec(`
   CREATE TABLE notes (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

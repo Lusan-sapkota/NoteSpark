@@ -9,7 +9,7 @@ console.warn = (...a: unknown[]) => { warnings.push(a.join(' ')); warn(...a); };
 
 process.env.NOTESPARK_DIR = mkdtempSync(join(tmpdir(), 'notespark-test-'));
 
-const src = new URL('../../../Mobile/src/storage/', import.meta.url).href;
+const src = new URL('../../../mobile/src/storage/', import.meta.url).href;
 export const database = await import(`${src}database.ts`);
 export const notes = await import(`${src}notes.ts`);
 export const profiles = await import(`${src}profiles.ts`);

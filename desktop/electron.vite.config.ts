@@ -7,7 +7,7 @@ import pkg from './package.json';
 // Shared pure code lives in ../packages/core (same alias as Mobile).
 const alias = { '@notespark/core': resolve(__dirname, '../packages/core/src/index.ts') };
 const app = (path: string) => resolve(__dirname, 'src/renderer/app', path);
-const mobileSrc = resolve(__dirname, '../Mobile/src');
+const mobileSrc = resolve(__dirname, '../mobile/src');
 // Phone modules that can't run in a browser are swapped, by file, for the versions in src/renderer/app/overrides.
 const overrides: Record<string, string> = Object.fromEntries(
   ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'storage/attachments', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'components/Menu', 'screens/PrivacyScreen'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
@@ -39,7 +39,7 @@ export default defineConfig({
         name: 'embedder-in-helper-process',
         enforce: 'pre',
         transform: (code, id) => {
-          if (!id.endsWith('Mobile/src/storage/semanticSearch.ts')) return null;
+          if (!id.endsWith('mobile/src/storage/semanticSearch.ts')) return null;
           const start = code.indexOf('const loadEmbedder = async (): Promise<Embed> => {');
           const end = code.indexOf('\n};\n\nconst getEmbedder', start);
           if (start < 0 || end < 0) throw new Error(`embedder-in-helper-process: loadEmbedder not found in ${id}`);
@@ -54,7 +54,7 @@ export default defineConfig({
   },
   preload: { resolve: { alias } },
   renderer: {
-    // Let the dev server read ../Mobile.
+    // Let the dev server read ../mobile.
     server: { fs: { allow: [resolve(__dirname, '..')] } },
     // Smaller code to parse and keep in memory; no source maps shipped.
     build: { minify: true, sourcemap: false },
@@ -82,7 +82,7 @@ export default defineConfig({
         name: 'require-images',
         enforce: 'pre',
         transform: (code, id) =>
-          id.includes('/Mobile/src/') && /require\((['"])\.\.?\/[^'"]+\.png\1\)/.test(code)
+          id.includes('/mobile/src/') && /require\((['"])\.\.?\/[^'"]+\.png\1\)/.test(code)
             ? code.replace(/require\((['"])(\.\.?\/[^'"]+\.png)\1\)/g, (_m, _q, file) => `({ uri: new URL('${file}', import.meta.url).href })`)
             : null,
       },
@@ -101,7 +101,7 @@ export default defineConfig({
           };
           const RESTORED = "If this phone was restored from a backup, a locked profile's encryption key isn't included in backups.";
           const RESTORED_DESKTOP = "If NoteSpark's folder was moved or restored from a backup, a protected profile's key may be missing: it is kept in your system's keyring, not in the folder.";
-          if (id.endsWith('Mobile/src/screens/HomeScreen.tsx')) {
+          if (id.endsWith('mobile/src/screens/HomeScreen.tsx')) {
             replaceAll(RESTORED, RESTORED_DESKTOP);
             // The desktop header already carries the app's name and logo; this row names the place.
             replace(": 'NoteSpark'}", ": 'Notes'}");
@@ -114,11 +114,11 @@ export default defineConfig({
             code = code.slice(0, profile) + code.slice(profileEnd, settingsEnd) + code.slice(profile, profileEnd) + code.slice(settingsEnd);
             return code;
           }
-          if (id.endsWith('Mobile/src/screens/EditorScreen.tsx')) {
+          if (id.endsWith('mobile/src/screens/EditorScreen.tsx')) {
             replace('Your phone may be low on storage.', 'Your computer may be low on storage.');
             return code;
           }
-          if (id.endsWith('Mobile/src/screens/ProfileLockScreen.tsx')) {
+          if (id.endsWith('mobile/src/screens/ProfileLockScreen.tsx')) {
             // No fingerprint on desktop (no cross-platform Electron API): drop it and make PIN last.
             const start = code.indexOf('<LockChoice\n              icon={fingerprintReady');
             const end = start < 0 ? -1 : code.indexOf('\n            />\n', start);
@@ -128,7 +128,7 @@ export default defineConfig({
             replace('Anyone using this phone can open it', 'Anyone using this computer can open it');
             return code;
           }
-          if (id.endsWith('Mobile/src/screens/SettingsScreen.tsx')) {
+          if (id.endsWith('mobile/src/screens/SettingsScreen.tsx')) {
             // Reminders and shared text run via src/main/notify.ts; the tray row ends the group.
             replaceAll(RESTORED, RESTORED_DESKTOP);
             replace('Your notes never leave your phone', 'Your notes never leave this computer');
@@ -141,7 +141,7 @@ export default defineConfig({
             code = `import KeepInTrayRow from '${app('KeepInTrayRow.tsx')}';\n` + code.slice(0, flag) + 'isLast={false}' + code.slice(flag + 'isLast'.length, after) + '          <KeepInTrayRow />\n' + code.slice(after);
             return code;
           }
-          if (id.endsWith('Mobile/src/screens/OnboardingScreen.tsx')) {
+          if (id.endsWith('mobile/src/screens/OnboardingScreen.tsx')) {
             replace('Notes that stay on your phone', 'Notes that stay on this computer');
             replace('No account, no cloud, no ads. Even search works offline: it finds notes by meaning, not just by matching words.', 'No account, no cloud, no ads. Your notes live in a database on this computer. The web view, if you turn it on, is only for devices on your own network.');
             replace('Tap New note on the home screen and start typing.', 'Choose New note on the home screen and start typing.');
@@ -155,7 +155,7 @@ export default defineConfig({
         name: 'desktop-tooltips',
         enforce: 'pre', // after desktop-copy, which looks for the unwrapped buttons
         transform: (code, id) => {
-          if (!id.includes('/Mobile/src/') || !/\.tsx$/.test(id) || !/<(Appbar\.|IconButton)/.test(code)) return null;
+          if (!id.includes('/mobile/src/') || !/\.tsx$/.test(id) || !/<(Appbar\.|IconButton)/.test(code)) return null;
           let count = 0;
           const wrapped = code.replace(/<(?:Appbar\.(?:Action|BackAction)|IconButton)\b((?:(?!\/>)[\s\S])*?)accessibilityLabel=("[^"]*"|\{(?:[^{}]|\{[^{}]*\})*\})((?:(?!\/>)[\s\S])*?)\/>/g, (all, _a, label) => { count++; return `<Tip title=${label}>${all}</Tip>`; });
           return count ? `import Tip from '${resolve(__dirname, 'src/renderer/app/Tip.tsx')}';\n${wrapped}` : null;
@@ -166,7 +166,7 @@ export default defineConfig({
         name: 'desktop-dialog-width',
         enforce: 'pre',
         transform: (code, id) => {
-          if (!id.includes('/Mobile/src/') || !/\.tsx$/.test(id) || !/<(Dialog|Snackbar)[\s>]/.test(code)) return null;
+          if (!id.includes('/mobile/src/') || !/\.tsx$/.test(id) || !/<(Dialog|Snackbar)[\s>]/.test(code)) return null;
           return code
             .replace(/<Dialog(\s)/g, "<Dialog style={{ width: '100%', maxWidth: 560, alignSelf: 'center' }}$1")
             .replace(/<Snackbar(\s)/g, '<Snackbar style={{ maxWidth: 560 }}$1');
@@ -179,7 +179,7 @@ export default defineConfig({
         transform: (code, id) => {
           const rewrite = (file: string, module: string, name: string) =>
             id.endsWith(file) && code.includes(`require('${module}')`) ? `import * as ${name} from '${module}';\n${code.replaceAll(`require('${module}')`, name)}` : null;
-          return rewrite('Mobile/src/screens/ImportExportScreen.tsx', 'expo-print', '__expoPrint') ?? rewrite('Mobile/src/components/MarkdownRenderer.tsx', 'react-native', '__reactNative');
+          return rewrite('mobile/src/screens/ImportExportScreen.tsx', 'expo-print', '__expoPrint') ?? rewrite('mobile/src/components/MarkdownRenderer.tsx', 'react-native', '__reactNative');
         },
       },
       {
@@ -192,7 +192,7 @@ export default defineConfig({
         // Mobile's theme.ts loads fonts with require('x.ttf'); turn that into a Vite asset URL.
         name: 'require-font',
         transform: (code, id) =>
-          id.endsWith('Mobile/src/theme/theme.ts')
+          id.endsWith('mobile/src/theme/theme.ts')
             ? code.replace(/require\((['"][^'"]+\.ttf['"])\)/g, 'new URL($1, import.meta.url).href')
             : null,
       },
@@ -215,7 +215,7 @@ export default defineConfig({
         'react-native-safe-area-context': app('shims/safe-area.tsx'),
         '@react-native-async-storage/async-storage': app('shims/async-storage.ts'),
       },
-      // Mobile/ has its own node_modules; make its files use Desktop's single copy.
+      // mobile/ has its own node_modules; make its files use Desktop's single copy.
       dedupe: ['react', 'react-dom', 'react-native-paper', '@expo/vector-icons', 'react-native-markdown-display'],
     },
     define: { __APP_VERSION__: JSON.stringify(pkg.version), global: 'globalThis', __DEV__: 'false', 'process.env.NODE_ENV': '"production"' },

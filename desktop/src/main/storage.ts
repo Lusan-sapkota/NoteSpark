@@ -1,11 +1,11 @@
-// The phone's storage code (Mobile/src/storage) running in the main process; the renderer uses the 'storage' channel.
+// The phone's storage code (mobile/src/storage) running in the main process; the renderer uses the 'storage' channel.
 import { BrowserWindow } from 'electron';
-import * as attachments from '../../../Mobile/src/storage/attachments';
-import * as autoBackup from '../../../Mobile/src/storage/autoBackup';
-import * as database from '../../../Mobile/src/storage/database';
-import * as notes from '../../../Mobile/src/storage/notes';
-import * as profiles from '../../../Mobile/src/storage/profiles';
-import * as semanticSearch from '../../../Mobile/src/storage/semanticSearch';
+import * as attachments from '../../../mobile/src/storage/attachments';
+import * as autoBackup from '../../../mobile/src/storage/autoBackup';
+import * as database from '../../../mobile/src/storage/database';
+import * as notes from '../../../mobile/src/storage/notes';
+import * as profiles from '../../../mobile/src/storage/profiles';
+import * as semanticSearch from '../../../mobile/src/storage/semanticSearch';
 import { idleMs, watchAway } from './activity';
 import AsyncStorage from '@notespark/node-shims/async-storage';
 

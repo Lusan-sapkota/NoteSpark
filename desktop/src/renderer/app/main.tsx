@@ -10,24 +10,24 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { canShowMenuButton, MENU_BUTTON_CHANGED } from './KeepInTrayRow';
 import { Navigator, useCurrentNavigation } from './nav';
 import { setMeaningSearchAvailable } from './overrides/storage/semanticSearch';
-// The phone's real screens, theme and shared components, imported straight from Mobile/.
-import { ThemeProvider, useTheme } from '../../../../Mobile/src/theme/ThemeContext';
-import { readingWidth, shape, space } from '../../../../Mobile/src/theme/theme';
-import { DialogProvider, useAlert } from '../../../../Mobile/src/components/DialogProvider';
-import { getStartScreen, StartScreen, startRoutes } from '../../../../Mobile/src/utils/startScreen';
-import HomeScreen from '../../../../Mobile/src/screens/HomeScreen';
-import NoteViewScreen from '../../../../Mobile/src/screens/NoteViewScreen';
-import TasksScreen from '../../../../Mobile/src/screens/TasksScreen';
-import BinScreen from '../../../../Mobile/src/screens/BinScreen';
-import EditorScreen from '../../../../Mobile/src/screens/EditorScreen';
-import ImportExportScreen from '../../../../Mobile/src/screens/ImportExportScreen';
-import ScratchpadScreen from '../../../../Mobile/src/screens/ScratchpadScreen';
-import SettingsScreen from '../../../../Mobile/src/screens/SettingsScreen';
-import ProfileLockScreen from '../../../../Mobile/src/screens/ProfileLockScreen';
-import ProfileUnlockScreen from '../../../../Mobile/src/screens/ProfileUnlockScreen';
-import AboutScreen from '../../../../Mobile/src/screens/AboutScreen';
-import PrivacyScreen from '../../../../Mobile/src/screens/PrivacyScreen';
-import OnboardingScreen from '../../../../Mobile/src/screens/OnboardingScreen';
+// The phone's real screens, theme and shared components, imported straight from mobile/.
+import { ThemeProvider, useTheme } from '../../../../mobile/src/theme/ThemeContext';
+import { readingWidth, shape, space } from '../../../../mobile/src/theme/theme';
+import { DialogProvider, useAlert } from '../../../../mobile/src/components/DialogProvider';
+import { getStartScreen, StartScreen, startRoutes } from '../../../../mobile/src/utils/startScreen';
+import HomeScreen from '../../../../mobile/src/screens/HomeScreen';
+import NoteViewScreen from '../../../../mobile/src/screens/NoteViewScreen';
+import TasksScreen from '../../../../mobile/src/screens/TasksScreen';
+import BinScreen from '../../../../mobile/src/screens/BinScreen';
+import EditorScreen from '../../../../mobile/src/screens/EditorScreen';
+import ImportExportScreen from '../../../../mobile/src/screens/ImportExportScreen';
+import ScratchpadScreen from '../../../../mobile/src/screens/ScratchpadScreen';
+import SettingsScreen from '../../../../mobile/src/screens/SettingsScreen';
+import ProfileLockScreen from '../../../../mobile/src/screens/ProfileLockScreen';
+import ProfileUnlockScreen from '../../../../mobile/src/screens/ProfileUnlockScreen';
+import AboutScreen from '../../../../mobile/src/screens/AboutScreen';
+import PrivacyScreen from '../../../../mobile/src/screens/PrivacyScreen';
+import OnboardingScreen from '../../../../mobile/src/screens/OnboardingScreen';
 
 const screens = {
   Home: HomeScreen,

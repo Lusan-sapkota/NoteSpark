@@ -2,10 +2,10 @@ import assert from 'node:assert/strict';
 import { readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { test } from 'node:test';
-import { unzipSync, zipSync } from '../../../Mobile/node_modules/fflate/esm/browser.js';
+import { unzipSync, zipSync } from '../../../mobile/node_modules/fflate/esm/browser.js';
 import { attachments, freshProfile, notes, sample } from './helpers.ts';
 
-const exportNotes = await import(new URL('../../../Mobile/src/utils/exportNotes.ts', import.meta.url).href);
+const exportNotes = await import(new URL('../../../mobile/src/utils/exportNotes.ts', import.meta.url).href);
 
 const noteFilesDir = () => join(process.env.NOTESPARK_DIR!, 'note-files');
 

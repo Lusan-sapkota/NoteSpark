@@ -1,5 +1,5 @@
-// Stands in for Mobile/src/storage/profiles.ts in the desktop renderer: the real module runs in the main process.
-import type * as Real from '../../../../../../Mobile/src/storage/profiles';
+// Stands in for mobile/src/storage/profiles.ts in the desktop renderer: the real module runs in the main process.
+import type * as Real from '../../../../../../mobile/src/storage/profiles';
 import { storageProxy } from '../../bridge';
 
 export const {
@@ -17,4 +17,4 @@ export const {
 ] as const);
 
 export const AUTO_LOCK_MINUTES = [0, 1, 5, 15]; // same values as the phone's module
-export type { Profile } from '../../../../../../Mobile/src/storage/profiles';
+export type { Profile } from '../../../../../../mobile/src/storage/profiles';

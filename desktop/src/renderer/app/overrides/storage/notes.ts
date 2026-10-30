@@ -1,5 +1,5 @@
-// Stands in for Mobile/src/storage/notes.ts in the desktop renderer: the real module runs in the main process.
-import type * as Real from '../../../../../../Mobile/src/storage/notes';
+// Stands in for mobile/src/storage/notes.ts in the desktop renderer: the real module runs in the main process.
+import type * as Real from '../../../../../../mobile/src/storage/notes';
 import { storageProxy } from '../../bridge';
 
 // Same idea as changesNotes on the phone: bumped after every write, so screens can skip a reload.
@@ -22,4 +22,4 @@ export const {
 } = api;
 
 export const SCRATCHPAD_ID = 0; // same value as the phone's module
-export type { ShareTarget, ImportMode, EditorDraft } from '../../../../../../Mobile/src/storage/notes';
+export type { ShareTarget, ImportMode, EditorDraft } from '../../../../../../mobile/src/storage/notes';

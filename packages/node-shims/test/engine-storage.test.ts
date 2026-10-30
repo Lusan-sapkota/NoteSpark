@@ -5,7 +5,7 @@ import { test } from 'node:test';
 import { Client, FakeClock, Hub, Net } from '../../sync-protocol/src/index.ts';
 import { attachments, crdt, database, profiles, sqlite } from './helpers.ts';
 
-const src = new URL('../../../Mobile/src/storage/', import.meta.url).href;
+const src = new URL('../../../mobile/src/storage/', import.meta.url).href;
 const { storageStore } = await import(`${src}syncStore.ts`);
 
 const sha256 = (d: Uint8Array) => new Uint8Array(createHash('sha256').update(d).digest());

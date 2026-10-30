@@ -1,4 +1,4 @@
-// Just enough of expo-sqlite for the phone's storage code (Mobile/src/storage), on better-sqlite3-multiple-ciphers.
+// Just enough of expo-sqlite for the phone's storage code (mobile/src/storage), on better-sqlite3-multiple-ciphers.
 // The native module loads on first open, so a tray-only app never pays for it.
 import { mkdirSync, rmSync } from 'node:fs';
 import { join, sep } from 'node:path';

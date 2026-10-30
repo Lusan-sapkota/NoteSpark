@@ -1,10 +1,10 @@
 /* Family names match the phone's theme.ts (each weight is its own family). */
-@font-face { font-family: Figtree-Regular; src: url('../../../Mobile/assets/fonts/Figtree-Regular.ttf'); }
-@font-face { font-family: Figtree-Medium; src: url('../../../Mobile/assets/fonts/Figtree-Medium.ttf'); }
-@font-face { font-family: Figtree-SemiBold; src: url('../../../Mobile/assets/fonts/Figtree-SemiBold.ttf'); }
-@font-face { font-family: Literata-Regular; src: url('../../../Mobile/assets/fonts/Literata-Regular.ttf'); }
-@font-face { font-family: Literata-Italic; src: url('../../../Mobile/assets/fonts/Literata-Italic.ttf'); }
-@font-face { font-family: Literata-SemiBold; src: url('../../../Mobile/assets/fonts/Literata-SemiBold.ttf'); }
+@font-face { font-family: Figtree-Regular; src: url('../../../mobile/assets/fonts/Figtree-Regular.ttf'); }
+@font-face { font-family: Figtree-Medium; src: url('../../../mobile/assets/fonts/Figtree-Medium.ttf'); }
+@font-face { font-family: Figtree-SemiBold; src: url('../../../mobile/assets/fonts/Figtree-SemiBold.ttf'); }
+@font-face { font-family: Literata-Regular; src: url('../../../mobile/assets/fonts/Literata-Regular.ttf'); }
+@font-face { font-family: Literata-Italic; src: url('../../../mobile/assets/fonts/Literata-Italic.ttf'); }
+@font-face { font-family: Literata-SemiBold; src: url('../../../mobile/assets/fonts/Literata-SemiBold.ttf'); }
 html, body, #root { height: 100%; margin: 0; }
 :root { color-scheme: light dark; } /* native scrollbars follow nativeTheme.themeSource */
 #root { display: flex; }

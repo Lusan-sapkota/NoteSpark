@@ -1,4 +1,4 @@
-// Runs Mobile/src/storage in plain Node: Expo modules -> node-shims, @notespark/* -> sources, extensionless -> .ts.
+// Runs mobile/src/storage in plain Node: Expo modules -> node-shims, @notespark/* -> sources, extensionless -> .ts.
 import { existsSync, statSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -16,7 +16,7 @@ const map = {
   'expo-local-authentication': resolve(root, 'packages/node-shims/test/loader/local-authentication.ts'),
   '@notespark/core': resolve(root, 'packages/core/src/index.ts'),
   '@notespark/sync': resolve(root, 'packages/sync/src/index.ts'),
-  'better-sqlite3-multiple-ciphers': resolve(root, 'Desktop/node_modules/better-sqlite3-multiple-ciphers/lib/index.js'),
+  'better-sqlite3-multiple-ciphers': resolve(root, 'desktop/node_modules/better-sqlite3-multiple-ciphers/lib/index.js'),
 };
 const isFile = p => existsSync(p) && statSync(p).isFile();
 
@@ -31,7 +31,7 @@ export async function resolve_(specifier, context, next) {
 export { resolve_ as resolve };
 
 // Type stripping keeps type-only imports; TypeScript's transpile drops them.
-const ts = (await import(pathToFileURL(resolve(root, 'Mobile/node_modules/typescript/lib/typescript.js')).href)).default;
+const ts = (await import(pathToFileURL(resolve(root, 'mobile/node_modules/typescript/lib/typescript.js')).href)).default;
 export async function load(url, context, next) {
   if (!url.startsWith('file:') || !url.endsWith('.ts') || url.includes('/node_modules/')) return next(url, context);
   const source = (await import('node:fs/promises')).readFile(fileURLToPath(url), 'utf8');

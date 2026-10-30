@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import GroupedRow from '../../../../Mobile/src/components/GroupedRow';
-import M3Switch from '../../../../Mobile/src/components/M3Switch';
-import { useAlert } from '../../../../Mobile/src/components/DialogProvider';
+import GroupedRow from '../../../../mobile/src/components/GroupedRow';
+import M3Switch from '../../../../mobile/src/components/M3Switch';
+import { useAlert } from '../../../../mobile/src/components/DialogProvider';
 import { isDesktop } from './bridge';
 
 // Desktop-only Settings rows; the settings channel refuses keys containing pin/key/secret/token/backup, so not "keepInTray".

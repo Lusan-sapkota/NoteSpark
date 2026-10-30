@@ -1,5 +1,5 @@
 import { Tooltip, TooltipProps } from 'react-native-paper';
-import { useTheme } from '../../../../Mobile/src/theme/ThemeContext';
+import { useTheme } from '../../../../mobile/src/theme/ThemeContext';
 
 // Tooltip on the app's own surface colors (Paper's is inverse); electron.vite.config.ts wraps icon buttons in it.
 const Tip = (props: TooltipProps) => {

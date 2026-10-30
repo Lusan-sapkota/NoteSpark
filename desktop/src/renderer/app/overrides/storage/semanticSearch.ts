@@ -1,5 +1,5 @@
-// Stands in for Mobile/src/storage/semanticSearch.ts; availability is asked once at start since the phone's check is sync.
-import type * as Real from '../../../../../../Mobile/src/storage/semanticSearch';
+// Stands in for mobile/src/storage/semanticSearch.ts; availability is asked once at start since the phone's check is sync.
+import type * as Real from '../../../../../../mobile/src/storage/semanticSearch';
 import { storageProxy } from '../../bridge';
 
 let available = false;

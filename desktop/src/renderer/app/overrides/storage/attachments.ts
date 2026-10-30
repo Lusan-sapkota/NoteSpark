@@ -1,4 +1,4 @@
-// Stands in for Mobile/src/storage/attachments.ts in the desktop renderer: the real module runs in the main process.
+// Stands in for mobile/src/storage/attachments.ts in the desktop renderer: the real module runs in the main process.
 import {
   ATTACHMENT_HASH_RE,
   ATTACHMENT_TOO_LARGE_MESSAGE,
@@ -12,8 +12,8 @@ import {
   removeAttachmentLink,
   sanitizeAttachmentName,
 } from '@notespark/core';
-import type * as Real from '../../../../../../Mobile/src/storage/attachments';
-import type { AddAttachmentInput } from '../../../../../../Mobile/src/storage/attachments';
+import type * as Real from '../../../../../../mobile/src/storage/attachments';
+import type { AddAttachmentInput } from '../../../../../../mobile/src/storage/attachments';
 import { storageProxy } from '../../bridge';
 
 export {

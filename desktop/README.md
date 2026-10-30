@@ -21,7 +21,7 @@ npm run build      # electron-vite build into out/
 npm run dist       # also packages dist/NoteSpark-<version>.AppImage
 ```
 
-`Mobile/` holds the phone screens that this app reuses, and `packages/core` the code both share (it is aliased as `@notespark/core`). Run the built app with `npx electron .` (unset `ELECTRON_RUN_AS_NODE` in editors that set it). `NOTESPARK_DIR` points the app at another data folder; `scripts/seed-db.mjs` builds a database from a NoteSpark JSON export.
+`mobile/` holds the phone screens that this app reuses, and `packages/core` the code both share (it is aliased as `@notespark/core`). Run the built app with `npx electron .` (unset `ELECTRON_RUN_AS_NODE` in editors that set it). `NOTESPARK_DIR` points the app at another data folder; `scripts/seed-db.mjs` builds a database from a NoteSpark JSON export.
 
 ## Notes for packagers
 

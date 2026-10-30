@@ -4,9 +4,9 @@ import { Linking, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Text } from 'react-native-paper';
-import Header, { useHeaderElevation } from '../../../../../../Mobile/src/components/Header';
-import { useTheme } from '../../../../../../Mobile/src/theme/ThemeContext';
-import { readingWidth, space } from '../../../../../../Mobile/src/theme/theme';
+import Header, { useHeaderElevation } from '../../../../../../mobile/src/components/Header';
+import { useTheme } from '../../../../../../mobile/src/theme/ThemeContext';
+import { readingWidth, space } from '../../../../../../mobile/src/theme/theme';
 
 const CONTACT_EMAIL = 'contact@lusansapkota.com.np';
 const EFFECTIVE_DATE = 'October 26, 2026';

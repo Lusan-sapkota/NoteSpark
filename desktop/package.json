@@ -62,7 +62,7 @@
     ],
     "extraResources": [
       {
-        "from": "../Mobile/assets/models",
+        "from": "../mobile/assets/models",
         "to": "models",
         "filter": [
           "all-MiniLM-L6-v2-int8.onnx",

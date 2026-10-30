@@ -1,4 +1,4 @@
-# Repo-wide. Each app folder (Mobile, Desktop, Docker, Web) has its own .gitignore too.
+# Repo-wide. Each app folder (mobile, desktop, docker, web) has its own .gitignore too.
 
 # Secrets, anywhere in the repo
 .env

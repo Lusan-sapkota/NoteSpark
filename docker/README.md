@@ -1,4 +1,4 @@
-# NoteSpark hub (Docker)
+# NoteSpark hub (docker)
 
 Coming soon. A small sync hub for a home server: it syncs your paired devices over your LAN or a private tunnel and keeps every note as a plain Markdown file on a volume.
 

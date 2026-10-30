@@ -68,13 +68,13 @@
     "../packages/core/src",
     "../packages/sync/src",
     "../packages/node-shims/src",
-    "../Mobile/src/storage/crdt.ts",
-    "../Mobile/src/storage/database.ts",
-    "../Mobile/src/storage/notes.ts",
-    "../Mobile/src/storage/profiles.ts",
-    "../Mobile/src/storage/autoBackup.ts",
-    "../Mobile/src/storage/semanticSearch.ts",
-    "../Mobile/src/storage/attachments.ts"
+    "../mobile/src/storage/crdt.ts",
+    "../mobile/src/storage/database.ts",
+    "../mobile/src/storage/notes.ts",
+    "../mobile/src/storage/profiles.ts",
+    "../mobile/src/storage/autoBackup.ts",
+    "../mobile/src/storage/semanticSearch.ts",
+    "../mobile/src/storage/attachments.ts"
   ],
   "exclude": [
     "src/renderer/app"
