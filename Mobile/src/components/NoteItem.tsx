@@ -1,6 +1,7 @@
-import React, { memo, useMemo, useState } from 'react';
+import React, { memo, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Icon, IconButton, Text, TouchableRipple } from 'react-native-paper';
+import Swipeable, { SwipeableMethods, SwipeDirection } from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Menu from './Menu';
 import { markTaskBoxes } from '@notespark/core';
 import { Note } from '../types';
@@ -75,6 +76,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
 }) => {
   const { theme } = useTheme();
   const [menuVisible, setMenuVisible] = useState(false);
+  const swipe = useRef<SwipeableMethods>(null);
   const preview = useMemo(() => toPreview(note.content), [note.content]);
   const title = note.title || 'Untitled note';
   const date = relativeDate(showCreated ? note.createdAt : note.updatedAt);
@@ -82,15 +84,21 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   const onColorVariant = selected ? theme.colors.onSecondaryContainer : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant;
   const background = selected ? theme.colors.secondaryContainer : isPinned ? theme.colors.primaryContainer : theme.colors.surfaceContainerLow;
 
-  return (
-    <View
-      style={[
-        styles.container,
-        groupCorners(isFirst, isLast),
-        { backgroundColor: background },
-        isLast ? styles.groupGap : styles.gap,
-      ]}
-    >
+  // Swipe right to archive (no question, Home offers Undo); swipe left to move to bin (Home asks first, so the row snaps back).
+  const swipeAction = (icon: string, label: string, color: string, onColor: string, align: 'flex-start' | 'flex-end') => (
+    <View style={[styles.swipeAction, { backgroundColor: color, alignItems: align }]}>
+      <Icon source={icon} size={24} color={onColor} />
+      <Text variant="labelMedium" maxFontSizeMultiplier={1.5} style={{ color: onColor }}>{label}</Text>
+    </View>
+  );
+  const onSwipeOpen = (direction: SwipeDirection.LEFT | SwipeDirection.RIGHT) => {
+    swipe.current?.close();
+    if (direction === SwipeDirection.LEFT) onArchiveToggle(note.id);
+    else onDelete(note.id);
+  };
+
+  const body = (
+    <View style={{ backgroundColor: background }}>
       <TouchableRipple
         onPress={() => (selecting ? onSelect(note.id) : onPress(note.id))}
         onLongPress={() => onSelect(note.id)}
@@ -184,6 +192,26 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
       </TouchableRipple>
     </View>
   );
+
+  const containerStyle = [styles.container, groupCorners(isFirst, isLast), isLast ? styles.groupGap : styles.gap];
+  if (selecting) return <View style={containerStyle}>{body}</View>;
+  return (
+    <Swipeable
+      ref={swipe}
+      containerStyle={containerStyle}
+      overshootLeft={false}
+      overshootRight={false}
+      onSwipeableOpen={onSwipeOpen}
+      renderLeftActions={() =>
+        swipeAction(note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline', note.isArchived ? 'Unarchive' : 'Archive', theme.colors.secondaryContainer, theme.colors.onSecondaryContainer, 'flex-start')
+      }
+      renderRightActions={() =>
+        swipeAction('delete-outline', 'Move to bin', theme.colors.errorContainer, theme.colors.onErrorContainer, 'flex-end')
+      }
+    >
+      {body}
+    </Swipeable>
+  );
 });
 
 const styles = StyleSheet.create({
@@ -196,6 +224,12 @@ const styles = StyleSheet.create({
   },
   groupGap: {
     marginBottom: space.lg,
+  },
+  swipeAction: {
+    flex: 1,
+    minWidth: 112,
+    justifyContent: 'center',
+    paddingHorizontal: space.lg,
   },
   row: {
     paddingTop: space.md,

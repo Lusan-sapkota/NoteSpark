@@ -203,6 +203,7 @@ export default defineConfig({
         'react-native': app('shims/react-native.tsx'),
         '@react-navigation/native': app('nav.tsx'),
         'react-native-reanimated': app('shims/reanimated.tsx'),
+        'react-native-gesture-handler/ReanimatedSwipeable': app('shims/swipeable.tsx'),
         'expo-application': app('shims/application.ts'),
         'expo-image-picker': app('shims/image-picker.ts'),
         'expo-file-system/legacy': app('shims/file-system.ts'),

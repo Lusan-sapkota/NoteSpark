@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { NavigationContainer, StackActions } from '@react-navigation/native';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { Button, PaperProvider, Portal, Text } from 'react-native-paper';
@@ -22,6 +23,7 @@ import ProfileUnlockScreen from './src/screens/ProfileUnlockScreen';
 import { runAutoBackupIfDue } from './src/storage/autoBackup';
 import { navigationRef as appNavigation } from './src/navigation/AppNavigator';
 import { Notifications } from './src/utils/notifications';
+import { getStartScreen, StartScreen } from './src/utils/startScreen';
 import { useShareIntent } from 'expo-share-intent';
 import * as QuickActions from 'expo-quick-actions';
 import { isRunningInExpoGo } from 'expo';
@@ -76,6 +78,7 @@ const AppContent = () => {
   const navigationRef = React.useRef<any>(null);
   const [dbInitialized, setDbInitialized] = useState(false);
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null);
+  const [startScreen, setStartScreen] = useState<StartScreen>('Home');
   const [lockedProfile, setLockedProfile] = useState<{ id: string; name: string } | null>(null);
   const [unreadableProfile, setUnreadableProfile] = useState<{ id: string; name: string } | null>(null);
   // Relock after time in the background, drawn over the open screens so unsaved work survives.
@@ -224,6 +227,7 @@ const AppContent = () => {
         setUnreadableProfile(fallback);
       } finally {
         const onboarded = await AsyncStorage.getItem('onboarded').catch(() => 'true');
+        setStartScreen(await getStartScreen());
         setShowOnboarding(onboarded !== 'true');
         setDbInitialized(true);
       }
@@ -321,7 +325,7 @@ const AppContent = () => {
           ) : showOnboarding ? (
             <OnboardingScreen onFinish={handleFinishOnboarding} />
           ) : (
-            <AppNavigator onReady={() => setNavReady(true)} />
+            <AppNavigator start={startScreen} onReady={() => setNavReady(true)} />
           )}
           {relocked && (
             <Portal>
@@ -341,6 +345,7 @@ const AppContent = () => {
 
 export default function App() {
   return (
+    <GestureHandlerRootView style={styles.root}>
     <SafeAreaProvider>
       {/* Keyboard avoidance is per screen; padding the whole app made the editor lose focus. */}
       <KeyboardProvider statusBarTranslucent navigationBarTranslucent>
@@ -349,6 +354,7 @@ export default function App() {
         </ThemeProvider>
       </KeyboardProvider>
     </SafeAreaProvider>
+    </GestureHandlerRootView>
   );
 }
 
