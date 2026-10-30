@@ -143,7 +143,7 @@ const LandscapeScreen: React.FC = () => {
         <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{t('landscape.overTimeHelp')}</Text>
         <View style={styles.chart}>
           {rows.map(r => (
-            <View key={r.month} style={styles.chartRow} accessible accessibilityLabel={t('landscape.monthRow', { month: monthLabel(r.month), count: r.total })}>
+            <View key={r.month} style={styles.chartRow} accessible accessibilityLabel={`${monthLabel(r.month)}, ${t('landscape.notesCount', { count: r.total })}`}>
               <Text variant="labelSmall" style={[styles.month, { color: theme.colors.onSurfaceVariant }]} maxFontSizeMultiplier={1.3}>{monthLabel(r.month)}</Text>
               <View style={[styles.bar, { width: `${(r.total / most) * 100}%` }]}>
                 {r.counts.map((n, i) => n > 0 && <View key={i} style={{ flex: n, backgroundColor: tones[i % tones.length].bg, borderWidth: open === i ? 2 : 0, borderColor: theme.colors.outline }} />)}

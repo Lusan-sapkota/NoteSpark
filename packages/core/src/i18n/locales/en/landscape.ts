@@ -11,7 +11,6 @@ export default {
   'landscape.fadingHelp': 'Fewer notes in the last 3 months than in the 3 before.',
   'landscape.overTime': 'Over time',
   'landscape.overTimeHelp': 'Notes written each month, by topic.',
-  'landscape.monthRow': '{month}, {count} notes',
   'landscape.closestNotes': 'Closest notes',
   'landscape.openTopic': 'Show the notes of {name}',
   'landscape.tooFewTitle': 'Not enough notes yet',
