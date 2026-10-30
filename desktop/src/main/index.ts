@@ -140,13 +140,18 @@ else {
       const web = webViewStatus();
       tray?.setContextMenu(Menu.buildFromTemplate([
         { label: 'Open NoteSpark', click: showWindow },
+        { label: 'New note', click: () => deliver({ type: 'go', routes: ['Home', 'Editor'] }) },
+        { label: 'Save clipboard text', click: () => void saveClipboard((fn, ...args) => invoke('storage', { module: 'notes', fn, args }, 'ipc')) },
         { type: 'separator' },
         web.on
-          ? { label: 'Stop web view', click: () => stopWebView().then(refreshTray).then(quitIfIdle) }
+          ? {
+              label: 'Web view (on)',
+              submenu: [
+                { label: 'Copy link', click: () => clipboard.writeText(webViewStatus().links.at(-1) ?? '') },
+                { label: 'Stop', click: () => stopWebView().then(refreshTray).then(quitIfIdle) },
+              ],
+            }
           : { label: 'Start web view', click: () => startWebView(invoke).then(refreshTray, () => {}) },
-        ...(web.on ? [{ label: 'Copy web view link', click: () => clipboard.writeText(webViewStatus().links.at(-1) ?? '') }] : []),
-        { type: 'separator' },
-        { label: 'Save clipboard text', click: () => void saveClipboard((fn, ...args) => invoke('storage', { module: 'notes', fn, args }, 'ipc')) },
         { type: 'separator' },
         { label: 'Quit', click: () => app.quit() },
       ]));
