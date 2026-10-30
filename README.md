@@ -16,7 +16,7 @@ Private, offline notes. No accounts, no ads, no tracking: your notes stay on you
 ## Mobile app
 
 ```bash
-cd Mobile
+cd mobile
 npm install
 npx expo start
 ```
