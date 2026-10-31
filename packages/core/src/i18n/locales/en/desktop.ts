@@ -67,4 +67,12 @@ export default {
   'desktop.showMenuButtonHelp': 'Turn off if your desktop already shows the menu at the top of the screen.',
   'desktop.keepInTray': 'Keep running in the tray',
   'desktop.keepInTrayHelp': 'Closing the window keeps NoteSpark running. Quit from the tray icon.',
+  // Wording that differs from the phone's (the keys these stand in for are in i18n/desktopKeys.ts).
+  'desktop.noLockDescription': 'Anyone using this computer can open it',
+  'desktop.addImageFailedMessage': 'Your computer may be low on storage. Free some space and try again.',
+  'desktop.privacyDescription': 'Your notes never leave this computer',
+  'desktop.slide1Title': 'Notes that stay on this computer',
+  'desktop.slide1Body': 'No account, no cloud, no ads. Your notes live in a database on this computer. The web view, if you turn it on, is only for devices on your own network.',
+  'desktop.slide2Body': 'Choose New note on the home screen and start typing. Pin the notes you need most.',
+  'desktop.shareDescription': 'Save clipboard text from the tray: {target}',
 } as const;

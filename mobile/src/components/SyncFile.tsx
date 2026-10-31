@@ -1,30 +1,21 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Button, Dialog, HelperText, Portal, Text, TextInput } from 'react-native-paper';
-import * as DocumentPicker from 'expo-document-picker';
-import { randomUUID } from 'expo-crypto';
-import { sha256 } from '@noble/hashes/sha2.js';
-import { SyncFileError, SyncFileFlowError, type ImportPlan, exportSyncFile, planImport, runImport, summarizeExport } from '@notespark/sync-protocol';
 import GroupedRow from './GroupedRow';
 import M3Switch from './M3Switch';
 import Snackbar from './Snackbar';
 import { useTheme } from '../theme/ThemeContext';
 import { useI18n } from '../i18n/I18nContext';
 import { controlTheme, space } from '../theme/theme';
-import * as database from '../storage/database';
-import { addProfile, getActiveProfile, switchProfile } from '../storage/profiles';
-import { storageStore } from '../storage/syncStore';
-import { readSyncFile, shareSyncFile } from '../utils/syncFile';
-import { reconcileSync } from '../sync/syncRuntime';
+import { type PlanView, asFailure, syncFileBackend as backend } from '../utils/syncFile';
 
-type Plan = Exclude<ImportPlan, { kind: 'otherProfile' }>;
 type Dialog = 'export' | 'open' | 'preview' | 'other' | null;
 const MIN_PASSPHRASE = 8;
 
 const size = (bytes: number) => (bytes >= 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${Math.max(1, Math.round(bytes / 1024))} KB`);
 
 // Export and Import of the sync file: moving a profile between devices by hand, with no network. Passphrases live only in this
-// component's state while a dialog is open; they are never stored or logged.
+// component's state while a dialog is open; they are never stored or logged. The work itself is in `backend` (utils/syncFile.ts).
 const SyncFile: React.FC = () => {
   const { theme } = useTheme();
   const { t } = useI18n();
@@ -36,30 +27,21 @@ const SyncFile: React.FC = () => {
   const [snackbar, setSnackbar] = useState('');
   const [summary, setSummary] = useState({ notes: 0, attachments: 0, attachmentBytes: 0 });
   const [withFiles, setWithFiles] = useState(true);
-  const [bytes, setBytes] = useState<Uint8Array | null>(null);
-  const [plan, setPlan] = useState<Plan | null>(null);
-  const [otherName, setOtherName] = useState('');
+  const [plan, setPlan] = useState<PlanView | null>(null);
 
-  const store = async () => {
-    const p = await getActiveProfile();
-    return { store: storageStore(database.db, p.name, p.id), name: p.name };
-  };
-  const close = () => { setDialog(null); setPass(''); setAgain(''); setError(''); setBytes(null); setPlan(null); setBusy(false); };
+  const close = () => { backend.clear(); setDialog(null); setPass(''); setAgain(''); setError(''); setPlan(null); setBusy(false); };
 
   const explain = (e: unknown, exporting = false) => {
-    if (e instanceof SyncFileError) {
-      if (e.reason === 'passphrase') return t('sync.fileWrong');
-      if (e.reason === 'version') return t('sync.fileNewer');
-      if (e.reason === 'tooBig') return exporting ? t('sync.fileTooBig') : t('sync.fileLarge');
-      return t('sync.fileNotSync');
-    }
+    const { reason } = asFailure(e);
+    if (reason === 'passphrase') return t('sync.fileWrong');
+    if (reason === 'version') return t('sync.fileNewer');
+    if (reason === 'tooBig') return exporting ? t('sync.fileTooBig') : t('sync.fileLarge');
     return t('sync.fileNotSync');
   };
 
   const openExport = async () => {
     setError('');
-    const { store: s } = await store();
-    const found = await summarizeExport(s);
+    const found = await backend.summary();
     setSummary(found);
     setWithFiles(found.attachments > 0);
     setDialog('export');
@@ -70,11 +52,9 @@ const SyncFile: React.FC = () => {
     if (pass !== again) return setError(t('sync.filePassphraseMismatch'));
     setBusy(true);
     try {
-      const { store: s, name } = await store();
-      const file = await exportSyncFile({ store: s, name, passphrase: pass, uuid: randomUUID, attachments: withFiles });
+      const saved = await backend.exportFile(pass, withFiles);
       close();
-      await shareSyncFile(file);
-      setSnackbar(t('sync.fileSaved'));
+      if (saved) setSnackbar(t('sync.fileSaved'));
     } catch (e) {
       setError(explain(e, true));
       setBusy(false);
@@ -82,10 +62,8 @@ const SyncFile: React.FC = () => {
   };
 
   const pick = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: '*/*', copyToCacheDirectory: false });
-    if (result.canceled || !result.assets?.[0]) return;
     try {
-      setBytes(await readSyncFile(result.assets[0].uri));
+      if (!(await backend.pickFile())) return;
       setError('');
       setDialog('open');
     } catch {
@@ -94,35 +72,24 @@ const SyncFile: React.FC = () => {
   };
 
   const doOpen = async () => {
-    if (!bytes) return;
     setBusy(true);
     setError('');
     try {
-      const { store: s } = await store();
-      const found = await planImport(s, bytes, pass, sha256);
-      if (found.kind === 'otherProfile') { setOtherName(found.fileName); setDialog('other'); } else { setPlan(found); setDialog('preview'); }
+      const found = await backend.plan(pass);
+      setPlan(found);
+      setDialog(found.kind === 'otherProfile' ? 'other' : 'preview');
     } catch (e) {
-      setError(e instanceof SyncFileFlowError ? t('sync.fileNotSync') : explain(e));
+      setError(explain(e));
     }
     setBusy(false);
   };
 
   const doImport = async (asNewProfile = false) => {
-    if (!bytes) return;
     setBusy(true);
     try {
-      let target = (await store()).store;
-      if (asNewProfile) { // a new, empty profile: the file's notes join it and nothing else is touched
-        const created = await addProfile(otherName || t('sync.fileImport'));
-        await switchProfile(created.id);
-        target = (await store()).store;
-      }
-      const found = asNewProfile ? await planImport(target, bytes, pass, sha256) : plan;
-      if (!found || found.kind === 'otherProfile') throw new SyncFileError('format', 'unexpected');
-      await runImport(target, found);
+      await backend.run(asNewProfile);
       close();
       setSnackbar(t('sync.fileImported'));
-      void reconcileSync();
     } catch (e) {
       setError(explain(e));
       setBusy(false);
@@ -137,6 +104,8 @@ const SyncFile: React.FC = () => {
       {!!error && <HelperText type="error" visible>{error}</HelperText>}
     </View>
   );
+
+  if (!backend.available) return null; // the web view in a browser has no file dialogs
 
   return (
     <View>
@@ -174,7 +143,7 @@ const SyncFile: React.FC = () => {
         <Dialog visible={dialog === 'preview'} onDismiss={busy ? undefined : close}>
           <Dialog.Title>{t('sync.fileJoinTitle')}</Dialog.Title>
           <Dialog.Content>
-            {plan && <Text variant="bodyMedium">{plan.kind === 'adopt' ? t('sync.fileJoinBody', { here: plan.localNotes, there: plan.fileNotes, same: plan.pairs.length }) : t('sync.fileMergeBody', { here: plan.localNotes, there: plan.fileNotes })}</Text>}
+            {plan && <Text variant="bodyMedium">{plan.kind === 'adopt' ? t('sync.fileJoinBody', { here: plan.localNotes, there: plan.fileNotes, same: plan.same }) : t('sync.fileMergeBody', { here: plan.localNotes, there: plan.fileNotes })}</Text>}
             {plan && plan.attachments > 0 && <Text variant="bodyMedium">{t('sync.fileAttachments', { count: plan.attachments })}</Text>}
             {!!error && <HelperText type="error" visible>{error}</HelperText>}
           </Dialog.Content>
@@ -187,7 +156,7 @@ const SyncFile: React.FC = () => {
         <Dialog visible={dialog === 'other'} onDismiss={busy ? undefined : close}>
           <Dialog.Title>{t('sync.fileOtherTitle')}</Dialog.Title>
           <Dialog.Content>
-            <Text variant="bodyMedium">{t('sync.fileOtherBody', { name: otherName })}</Text>
+            <Text variant="bodyMedium">{t('sync.fileOtherBody', { name: plan?.fileName ?? '' })}</Text>
             {!!error && <HelperText type="error" visible>{error}</HelperText>}
           </Dialog.Content>
           <Dialog.Actions>

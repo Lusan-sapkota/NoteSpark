@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Platform, StyleSheet, View, ScrollView, Share, RefreshControl } from 'react-native';
+import { StyleSheet, View, ScrollView, Share, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -615,8 +615,7 @@ const ImportExportScreen: React.FC = () => {
             />
           </View>
 
-          {/* The desktop needs its own file handling for this (docs/todo.md), so it is the phone's for now. */}
-          {Platform.OS !== 'web' && <SyncFile />}
+          <SyncFile />
 
           <Text variant="titleSmall" accessibilityRole="header" style={[styles.sectionTitle, { color: theme.colors.primary }]}>
             {t('importExport.automaticBackups')}

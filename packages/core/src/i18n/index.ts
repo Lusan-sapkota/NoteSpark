@@ -35,3 +35,4 @@ export type TKey = StripPlural<keyof typeof en>;
 
 export const t = (key: TKey, params?: Params) => translate(key, params);
 export * from './translate';
+export * from './desktopKeys';

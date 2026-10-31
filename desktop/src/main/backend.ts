@@ -1,4 +1,4 @@
-import { clipboard, nativeTheme } from 'electron';
+import { clipboard, dialog, nativeTheme } from 'electron';
 import { touch } from './activity';
 import { renderPdf, saveImage } from './assets';
 import { startWebView, stopWebView, webViewStatus } from './web';
@@ -6,6 +6,8 @@ import { startWebView, stopWebView, webViewStatus } from './web';
 // One API for both transports: Electron IPC (the window) and HTTP (the web view).
 // `local` handlers run only for the desktop window, never from the browser.
 type Handler = { local?: boolean; run: (args: any, from: 'ipc' | 'http') => unknown | Promise<unknown> };
+
+let syncFileOps: { call(op: string, a: unknown): Promise<unknown> } | null = null;
 
 const handlers: Record<string, Handler> = {
   // The storage and settings code loads on first use, so a tray-only app stays small.
@@ -34,6 +36,19 @@ const handlers: Record<string, Handler> = {
       // The Wi-Fi switch changes what the web view listens on: a running view restarts so it follows.
       if (args?.op === 'update' && typeof args.args?.webLan === 'boolean' && webViewStatus().on) { await stopWebView(); await startWebView(invoke); }
       return result;
+    },
+  },
+  // Export and import of the sync file: dialogs and passphrases, so the desktop window only (never the web view).
+  syncFile: {
+    local: true,
+    run: async (args: any) => {
+      const { SyncFileOps } = await import('./syncFile');
+      const { isReady } = await import('./storage');
+      syncFileOps ??= new SyncFileOps({
+        save: async name => (await dialog.showSaveDialog({ defaultPath: name, filters: [{ name: 'NoteSpark sync file', extensions: ['nsync'] }] })).filePath ?? null,
+        open: async () => (await dialog.showOpenDialog({ properties: ['openFile'], filters: [{ name: 'NoteSpark sync file', extensions: ['nsync'] }, { name: 'All files', extensions: ['*'] }] })).filePaths[0] ?? null,
+      }, isReady);
+      return syncFileOps.call(String(args?.op), args?.args);
     },
   },
   'web:status': { local: true, run: () => webViewStatus() },

@@ -35,6 +35,10 @@ import PrivacyScreen from '../../../../mobile/src/screens/PrivacyScreen';
 import SyncScreen from './SyncScreen';
 import { text as syncText } from './syncText';
 import OnboardingScreen from '../../../../mobile/src/screens/OnboardingScreen';
+import { DESKTOP_KEYS, setKeyOverrides } from '@notespark/core';
+
+// Where the phone's texts say "phone", the desktop says "computer" (every language).
+setKeyOverrides(DESKTOP_KEYS);
 
 const screens = {
   Home: HomeScreen,

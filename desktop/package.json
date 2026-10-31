@@ -8,6 +8,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
+    "check:copy": "node scripts/check-copy.mjs",
     "start": "electron-vite preview",
     "dist": "electron-vite build && electron-builder --linux AppImage"
   },

@@ -10,7 +10,7 @@ const app = (path: string) => resolve(__dirname, 'src/renderer/app', path);
 const mobileSrc = resolve(__dirname, '../mobile/src');
 // Phone modules that can't run in a browser are swapped, by file, for the versions in src/renderer/app/overrides.
 const overrides: Record<string, string> = Object.fromEntries(
-  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'storage/attachments', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'components/Menu', 'components/MermaidDiagram', 'components/SyncFile', 'sync/syncRuntime', 'screens/PrivacyScreen'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
+  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'storage/attachments', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'components/Menu', 'components/MermaidDiagram', 'utils/syncFile', 'sync/syncRuntime', 'screens/PrivacyScreen'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
 );
 
 // The phone's storage code runs in the main process; its Expo imports resolve to the shims in src/main/shims.
@@ -87,7 +87,7 @@ export default defineConfig({
             : null,
       },
       {
-        // Phone-only copy edits; each must find its text so source changes fail the build loudly.
+        // Layout edits for the desktop (wording that differs is in packages/core/src/i18n/desktopKeys.ts); each must find its anchor so source changes fail the build loudly.
         name: 'desktop-copy',
         enforce: 'pre',
         transform: (code, id) => {
@@ -99,10 +99,7 @@ export default defineConfig({
             if (!code.includes(from)) throw new Error(`desktop-copy: "${from.slice(0, 50)}" not found in ${id}`);
             code = code.replaceAll(from, to);
           };
-          const RESTORED = "If this phone was restored from a backup, a locked profile's encryption key isn't included in backups.";
-          const RESTORED_DESKTOP = "If NoteSpark's folder was moved or restored from a backup, a protected profile's key may be missing: it is kept in your system's keyring, not in the folder.";
           if (id.endsWith('mobile/src/screens/HomeScreen.tsx')) {
-            replaceAll(RESTORED, RESTORED_DESKTOP);
             // The desktop header already carries the app's name and logo; this row names the place.
             replace(": 'NoteSpark'}", ": 'Notes'}");
             // The places sit in this row, before the profile button (on the phone the profile button comes first).
@@ -114,10 +111,6 @@ export default defineConfig({
             code = code.slice(0, profile) + code.slice(profileEnd, settingsEnd) + code.slice(profile, profileEnd) + code.slice(settingsEnd);
             return code;
           }
-          if (id.endsWith('mobile/src/screens/EditorScreen.tsx')) {
-            replace('Your phone may be low on storage.', 'Your computer may be low on storage.');
-            return code;
-          }
           if (id.endsWith('mobile/src/screens/ProfileLockScreen.tsx')) {
             // No fingerprint on desktop (no cross-platform Electron API): drop it and make PIN last.
             const start = code.indexOf('<LockChoice\n              icon={fingerprintReady');
@@ -125,26 +118,17 @@ export default defineConfig({
             if (end < 0) throw new Error(`desktop-copy: fingerprint choice not found in ${id}`);
             code = code.slice(0, code.lastIndexOf('\n', start) + 1) + code.slice(end + '\n            />\n'.length);
             replace('isLast={false}\n            />\n          </View>', 'isLast\n            />\n          </View>');
-            replace('Anyone using this phone can open it', 'Anyone using this computer can open it');
             return code;
           }
           if (id.endsWith('mobile/src/screens/SettingsScreen.tsx')) {
             // Reminders and shared text run via src/main/notify.ts; the tray row ends the group.
-            replaceAll(RESTORED, RESTORED_DESKTOP);
-            replace('Your notes never leave your phone', 'Your notes never leave this computer');
-            replace('description={shareLabel(shareTarget)}', 'description={`Save clipboard text from the tray: ${shareLabel(shareTarget).toLowerCase()}`}');
-            const row = code.indexOf('title="Task reminders"');
+            replace('description={shareLabel(shareTarget)}', "description={t('desktop.shareDescription', { target: shareLabel(shareTarget).toLowerCase() })}");
+            const row = code.indexOf("title={t('settings.taskReminders')}");
             const flag = row < 0 ? -1 : code.indexOf('isLast\n', row);
             const end = row < 0 ? -1 : code.indexOf('\n          />\n', row);
             if (flag < 0 || end < 0) throw new Error(`desktop-copy: Task reminders row not found in ${id}`);
             const after = end + '\n          />\n'.length;
             code = `import KeepInTrayRow from '${app('KeepInTrayRow.tsx')}';\n` + code.slice(0, flag) + 'isLast={false}' + code.slice(flag + 'isLast'.length, after) + '          <KeepInTrayRow />\n' + code.slice(after);
-            return code;
-          }
-          if (id.endsWith('mobile/src/screens/OnboardingScreen.tsx')) {
-            replace('Notes that stay on your phone', 'Notes that stay on this computer');
-            replace('No account, no cloud, no ads. Even search works offline: it finds notes by meaning, not just by matching words.', 'No account, no cloud, no ads. Your notes live in a database on this computer. The web view, if you turn it on, is only for devices on your own network.');
-            replace('Tap New note on the home screen and start typing.', 'Choose New note on the home screen and start typing.');
             return code;
           }
           return null;

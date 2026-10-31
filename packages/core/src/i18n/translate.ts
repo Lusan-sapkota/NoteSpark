@@ -38,7 +38,12 @@ export const resolveLanguage = (locale: string | null | undefined): LanguageCode
 
 const fill = (text: string, params?: Params) => text.replace(/\{(\w+)\}/g, (whole, name: string) => (params && name in params ? String(params[name]) : whole));
 
-export const translate = (key: string, params?: Params): string => {
+let keyOverrides: Record<string, string> = {};
+// Texts to say differently on this platform: key -> the key to use instead (desktopKeys.ts).
+export const setKeyOverrides = (overrides: Record<string, string>) => { keyOverrides = overrides; };
+
+export const translate = (original: string, params?: Params): string => {
+  const key = keyOverrides[original] ?? original;
   const own = catalogs.get(current);
   const base = catalogs.get('en');
   if (params && typeof params.count === 'number') {

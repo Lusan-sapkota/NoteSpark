@@ -18,7 +18,7 @@ const sections: { heading: TKey; intro?: TKey; bullets?: TKey[]; outro?: TKey }[
   { heading: 'privacy.leavesHeadingM', intro: 'privacy.leavesIntroM',
     bullets: ['privacy.leavesM1', 'privacy.leavesM2', 'privacy.leavesBackups', 'privacy.leavesM4'] },
   { heading: 'privacy.syncHeadingM', intro: 'privacy.syncIntroM',
-    bullets: ['privacy.syncM1', 'privacy.syncM2', 'privacy.syncM3', 'privacy.syncM4'] },
+    bullets: ['privacy.syncM1', 'privacy.syncM2', 'privacy.syncM3', 'privacy.syncM5', 'privacy.syncM4'] },
   { heading: 'privacy.permHeading',
     bullets: ['privacy.permM1', 'privacy.permM2', 'privacy.permM3', 'privacy.permM4', 'privacy.permM5', 'privacy.permM6', 'privacy.permM7'] },
   { heading: 'privacy.controlHeading',

@@ -16,7 +16,7 @@ const sections: { heading: TKey; intro?: TKey; bullets?: TKey[]; outro?: TKey }[
   { heading: 'privacy.storesHeading',
     bullets: ['privacy.storesD1', 'privacy.storesD2', 'privacy.storesD3', 'privacy.storesD4', 'privacy.storesD5'], outro: 'privacy.storesOutro' },
   { heading: 'privacy.leavesHeadingD', intro: 'privacy.leavesIntroD',
-    bullets: ['privacy.leavesD1', 'privacy.leavesD2', 'privacy.leavesBackups', 'privacy.leavesD4'] },
+    bullets: ['privacy.leavesD1', 'privacy.leavesD2', 'privacy.leavesBackups', 'privacy.leavesD5', 'privacy.leavesD4'] },
   { heading: 'privacy.webHeading', intro: 'privacy.webIntro',
     bullets: ['privacy.web1', 'privacy.web2', 'privacy.web3', 'privacy.web4'] },
   { heading: 'privacy.controlHeading',
