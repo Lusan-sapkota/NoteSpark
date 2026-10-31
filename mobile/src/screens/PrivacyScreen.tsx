@@ -14,11 +14,13 @@ const CONTACT_EMAIL = 'contact@lusansapkota.com.np';
 // Keep this in step with what the app actually does; update EFFECTIVE_DATE on every change.
 const sections: { heading: TKey; intro?: TKey; bullets?: TKey[]; outro?: TKey }[] = [
   { heading: 'privacy.storesHeading',
-    bullets: ['privacy.storesM1', 'privacy.storesM2', 'privacy.storesM3', 'privacy.storesM4', 'privacy.storesM5', 'privacy.storesM6'], outro: 'privacy.storesOutro' },
+    bullets: ['privacy.storesM1', 'privacy.storesM2', 'privacy.storesM3', 'privacy.storesM4', 'privacy.storesM5', 'privacy.storesM6', 'privacy.storesM7'], outro: 'privacy.storesOutro' },
   { heading: 'privacy.leavesHeadingM', intro: 'privacy.leavesIntroM',
     bullets: ['privacy.leavesM1', 'privacy.leavesM2', 'privacy.leavesBackups', 'privacy.leavesM4'] },
+  { heading: 'privacy.syncHeadingM', intro: 'privacy.syncIntroM',
+    bullets: ['privacy.syncM1', 'privacy.syncM2', 'privacy.syncM3', 'privacy.syncM4'] },
   { heading: 'privacy.permHeading',
-    bullets: ['privacy.permM1', 'privacy.permM2', 'privacy.permM3', 'privacy.permM4', 'privacy.permM5'] },
+    bullets: ['privacy.permM1', 'privacy.permM2', 'privacy.permM3', 'privacy.permM4', 'privacy.permM5', 'privacy.permM6', 'privacy.permM7'] },
   { heading: 'privacy.controlHeading',
     bullets: ['privacy.controlBin', 'privacy.controlExport', 'privacy.controlM3'] },
   { heading: 'privacy.childrenHeading', intro: 'privacy.childrenText' },
