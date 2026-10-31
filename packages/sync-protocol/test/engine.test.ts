@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { catalogUpdate } from '@notespark/sync';
 import { Session, backoff } from '../src/index.ts';
 import { T, encodeFrame } from '../src/wire.ts';
 import { World, note, rng, sha256, uuid } from './harness.ts';
@@ -209,4 +210,15 @@ test('a reference to a file nobody has is asked for a few times, then not again;
   await w.run(3 * 60_000);
   assert.deepEqual(await b.store.getBlob(syncId, hash), bytes);
   assert.deepEqual(await w.hubStore.getBlob(syncId, hash), bytes);
+});
+
+test('a catalog key that is not a note uuid (from a hostile device or file) cannot stop other devices from syncing', async () => {
+  const w = new World();
+  const a = await linked(w, { [uuid(1)]: note('One') });
+  const syncId = a.client!.syncId!;
+  await w.hubStore.apply(syncId, 'catalog', [catalogUpdate([], 99, { live: ['not-a-uuid'], erased: ['Not-A-UUID-either'] })!]);
+  const b = await linked(w, {}, syncId);
+  await w.run(60_000);
+  assert.equal(b.client!.state, 'live');
+  assert.equal(b.store.peek(syncId, uuid(1))!.title, 'One');
 });

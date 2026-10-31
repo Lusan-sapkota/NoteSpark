@@ -2,7 +2,7 @@ import { type SyncStore, extractBlobHashes } from '@notespark/sync';
 import { type Hash, fingerprints, planAdoption } from './adopt.ts';
 import type { Channel } from './channel.ts';
 import type { Clock } from './clock.ts';
-import { CHUNK, type Frame, type LinkEntry, MAX_BUFFERED, MAX_DOCS_IN_FLIGHT, MAX_DOC_BYTES, MAX_LINK_ENTRIES, type PairEntry, ProtocolError, Reassembler, T, bytesToHash, chunkBlob, chunkUpdate, decodeFrame, encodeFrame } from './wire.ts';
+import { CHUNK, type Frame, type LinkEntry, MAX_BUFFERED, MAX_DOCS_IN_FLIGHT, MAX_DOC_BYTES, MAX_LINK_ENTRIES, type PairEntry, ProtocolError, Reassembler, T, bytesToHash, chunkBlob, chunkUpdate, decodeFrame, encodeFrame, isUuid } from './wire.ts';
 
 export const PING_EVERY = 15_000;
 export const DEAD_AFTER = 45_000;
@@ -396,7 +396,8 @@ export class Session {
   private async pulled(doc: string) {
     if (!this.inflight.delete(doc)) return
     this.armPullTimer();
-    if (doc === 'catalog') this.pending = await this.o.store.docs(this.syncId);
+    // Catalog keys come from other devices; one that is not a uuid can't be put on the wire, so it is skipped, not a reason to close.
+    if (doc === 'catalog') this.pending = (await this.o.store.docs(this.syncId)).filter(isUuid);
     while (this.inflight.size < MAX_DOCS_IN_FLIGHT && this.pending.length) {
       const next = this.pending.shift()!;
       this.inflight.add(next);
@@ -418,7 +419,7 @@ export class Session {
 
   // Never the only copy: the next exchange sends it again.
   push(doc: string, bytes: Uint8Array) {
-    if (!this.subscribed() || bytes.length <= 2) return;
+    if (!this.subscribed() || bytes.length <= 2 || (doc !== 'catalog' && !isUuid(doc))) return;
     if (bytes.length > MAX_DOC_BYTES) return this.o.onProblem?.({ code: 413, doc });
     for (const c of chunkUpdate(doc, this.nextId++, bytes)) this.send(c);
     if (doc !== 'catalog' && this.o.store.blobs) {

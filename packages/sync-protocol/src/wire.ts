@@ -81,6 +81,7 @@ class Writer {
 }
 
 const HEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+export const isUuid = (s: string) => HEX.test(s);
 export const uuidToBytes = (uuid: string): Uint8Array => {
   if (!HEX.test(uuid)) return bad('bad uuid');
   const hex = uuid.replaceAll('-', '');
