@@ -3,7 +3,7 @@ import { addDays } from './tasks';
 // Review cards: a line "Capital of Nepal ?? Kathmandu" in any note is a card (question ?? answer, with spaces around the
 // two question marks, so "What??" is just text). Cards are read from the notes each time; only the schedule is kept.
 export interface Card {
-  id: string; // note id and a hash of the question: editing the answer keeps the card's history
+  id: string; // the note's uuid (its number differs per device) and a hash of the question: editing the answer keeps the card's history
   noteId: number;
   noteTitle: string;
   question: string;
@@ -21,13 +21,14 @@ export interface CardState {
 const fence = /^\s*(```|~~~)/;
 const cardLine = /^\s*(?:[-*+]\s+|\d+[.)]\s+)?(?:\[[ xX]\]\s+)?(.+?)\s+\?\?\s+(.+?)\s*$/;
 
+export const questionHash = (question: string) => hash(question.trim().toLowerCase());
 const hash = (text: string) => {
   let h = 5381;
   for (let i = 0; i < text.length; i++) h = ((h * 33) ^ text.charCodeAt(i)) >>> 0;
   return h.toString(36);
 };
 
-export const extractCards = (note: { id: number; title: string; content: string }): Card[] => {
+export const extractCards = (note: { id: number; uuid?: string; title: string; content: string }): Card[] => {
   const cards: Card[] = [];
   const seen = new Set<string>();
   let inFence = false;
@@ -37,7 +38,7 @@ export const extractCards = (note: { id: number; title: string; content: string 
     const m = cardLine.exec(line);
     if (!m) continue;
     const question = m[1].trim();
-    const id = `${note.id}:${hash(question.toLowerCase())}`;
+    const id = `${note.uuid ?? note.id}:${hash(question.toLowerCase())}`;
     if (seen.has(id)) continue; // the same question twice in a note is one card
     seen.add(id);
     cards.push({ id, noteId: note.id, noteTitle: note.title, question, answer: m[2].trim() });
@@ -76,4 +77,32 @@ export const dueCards = (cards: Card[], states: Record<string, CardState>, today
   const due = cards.filter(c => states[c.id] && states[c.id].due <= today).sort((a, b) => states[a.id].due.localeCompare(states[b.id].due) || a.id.localeCompare(b.id));
   const fresh = cards.filter(c => !states[c.id]).slice(0, newLimit);
   return [...due, ...fresh].slice(0, max);
+};
+
+// What syncs: one record per review, never the schedule itself. Records from any device are merged by keeping all of them,
+// and a card's schedule is replayed from them in time order, so every device ends with the same schedule whatever order they
+// arrived in. A record with `state` is a starting point (a schedule that existed before reviews were recorded), not a review.
+export interface Review {
+  id: string; // unique per record
+  card: string; // Card.id
+  at: number; // when, in ms; with the id, the replay order
+  on: string; // YYYY-MM-DD, the day the review counted for
+  grade?: Grade;
+  state?: CardState;
+}
+
+export const foldReviews = (reviews: Review[]): Record<string, CardState> => {
+  const by = new Map<string, Review[]>();
+  for (const r of reviews) by.set(r.card, [...(by.get(r.card) ?? []), r]);
+  const out: Record<string, CardState> = {};
+  for (const [card, list] of by) {
+    list.sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
+    let state: CardState | undefined;
+    for (const r of list) {
+      if (r.state) state = r.state;
+      else if (r.grade) state = schedule(state, r.grade, r.on);
+    }
+    if (state) out[card] = state;
+  }
+  return out;
 };

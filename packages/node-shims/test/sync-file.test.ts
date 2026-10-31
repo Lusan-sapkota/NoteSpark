@@ -44,3 +44,22 @@ test('a profile with an attachment exports to a file and imports into another pr
   assert.equal((((await database.db.getAllAsync('SELECT title FROM notes')) as unknown[]).length), 3);
   await assertInStep('after importing twice');
 });
+
+test('review records travel in the sync file: grade on one profile, import into another, the schedule is there', async () => {
+  const { foldReviews } = await import('@notespark/core');
+  await freshProfile(true);
+  await notes.saveNote({ ...sample('Cards'), content: 'Capital of Nepal ?? Kathmandu' });
+  const a = storageStore(database.db, 'A');
+  const records = [{ id: 'r1', card: 'c', at: 100, on: '2026-11-01', grade: 'good' }, { id: 'r2', card: 'c', at: 200, on: '2026-11-02', grade: 'good' }];
+  await (await import(new URL('../../../mobile/src/storage/crdt.ts', import.meta.url).href)).recordReviews(database.db, records);
+  const file = await flow.exportSyncFile({ store: a, name: 'A', passphrase: PASS, uuid: () => crypto.randomUUID() });
+  await freshProfile(false);
+  const b = storageStore(database.db, 'B');
+  const plan = await flow.planImport(b, file, PASS, sha256);
+  assert.notEqual(plan.kind, 'otherProfile');
+  if (plan.kind === 'otherProfile') return;
+  await flow.runImport(b, plan);
+  const got = (await notes.getReviewData()).reviews;
+  assert.deepEqual(got.map((r: any) => r.id).sort(), ['r1', 'r2']);
+  assert.equal(foldReviews(got).c.reps, 2);
+});

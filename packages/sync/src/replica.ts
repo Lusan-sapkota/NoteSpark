@@ -2,7 +2,7 @@ import * as decoding from 'lib0/decoding';
 import * as encoding from 'lib0/encoding';
 import * as syncProtocol from 'y-protocols/sync';
 import * as Y from 'yjs';
-import { catalogUuids, isErased, isKnown, markErased, markLive } from './catalog.ts';
+import { type ReviewEntry, catalogUuids, isErased, isKnown, markErased, markLive, markReview, readReviews } from './catalog.ts';
 import { type NoteState, readNote, writeNote } from './note.ts';
 
 export interface Delta {
@@ -60,6 +60,15 @@ export class Replica {
     const bytes = writeNote(this.getDoc(uuid), next);
     if (bytes) out.push({ doc: uuid, bytes });
     return out;
+  }
+
+  addReviews(entries: ReviewEntry[]): Delta[] {
+    const d = this.catalogChange(() => entries.forEach(e => markReview(this.catalog, e)));
+    return d.bytes.length > 2 ? [d] : [];
+  }
+
+  reviews(): ReviewEntry[] {
+    return readReviews(this.catalog);
   }
 
   erase(uuid: string): Delta[] {

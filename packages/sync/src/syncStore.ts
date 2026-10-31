@@ -1,5 +1,5 @@
 import * as Y from 'yjs';
-import { catalogUuids, isErased } from './catalog.ts';
+import { type ReviewEntry, catalogUuids, isErased } from './catalog.ts';
 import { type NoteState, readNote } from './note.ts';
 import { rebaseText } from './rebase.ts';
 import { type Delta, Replica } from './replica.ts';
@@ -161,6 +161,13 @@ export class MemoryStore implements SyncStore {
   // Local actions.
   edit(syncId: string, uuid: string, state: NoteState) {
     this.emit(syncId, this.profile(syncId).save(uuid, state));
+  }
+  // Review records (S1) added here, as the phone does.
+  addReviews(syncId: string, entries: ReviewEntry[]) {
+    this.emit(syncId, this.profile(syncId).addReviews(entries));
+  }
+  reviews(syncId: string): ReviewEntry[] {
+    return this.profile(syncId).reviews();
   }
   erase(syncId: string, uuid: string) {
     this.emit(syncId, this.profile(syncId).erase(uuid));

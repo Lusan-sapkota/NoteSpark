@@ -15,3 +15,39 @@ export const markErased = (doc: Y.Doc, uuid: string) => {
 export const isErased = (doc: Y.Doc, uuid: string) => erased(doc).has(uuid);
 export const isKnown = (doc: Y.Doc, uuid: string) => live(doc).has(uuid) || erased(doc).has(uuid);
 export const catalogUuids = (doc: Y.Doc) => [...new Set([...live(doc).keys(), ...erased(doc).keys()])];
+
+// Review records (docs/decisions/sync-decisions.md S1) ride in the catalog doc, so the hub, the sync file and every store
+// carry them without a protocol change. One key per record, never rewritten, so two devices never conflict: the union is the merge.
+const reviews = (doc: Y.Doc) => doc.getMap<string>('reviews');
+export const MAX_REVIEW_BYTES = 400;
+
+export interface ReviewEntry {
+  id: string;
+  card: string;
+  at: number;
+  on: string;
+  grade?: 'again' | 'hard' | 'good' | 'easy';
+  state?: { due: string; interval: number; ease: number; reps: number; lapses: number };
+}
+
+export const markReview = (doc: Y.Doc, entry: ReviewEntry) => {
+  const text = JSON.stringify(entry);
+  if (text.length <= MAX_REVIEW_BYTES && !reviews(doc).has(entry.id)) reviews(doc).set(entry.id, text);
+};
+
+const day = /^\d{4}-\d{2}-\d{2}$/;
+const num = (n: unknown) => typeof n === 'number' && Number.isFinite(n);
+// Records come from other devices: anything that is not exactly a record is skipped.
+export const readReviews = (doc: Y.Doc): ReviewEntry[] => {
+  const out: ReviewEntry[] = [];
+  for (const [key, text] of reviews(doc)) {
+    if (typeof text !== 'string' || text.length > MAX_REVIEW_BYTES) continue;
+    let e: ReviewEntry;
+    try { e = JSON.parse(text); } catch { continue; }
+    const s = e.state;
+    const okState = !s || (day.test(s.due) && num(s.interval) && num(s.ease) && num(s.reps) && num(s.lapses));
+    if (e && e.id === key && typeof e.card === 'string' && num(e.at) && typeof e.on === 'string' && day.test(e.on) && okState
+      && (e.state || ['again', 'hard', 'good', 'easy'].includes(e.grade as string))) out.push(e);
+  }
+  return out;
+};

@@ -110,6 +110,16 @@ run({
   },
 });
 
+run({
+  name: 'record review cards (one catalog update)',
+  setup: async () => { await three(); },
+  op: () => crdt.recordReviews(database.db, [{ id: 'r1', card: 'c', at: 1, on: '2026-11-01', grade: 'good' }, { id: 'r2', card: 'c', at: 2, on: '2026-11-02', grade: 'easy' }]),
+  check: async () => {
+    const n = (await crdt.loadReviews(database.db)).length;
+    assert.ok(n === 0 || n === 2, `half the records: ${n}`); // both or neither
+  },
+});
+
 // A sync file import is one transaction: after a crash at any statement the profile is exactly as before or exactly after, never half.
 const flow = await import('@notespark/sync-protocol');
 const { storageStore } = await import(new URL('../../../mobile/src/storage/syncStore.ts', import.meta.url).href);
