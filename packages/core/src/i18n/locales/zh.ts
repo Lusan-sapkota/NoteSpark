@@ -734,7 +734,7 @@ const catalog: Record<string, string> = {
   "privacy.storesHeading": "NoteSpark 存储的内容",
   "privacy.storesM1": "你的笔记：标题、正文、格式、是否置顶、创建和编辑日期，以及草稿本。它们保存在你设备上的数据库中，每个档案一个。", // REVIEW (legal)
   "privacy.storesM2": "搜索索引：为实现语义搜索，应用内置的一个小型模型会在你的设备上运行，把每条笔记转换成一列数字。索引与笔记保存在同一个数据库中。",
-  "privacy.storesM3": "你从手机中添加的图片会复制到 NoteSpark 自己在你设备上的存储空间，这样即使原图被移动或手机清理了缓存，图片仍能正常显示。图片不会被上传。当没有任何笔记使用某张图片时，其副本会被删除。",
+  "privacy.storesM3": "如果你把手机上的图片添加到笔记，它会被复制到 NoteSpark 在你设备上的自有存储中，因此即使原文件被移动或手机清理缓存，它也能继续显示。它不会被上传，同步也不会携带它：你的其他设备只会收到笔记的文字。当没有笔记使用某份副本时，它会被删除。",  // REVIEW (legal)
   "privacy.storesM4": "你的档案名称、当前打开的档案、主题选择、是否已看完欢迎页面，以及最近20条导入和导出记录。这些内容同样保存在你的设备上。",
   "privacy.storesM5": "档案PIN码：只在 Android 安全存储中保存每个PIN码经过加扰的形式（加盐哈希）。PIN码本身不会被存储，因此忘记后无法找回。带PIN码的档案，其笔记也会在你的手机上加密，密钥保存在 Android 安全存储中。",
   "privacy.storesM6": "已删除的档案会在你的设备上保留30天，以便恢复，之后它及其笔记将被清除。",
@@ -772,7 +772,7 @@ const catalog: Record<string, string> = {
   "privacy.dateM": "2026年10月31日",
   "privacy.leadM": "NoteSpark 是一款离线笔记应用。没有账户、广告、分析或跟踪。你写的一切都留在手机上；如果开启同步，则只会传到你自己的电脑。本政策说明应用存储什么以及存储在哪里。",
   "privacy.storesD1": "你的笔记：标题、正文、格式、是否置顶或归档、创建和编辑日期，以及草稿本。它们保存在这台电脑上 NoteSpark 文件夹中的数据库里，每个档案一个。在 Linux 上，该文件夹是 ~/.config/NoteSpark。",
-  "privacy.storesD2": "你添加到笔记中的图片会复制到这台电脑上 NoteSpark 自己的文件夹。图片不会被上传，会一直保留在那里，直到你删除该文件夹。",
+  "privacy.storesD2": "如果你把图片添加到笔记，它会被复制到这台电脑上 NoteSpark 自己的文件夹中。它不会被上传，同步也不会携带它：你的其他设备只会收到笔记的文字。它会一直保留在那里，直到你删除该文件夹。",  // REVIEW (legal)
   "privacy.storesD3": "你的档案名称、当前打开的档案、主题选择、是否已看完欢迎页面、备份设置，以及最近20条导入和导出记录。这些内容保存在同一个文件夹中。",
   "privacy.storesD4": "档案PIN码：只保存每个PIN码经过加扰的形式（加盐哈希）。PIN码本身不会被存储，因此忘记后无法找回。带PIN码的档案，其笔记也会被加密，密钥由系统密钥环（如 KWallet 或 GNOME Keyring）为 NoteSpark 保管。如果没有可用的密钥环，NoteSpark 不会创建受保护的档案。",
   "privacy.storesD5": "已删除的档案会在这台电脑上保留30天，以便恢复，之后它及其笔记将被清除。",
@@ -1106,7 +1106,7 @@ const catalog: Record<string, string> = {
   "settings.webImagesDescription": "加载网上链接的图片。关闭时不会联系任何网站。",
   "note.webImageOff": "网络图片已关闭。在设置中打开“显示网络图片”即可加载此图片。",
   "privacy.leavesWebImages": "保持离线的唯一例外：显示网络图片，默认关闭。如果你在设置中打开它，打开笔记时会向该网站请求笔记中通过网址链接的图片，因此该网站能看到你的连接。关闭后不会联系任何网站。", // REVIEW (legal)
-  "privacy.storesAttach": "你附加到笔记的文档（每个最大 32 MB）会复制到 NoteSpark 自己的存储中并加密保存，不会上传。当没有笔记使用某份副本时，它会被删除。",  // REVIEW (legal)
+  "privacy.storesAttach": "你附加到笔记的文档（每个最大 32 MB）会复制到 NoteSpark 自己的存储中并加密保存。它们不会上传到任何地方。如果你开启同步，文档会随其笔记一起传到你配对的设备。当没有笔记使用某份副本时，它会被删除。",  // REVIEW (legal)
   "privacy.storesPinCopy": "每个 PIN 的哈希副本，以及用该 PIN 包裹的资料档案密钥副本，也保存在应用的普通存储中，以便恢复后的手机能解锁该档案。Android 备份可能包含它，因此能读取备份的人可以尝试所有 4 位 PIN。",  // REVIEW (legal)
   "privacy.syncPin": "PIN 永远不会同步。它只保护你设置它的设备：受保护档案的笔记会作为普通笔记到达另一台设备，那里的档案是否设置 PIN 由你决定。",  // REVIEW (legal)
   "privacy.storesDPaired": "你为同步配对的设备：每台设备的名称和公钥，以及这台电脑自己的同步密钥，由系统密钥环为 NoteSpark 保管。为此不存储任何笔记文字。",  // REVIEW (legal)
