@@ -1104,6 +1104,10 @@ const catalog: Record<string, string> = {
   "desktop.slide1Body": "Tanpa akun, tanpa cloud, tanpa iklan. Catatan Anda disimpan dalam database di komputer ini. Tampilan web, jika Anda mengaktifkannya, hanya untuk perangkat di jaringan Anda sendiri.",
   "desktop.slide2Body": "Pilih Catatan baru di layar utama lalu mulai mengetik. Sematkan catatan yang paling sering dibutuhkan.",
   "desktop.shareDescription": "Simpan teks papan klip dari tray: {target}",
+  "settings.webImages": "Tampilkan gambar web",
+  "settings.webImagesDescription": "Memuat gambar yang ditautkan dari web. Jika mati, tidak ada situs yang dihubungi.",
+  "note.webImageOff": "Gambar web dimatikan. Aktifkan Tampilkan gambar web di Pengaturan untuk memuat yang ini.",
+  "privacy.leavesWebImages": "Satu-satunya pengecualian dari tetap offline: Tampilkan gambar web, mati secara default. Jika Anda menyalakannya di Pengaturan, gambar yang ditautkan catatan dari alamat web diminta dari situs itu saat Anda membuka catatan, sehingga situs itu melihat koneksi Anda. Matikan dan tidak ada situs yang dihubungi.", // REVIEW (legal)
 };
 
 export default catalog;

@@ -1144,6 +1144,10 @@ const catalog: Record<string, string> = {
   "desktop.slide1Body": "Kein Konto, keine Cloud, keine Werbung. Deine Notizen liegen in einer Datenbank auf diesem Computer. Die Webansicht, falls du sie einschaltest, ist nur für Geräte in deinem eigenen Netzwerk.",
   "desktop.slide2Body": "Wähle auf dem Startbildschirm „Neue Notiz“ und fang an zu schreiben. Hefte die Notizen an, die du am häufigsten brauchst.",
   "desktop.shareDescription": "Text aus der Zwischenablage über den Infobereich speichern: {target}",
+  "settings.webImages": "Webbilder anzeigen",
+  "settings.webImagesDescription": "Lädt Bilder aus dem Web. Aus: keine Website wird kontaktiert.",
+  "note.webImageOff": "Webbilder sind ausgeschaltet. Schalte in den Einstellungen „Webbilder anzeigen“ ein, um dieses zu laden.",
+  "privacy.leavesWebImages": "Die einzige Ausnahme vom Offline-Betrieb: Webbilder anzeigen, standardmäßig aus. Wenn du es in den Einstellungen einschaltest, wird ein Bild, das eine Notiz von einer Webadresse einbindet, beim Öffnen der Notiz bei dieser Website angefragt, sodass sie deine Verbindung sieht. Schalte es aus, und es wird keine Website kontaktiert.", // REVIEW (legal)
 };
 
 export default catalog;

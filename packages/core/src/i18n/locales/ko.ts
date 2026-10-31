@@ -1103,6 +1103,10 @@ const catalog: Record<string, string> = {
   "desktop.slide1Body": "계정도, 클라우드도, 광고도 없어요. 메모는 이 컴퓨터의 데이터베이스에 저장돼요. 웹 보기는 켜더라도 내 네트워크에 있는 기기용이에요.",
   "desktop.slide2Body": "홈 화면에서 새 메모를 선택하고 바로 입력하세요. 자주 쓰는 메모는 고정해 두세요.",
   "desktop.shareDescription": "트레이에서 클립보드 텍스트 저장: {target}",
+  "settings.webImages": "웹 이미지 표시",
+  "settings.webImagesDescription": "웹에 연결된 이미지를 불러옵니다. 끄면 어떤 웹사이트에도 연결하지 않습니다.",
+  "note.webImageOff": "웹 이미지가 꺼져 있습니다. 이 이미지를 불러오려면 설정에서 ‘웹 이미지 표시’를 켜세요.",
+  "privacy.leavesWebImages": "오프라인을 유지하는 유일한 예외: 웹 이미지 표시(기본값은 꺼짐). 설정에서 켜면 노트를 열 때 노트가 웹 주소로 연결한 이미지를 해당 웹사이트에 요청하므로 그 웹사이트에 연결이 보입니다. 끄면 어떤 웹사이트에도 연결하지 않습니다.", // REVIEW (legal)
 };
 
 export default catalog;

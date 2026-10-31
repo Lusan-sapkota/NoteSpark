@@ -42,13 +42,15 @@ const NoteImage: React.FC<{ uri: string; onOpen: (src: string) => void }> = ({ u
         </Pressable>
       ) : (
         <View style={box}>
-          <Icon source={image.status === 'gone' ? 'image-off-outline' : 'image-refresh-outline'} size={28} color={theme.colors.onSurfaceVariant} />
+          <Icon source={image.status === 'off' ? 'image-off-outline' : image.status === 'gone' ? 'image-off-outline' : 'image-refresh-outline'} size={28} color={theme.colors.onSurfaceVariant} />
           <Text variant="bodyMedium" style={[styles.placeholderText, { color: theme.colors.onSurfaceVariant }]}>
-            {image.status === 'gone'
-              ? t('note.imageGone')
-              : t('note.imageFailed')}
+            {image.status === 'off'
+              ? t('note.webImageOff')
+              : image.status === 'gone'
+                ? t('note.imageGone')
+                : t('note.imageFailed')}
           </Text>
-          <Button mode="text" onPress={image.retry}>{t('common.tryAgain')}</Button>
+          {image.status !== 'off' && <Button mode="text" onPress={image.retry}>{t('common.tryAgain')}</Button>}
         </View>
       )}
       <Text variant="bodySmall" numberOfLines={1} style={[styles.caption, { color: theme.colors.onSurfaceVariant }]}>

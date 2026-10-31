@@ -1103,6 +1103,10 @@ const catalog: Record<string, string> = {
   "desktop.slide1Body": "アカウントも、クラウドも、広告もありません。ノートはこのパソコンのデータベースに保存されます。ウェブビューは、オンにした場合でも、あなた自身のネットワーク上のデバイス専用です。",
   "desktop.slide2Body": "ホーム画面で「新規ノート」を選んで、入力を始めましょう。よく使うノートはピン留めできます。",
   "desktop.shareDescription": "トレイからクリップボードのテキストを保存：{target}",
+  "settings.webImages": "ウェブ画像を表示",
+  "settings.webImagesDescription": "ウェブ上の画像を読み込みます。オフの間はどのサイトにも接続しません。",
+  "note.webImageOff": "ウェブ画像はオフです。この画像を読み込むには、設定で「ウェブ画像を表示」をオンにしてください。",
+  "privacy.leavesWebImages": "オフラインを保つ唯一の例外：ウェブ画像を表示（初期設定はオフ）。設定でオンにすると、ノートを開いたときに、ノートがウェブアドレスでリンクしている画像をそのウェブサイトに要求するため、そのサイトに接続が見えます。オフにすればどのサイトにも接続しません。", // REVIEW (legal)
 };
 
 export default catalog;

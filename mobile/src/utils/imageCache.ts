@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
+import { isWebImagesOn } from './webImages';
 
 // Web images are kept in app storage (Android may clear the OS cache) so they show offline.
 const CACHE_DIR = `${FileSystem.documentDirectory}image-cache/`;
@@ -42,8 +43,8 @@ const markViewed = async (name: string) => {
   await AsyncStorage.setItem(INDEX_KEY, JSON.stringify(idx)).catch(() => {});
 };
 
-// gone: the server says there's no image; failed: couldn't reach it, worth retrying.
-type Result = { status: 'ready'; path: string } | { status: 'gone' | 'failed' };
+// gone: the server says there's no image; failed: couldn't reach it, worth retrying; off: web images are switched off in Settings.
+type Result = { status: 'ready'; path: string } | { status: 'gone' | 'failed' | 'off' };
 
 const inflight = new Map<string, Promise<Result>>();
 
@@ -77,7 +78,8 @@ const download = async (url: string, name: string): Promise<Result> => {
   }
 };
 
-const getCachedImage = (url: string): Promise<Result> => {
+export const getCachedImage = async (url: string): Promise<Result> => {
+  if (!(await isWebImagesOn())) return { status: 'off' }; // nothing is contacted, and a copy kept earlier isn't shown either
   const name = fileNameFor(url);
   let job = inflight.get(name);
   if (!job) {
@@ -142,7 +144,7 @@ export const pruneImageCache = async (noteContents: string[]) => {
 
 export type CachedImage = {
   src: string | null;
-  status: 'loading' | 'ready' | 'gone' | 'failed';
+  status: 'loading' | 'ready' | 'gone' | 'failed' | 'off';
   retry: () => void;
   // Call from the Image's onError: the file (or device image) couldn't be shown.
   onError: () => void;

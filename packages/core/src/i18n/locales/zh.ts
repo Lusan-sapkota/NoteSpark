@@ -1103,6 +1103,10 @@ const catalog: Record<string, string> = {
   "desktop.slide1Body": "无需账号，没有云端，没有广告。你的笔记保存在这台电脑上的数据库中。网页视图如果开启，只供你自己网络上的设备使用。",
   "desktop.slide2Body": "点按主屏幕上的“新建笔记”，开始输入即可。把最常用的笔记置顶。",
   "desktop.shareDescription": "从托盘保存剪贴板文字：{target}",
+  "settings.webImages": "显示网络图片",
+  "settings.webImagesDescription": "加载网上链接的图片。关闭时不会联系任何网站。",
+  "note.webImageOff": "网络图片已关闭。在设置中打开“显示网络图片”即可加载此图片。",
+  "privacy.leavesWebImages": "保持离线的唯一例外：显示网络图片，默认关闭。如果你在设置中打开它，打开笔记时会向该网站请求笔记中通过网址链接的图片，因此该网站能看到你的连接。关闭后不会联系任何网站。", // REVIEW (legal)
 };
 
 export default catalog;

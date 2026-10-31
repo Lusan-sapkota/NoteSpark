@@ -8,6 +8,7 @@ import M3Switch from '../components/M3Switch';
 import { RootStackParamList } from '../types';
 import { deleteAllNotesForever, getShareTarget, moveAllNotesToBin, restoreBatch, setShareTarget, ShareTarget } from '../storage/notes';
 import { isRediscoverOn, setRediscoverOn } from '../utils/rediscover';
+import { isWebImagesOn, setWebImagesOn } from '../utils/webImages';
 import { isLiveRelatedOn, setLiveRelatedOn } from '../utils/liveRelated';
 import { isMeaningSearchAvailable } from '../storage/semanticSearch';
 import { getStartScreen, setStartScreen, START_SCREENS, startScreenLabel, StartScreen } from '../utils/startScreen';
@@ -54,6 +55,7 @@ const SettingsScreen: React.FC = () => {
   const [reminderHour, setReminderHourState] = useState(9);
   const [autoLock, setAutoLock] = useState(1);
   const [rediscover, setRediscover] = useState(true);
+  const [webImages, setWebImages] = useState(false);
   const [shareTarget, setShareTargetState] = useState<ShareTarget>('scratchpad');
   const [liveRelated, setLiveRelated] = useState(false);
   const [startScreen, setStartScreenState] = useState<StartScreen>('Home');
@@ -80,6 +82,7 @@ const SettingsScreen: React.FC = () => {
     setReminderHourState(await getReminderHour());
     setAutoLock(await getAutoLockMinutes());
     setRediscover(await isRediscoverOn());
+    setWebImages(await isWebImagesOn());
     setShareTargetState(await getShareTarget());
     setStartScreenState(await getStartScreen());
     setLiveRelated(await isLiveRelatedOn());
@@ -454,6 +457,21 @@ const SettingsScreen: React.FC = () => {
               />
             }
             onPress={() => { setRediscover(!rediscover); setRediscoverOn(!rediscover).catch(() => {}); }}
+            isFirst={false}
+            isLast={false}
+          />
+          <GroupedRow
+            title={t('settings.webImages')}
+            description={t('settings.webImagesDescription')}
+            icon="image-outline"
+            right={
+              <M3Switch
+                value={webImages}
+                onValueChange={on => { setWebImages(on); setWebImagesOn(on).catch(() => {}); }}
+                accessibilityLabel={t('settings.webImages')}
+              />
+            }
+            onPress={() => { setWebImages(!webImages); setWebImagesOn(!webImages).catch(() => {}); }}
             isFirst={false}
             isLast={false}
           />

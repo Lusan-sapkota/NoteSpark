@@ -1184,6 +1184,10 @@ const catalog: Record<string, string> = {
   "desktop.slide1Body": "Sem conta, sem nuvem, sem anúncios. Suas notas ficam em um banco de dados neste computador. A visualização web, se você ativar, é só para dispositivos da sua própria rede.",
   "desktop.slide2Body": "Escolha Nova nota na tela inicial e comece a digitar. Fixe as notas de que você mais precisa.",
   "desktop.shareDescription": "Salvar texto da área de transferência pela bandeja: {target}",
+  "settings.webImages": "Mostrar imagens da web",
+  "settings.webImagesDescription": "Carrega imagens vinculadas da web. Desativado, nenhum site é contatado.",
+  "note.webImageOff": "As imagens da web estão desativadas. Ative Mostrar imagens da web em Configurações para carregar esta.",
+  "privacy.leavesWebImages": "A única exceção a ficar offline: Mostrar imagens da web, desativado por padrão. Se você ativar em Configurações, uma imagem que uma nota vincula de um endereço da web é solicitada a esse site quando você abre a nota, então esse site vê sua conexão. Desative e nenhum site é contatado.", // REVIEW (legal)
 };
 
 export default catalog;

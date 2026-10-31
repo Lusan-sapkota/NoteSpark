@@ -13,6 +13,8 @@ export default {
   'settings.openAppOn': 'Open the app on',
   'settings.rediscover': 'Rediscover on Home',
   'settings.rediscoverDescription': 'One older note a day at the top of your list',
+  'settings.webImages': 'Show web images',
+  'settings.webImagesDescription': 'Load pictures linked from the web. Off, no website is contacted.',
   'settings.relatedWhileWriting': 'Related notes while writing',
   'settings.relatedDescription': "Suggests notes close to the paragraph you're writing",
   'settings.relatedUnavailable': "Needs search by meaning, which this build doesn't have",

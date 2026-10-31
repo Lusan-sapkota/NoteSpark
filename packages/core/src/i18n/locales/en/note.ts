@@ -93,6 +93,7 @@ export default {
   'note.loadingImage': 'Loading image',
   'note.openImageFull': 'Open image full screen',
   'note.closeImage': 'Close image',
+  'note.webImageOff': 'Web images are off. Turn on Show web images in Settings to load this one.',
   'note.imageGone': 'This image is no longer available at its web address.',
   'note.imageFailed': "Couldn't load this image. Check your connection and try again.",
   // Mermaid

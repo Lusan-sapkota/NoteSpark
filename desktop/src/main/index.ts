@@ -130,7 +130,12 @@ else {
     const ses = session.defaultSession;
     ses.setSpellCheckerEnabled(false);
     ses.setPermissionRequestHandler((_wc, _permission, done) => done(false));
-    ses.webRequest.onBeforeRequest((details, done) => done({ cancel: !isAppUrl(details.url) && !details.url.startsWith('ws://localhost') }));
+    // Only a picture over http(s), and only while "Show web images" is on in Settings (read at each request, so the switch takes effect at once).
+    ses.webRequest.onBeforeRequest(async (details, done) => {
+      const local = isAppUrl(details.url) || details.url.startsWith('ws://localhost');
+      const webImage = !local && details.resourceType === 'image' && /^https?:\/\//i.test(details.url) && (await AsyncStorage.getItem('webImages').catch(() => null)) === 'true';
+      done({ cancel: !local && !webImage });
+    });
 
     ipcMain.handle('backend', (e, channel: unknown, args: unknown) => {
       if (!e.senderFrame || !isAppUrl(e.senderFrame.url) || typeof channel !== 'string') throw new Error('Blocked');

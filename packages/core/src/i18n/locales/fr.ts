@@ -1184,6 +1184,10 @@ const catalog: Record<string, string> = {
   "desktop.slide1Body": "Pas de compte, pas de cloud, pas de publicités. Vos notes sont stockées dans une base de données sur cet ordinateur. La vue web, si vous l'activez, est réservée aux appareils de votre propre réseau.",
   "desktop.slide2Body": "Choisissez Nouvelle note sur l'écran d'accueil et commencez à écrire. Épinglez les notes dont vous avez le plus besoin.",
   "desktop.shareDescription": "Enregistrer le texte du presse-papiers depuis la zone de notification : {target}",
+  "settings.webImages": "Afficher les images web",
+  "settings.webImagesDescription": "Charge les images liées du web. Désactivé, aucun site n'est contacté.",
+  "note.webImageOff": "Les images web sont désactivées. Activez Afficher les images web dans les réglages pour charger celle-ci.",
+  "privacy.leavesWebImages": "La seule exception au fonctionnement hors ligne : Afficher les images web, désactivé par défaut. Si vous l'activez dans les réglages, une image qu'une note lie depuis une adresse web est demandée à ce site à l'ouverture de la note, donc ce site voit votre connexion. Désactivez-le et aucun site n'est contacté.", // REVIEW (legal)
 };
 
 export default catalog;
