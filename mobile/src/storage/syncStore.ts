@@ -79,12 +79,16 @@ export const storageStore = (db: DB, name = 'Profile', profileId?: string): Sync
         await sync.capture([row.id]);
       }),
     blobs: async syncId => {
-      await own(syncId);
+      if (syncId) await own(syncId); // '' is a profile never linked (read only: a sync file preview)
       const list = await listAttachments(resolveProfileId());
       return list.map(a => a.hash);
     },
+    blobSizes: async syncId => {
+      if (syncId) await own(syncId);
+      return Object.fromEntries((await listAttachments(resolveProfileId())).map(a => [a.hash, a.size]));
+    },
     getBlob: async (syncId, hash) => {
-      await own(syncId);
+      if (syncId) await own(syncId);
       const pid = resolveProfileId();
       if (!(await hasAttachment(hash, pid))) return null;
       return readAttachment(hash, pid);

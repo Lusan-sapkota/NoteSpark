@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { MemoryStore, type NoteState } from '@notespark/sync';
-import { SyncFileFlowError, exportSyncFile, planImport, runImport } from '../src/index.ts';
+import { SyncFileFlowError, decodeSyncFile, encodeSyncFile, exportSyncFile, planImport, runImport, summarizeExport } from '../src/index.ts';
 import { note, rng, sha256, uuid } from './harness.ts';
 
 const S = '11111111-1111-4111-8111-111111111111';
@@ -136,4 +136,67 @@ test('a wrong passphrase imports nothing', async () => {
   const b = new MemoryStore(2);
   await assert.rejects(planImport(b, await exp(a), 'nope', sha256), { reason: 'passphrase' });
   assert.equal((await b.profiles()).length, 0);
+});
+
+// Attachments: a note points to a file by "attachment:<sha256>", the file is named by its hash.
+const attach = (store: MemoryStore, syncId: string, bytes: Uint8Array) => {
+  const hash = Array.from(sha256(bytes), x => x.toString(16).padStart(2, '0')).join('');
+  void store.putBlob(syncId, hash, bytes);
+  return hash;
+};
+const bytesOf = (n: number, v: number) => new Uint8Array(n).fill(v);
+const blobOf = async (s: MemoryStore, h: string) => (await s.getBlob(S, h)) ?? null;
+
+test('attachments travel with the notes that use them; one nobody uses is left out; the preview counts them', async () => {
+  const a = linked(1);
+  const used = attach(a, S, bytesOf(100_000, 5));
+  const unused = attach(a, S, bytesOf(10, 6));
+  a.edit(S, uuid(1), note('With file', `see attachment:${used}`));
+  assert.deepEqual(await summarizeExport(a), { notes: 1, attachments: 1, attachmentBytes: 100_000 });
+  const file = await exp(a);
+  const b = new MemoryStore(2);
+  const plan = await imp(b, file);
+  assert.equal(plan.kind !== 'otherProfile' && plan.attachments, 1);
+  assert.deepEqual(await blobOf(b, used), bytesOf(100_000, 5));
+  assert.equal(await blobOf(b, unused), null);
+});
+
+test('leaving attachments out exports notes only; importing twice stores each file once', async () => {
+  const a = linked(1);
+  const h = attach(a, S, bytesOf(50, 9));
+  a.edit(S, uuid(1), note('X', `attachment:${h}`));
+  const without = await exportSyncFile({ store: a, name: 'P', passphrase: PASS, uuid: newId, attachments: false });
+  assert.equal((await decodeSyncFile(without, PASS)).blobs.length, 0);
+  const b = new MemoryStore(2);
+  await imp(b, await exp(a));
+  await imp(b, await exp(a));
+  assert.deepEqual(await b.blobs(S), [h]);
+});
+
+test('an attachment that does not match its name stops the whole import before anything is stored', async () => {
+  const a = linked(1, { [uuid(1)]: note('One') });
+  const good = await decodeSyncFile(await exp(a), PASS);
+  const forged = await encodeSyncFile({ ...good, blobs: [{ hash: '0'.repeat(64), bytes: bytesOf(10, 1) }] }, PASS);
+  const b = new MemoryStore(2);
+  await assert.rejects(planImport(b, forged, PASS, sha256), { reason: 'format' });
+  assert.equal((await b.profiles()).length, 0);
+  assert.equal(b.plainBlobs.size, 0);
+});
+
+test('a note that points to an attachment the profile never received exports fine, without it', async () => {
+  const a = linked(1, { [uuid(1)]: note('Dangling', `attachment:${'a'.repeat(64)}`) });
+  const b = new MemoryStore(2);
+  const plan = await imp(b, await exp(a));
+  assert.equal(plan.kind !== 'otherProfile' && plan.attachments, 0);
+  assert.equal(b.peek(S, uuid(1))?.title, 'Dangling');
+});
+
+test('too much attachment data says so instead of failing late', async () => {
+  const a = linked(1);
+  const refs: string[] = [];
+  for (let i = 0; i < 4; i++) refs.push(attach(a, S, bytesOf(32 * 1024 * 1024, i + 1)));
+  a.edit(S, uuid(1), note('Big', refs.map(h => `attachment:${h}`).join(' ')));
+  await assert.rejects(exp(a), { reason: 'tooBig' });
+  const notesOnly = await exportSyncFile({ store: a, name: 'P', passphrase: PASS, uuid: newId, attachments: false });
+  assert.ok(notesOnly.length < 10_000);
 });

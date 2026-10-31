@@ -1,18 +1,18 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { FILE_VERSION, MAX_DOC_BYTES, SyncFileError, decodeSyncFile, encodeSyncFile, type SyncFileContent } from '../src/index.ts';
+import { FILE_VERSION, MAX_DOC_BYTES, SyncFileError, decodeSyncFile, encodeSyncFile, MAX_FILE_BLOB, MAX_FILE_PLAIN, type SyncFileContent, type SyncFileInput } from '../src/index.ts';
 
 const FAST = { logN: 4 }; // the reader's floor is lowered to match in these tests
 const READ = { minLogN: 4 };
 const U = (n: number) => `00000000-0000-4000-8000-${n.toString(16).padStart(12, '0')}`;
 const fill = (n: number, v: number) => new Uint8Array(n).fill(v);
-const sample = (sizes: number[] = [20, 300, 5]): SyncFileContent => ({
+const sample = (sizes: number[] = [20, 300, 5]): SyncFileInput => ({
   syncId: U(1), name: 'Personal', createdAt: 1_790_000_000_000,
   docs: [{ id: 'catalog', update: fill(sizes[0], 1) }, ...sizes.slice(1).map((n, i) => ({ id: U(10 + i), update: fill(n, 2 + i) }))],
 });
 const salt = (n: number) => Uint8Array.from({ length: n }, (_, i) => i * 7 + 3);
-const enc = (c: SyncFileContent, pass = 'correct horse') => encodeSyncFile(c, pass, { ...FAST, random: salt });
-const same = (a: SyncFileContent, b: SyncFileContent) => {
+const enc = (c: SyncFileInput, pass = 'correct horse') => encodeSyncFile(c, pass, { ...FAST, random: salt });
+const same = (a: SyncFileContent, b: SyncFileInput) => {
   assert.equal(a.syncId, b.syncId); assert.equal(a.name, b.name); assert.equal(a.createdAt, b.createdAt);
   assert.deepEqual(a.docs.map(d => [d.id, Array.from(d.update)]), b.docs.map(d => [d.id, Array.from(d.update)]));
 };
@@ -25,7 +25,7 @@ test('a file round-trips: small, empty, and larger than one 64 KB chunk (and exa
     const c = sample(sizes);
     same(await decodeSyncFile(await enc(c), 'correct horse', READ), c);
   }
-  const none: SyncFileContent = { syncId: U(2), name: '', createdAt: 0, docs: [] };
+  const none: SyncFileInput = { syncId: U(2), name: '', createdAt: 0, docs: [] };
   same(await decodeSyncFile(await enc(none), 'correct horse', READ), none);
 });
 
@@ -133,4 +133,28 @@ test('fuzz: random damage never throws anything but SyncFileError and never deco
     }
   }
   assert.ok(refused > 1400);
+});
+
+const H = (n: number) => n.toString(16).padStart(64, '0');
+
+test('attachments round-trip, including one larger than a chunk and an empty one', async () => {
+  const c = { ...sample(), blobs: [{ hash: H(1), bytes: fill(200_000, 7) }, { hash: H(2), bytes: new Uint8Array(0) }, { hash: H(3), bytes: fill(5, 1) }] };
+  const back = await decodeSyncFile(await enc(c), 'correct horse', READ);
+  assert.deepEqual(back.blobs.map(b => [b.hash, b.bytes.length, b.bytes[0]]), [[H(1), 200_000, 7], [H(2), 0, undefined], [H(3), 5, 1]]);
+  assert.deepEqual((await decodeSyncFile(await enc(sample()), 'correct horse', READ)).blobs, []);
+});
+
+test('attachment limits: bad name, one over 32 MB, two with one name, too many bytes together', async () => {
+  const bad = (blobs: { hash: string; bytes: Uint8Array }[]) => enc({ ...sample(), blobs });
+  await assert.rejects(bad([{ hash: 'ABC', bytes: fill(1, 1) }]), { reason: 'format' });
+  await assert.rejects(bad([{ hash: H(1).toUpperCase().replace(/[0-9]/g, 'A'), bytes: fill(1, 1) }]), { reason: 'format' });
+  await assert.rejects(bad([{ hash: H(1), bytes: new Uint8Array(MAX_FILE_BLOB + 1) }]), { reason: 'tooBig' });
+  await fails(await bad([{ hash: H(1), bytes: fill(1, 1) }, { hash: H(1), bytes: fill(2, 2) }]), 'correct horse', 'format');
+  await assert.rejects(bad([1, 2, 3, 4].map(i => ({ hash: H(i), bytes: new Uint8Array(MAX_FILE_BLOB) }))), { reason: 'tooBig' }); // 4 x 32 MB > the 96 MB file cap
+  assert.equal(MAX_FILE_PLAIN, 96 * 1024 * 1024);
+});
+
+test('a file with attachments: every flipped byte in a small one is still refused', async () => {
+  const file = await enc({ ...sample([10]), blobs: [{ hash: H(9), bytes: fill(40, 3) }] });
+  for (let i = 0; i < file.length; i++) { const f = file.slice(); f[i] ^= 0x80; await fails(f); }
 });

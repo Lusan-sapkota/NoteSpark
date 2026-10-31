@@ -57,6 +57,8 @@ export interface SyncStore {
   blobs?(syncId: string): Promise<string[]>;
   getBlob?(syncId: string, hash: string): Promise<Uint8Array | null>;
   putBlob?(syncId: string, hash: string, bytes: Uint8Array): Promise<void>;
+  // Plain sizes in bytes by hash, for a preview that does not read every file.
+  blobSizes?(syncId: string): Promise<Record<string, number>>;
 }
 
 const BLOB_REF_RE = /attachment:([0-9a-fA-F]{64})\b/g;
@@ -198,15 +200,21 @@ export class MemoryStore implements SyncStore {
     const cur = await this.note(syncId, uuid);
     if (cur && !cur.deletedAt) this.edit(syncId, uuid, { ...cur, deletedAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
   }
+  private blobMap(syncId: string) {
+    return syncId ? this.profileEntry(syncId).blobs : this.plainBlobs; // '' is a profile never linked
+  }
   async blobs(syncId: string): Promise<string[]> {
-    return [...this.profileEntry(syncId).blobs.keys()].sort();
+    return [...this.blobMap(syncId).keys()].sort();
   }
   async getBlob(syncId: string, hash: string): Promise<Uint8Array | null> {
-    const b = this.profileEntry(syncId).blobs.get(hash.toLowerCase());
+    const b = this.blobMap(syncId).get(hash.toLowerCase());
     return b ? b.slice() : null;
   }
   async putBlob(syncId: string, hash: string, bytes: Uint8Array): Promise<void> {
     this.profileEntry(syncId).blobs.set(hash.toLowerCase(), bytes.slice());
+  }
+  async blobSizes(syncId: string): Promise<Record<string, number>> {
+    return Object.fromEntries([...this.blobMap(syncId)].map(([h, b]) => [h, b.length]));
   }
   referencedBlobs(syncId: string): string[] {
     return extractBlobHashes(Object.values(this.notes(syncId)));
