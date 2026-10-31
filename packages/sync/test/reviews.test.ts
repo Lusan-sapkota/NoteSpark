@@ -32,6 +32,11 @@ test('records that are not exactly records are skipped when read (they come from
   m.set('huge', JSON.stringify(r('huge', { card: 'c'.repeat(MAX_REVIEW_BYTES) })));
   m.set('junk', '{not json');
   m.set('not-text', 5 as never);
+  m.set('null', 'null');
+  m.set('number', '5');
+  m.set('not-a-day', JSON.stringify(r('not-a-day', { on: '9999-99-99' })));
+  m.set('feb-30', JSON.stringify(r('feb-30', { on: '2026-02-30' })));
+  m.set('bad-due', JSON.stringify({ id: 'bad-due', card: 'c', at: 0, on: '2026-11-01', state: { due: '2026-13-01', interval: 1, ease: 2, reps: 1, lapses: 0 } }));
   m.set('seed', JSON.stringify({ id: 'seed', card: 'c', at: 0, on: '2026-11-01', state: { due: '2026-11-09', interval: 7, ease: 2.5, reps: 2, lapses: 0 } }));
   assert.deepEqual(readReviewEntries([Y.encodeStateAsUpdate(doc)]).map(e => e.id).sort(), ['ok', 'seed']);
 });

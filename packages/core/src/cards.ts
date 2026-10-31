@@ -93,7 +93,7 @@ export interface Review {
 
 export const foldReviews = (reviews: Review[]): Record<string, CardState> => {
   const by = new Map<string, Review[]>();
-  for (const r of reviews) by.set(r.card, [...(by.get(r.card) ?? []), r]);
+  for (const r of reviews) { const list = by.get(r.card); if (list) list.push(r); else by.set(r.card, [r]); }
   const out: Record<string, CardState> = {};
   for (const [card, list] of by) {
     list.sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0));
