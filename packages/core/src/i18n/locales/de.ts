@@ -776,7 +776,7 @@ const catalog: Record<string, string> = {
   "privacy.storesOutro": "Nichts davon wird an den Entwickler oder an andere gesendet.",
   "privacy.leavesHeadingM": "Nichts verlässt dein Gerät",
   "privacy.leavesIntroM": "NoteSpark bleibt von Grund auf offline. Es stellt von sich aus keine Internetanfragen: keine Analyse, keine Absturzberichte und keine Update-Prüfungen. App-Updates kommen nur über den Store, aus dem du die App installiert hast. Die Synchronisierung ist aus, bis du sie einschaltest, und dann verlässt nichts dein eigenes Netzwerk (siehe Synchronisierung zwischen deinen Geräten).",
-  "privacy.leavesM1": "Wenn du einer Notiz ein Bild von einer Webadresse hinzufügst, wird es beim ersten Anzeigen der Notiz von dieser Website heruntergeladen und dann auf deinem Handy gespeichert, damit es offline angezeigt wird, auch wenn die Website es entfernt. Eine gespeicherte Kopie wird gelöscht, sobald keine Notiz sie mehr verwendet und sie 30 Tage nicht angezeigt wurde.",
+  "privacy.leavesM1": "Wenn Webbilder anzeigen eingeschaltet ist, wird ein Bild von einer Webadresse in einer Notiz beim ersten Ansehen der Notiz von dieser Website heruntergeladen und auf deinem Telefon gespeichert, damit es offline angezeigt wird, auch wenn die Website es entfernt. Eine gespeicherte Kopie wird gelöscht, sobald keine Notiz sie mehr verwendet und sie 30 Tage nicht angesehen wurde.",  // REVIEW (legal)
   "privacy.leavesM2": "Wenn du Notizen exportierst oder teilst, geht die Datei nur dorthin, wo du es im Teilen-Menü auswählst.",
   "privacy.leavesBackups": "Automatische Sicherungen, wenn du sie einschaltest, werden nur in dem Ordner gespeichert, den du auswählst. Profile mit PIN bleiben außen vor, sofern du sie nicht einbeziehst; Sicherungsdateien können ohne die PIN gelesen werden.",
   "privacy.leavesM4": "Die eigene Sicherung von Android: Wenn die Sicherung in den Einstellungen deines Handys eingeschaltet ist, kann Android die Daten von NoteSpark, einschließlich deiner Notizen, in dein Google-Konto kopieren, damit sie auf einem neuen Handy wiederhergestellt werden können. Das ist eine Funktion von Android, die du in den Einstellungen deines Handys steuerst; NoteSpark sendet selbst nichts.",
@@ -792,7 +792,7 @@ const catalog: Record<string, string> = {
   "privacy.permM2": "Fotos: nur die Bilder, die du beim Hinzufügen eines Bildes zu einer Notiz auswählst.",
   "privacy.permM3": "Dateien: nur die Sicherungs- oder Notizdateien, die du beim Importieren von Notizen auswählst, und der Ordner, den du für automatische Sicherungen auswählst.",
   "privacy.permM4": "Fingerabdruck: nur, wenn du das Entsperren per Fingerabdruck für ein Profil einschaltest. Android prüft deinen Fingerabdruck; NoteSpark sieht oder speichert ihn nie.",
-  "privacy.permM5": "Netzwerkzugriff: nur, um Bilder von Webadressen anzuzeigen, die du zu Notizen hinzufügst, und, wenn du die Synchronisierung einschaltest, um mit deinem eigenen Computer in deinem eigenen Netzwerk zu sprechen. NoteSpark erlaubt jetzt auch einfache http-Webadressen für diese Bilder, die Android früher blockiert hat, nutze also nach Möglichkeit https-Adressen.",
+  "privacy.permM5": "Netzwerkzugriff: um Bilder von Webadressen anzuzeigen, die du Notizen hinzufügst (nur wenn du Webbilder anzeigen einschaltest), und, wenn du die Synchronisierung einschaltest, um mit deinem eigenen Computer in deinem eigenen Netzwerk zu sprechen. NoteSpark erlaubt für diese Bilder auch einfache http-Adressen; verwende nach Möglichkeit https-Adressen.",  // REVIEW (legal)
   "privacy.permM6": "Kamera: nur, während du auf dem Synchronisierungsbildschirm einen Kopplungscode scannst. NoteSpark fragt, wenn du auf Scannen tippst, nimmt nichts auf und speichert nichts, und du kannst den Code stattdessen einfügen.",
   "privacy.permM7": "Ausführung im Hintergrund: nur, solange die Synchronisierung an ist, damit deine Geräte auf dem neuesten Stand bleiben, wenn NoteSpark geschlossen ist. Android zeigt eine Benachrichtigung an, solange sie läuft. Wenn du Nein sagst, funktioniert die Synchronisierung, solange NoteSpark geöffnet ist.",
   "privacy.controlHeading": "Deine Kontrolle über deine Daten",
@@ -804,7 +804,7 @@ const catalog: Record<string, string> = {
   "privacy.changesHeading": "Änderungen dieser Richtlinie",
   "privacy.changesM": "Wenn sich diese Richtlinie ändert, erscheint die neue Fassung hier und auf notespark.lusansapkota.com.np mit einem neuen Datum des Inkrafttretens.",
   "privacy.dateM": "31. Oktober 2026",
-  "privacy.leadM": "NoteSpark ist eine Offline-Notiz-App. Sie hat kein Konto, keine Werbung, keine Analyse und kein Tracking. Alles, was du schreibst, bleibt auf deinem Handy. Diese Richtlinie erklärt, was die App speichert und wo.",
+  "privacy.leadM": "NoteSpark ist eine Offline-Notiz-App. Sie hat kein Konto, keine Werbung, keine Analyse und kein Tracking. Alles, was du schreibst, bleibt auf deinem Telefon oder geht nur an deinen eigenen Computer, wenn du die Synchronisierung einschaltest. Diese Richtlinie erklärt, was die App speichert und wo.",
   "privacy.storesD1": "Deine Notizen: den Titel, den Text, das Format, ob sie angeheftet oder archiviert sind, die Daten ihrer Erstellung und letzten Bearbeitung sowie deinen Notizblock. Sie werden in einer Datenbank im Ordner von NoteSpark auf diesem Computer gespeichert, eine pro Profil. Unter Linux ist der Ordner ~/.config/NoteSpark.",
   "privacy.storesD2": "Bilder, die du einer Notiz hinzufügst, werden in den eigenen Ordner von NoteSpark auf diesem Computer kopiert. Sie werden nicht hochgeladen. Sie bleiben dort, bis du den Ordner löschst.",
   "privacy.storesD3": "Deine Profilnamen, welches Profil geöffnet ist, deine Designauswahl, ob du die Willkommensseiten abgeschlossen hast, Sicherungseinstellungen und eine Liste deiner letzten 20 Importe und Exporte. Diese werden im selben Ordner gespeichert.",
@@ -812,7 +812,7 @@ const catalog: Record<string, string> = {
   "privacy.storesD5": "Ein gelöschtes Profil bleibt 30 Tage auf diesem Computer, damit du es wiederherstellen kannst, danach werden es und seine Notizen gelöscht.",
   "privacy.leavesHeadingD": "Nichts verlässt deinen Computer von selbst",
   "privacy.leavesIntroD": "NoteSpark stellt von sich aus keine Netzwerkanfragen: keine Synchronisierung, keine Analyse, keine Absturzberichte, keine Update-Prüfungen und keine Schriften oder Bilder aus dem Netz. Neue Versionen kommen nur als neues Installationsprogramm, das du selbst herunterlädst.",
-  "privacy.leavesD1": "Bilder, die auf eine Webadresse verweisen, werden nicht geladen, damit keine Website erfährt, dass du eine Notiz geöffnet hast.",
+  "privacy.leavesD1": "Bilder, die auf eine Webadresse verweisen, werden nur geladen, wenn du in den Einstellungen Webbilder anzeigen einschaltest; so erfährt keine Website, dass du eine Notiz geöffnet hast.",  // REVIEW (legal)
   "privacy.leavesD2": "Wenn du Notizen exportierst oder eine Sicherung oder ein PDF speicherst, geht die Datei nur dorthin, wo du es auswählst.",
   "privacy.leavesD4": "Wenn du in einer Notiz auf einen Link klickst, wird er in deinem eigenen Browser geöffnet, der dann diese Website kontaktiert. NoteSpark tut das nicht.",
   "privacy.leavesD5": "Eine Sync-Datei, falls du eine exportierst, wird nur dort gespeichert, wo du es wählst, und ist mit einer Passphrase gesperrt, die NoteSpark nie speichert. NoteSpark sendet sie nirgendwohin; du verschiebst sie selbst. Ohne die Passphrase können die Notizen darin nicht gelesen werden.", // REVIEW (legal)
@@ -1148,6 +1148,9 @@ const catalog: Record<string, string> = {
   "settings.webImagesDescription": "Lädt Bilder aus dem Web. Aus: keine Website wird kontaktiert.",
   "note.webImageOff": "Webbilder sind ausgeschaltet. Schalte in den Einstellungen „Webbilder anzeigen“ ein, um dieses zu laden.",
   "privacy.leavesWebImages": "Die einzige Ausnahme vom Offline-Betrieb: Webbilder anzeigen, standardmäßig aus. Wenn du es in den Einstellungen einschaltest, wird ein Bild, das eine Notiz von einer Webadresse einbindet, beim Öffnen der Notiz bei dieser Website angefragt, sodass sie deine Verbindung sieht. Schalte es aus, und es wird keine Website kontaktiert.", // REVIEW (legal)
+  "privacy.storesAttach": "Dokumente, die du an eine Notiz anhängst (bis zu 32 MB je Datei), werden in den eigenen Speicher von NoteSpark kopiert und verschlüsselt abgelegt. Sie werden nicht hochgeladen. Eine Kopie wird gelöscht, sobald keine Notiz sie mehr verwendet.",  // REVIEW (legal)
+  "privacy.storesPinCopy": "Eine Kopie des Hashs jedes PINs und des mit diesem PIN umhüllten Profilschlüssels liegt auch im normalen Speicher der App, damit ein wiederhergestelltes Telefon das Profil entsperren kann. Das Android-Backup kann sie enthalten; wer ein Backup lesen kann, könnte daher alle vierstelligen PINs durchprobieren.",  // REVIEW (legal)
+  "privacy.syncPin": "Ein PIN wird nie synchronisiert. Er schützt nur das Gerät, auf dem du ihn festgelegt hast: Die Notizen eines geschützten Profils kommen auf dem anderen Gerät als normale Notizen an, und ob das Profil dort einen PIN hat, entscheidest du.",  // REVIEW (legal)
 };
 
 export default catalog;

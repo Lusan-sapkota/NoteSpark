@@ -743,7 +743,7 @@ const catalog: Record<string, string> = {
   "privacy.storesOutro": "Tidak ada dari data ini yang dikirim ke pengembang atau pihak lain.",
   "privacy.leavesHeadingM": "Tidak ada yang keluar dari perangkat",
   "privacy.leavesIntroM": "NoteSpark offline sejak awal. Aplikasi ini tidak membuat permintaan ke internet sendiri: tanpa analitik, tanpa laporan error, dan tanpa pengecekan pembaruan. Pembaruan aplikasi hanya datang lewat toko tempat Anda memasangnya. Sinkronisasi nonaktif sampai Anda mengaktifkannya, dan setelah itu tidak ada yang keluar dari jaringan Anda sendiri (lihat Sinkronisasi antar perangkat Anda).",
-  "privacy.leavesM1": "Jika Anda menambahkan gambar dari alamat web ke catatan, gambar diunduh dari situs itu saat pertama kali catatan dilihat, lalu disimpan di ponsel agar tampil offline, meskipun situs menghapusnya. Salinan tersimpan dihapus setelah tidak ada catatan yang memakainya dan tidak dilihat selama 30 hari.",
+  "privacy.leavesM1": "Saat Tampilkan gambar web menyala, gambar dari alamat web di catatan diunduh dari situs itu saat pertama kali Anda melihat catatan, lalu disimpan di ponsel agar tampil offline, meski situs menghapusnya. Salinan tersimpan dihapus jika tidak ada catatan yang memakainya dan tidak dilihat selama 30 hari.",  // REVIEW (legal)
   "privacy.leavesM2": "Saat Anda mengekspor atau membagikan catatan, file hanya dikirim ke tujuan yang dipilih di lembar berbagi.",
   "privacy.leavesBackups": "Cadangan otomatis, jika diaktifkan, hanya disimpan ke folder yang dipilih. Profil ber-PIN tidak disertakan kecuali dipilih; file cadangan dapat dibaca tanpa PIN.",
   "privacy.leavesM4": "Cadangan bawaan Android: jika cadangan diaktifkan di pengaturan ponsel, Android dapat menyalin data NoteSpark, termasuk catatan, ke akun Google Anda agar dapat dipulihkan di ponsel baru. Ini adalah fitur Android yang dikendalikan di pengaturan ponsel; NoteSpark sendiri tidak mengirim apa pun.",
@@ -759,7 +759,7 @@ const catalog: Record<string, string> = {
   "privacy.permM2": "Foto: hanya gambar yang dipilih saat menambahkan gambar ke catatan.",
   "privacy.permM3": "File: hanya file cadangan atau catatan yang dipilih saat mengimpor catatan, dan folder yang dipilih untuk cadangan otomatis.",
   "privacy.permM4": "Sidik jari: hanya jika membuka kunci dengan sidik jari diaktifkan untuk profil. Android memeriksa sidik jari; NoteSpark tidak pernah melihat atau menyimpannya.",
-  "privacy.permM5": "Akses jaringan: hanya untuk menampilkan gambar dari alamat web yang ditambahkan ke catatan dan, jika sinkronisasi diaktifkan, untuk berbicara dengan komputer Anda sendiri di jaringan Anda sendiri. NoteSpark kini juga mengizinkan alamat web http biasa untuk gambar tersebut, yang sebelumnya diblokir Android, jadi gunakan alamat https bila bisa.",
+  "privacy.permM5": "Akses jaringan: untuk menampilkan gambar dari alamat web yang Anda tambahkan ke catatan (hanya jika Anda menyalakan Tampilkan gambar web), dan, jika Anda menyalakan sinkronisasi, untuk berbicara dengan komputer Anda sendiri di jaringan Anda sendiri. NoteSpark juga mengizinkan alamat web http biasa untuk gambar itu, jadi gunakan alamat https jika bisa.",  // REVIEW (legal)
   "privacy.permM6": "Kamera: hanya saat Anda memindai kode pemasangan di layar Sinkronisasi. NoteSpark meminta izin saat Anda mengetuk Pindai, tidak merekam atau menyimpan apa pun, dan Anda bisa menempel kodenya saja.",
   "privacy.permM7": "Berjalan di latar belakang: hanya saat sinkronisasi aktif, agar perangkat Anda tetap terbaru saat NoteSpark ditutup. Android menampilkan notifikasi selama berjalan. Jika Anda menolak, sinkronisasi tetap berfungsi saat NoteSpark terbuka.",
   "privacy.controlHeading": "Kendali Anda atas data",
@@ -771,7 +771,7 @@ const catalog: Record<string, string> = {
   "privacy.changesHeading": "Perubahan kebijakan ini",
   "privacy.changesM": "Jika kebijakan ini berubah, versi baru akan muncul di sini dan di notespark.lusansapkota.com.np dengan tanggal berlaku baru.",
   "privacy.dateM": "31 Oktober 2026",
-  "privacy.leadM": "NoteSpark adalah aplikasi catatan offline. Tanpa akun, tanpa iklan, tanpa analitik, dan tanpa pelacakan. Semua yang Anda tulis tetap di ponsel. Kebijakan ini menjelaskan apa yang disimpan aplikasi dan di mana.",
+  "privacy.leadM": "NoteSpark adalah aplikasi catatan offline. Tidak ada akun, iklan, analitik, atau pelacakan. Semua yang Anda tulis tetap di ponsel Anda, atau hanya dikirim ke komputer Anda sendiri jika Anda menyalakan sinkronisasi. Kebijakan ini menjelaskan apa yang disimpan aplikasi dan di mana.",
   "privacy.storesD1": "Catatan Anda: judul, teks, format, status disematkan atau diarsipkan, tanggal dibuat dan diubah, serta Coretan. Semuanya disimpan dalam database di folder NoteSpark pada komputer ini, satu untuk setiap profil. Di Linux, foldernya adalah ~/.config/NoteSpark.",
   "privacy.storesD2": "Gambar yang ditambahkan ke catatan disalin ke folder NoteSpark sendiri pada komputer ini. Gambar tidak diunggah. Gambar tetap di sana sampai folder dihapus.",
   "privacy.storesD3": "Nama profil, profil yang sedang dibuka, pilihan tema, status layar sambutan, pengaturan cadangan, dan daftar 20 impor dan ekspor terakhir. Data ini disimpan di folder yang sama.",
@@ -779,7 +779,7 @@ const catalog: Record<string, string> = {
   "privacy.storesD5": "Profil yang dihapus tetap berada di komputer ini selama 30 hari agar dapat dipulihkan, lalu profil dan catatannya dihapus permanen.",
   "privacy.leavesHeadingD": "Tidak ada yang keluar dari komputer dengan sendirinya",
   "privacy.leavesIntroD": "NoteSpark tidak membuat permintaan jaringan sendiri: tanpa sinkronisasi, tanpa analitik, tanpa pelaporan crash, tanpa pengecekan pembaruan, dan tanpa font atau gambar jarak jauh. Versi baru hanya datang sebagai penginstal baru yang Anda unduh sendiri.",
-  "privacy.leavesD1": "Gambar yang mengarah ke alamat web tidak dimuat, sehingga tidak ada situs yang tahu bahwa catatan dibuka.",
+  "privacy.leavesD1": "Gambar yang mengarah ke alamat web tidak dimuat kecuali Anda menyalakan Tampilkan gambar web di Pengaturan, sehingga tidak ada situs yang tahu Anda membuka catatan.",  // REVIEW (legal)
   "privacy.leavesD2": "Saat Anda mengekspor catatan, atau menyimpan cadangan atau PDF, file hanya dikirim ke tujuan yang dipilih.",
   "privacy.leavesD4": "Saat Anda mengeklik tautan di catatan, tautan dibuka di browser Anda sendiri, yang kemudian menghubungi situs itu. NoteSpark tidak.",
   "privacy.leavesD5": "File sinkronisasi, jika Anda mengekspornya, hanya disimpan di tempat yang Anda pilih dan dikunci dengan frasa sandi yang tidak pernah disimpan NoteSpark. NoteSpark tidak mengirimkannya ke mana pun; Anda memindahkannya sendiri. Tanpa frasa sandi, catatan di dalamnya tidak dapat dibaca.", // REVIEW (legal)
@@ -1108,6 +1108,9 @@ const catalog: Record<string, string> = {
   "settings.webImagesDescription": "Memuat gambar yang ditautkan dari web. Jika mati, tidak ada situs yang dihubungi.",
   "note.webImageOff": "Gambar web dimatikan. Aktifkan Tampilkan gambar web di Pengaturan untuk memuat yang ini.",
   "privacy.leavesWebImages": "Satu-satunya pengecualian dari tetap offline: Tampilkan gambar web, mati secara default. Jika Anda menyalakannya di Pengaturan, gambar yang ditautkan catatan dari alamat web diminta dari situs itu saat Anda membuka catatan, sehingga situs itu melihat koneksi Anda. Matikan dan tidak ada situs yang dihubungi.", // REVIEW (legal)
+  "privacy.storesAttach": "Dokumen yang Anda lampirkan ke catatan (hingga 32 MB masing-masing) disalin ke penyimpanan NoteSpark sendiri dan disimpan terenkripsi. Dokumen tidak diunggah. Salinan dihapus jika tidak ada catatan yang memakainya.",  // REVIEW (legal)
+  "privacy.storesPinCopy": "Salinan hash setiap PIN, dan kunci profil yang dibungkus dengan PIN itu, juga disimpan di penyimpanan biasa aplikasi agar ponsel yang dipulihkan dapat membuka profil. Cadangan Android dapat menyertakannya, jadi siapa pun yang dapat membaca cadangan bisa mencoba semua PIN 4 digit.",  // REVIEW (legal)
+  "privacy.syncPin": "PIN tidak pernah disinkronkan. PIN hanya melindungi perangkat tempat Anda mengaturnya: catatan profil terlindungi sampai di perangkat lain sebagai catatan biasa, dan apakah profil di sana memakai PIN terserah Anda.",  // REVIEW (legal)
 };
 
 export default catalog;

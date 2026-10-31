@@ -742,7 +742,7 @@ const catalog: Record<string, string> = {
   "privacy.storesOutro": "以上内容都不会发送给开发者或任何其他人。",
   "privacy.leavesHeadingM": "没有任何内容离开你的设备",
   "privacy.leavesIntroM": "NoteSpark 设计上始终离线。它自己不会向互联网发出任何请求：没有分析、没有崩溃报告，也不检查更新。应用更新只通过你安装它的应用商店提供。同步在你开启前一直关闭，开启后也没有任何内容会离开你自己的网络（见“在你的设备之间同步”）。",
-  "privacy.leavesM1": "如果你在笔记中添加了来自网址的图片，它会在你第一次查看该笔记时从该网站下载，然后保存在你的手机上，以便离线显示，即使网站删除了它也一样。当没有任何笔记使用某个已保存的副本，且它已30天未被查看时，该副本会被删除。",
+  "privacy.leavesM1": "开启“显示网络图片”后，笔记中来自网址的图片会在你第一次查看笔记时从该网站下载，并保存在手机上以便离线显示，即使网站删除了它。当没有笔记使用某份已保存的副本且 30 天未查看时，该副本会被删除。",  // REVIEW (legal)
   "privacy.leavesM2": "导出或分享笔记时，文件只会发送到你在分享面板中选择的位置。",
   "privacy.leavesBackups": "自动备份（如果你开启）只会保存到你选择的文件夹。带PIN码的档案默认不包含在内，除非你选择包含；备份文件无需PIN码即可读取。",
   "privacy.leavesM4": "Android 自带的备份：如果你在手机设置中开启了备份，Android 可能会把 NoteSpark 的数据（包括你的笔记）复制到你的 Google 账号，以便在新手机上恢复。这是 Android 的功能，由你在手机设置中控制；NoteSpark 自身不会发送任何内容。",
@@ -758,7 +758,7 @@ const catalog: Record<string, string> = {
   "privacy.permM2": "照片：仅限你在为笔记添加图片时选择的图片。",
   "privacy.permM3": "文件：仅限你在导入笔记时选择的备份或笔记文件，以及你为自动备份选择的文件夹。",
   "privacy.permM4": "指纹：仅在你为某个档案开启指纹解锁时使用。指纹由 Android 校验；NoteSpark 从不查看或存储你的指纹。",
-  "privacy.permM5": "网络访问：仅用于显示你添加到笔记中的网址图片，以及在你开启同步后，在你自己的网络中与你自己的电脑通信。NoteSpark 现在也允许这些图片使用普通的 http 网址（Android 以前会阻止），所以请尽量使用 https 网址。",
+  "privacy.permM5": "网络访问：用于显示你添加到笔记中的网址图片（仅当你打开“显示网络图片”时），以及在开启同步后与你自己网络中的电脑通信。NoteSpark 也允许这些图片使用普通 http 网址，所以请尽量使用 https 网址。",  // REVIEW (legal)
   "privacy.permM6": "相机：仅在你于“同步”界面扫描配对码时使用。你点按“扫描”时 NoteSpark 才会请求权限，不会录制或保存任何内容，你也可以改为粘贴代码。",
   "privacy.permM7": "后台运行：仅在同步开启时，这样 NoteSpark 关闭后你的设备也能保持最新。运行期间 Android 会显示一条通知。如果你选择不允许，同步只在 NoteSpark 打开时进行。",
   "privacy.controlHeading": "你对数据的掌控",
@@ -770,7 +770,7 @@ const catalog: Record<string, string> = {
   "privacy.changesHeading": "本政策的变更",
   "privacy.changesM": "如果本政策有变更，新版本将与新的生效日期一起显示在这里以及 notespark.lusansapkota.com.np。",
   "privacy.dateM": "2026年10月31日",
-  "privacy.leadM": "NoteSpark 是一款离线笔记应用。没有账号、没有广告、没有分析，也没有跟踪。你写的一切都只保存在你的手机上。本政策说明应用存储什么内容以及存储在哪里。",
+  "privacy.leadM": "NoteSpark 是一款离线笔记应用。没有账户、广告、分析或跟踪。你写的一切都留在手机上；如果开启同步，则只会传到你自己的电脑。本政策说明应用存储什么以及存储在哪里。",
   "privacy.storesD1": "你的笔记：标题、正文、格式、是否置顶或归档、创建和编辑日期，以及草稿本。它们保存在这台电脑上 NoteSpark 文件夹中的数据库里，每个档案一个。在 Linux 上，该文件夹是 ~/.config/NoteSpark。",
   "privacy.storesD2": "你添加到笔记中的图片会复制到这台电脑上 NoteSpark 自己的文件夹。图片不会被上传，会一直保留在那里，直到你删除该文件夹。",
   "privacy.storesD3": "你的档案名称、当前打开的档案、主题选择、是否已看完欢迎页面、备份设置，以及最近20条导入和导出记录。这些内容保存在同一个文件夹中。",
@@ -778,7 +778,7 @@ const catalog: Record<string, string> = {
   "privacy.storesD5": "已删除的档案会在这台电脑上保留30天，以便恢复，之后它及其笔记将被清除。",
   "privacy.leavesHeadingD": "没有任何内容会自行离开你的电脑",
   "privacy.leavesIntroD": "NoteSpark 自身不发出任何网络请求：没有同步、没有分析、没有崩溃报告、不检查更新，也没有远程字体或图片。新版本只以新的安装程序形式提供，由你自行下载。",
-  "privacy.leavesD1": "指向网址的图片不会被加载，因此没有任何网站会知道你打开了某条笔记。",
+  "privacy.leavesD1": "指向网址的图片不会加载，除非你在设置中打开“显示网络图片”，因此没有网站会知道你打开了笔记。",  // REVIEW (legal)
   "privacy.leavesD2": "导出笔记、保存备份或 PDF 时，文件只会保存到你选择的位置。",
   "privacy.leavesD4": "点击笔记中的链接时，它会在你自己的浏览器中打开，由浏览器联系该网站，NoteSpark 不会。",
   "privacy.leavesD5": "同步文件（如果你导出了一个）只会保存到你选择的位置，并用 NoteSpark 从不存储的口令锁定。NoteSpark 不会把它发送到任何地方，需要你自己传送。没有口令，其中的笔记无法读取。", // REVIEW (legal)
@@ -1107,6 +1107,9 @@ const catalog: Record<string, string> = {
   "settings.webImagesDescription": "加载网上链接的图片。关闭时不会联系任何网站。",
   "note.webImageOff": "网络图片已关闭。在设置中打开“显示网络图片”即可加载此图片。",
   "privacy.leavesWebImages": "保持离线的唯一例外：显示网络图片，默认关闭。如果你在设置中打开它，打开笔记时会向该网站请求笔记中通过网址链接的图片，因此该网站能看到你的连接。关闭后不会联系任何网站。", // REVIEW (legal)
+  "privacy.storesAttach": "你附加到笔记的文档（每个最大 32 MB）会复制到 NoteSpark 自己的存储中并加密保存，不会上传。当没有笔记使用某份副本时，它会被删除。",  // REVIEW (legal)
+  "privacy.storesPinCopy": "每个 PIN 的哈希副本，以及用该 PIN 包裹的资料档案密钥副本，也保存在应用的普通存储中，以便恢复后的手机能解锁该档案。Android 备份可能包含它，因此能读取备份的人可以尝试所有 4 位 PIN。",  // REVIEW (legal)
+  "privacy.syncPin": "PIN 永远不会同步。它只保护你设置它的设备：受保护档案的笔记会作为普通笔记到达另一台设备，那里的档案是否设置 PIN 由你决定。",  // REVIEW (legal)
 };
 
 export default catalog;

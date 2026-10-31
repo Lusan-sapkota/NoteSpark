@@ -809,7 +809,7 @@ const catalog: Record<string, string> = {
   "privacy.storesOutro": "Nada de esto se envía al desarrollador ni a nadie más.",
   "privacy.leavesHeadingM": "Nada sale de tu dispositivo",
   "privacy.leavesIntroM": "NoteSpark funciona sin conexión por diseño. No hace por sí mismo ninguna solicitud a internet: sin analíticas, sin informes de fallos y sin comprobación de actualizaciones. Las actualizaciones de la app llegan solo a través de la tienda desde la que la instalaste. La sincronización está desactivada hasta que la actives y, entonces, nada sale de tu propia red (consulta Sincronización entre tus dispositivos).",
-  "privacy.leavesM1": "Si añades a una nota una imagen desde una dirección web, se descarga de ese sitio web la primera vez que ves la nota y luego se conserva en tu teléfono para que se muestre sin conexión, aunque el sitio web la retire. Una copia guardada se elimina cuando ninguna nota la usa y no se ha visto en 30 días.",
+  "privacy.leavesM1": "Con Mostrar imágenes web activado, una imagen de una dirección web en una nota se descarga de ese sitio la primera vez que ves la nota y se guarda en tu teléfono para que se muestre sin conexión, aunque el sitio la elimine. Una copia guardada se borra cuando ninguna nota la usa y no se ha visto en 30 días.",  // REVIEW (legal)
   "privacy.leavesM2": "Cuando exportas o compartes notas, el archivo va solo adonde tú elijas en el menú de compartir.",
   "privacy.leavesBackups": "Las copias automáticas, si las activas, se guardan solo en la carpeta que elijas. Los perfiles con PIN quedan fuera salvo que los incluyas; los archivos de copia se pueden leer sin el PIN.",
   "privacy.leavesM4": "La copia de seguridad de Android: si la copia está activada en los ajustes de tu teléfono, Android puede copiar los datos de NoteSpark, incluidas tus notas, a tu cuenta de Google para poder restaurarlos en un teléfono nuevo. Es una función de Android que controlas en los ajustes de tu teléfono; NoteSpark no envía nada por sí misma.",
@@ -825,7 +825,7 @@ const catalog: Record<string, string> = {
   "privacy.permM2": "Fotos: solo las imágenes que eliges al añadir una imagen a una nota.",
   "privacy.permM3": "Archivos: solo los archivos de copia o de notas que eliges al importar notas, y la carpeta que eliges para las copias automáticas.",
   "privacy.permM4": "Huella: solo si activas el desbloqueo con huella en un perfil. Android comprueba tu huella; NoteSpark nunca la ve ni la guarda.",
-  "privacy.permM5": "Acceso a la red: solo para mostrar imágenes de direcciones web que añades a las notas y, si activas la sincronización, para comunicarse con tu propia computadora en tu propia red. NoteSpark ahora también permite direcciones web http simples para esas imágenes, que Android bloqueaba antes, así que usa direcciones https cuando puedas.",
+  "privacy.permM5": "Acceso a la red: para mostrar imágenes de direcciones web que añades a las notas (solo si activas Mostrar imágenes web) y, si activas la sincronización, para hablar con tu propia computadora en tu propia red. NoteSpark también permite direcciones web http simples para esas imágenes, así que usa direcciones https cuando puedas.",  // REVIEW (legal)
   "privacy.permM6": "Cámara: solo mientras escaneas un código de vinculación en la pantalla de sincronización. NoteSpark te lo pide al tocar Escanear, no graba ni guarda nada, y puedes pegar el código en su lugar.",
   "privacy.permM7": "Ejecución en segundo plano: solo mientras la sincronización está activada, para que tus dispositivos estén al día con NoteSpark cerrada. Android muestra una notificación mientras se ejecuta. Si dices que no, la sincronización funciona mientras NoteSpark está abierta.",
   "privacy.controlHeading": "Tu control sobre tus datos",
@@ -837,7 +837,7 @@ const catalog: Record<string, string> = {
   "privacy.changesHeading": "Cambios en esta política",
   "privacy.changesM": "Si esta política cambia, la nueva versión aparecerá aquí y en notespark.lusansapkota.com.np con una nueva fecha de entrada en vigor.",
   "privacy.dateM": "31 de octubre de 2026",
-  "privacy.leadM": "NoteSpark es una app de notas sin conexión. No tiene cuenta, ni anuncios, ni analíticas, ni seguimiento. Todo lo que escribes se queda en tu teléfono. Esta política explica qué almacena la app y dónde.",
+  "privacy.leadM": "NoteSpark es una app de notas sin conexión. No tiene cuenta, anuncios, analíticas ni seguimiento. Todo lo que escribes se queda en tu teléfono, o va solo a tu propia computadora si activas la sincronización. Esta política explica qué guarda la app y dónde.",
   "privacy.storesD1": "Tus notas: el título, el texto, el formato, si están fijadas o archivadas, las fechas en que se crearon y editaron, y tu bloc de notas. Se guardan en una base de datos en la carpeta de NoteSpark de este ordenador, una por cada perfil. En Linux la carpeta es ~/.config/NoteSpark.",
   "privacy.storesD2": "Las imágenes que añades a una nota se copian en la carpeta propia de NoteSpark en este ordenador. No se suben a ninguna parte. Permanecen allí hasta que elimines la carpeta.",
   "privacy.storesD3": "Los nombres de tus perfiles, qué perfil está abierto, tu elección de tema, si has terminado las pantallas de bienvenida, los ajustes de copias y una lista de tus últimas 20 importaciones y exportaciones. Esto se guarda en la misma carpeta.",
@@ -845,7 +845,7 @@ const catalog: Record<string, string> = {
   "privacy.storesD5": "Un perfil eliminado permanece en este ordenador 30 días para que puedas restaurarlo; después, él y sus notas se borran.",
   "privacy.leavesHeadingD": "Nada sale de tu ordenador por sí solo",
   "privacy.leavesIntroD": "NoteSpark no hace solicitudes de red por su cuenta: ni sincronización, ni analíticas, ni informes de fallos, ni comprobación de actualizaciones, ni fuentes ni imágenes remotas. Las versiones nuevas llegan solo como un instalador nuevo que descargas tú mismo.",
-  "privacy.leavesD1": "Las imágenes que apuntan a una dirección web no se cargan, así que ningún sitio web se entera de que abriste una nota.",
+  "privacy.leavesD1": "Las imágenes que apuntan a una dirección web no se cargan a menos que actives Mostrar imágenes web en Ajustes, así que ningún sitio se entera de que abriste una nota.",  // REVIEW (legal)
   "privacy.leavesD2": "Cuando exportas notas, o guardas una copia o un PDF, el archivo va solo adonde tú elijas.",
   "privacy.leavesD4": "Cuando haces clic en un enlace de una nota, se abre en tu propio navegador, que es el que contacta con ese sitio web. NoteSpark no lo hace.",
   "privacy.leavesD5": "Un archivo de sincronización, si exportas uno, se guarda solo donde elijas y está protegido con una frase de contraseña que NoteSpark nunca guarda. NoteSpark no lo envía a ningún sitio; lo mueves tú. Sin la frase de contraseña no se pueden leer las notas que contiene.", // REVIEW (legal)
@@ -1188,6 +1188,9 @@ const catalog: Record<string, string> = {
   "settings.webImagesDescription": "Carga imágenes enlazadas de la web. Desactivado, no se contacta ningún sitio.",
   "note.webImageOff": "Las imágenes web están desactivadas. Activa Mostrar imágenes web en Ajustes para cargar esta.",
   "privacy.leavesWebImages": "La única excepción a seguir sin conexión: Mostrar imágenes web, desactivado por defecto. Si lo activas en Ajustes, una imagen que una nota enlaza desde una dirección web se pide a ese sitio al abrir la nota, así que ese sitio ve tu conexión. Desactívalo y no se contacta con ningún sitio.", // REVIEW (legal)
+  "privacy.storesAttach": "Los documentos que adjuntas a una nota (hasta 32 MB cada uno) se copian al almacenamiento propio de NoteSpark y se guardan cifrados. No se suben. Una copia se borra cuando ninguna nota la usa.",  // REVIEW (legal)
+  "privacy.storesPinCopy": "Una copia del hash de cada PIN, y de la clave del perfil envuelta con ese PIN, también se guarda en el almacenamiento ordinario de la app para que un teléfono restaurado pueda desbloquear el perfil. La copia de seguridad de Android puede incluirla, así que quien pueda leer una copia de seguridad podría probar todos los PIN de 4 dígitos.",  // REVIEW (legal)
+  "privacy.syncPin": "Un PIN nunca se sincroniza. Protege solo el dispositivo donde lo configuraste: las notas de un perfil protegido llegan al otro dispositivo como notas normales, y que el perfil de allí tenga PIN depende de ti.",  // REVIEW (legal)
 };
 
 export default catalog;
