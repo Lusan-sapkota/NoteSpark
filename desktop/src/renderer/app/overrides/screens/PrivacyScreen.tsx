@@ -14,9 +14,13 @@ const CONTACT_EMAIL = 'contact@lusansapkota.com.np';
 
 const sections: { heading: TKey; intro?: TKey; bullets?: TKey[]; outro?: TKey }[] = [
   { heading: 'privacy.storesHeading',
-    bullets: ['privacy.storesD1', 'privacy.storesD2', 'privacy.storesAttach', 'privacy.storesD3', 'privacy.storesD4', 'privacy.storesD5'], outro: 'privacy.storesOutro' },
-  { heading: 'privacy.leavesHeadingD', intro: 'privacy.leavesIntroD',
-    bullets: ['privacy.leavesWebImages', 'privacy.leavesD1', 'privacy.leavesD2', 'privacy.leavesBackups', 'privacy.leavesD5', 'privacy.syncPin', 'privacy.leavesD4'] },
+    bullets: ['privacy.storesD1', 'privacy.storesD2', 'privacy.storesAttach', 'privacy.storesD3', 'privacy.storesDPaired', 'privacy.storesD4', 'privacy.storesDPinCopy', 'privacy.storesD5'], outro: 'privacy.storesOutro' },
+  { heading: 'privacy.leavesHeadingD', intro: 'privacy.leavesIntroD2',
+    bullets: ['privacy.leavesWebImages', 'privacy.leavesD1', 'privacy.leavesD2', 'privacy.leavesBackups', 'privacy.leavesD4'] },
+  { heading: 'privacy.syncHeadingM', intro: 'privacy.syncIntroD',
+    bullets: ['privacy.syncD1', 'privacy.syncD2', 'privacy.syncD3', 'privacy.leavesD5', 'privacy.syncPin', 'privacy.syncD4'] },
+  { heading: 'privacy.permHeading',
+    bullets: ['privacy.permD1', 'privacy.permD2', 'privacy.permD3', 'privacy.permD4'] },
   { heading: 'privacy.webHeading', intro: 'privacy.webIntro',
     bullets: ['privacy.web1', 'privacy.web2', 'privacy.web3', 'privacy.web4'] },
   { heading: 'privacy.controlHeading',

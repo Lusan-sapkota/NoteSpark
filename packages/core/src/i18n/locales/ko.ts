@@ -777,7 +777,6 @@ const catalog: Record<string, string> = {
   "privacy.storesD4": "프로필 PIN: 각 PIN을 뒤섞은 형태(솔트가 적용된 해시)만 보관해요. PIN 자체는 저장되지 않으므로 잊어버리면 복구할 수 없어요. PIN이 있는 프로필은 메모도 암호화되며, 암호화 키는 시스템 키링(KWallet 또는 GNOME Keyring 등)이 NoteSpark를 위해 보관해요. 사용 가능한 키링이 없으면 NoteSpark는 보호된 프로필을 만들지 않아요.",
   "privacy.storesD5": "삭제한 프로필은 복원할 수 있도록 30일 동안 이 컴퓨터에 남아 있다가, 이후 프로필과 메모가 모두 삭제돼요.",
   "privacy.leavesHeadingD": "스스로 컴퓨터 밖으로 나가는 정보는 없어요",
-  "privacy.leavesIntroD": "NoteSpark는 자체적으로 네트워크 요청을 하지 않아요. 동기화, 분석, 오류 보고, 업데이트 확인이 없고 원격 글꼴이나 이미지도 없어요. 새 버전은 직접 내려받는 새 설치 파일로만 제공돼요.",
   "privacy.leavesD1": "웹 주소를 가리키는 이미지는 설정에서 ‘웹 이미지 표시’를 켜지 않는 한 불러오지 않으므로, 노트를 열었다는 사실을 어떤 웹사이트도 알지 못합니다.",  // REVIEW (legal)
   "privacy.leavesD2": "메모를 내보내거나 백업 또는 PDF로 저장하면 파일은 선택한 곳으로만 전달돼요.",
   "privacy.leavesD4": "메모의 링크를 클릭하면 사용 중인 브라우저에서 열리며, 해당 웹사이트에 연결하는 것은 브라우저예요. NoteSpark는 연결하지 않아요.",
@@ -1110,6 +1109,18 @@ const catalog: Record<string, string> = {
   "privacy.storesAttach": "노트에 첨부한 문서(각 최대 32MB)는 NoteSpark 자체 저장소에 복사되어 암호화되어 보관됩니다. 업로드되지 않습니다. 어떤 노트도 사용하지 않는 사본은 삭제됩니다.",  // REVIEW (legal)
   "privacy.storesPinCopy": "각 PIN 해시의 사본과, 그 PIN으로 감싼 프로필 키의 사본은 복원한 휴대전화에서 프로필을 열 수 있도록 앱의 일반 저장소에도 보관됩니다. Android 백업에 포함될 수 있으므로, 백업을 읽을 수 있는 사람은 4자리 PIN을 모두 시도해 볼 수 있습니다.",  // REVIEW (legal)
   "privacy.syncPin": "PIN은 동기화되지 않습니다. PIN은 설정한 기기만 보호합니다. 보호된 프로필의 노트는 다른 기기에 일반 노트로 전달되며, 그쪽 프로필에 PIN을 둘지는 직접 정하면 됩니다.",  // REVIEW (legal)
+  "privacy.storesDPaired": "동기화를 위해 페어링한 기기: 각 기기의 이름과 공개 키, 그리고 시스템 키링이 NoteSpark를 위해 보관하는 이 컴퓨터 자체의 동기화 키. 이를 위해 노트 텍스트는 저장되지 않습니다.",  // REVIEW (legal)
+  "privacy.storesDPinCopy": "각 PIN 해시의 사본과, 그 PIN으로 감싼 프로필 키의 사본은 복원한 폴더에서 프로필을 열 수 있도록 같은 폴더의 NoteSpark 설정 파일에도 보관됩니다. 그 폴더나 그 백업을 읽을 수 있는 사람은 4자리 PIN을 모두 시도해 볼 수 있습니다.",  // REVIEW (legal)
+  "privacy.leavesIntroD2": "NoteSpark는 설계상 오프라인입니다. 스스로 인터넷에 요청을 보내지 않습니다. 분석도, 충돌 보고도, 업데이트 확인도 없습니다. 새 버전은 직접 내려받는 새 설치 프로그램으로만 제공됩니다. 동기화는 켜기 전까지 꺼져 있으며, 켜도 아무것도 내 네트워크 밖으로 나가지 않습니다(기기 간 동기화 참고).",  // REVIEW (legal)
+  "privacy.syncIntroD": "동기화는 설정의 ‘동기화’에서 켜고 기기를 페어링하기 전까지 꺼져 있습니다.",  // REVIEW (legal)
+  "privacy.syncD1": "켜져 있을 때 이 컴퓨터는 페어링한 기기를 위해 비공개 네트워크 주소(집이나 사무실 네트워크, 핫스팟, USB 테더링, VPN)에서만 대기하며 기기와 직접 통신합니다. 모든 것이 암호화되어 네트워크의 누구도 읽을 수 없고, NoteSpark는 공개 인터넷 주소에 연결하지 않습니다. 아무것도 내 네트워크 밖으로 나가지 않습니다.",  // REVIEW (legal)
+  "privacy.syncD2": "계정도, 우리 서버도 없습니다. 페어링하지 않은 기기에는 응답하지 않습니다.",  // REVIEW (legal)
+  "privacy.syncD3": "기기는 이 컴퓨터에 이미 있는 프로필에만 동기화할 수 있습니다. ‘기기에서 온 새 프로필 받기’를 켜면 기기가 이 컴퓨터에 프로필을 추가할 수 있으며, 그 프로필은 PIN 없이 시작합니다.",  // REVIEW (legal)
+  "privacy.syncD4": "동기화는 언제든 끄거나 기기를 제거할 수 있습니다. 이 컴퓨터에 이미 있는 노트는 그대로 남습니다.",  // REVIEW (legal)
+  "privacy.permD1": "알림: 작업 마감일에 알려 주기 위한 것입니다. 알림은 이 컴퓨터에서 만들어지며 NoteSpark는 푸시 알림을 사용하지 않습니다. PIN이 있는 프로필의 알림은 작업 텍스트를 보여 주지 않습니다.",  // REVIEW (legal)
+  "privacy.permD2": "파일과 클립보드: 가져올 때 고르는 파일, 백업·Markdown 미러·내보내기를 위해 고르는 폴더만 사용하며, 클립보드는 트레이 아이콘에서 ‘클립보드 저장’을 선택할 때만 사용합니다.",  // REVIEW (legal)
+  "privacy.permD3": "키링: 시스템의 키링(KWallet이나 GNOME Keyring 등)이 보호된 프로필과 동기화에 NoteSpark가 필요한 키를 보관합니다. 키링이 없으면 NoteSpark는 보호된 프로필을 만들지 않고 동기화도 켜지 않습니다.",  // REVIEW (legal)
+  "privacy.permD4": "네트워크 접근: 내 네트워크에서의 동기화, 켠 경우의 웹 보기, ‘웹 이미지 표시’를 켠 경우의 웹 이미지에만 사용합니다. NoteSpark는 공개 주소에서 대기하지 않습니다.",  // REVIEW (legal)
 };
 
 export default catalog;

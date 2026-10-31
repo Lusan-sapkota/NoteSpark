@@ -777,7 +777,6 @@ const catalog: Record<string, string> = {
   "privacy.storesD4": "档案PIN码：只保存每个PIN码经过加扰的形式（加盐哈希）。PIN码本身不会被存储，因此忘记后无法找回。带PIN码的档案，其笔记也会被加密，密钥由系统密钥环（如 KWallet 或 GNOME Keyring）为 NoteSpark 保管。如果没有可用的密钥环，NoteSpark 不会创建受保护的档案。",
   "privacy.storesD5": "已删除的档案会在这台电脑上保留30天，以便恢复，之后它及其笔记将被清除。",
   "privacy.leavesHeadingD": "没有任何内容会自行离开你的电脑",
-  "privacy.leavesIntroD": "NoteSpark 自身不发出任何网络请求：没有同步、没有分析、没有崩溃报告、不检查更新，也没有远程字体或图片。新版本只以新的安装程序形式提供，由你自行下载。",
   "privacy.leavesD1": "指向网址的图片不会加载，除非你在设置中打开“显示网络图片”，因此没有网站会知道你打开了笔记。",  // REVIEW (legal)
   "privacy.leavesD2": "导出笔记、保存备份或 PDF 时，文件只会保存到你选择的位置。",
   "privacy.leavesD4": "点击笔记中的链接时，它会在你自己的浏览器中打开，由浏览器联系该网站，NoteSpark 不会。",
@@ -1110,6 +1109,18 @@ const catalog: Record<string, string> = {
   "privacy.storesAttach": "你附加到笔记的文档（每个最大 32 MB）会复制到 NoteSpark 自己的存储中并加密保存，不会上传。当没有笔记使用某份副本时，它会被删除。",  // REVIEW (legal)
   "privacy.storesPinCopy": "每个 PIN 的哈希副本，以及用该 PIN 包裹的资料档案密钥副本，也保存在应用的普通存储中，以便恢复后的手机能解锁该档案。Android 备份可能包含它，因此能读取备份的人可以尝试所有 4 位 PIN。",  // REVIEW (legal)
   "privacy.syncPin": "PIN 永远不会同步。它只保护你设置它的设备：受保护档案的笔记会作为普通笔记到达另一台设备，那里的档案是否设置 PIN 由你决定。",  // REVIEW (legal)
+  "privacy.storesDPaired": "你为同步配对的设备：每台设备的名称和公钥，以及这台电脑自己的同步密钥，由系统密钥环为 NoteSpark 保管。为此不存储任何笔记文字。",  // REVIEW (legal)
+  "privacy.storesDPinCopy": "每个 PIN 的哈希副本，以及用该 PIN 包裹的档案密钥副本，也保存在同一文件夹中 NoteSpark 的设置文件里，以便恢复后的文件夹能解锁该档案。能读取该文件夹或其备份的人可以尝试所有 4 位 PIN。",  // REVIEW (legal)
+  "privacy.leavesIntroD2": "NoteSpark 从设计上保持离线。它自己不会向互联网发出请求：没有分析、没有崩溃报告、没有更新检查。新版本只以你自己下载的新安装程序形式提供。同步在你打开之前是关闭的，打开后也没有任何内容离开你自己的网络（见设备之间的同步）。",  // REVIEW (legal)
+  "privacy.syncIntroD": "同步在你于设置的“同步”中打开并配对一台设备之前是关闭的。",  // REVIEW (legal)
+  "privacy.syncD1": "打开后，这台电脑只在私有网络地址（你的家庭或办公网络、热点、USB 网络共享或 VPN）上监听你配对的设备，并直接与它们通信。一切都经过加密，网络上的任何人都无法读取，NoteSpark 也从不连接公共互联网地址。没有任何内容离开你自己的网络。",  // REVIEW (legal)
+  "privacy.syncD2": "没有账户，也没有我们的服务器。你没有配对的设备得不到任何回应。",  // REVIEW (legal)
+  "privacy.syncD3": "设备只能同步到你在这里已有的档案。如果你打开“接受来自设备的新档案”，设备就可以在这台电脑上添加档案，而它一开始没有 PIN。",  // REVIEW (legal)
+  "privacy.syncD4": "你可以随时关闭同步，或移除某台设备。已在这台电脑上的笔记会留在这里。",  // REVIEW (legal)
+  "privacy.permD1": "通知：用于在任务到期日提醒你。通知在这台电脑上创建；NoteSpark 不使用推送通知。带 PIN 的档案的提醒不会显示任务文字。",  // REVIEW (legal)
+  "privacy.permD2": "文件和剪贴板：仅限你在导入时选择的文件、你为备份、Markdown 镜像和导出选择的文件夹，剪贴板仅在你从托盘图标选择“保存剪贴板”时使用。",  // REVIEW (legal)
+  "privacy.permD3": "密钥环：你系统的密钥环（如 KWallet 或 GNOME Keyring）保管 NoteSpark 为受保护档案和同步所需的密钥。没有密钥环时，NoteSpark 不会创建受保护档案，也不会打开同步。",  // REVIEW (legal)
+  "privacy.permD4": "网络访问：仅用于在你自己网络上的同步、你打开的网页视图，以及你打开“显示网络图片”时的网络图片。NoteSpark 从不在公共地址上监听。",  // REVIEW (legal)
 };
 
 export default catalog;
