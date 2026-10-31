@@ -13,17 +13,20 @@ const map = {
   'expo-file-system/legacy': shim('expo-file-system-legacy.ts'),
   'expo-sharing': shim('expo-sharing.ts'),
   '@react-native-async-storage/async-storage': shim('async-storage.ts'),
+  electron: resolve(root, 'packages/node-shims/test/loader/electron.ts'),
   'expo-local-authentication': resolve(root, 'packages/node-shims/test/loader/local-authentication.ts'),
   '@notespark/core': resolve(root, 'packages/core/src/index.ts'),
   '@notespark/sync': resolve(root, 'packages/sync/src/index.ts'),
   '@notespark/sync-protocol': resolve(root, 'packages/sync-protocol/src/index.ts'),
   '@notespark/hub': resolve(root, 'packages/hub/src/index.ts'),
   '@notespark/node-shims/paths': shim('paths.ts'),
+  '@notespark/node-shims/async-storage': shim('async-storage.ts'),
   'better-sqlite3-multiple-ciphers': resolve(root, 'desktop/node_modules/better-sqlite3-multiple-ciphers/lib/index.js'),
 };
 const isFile = p => existsSync(p) && statSync(p).isFile();
 
 export async function resolve_(specifier, context, next) {
+  if (/\/storage\/semanticSearch$/.test(specifier) && context.parentURL?.endsWith('/desktop/src/main/storage.ts')) return next(pathToFileURL(resolve(root, 'packages/node-shims/test/loader/semantic-search.ts')).href, context);
   if (map[specifier]) return next(pathToFileURL(map[specifier]).href, context);
   if (specifier.startsWith('.') && context.parentURL?.startsWith('file:') && !/\.[cm]?[jt]sx?$/.test(specifier)) {
     const base = resolve(dirname(fileURLToPath(context.parentURL)), specifier);

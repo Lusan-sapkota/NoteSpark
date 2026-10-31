@@ -18,7 +18,10 @@ const whileLocked = new Set(['getProfiles', 'getBinnedProfiles', 'getActiveProfi
 // Profile calls a browser may make; switching, PINs, locking and deleting stay on the desktop.
 const webProfiles = new Set(['getProfiles', 'getBinnedProfiles', 'getActiveProfile', 'getDefaultProfile', 'getAutoLockMinutes', 'getPinLockout', 'wrongPinMessage', 'hasProfilePin', 'usesBiometrics', 'canUseBiometrics']);
 
-type Phase = 'starting' | 'ready' | 'locked' | 'unreadable';
+// Attachment calls a browser may make, with how many arguments it may pass: a profile id after those is dropped, so only the open profile answers.
+const webAttachments: Record<string, number> = { addAttachment: 1, readAttachment: 1, hasAttachment: 1, getAttachmentMeta: 1, openAttachmentInViewer: 2, listAttachments: 0, clearAttachmentTempDir: 0, pruneAttachments: 0 };
+
+type Phase ='starting' | 'ready' | 'locked' | 'unreadable';
 let phase: Phase = 'starting';
 let phaseProfile: profiles.Profile | null = null;
 let starting: Promise<void> | undefined;
@@ -119,6 +122,14 @@ let syncTimer: NodeJS.Timeout | undefined;
 
 export const callStorage = async ({ module, fn, args }: { module: string; fn: string; args?: unknown[] }, from: 'ipc' | 'http') => {
   if (desktopOnly.has(module) && from !== 'ipc') throw new Error(`Unknown storage call: ${module}.${fn}`);
+  // Profile keys, opening, deleting and moving files between profiles stay in the desktop window; the PIN only guards switchProfile.
+  if (from === 'http' && (module === 'database' || (module === 'attachments' && !Object.hasOwn(webAttachments, fn)))) throw new Error(`Unknown storage call: ${module}.${fn}`);
+  if (from === 'http' && module === 'attachments') {
+    // A browser sends bytes, never a path on this computer (the renderer reads picked files itself).
+    const input = Array.isArray(args) ? args[0] : undefined;
+    if (fn === 'addAttachment' && input && typeof input === 'object' && 'uri' in input) throw new Error(`Unknown storage call: ${module}.${fn}`);
+    args = Array.isArray(args) ? args.slice(0, webAttachments[fn]) : [];
+  }
   const exported = Object.hasOwn(modules, module) ? modules[module] : undefined;
   const target = exported && Object.hasOwn(exported, fn) ? exported[fn] : undefined;
   if (typeof target !== 'function') throw new Error(`Unknown storage call: ${module}.${fn}`);
