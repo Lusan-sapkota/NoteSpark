@@ -1,7 +1,7 @@
 // Crash injection: every SQLite call of an operation fails once (all later ones too), then the database is reopened and checked.
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { assertInStep, byTitle, crdt, database, freshProfile, notes, profiles, reopen, rows, sample, sqlite, sync } from './helpers.ts';
+import { T, assertInStep, byTitle, crdt, database, freshProfile, notes, profiles, reopen, rows, sample, sqlite, sync } from './helpers.ts';
 
 const proto = sqlite.SQLiteDatabase.prototype as any;
 let calls = 0;
@@ -107,6 +107,45 @@ run({
   check: async () => {
     await crdt.applyRemote(database.db, deltas);
     assert.deepEqual(Object.keys(await titles()).sort(), ['A', 'C', 'R']);
+  },
+});
+
+// A sync file import is one transaction: after a crash at any statement the profile is exactly as before or exactly after, never half.
+const flow = await import('@notespark/sync-protocol');
+const { storageStore } = await import(new URL('../../../mobile/src/storage/syncStore.ts', import.meta.url).href);
+const { createHash } = await import('node:crypto');
+const sha256 = (d: Uint8Array) => new Uint8Array(createHash('sha256').update(d).digest());
+let importFile = new Uint8Array(0);
+const importFrom = async () => {
+  const store = storageStore(database.db, 'P');
+  const plan = await flow.planImport(store, importFile, 'correct horse', sha256);
+  if (plan.kind === 'otherProfile') throw new Error('unexpected profile');
+  await flow.runImport(store, plan);
+};
+run({
+  name: 'import a sync file (merge: one note edited, one new, one erased)',
+  setup: async () => {
+    await three();
+    const store = storageStore(database.db, 'P');
+    const own = await flow.exportSyncFile({ store, name: 'P', passphrase: 'correct horse', uuid: () => crypto.randomUUID() });
+    const other = new sync.MemoryStore(9001);
+    const first = await flow.planImport(other, own, 'correct horse', sha256);
+    if (first.kind === 'otherProfile') throw new Error('unexpected');
+    await flow.runImport(other, first);
+    const syncId = (await other.profiles())[0].syncId;
+    const [a, b] = [(await database.db.getFirstAsync("SELECT uuid FROM notes WHERE title = 'A'")).uuid, (await database.db.getFirstAsync("SELECT uuid FROM notes WHERE title = 'B'")).uuid];
+    other.edit(syncId, a, { ...other.peek(syncId, a)!, content: 'edited in the file' });
+    other.edit(syncId, crypto.randomUUID(), { title: 'New', content: 'n', isMarkdown: true, isPinned: false, isArchived: false, deletedAt: null, createdAt: T, updatedAt: T });
+    other.erase(syncId, b);
+    importFile = await flow.exportSyncFile({ store: other, name: 'P', passphrase: 'correct horse', uuid: () => crypto.randomUUID() });
+  },
+  op: importFrom,
+  check: async (_c, _b, _a, state) => {
+    await importFrom(); // importing again, after a crash or not, ends in the same place
+    assert.deepEqual(Object.keys(await titles()).sort(), ['A', 'C', 'New']);
+    assert.equal(await textOf('A')(), 'edited in the file');
+    await assertInStep('after re-import');
+    void state;
   },
 });
 

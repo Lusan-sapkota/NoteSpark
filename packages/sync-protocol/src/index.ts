@@ -3,6 +3,7 @@ export * from './channel.ts';
 export * from './client.ts';
 export * from './clock.ts';
 export * from './file.ts';
+export * from './fileSync.ts';
 export * from './hub.ts';
 export * from './noise.ts';
 export * from './pairing.ts';

@@ -46,6 +46,7 @@ export const storageStore = (db: DB, name = 'Profile', profileId?: string): Sync
     stateVector: async (syncId, doc) => (await own(syncId), stateVectorOf(await docUpdates(db, doc))),
     diff: async (syncId, doc, remote) => (await own(syncId), diffFor(await docUpdates(db, doc), remote)),
     apply: async (syncId, doc, updates) => (await own(syncId), applyRemote(db, updates.map(bytes => ({ doc, bytes })))),
+    applyMany: async (syncId, items) => (await own(syncId), applyRemote(db, items.map(i => ({ doc: i.doc, bytes: i.update })))),
     subscribe: (_syncId, listener) => onLocalUpdate(db, d => listener(d.doc, d.bytes)),
     note: async (_syncId, uuid) => {
       const r = await db.getFirstAsync<any>('SELECT * FROM notes WHERE uuid = ?', [uuid]);

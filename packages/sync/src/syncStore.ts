@@ -41,6 +41,8 @@ export interface SyncStore {
   stateVector(syncId: string, doc: string): Promise<Uint8Array>;
   diff(syncId: string, doc: string, remoteStateVector: Uint8Array): Promise<Uint8Array>;
   apply(syncId: string, doc: string, updates: Uint8Array[]): Promise<void>;
+  // Several documents in one transaction (a sync file import): all of them or none.
+  applyMany?(syncId: string, items: { doc: string; update: Uint8Array }[]): Promise<void>;
   // Changes made here (not by `apply`), once committed.
   subscribe(syncId: string, listener: (doc: string, update: Uint8Array) => void): () => void;
   // For the Markdown mirror: readable notes, and after every commit (local or applied) the uuids that changed.
@@ -142,6 +144,9 @@ export class MemoryStore implements SyncStore {
     if (doc !== 'catalog' && !wasErased) this.changeListeners.get(syncId)?.forEach(l => l(doc));
     if (doc === 'catalog') for (const u of catalogUuids(r.catalog)) if (isErased(r.catalog, u) && this.known.get(syncId)?.has(u)) this.changeListeners.get(syncId)?.forEach(l => l(u));
     this.known.set(syncId, new Set(r.docs.keys()));
+  }
+  async applyMany(syncId: string, items: { doc: string; update: Uint8Array }[]) {
+    for (const { doc, update } of items) await this.apply(syncId, doc, [update]); // ponytail: not atomic in memory; the phone and desktop stores are
   }
   private known = new Map<string, Set<string>>();
   subscribe(syncId: string, listener: (doc: string, update: Uint8Array) => void) {
