@@ -1121,6 +1121,7 @@ const catalog: Record<string, string> = {
   "privacy.permD2": "文件和剪贴板（可选）：仅限你在导入时选择的文件、你为备份、Markdown 镜像和导出选择的文件夹，剪贴板仅在你从托盘图标选择“保存剪贴板”时使用。",  // REVIEW (legal)
   "privacy.permD3": "密钥环（可选）：你系统的密钥环（如 KWallet 或 GNOME Keyring）保管 NoteSpark 为受保护档案和同步所需的密钥。没有密钥环时，NoteSpark 不会创建受保护档案，也不会打开同步。",  // REVIEW (legal)
   "privacy.permD4": "网络访问：仅用于在你自己网络上的同步、你打开的网页视图，以及你打开“显示网络图片”时的网络图片。NoteSpark 从不在公共地址上监听。",  // REVIEW (legal)
+  "home.tasksDueCount": "今天到期或已逾期：{count}",
 };
 
 export default catalog;

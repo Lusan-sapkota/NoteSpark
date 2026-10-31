@@ -1121,6 +1121,7 @@ const catalog: Record<string, string> = {
   "privacy.permD2": "파일과 클립보드 (선택 사항): 가져올 때 고르는 파일, 백업·Markdown 미러·내보내기를 위해 고르는 폴더만 사용하며, 클립보드는 트레이 아이콘에서 ‘클립보드 저장’을 선택할 때만 사용합니다.",  // REVIEW (legal)
   "privacy.permD3": "키링 (선택 사항): 시스템의 키링(KWallet이나 GNOME Keyring 등)이 보호된 프로필과 동기화에 NoteSpark가 필요한 키를 보관합니다. 키링이 없으면 NoteSpark는 보호된 프로필을 만들지 않고 동기화도 켜지 않습니다.",  // REVIEW (legal)
   "privacy.permD4": "네트워크 접근: 내 네트워크에서의 동기화, 켠 경우의 웹 보기, ‘웹 이미지 표시’를 켠 경우의 웹 이미지에만 사용합니다. NoteSpark는 공개 주소에서 대기하지 않습니다.",  // REVIEW (legal)
+  "home.tasksDueCount": "오늘 마감 또는 지난 항목: {count}",
 };
 
 export default catalog;

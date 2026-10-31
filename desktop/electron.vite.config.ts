@@ -102,13 +102,6 @@ export default defineConfig({
           if (id.endsWith('mobile/src/screens/HomeScreen.tsx')) {
             // The desktop header already carries the app's name and logo; this row names the place.
             replace(": 'NoteSpark'}", ": 'Notes'}");
-            // The places sit in this row, before the profile button (on the phone the profile button comes first).
-            const profile = code.indexOf('              <Appbar.Action\n                icon="account-circle-outline"');
-            const profileEnd = profile < 0 ? -1 : code.indexOf('/>\n', profile) + 3;
-            const settings = code.indexOf('<Appbar.Action icon="cog-outline"');
-            const settingsEnd = settings < 0 ? -1 : code.indexOf('\n', settings) + 1;
-            if (profile < 0 || profileEnd < 3 || settingsEnd < 1 || settings < profileEnd) throw new Error(`desktop-copy: Home header actions not found in ${id}`);
-            code = code.slice(0, profile) + code.slice(profileEnd, settingsEnd) + code.slice(profile, profileEnd) + code.slice(settingsEnd);
             return code;
           }
           if (id.endsWith('mobile/src/screens/ProfileLockScreen.tsx')) {

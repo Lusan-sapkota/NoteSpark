@@ -1162,6 +1162,7 @@ const catalog: Record<string, string> = {
   "privacy.permD2": "Dateien und Zwischenablage (optional): nur die Dateien, die du beim Import auswählst, die Ordner, die du für Backups, den Markdown-Spiegel und Exporte wählst, und die Zwischenablage nur, wenn du im Tray-Symbol Zwischenablage speichern wählst.",  // REVIEW (legal)
   "privacy.permD3": "Schlüsselbund (optional): Der Schlüsselbund deines Systems (z. B. KWallet oder GNOME Keyring) bewahrt die Schlüssel auf, die NoteSpark für geschützte Profile und die Synchronisierung braucht. Ohne ihn legt NoteSpark kein geschütztes Profil an und schaltet die Synchronisierung nicht ein.",  // REVIEW (legal)
   "privacy.permD4": "Netzwerkzugriff: nur für die Synchronisierung in deinem eigenen Netzwerk, für die Webansicht, wenn du sie einschaltest, und für Webbilder, wenn du Webbilder anzeigen einschaltest. NoteSpark lauscht nie auf einer öffentlichen Adresse.",  // REVIEW (legal)
+  "home.tasksDueCount": "Heute fällig oder überfällig: {count}",
 };
 
 export default catalog;

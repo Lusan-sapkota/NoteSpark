@@ -1202,6 +1202,7 @@ const catalog: Record<string, string> = {
   "privacy.permD2": "Archivos y portapapeles (opcional): solo los archivos que eliges al importar, las carpetas que eliges para copias de seguridad, el espejo de Markdown y las exportaciones, y el portapapeles solo cuando eliges Guardar portapapeles en el icono de la bandeja.",  // REVIEW (legal)
   "privacy.permD3": "Llavero (opcional): el llavero de tu sistema (como KWallet o GNOME Keyring) guarda las claves que NoteSpark necesita para los perfiles protegidos y la sincronización. Sin uno, NoteSpark no crea un perfil protegido ni activa la sincronización.",  // REVIEW (legal)
   "privacy.permD4": "Acceso a la red: solo para sincronizar en tu propia red, para la vista web si la activas y para imágenes web si activas Mostrar imágenes web. NoteSpark nunca escucha en una dirección pública.",  // REVIEW (legal)
+  "home.tasksDueCount": "Para hoy o atrasadas: {count}",
 };
 
 export default catalog;

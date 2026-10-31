@@ -99,6 +99,10 @@ export const extractTasks = (note: Note, { done = false } = {}): Task[] =>
       ...splitDue(t.text),
     }));
 
+// What the Tasks button's badge shows: open tasks due today or earlier, in notes that are not archived.
+export const countDueTasks = (notes: Note[], now = today()): number =>
+  notes.filter(n => !n.isArchived).reduce((sum, note) => sum + extractTasks(note).filter(t => t.due && t.due <= now).length, 0);
+
 // Sets (or with null, removes) a line's due date, turning the line into a task first if it isn't one.
 export const setLineDue = (line: string, due: string | null): string => {
   const base = line.replace(new RegExp(`\\s*${dueDate.source}`), '').trimEnd();

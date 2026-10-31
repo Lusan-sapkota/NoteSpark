@@ -1202,6 +1202,7 @@ const catalog: Record<string, string> = {
   "privacy.permD2": "Arquivos e área de transferência (opcional): apenas os arquivos que você escolhe ao importar, as pastas que você escolhe para backups, o espelho Markdown e exportações, e a área de transferência só quando você escolhe Salvar área de transferência no ícone da bandeja.",  // REVIEW (legal)
   "privacy.permD3": "Chaveiro (opcional): o chaveiro do seu sistema (como KWallet ou GNOME Keyring) guarda as chaves de que o NoteSpark precisa para perfis protegidos e sincronização. Sem um, o NoteSpark não cria um perfil protegido nem ativa a sincronização.",  // REVIEW (legal)
   "privacy.permD4": "Acesso à rede: só para sincronizar na sua própria rede, para a visualização web se você a ativar e para imagens da web se você ativar Mostrar imagens da web. O NoteSpark nunca escuta em um endereço público.",  // REVIEW (legal)
+  "home.tasksDueCount": "Para hoje ou atrasadas: {count}",
 };
 
 export default catalog;

@@ -43,6 +43,7 @@ export default {
   'home.exportSelected': 'Export selected notes',
   'home.binSelected': 'Move selected notes to bin',
   'home.switchProfileLabel': 'Switch profile, current profile {name}',
+  'home.tasksDueCount': 'Due or overdue: {count}',
   'home.more': 'More',
   'home.dailyNote': 'Daily note',
   'home.newFromTemplate': 'New from template',

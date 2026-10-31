@@ -2,18 +2,18 @@ import React, { useState, useEffect, useMemo, useCallback, useRef, useDeferredVa
 import { BackHandler, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
-import { AnimatedFAB, Appbar, Button, Chip, Dialog, Icon, IconButton, List, Portal, Searchbar, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { AnimatedFAB, Appbar, Badge, Button, Chip, Dialog, Divider, Icon, IconButton, List, Portal, Searchbar, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../types';
-import { clearDraft, getDraft, getNotes, getNotesVersion, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
+import { clearDraft, getDraft, getNotes, getNotesVersion, getScratchpadNote, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
 import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
-import { extractTags, mergeSearch, TemplateKind, templateNote, today } from '@notespark/core';
+import { countDueTasks, extractTags, mergeSearch, TemplateKind, templateNote, today } from '@notespark/core';
 import { DailyNoteDialog, TemplateDialog } from '../components/NoteTemplates';
 import { dueCardCount } from '../utils/reviewCards';
 import { shareNotesAsJson, shareNotesAsZip } from '../utils/exportNotes';
@@ -46,6 +46,7 @@ const HomeScreen: React.FC = () => {
   const { elevated, onScroll: onHeaderScroll } = useHeaderElevation();
   const alert = useAlert();
   const [notes, setNotes] = useState<Note[]>([]);
+  const [padNote, setPadNote] = useState<Note | null>(null); // the scratchpad's tasks count on the Tasks button too
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -114,6 +115,7 @@ const HomeScreen: React.FC = () => {
       const [list, active] = await Promise.all([getProfiles(), getActiveProfile()]);
       setProfiles(list);
       setActiveProfile(active);
+      setPadNote(await getScratchpadNote().catch(() => null));
       const key = `${active.id}:${getNotesVersion()}`;
       if (!force && key === loadedKey.current) return;
       loadedKey.current = key;
@@ -238,6 +240,7 @@ const HomeScreen: React.FC = () => {
   }, [searchText, searchType, notes]);
 
   // Tag chips, most used first, from notes outside the archive.
+  const dueTasks = useMemo(() => countDueTasks([...notes, ...(padNote ? [padNote] : [])]), [notes, padNote]);
   const tagsByNote = useMemo(() => new Map(notes.map(n => [n.id, extractTags(n.content)])), [notes]);
   const tags = useMemo(() => {
     const counts = new Map<string, number>();
@@ -728,15 +731,29 @@ const HomeScreen: React.FC = () => {
       ) : (
         <Header elevated={elevated}
           title={profiles.length > 1 && activeProfile ? activeProfile.name : 'NoteSpark'}
+          // With two or more profiles the title is the switcher; with one there is nothing to switch.
+          onTitlePress={profiles.length > 1 && activeProfile ? () => setProfileDialogVisible(true) : undefined}
+          titleLabel={t('home.switchProfileLabel', { name: activeProfile?.name ?? '' })}
           rightActions={
             <>
-              <Appbar.Action
-                icon="account-circle-outline"
-                accessibilityLabel={t('home.switchProfileLabel', { name: activeProfile?.name ?? '' })}
-                onPress={() => setProfileDialogVisible(true)}
-              />
               <Appbar.Action icon="notebook-edit-outline" accessibilityLabel={t('common.scratchpad')} onPress={() => navigation.navigate('Scratchpad')} />
-              <Appbar.Action icon="checkbox-marked-outline" accessibilityLabel={t('common.tasks')} onPress={() => navigation.navigate('Tasks')} />
+              <View>
+                <Appbar.Action
+                  icon="checkbox-marked-outline"
+                  accessibilityLabel={dueTasks > 0 ? `${t('common.tasks')}. ${t('home.tasksDueCount', { count: dueTasks })}` : t('common.tasks')}
+                  onPress={() => navigation.navigate('Tasks')}
+                />
+                {dueTasks > 0 && (
+                  <Badge
+                    size={18}
+                    style={[styles.taskBadge, { backgroundColor: theme.colors.tertiaryContainer, color: theme.colors.onTertiaryContainer }]}
+                    accessibilityElementsHidden
+                    importantForAccessibility="no"
+                  >
+                    {dueTasks > 9 ? '9+' : dueTasks}
+                  </Badge>
+                )}
+              </View>
               <Menu
                 visible={moreVisible}
                 onDismiss={() => setMoreVisible(false)}
@@ -744,12 +761,14 @@ const HomeScreen: React.FC = () => {
               >
                 <Menu.Item title={t('home.dailyNote')} leadingIcon="calendar-today" onPress={() => { setMoreVisible(false); setDailyVisible(true); }} />
                 <Menu.Item title={t('home.newFromTemplate')} leadingIcon="file-document-plus-outline" onPress={() => { setMoreVisible(false); setTemplateVisible(true); }} />
+                <Divider />
                 <Menu.Item title={t('home.askYourNotes')} leadingIcon="comment-search-outline" onPress={() => { setMoreVisible(false); navigation.navigate('Ask'); }} />
-                <Menu.Item title={t('home.tidyUpNotes')} leadingIcon="broom" onPress={() => { setMoreVisible(false); navigation.navigate('Tidy'); }} />
                 <Menu.Item title={t('landscape.title')} leadingIcon="chart-bubble" onPress={() => { setMoreVisible(false); navigation.navigate('Landscape'); }} />
                 <Menu.Item title={dueCards > 0 ? t('review.menuDue', { count: dueCards }) : t('review.menu')} leadingIcon="cards-outline" onPress={() => { setMoreVisible(false); navigation.navigate('Review'); }} />
+                <Menu.Item title={t('home.tidyUpNotes')} leadingIcon="broom" onPress={() => { setMoreVisible(false); navigation.navigate('Tidy'); }} />
+                <Divider />
+                <Menu.Item title={t('common.settings')} leadingIcon="cog-outline" onPress={() => { setMoreVisible(false); navigation.navigate('Settings'); }} />
               </Menu>
-              <Appbar.Action icon="cog-outline" accessibilityLabel={t('common.settings')} onPress={() => navigation.navigate('Settings')} />
             </>
           }
         />
@@ -1021,6 +1040,7 @@ const HomeScreen: React.FC = () => {
 };
 
 const styles = StyleSheet.create({
+  taskBadge: { position: 'absolute', top: 6, right: 4, fontSize: 11 }, // Paper sizes badge text at half the badge, too small to read
   container: {
     flex: 1,
   },

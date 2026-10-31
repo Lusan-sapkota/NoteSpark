@@ -1121,6 +1121,7 @@ const catalog: Record<string, string> = {
   "privacy.permD2": "ファイルとクリップボード（任意）：読み込み時に選ぶファイル、バックアップ・Markdown ミラー・書き出しのために選ぶフォルダーのみで、クリップボードはトレイアイコンから「クリップボードを保存」を選んだときだけ使います。",  // REVIEW (legal)
   "privacy.permD3": "キーリング（任意）：お使いのシステムのキーリング（KWallet や GNOME Keyring など）が、保護されたプロフィールと同期に NoteSpark が必要とする鍵を保管します。キーリングがない場合、NoteSpark は保護されたプロフィールを作成せず、同期もオンにしません。",  // REVIEW (legal)
   "privacy.permD4": "ネットワークアクセス：自分のネットワーク上での同期、オンにした場合のウェブビュー、「ウェブ画像を表示」をオンにした場合のウェブ画像のためだけです。NoteSpark が公開アドレスで待ち受けることはありません。",  // REVIEW (legal)
+  "home.tasksDueCount": "今日が期限または期限切れ：{count}",
 };
 
 export default catalog;

@@ -1202,6 +1202,7 @@ const catalog: Record<string, string> = {
   "privacy.permD2": "Fichiers et presse-papiers (facultatif) : seulement les fichiers que vous choisissez à l'import, les dossiers que vous choisissez pour les sauvegardes, le miroir Markdown et les exports, et le presse-papiers seulement quand vous choisissez Enregistrer le presse-papiers dans l'icône de la barre d'état.",  // REVIEW (legal)
   "privacy.permD3": "Trousseau (facultatif) : le trousseau de votre système (comme KWallet ou GNOME Keyring) conserve les clés dont NoteSpark a besoin pour les profils protégés et la synchronisation. Sans trousseau, NoteSpark ne crée pas de profil protégé et n'active pas la synchronisation.",  // REVIEW (legal)
   "privacy.permD4": "Accès au réseau : seulement pour la synchronisation sur votre propre réseau, pour la vue web si vous l'activez et pour les images web si vous activez Afficher les images web. NoteSpark n'écoute jamais sur une adresse publique.",  // REVIEW (legal)
+  "home.tasksDueCount": "À faire aujourd'hui ou en retard : {count}",
 };
 
 export default catalog;

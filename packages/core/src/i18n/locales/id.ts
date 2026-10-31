@@ -1122,6 +1122,7 @@ const catalog: Record<string, string> = {
   "privacy.permD2": "Berkas dan papan klip (opsional): hanya berkas yang Anda pilih saat mengimpor, folder yang Anda pilih untuk cadangan, cermin Markdown, dan ekspor, serta papan klip hanya saat Anda memilih Simpan papan klip dari ikon baki.",  // REVIEW (legal)
   "privacy.permD3": "Keyring (opsional): keyring sistem Anda (seperti KWallet atau GNOME Keyring) menyimpan kunci yang dibutuhkan NoteSpark untuk profil terlindungi dan sinkronisasi. Tanpanya, NoteSpark tidak membuat profil terlindungi atau menyalakan sinkronisasi.",  // REVIEW (legal)
   "privacy.permD4": "Akses jaringan: hanya untuk sinkronisasi di jaringan Anda sendiri, untuk tampilan web jika Anda menyalakannya, dan untuk gambar web jika Anda menyalakan Tampilkan gambar web. NoteSpark tidak pernah mendengarkan pada alamat publik.",  // REVIEW (legal)
+  "home.tasksDueCount": "Jatuh tempo hari ini atau terlambat: {count}",
 };
 
 export default catalog;
