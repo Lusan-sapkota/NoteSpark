@@ -699,16 +699,19 @@ const SettingsScreen: React.FC = () => {
         <Dialog visible={!!choice?.open} onDismiss={() => setChoice(c => c && { ...c, open: false })}>
           <Dialog.Title>{choice?.title}</Dialog.Title>
           <Dialog.ScrollArea style={styles.choiceList}>
-            <RadioButton.Group
-              value={String(choice?.value)}
-              onValueChange={value => {
-                const picked = typeof choice?.value === 'number' ? Number(value) : value;
-                choice?.onPick(picked);
-                setChoice(c => c && { ...c, value: picked, open: false });
-              }}
-            >
-              {choice?.options.map(o => <RadioButton.Item key={o.value} label={o.label} value={String(o.value)} />)}
-            </RadioButton.Group>
+            {/* The area only caps the height; the list has to scroll inside it (the language list is 14 rows). */}
+            <ScrollView>
+              <RadioButton.Group
+                value={String(choice?.value)}
+                onValueChange={value => {
+                  const picked = typeof choice?.value === 'number' ? Number(value) : value;
+                  choice?.onPick(picked);
+                  setChoice(c => c && { ...c, value: picked, open: false });
+                }}
+              >
+                {choice?.options.map(o => <RadioButton.Item key={o.value} label={o.label} value={String(o.value)} />)}
+              </RadioButton.Group>
+            </ScrollView>
           </Dialog.ScrollArea>
           <Dialog.Actions>
             <Button onPress={() => setChoice(c => c && { ...c, open: false })}>{t('common.cancel')}</Button>
