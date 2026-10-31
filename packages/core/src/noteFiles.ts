@@ -1,4 +1,4 @@
-import { Note } from './types';
+import type { Note } from './types';
 import { t } from './i18n';
 
 // The JSON backup format: the stored note fields, with isMarkdown as a boolean.
@@ -55,3 +55,22 @@ export const markdownToNote = (fileName: string, text: string) => {
 };
 
 export const isNoteFile = (name: string) => /\.(md|markdown|txt)$/i.test(name) && !/(^|\/)(\.|__MACOSX\/)/.test(name);
+
+// A zip is read into memory entry by entry, with each entry sized from a number the file itself declares, so a small
+// hostile zip can ask for gigabytes. This is the unzip filter for every importer: it counts what it keeps and refuses a file
+// whose entries, one by one or together, ask for more than a real export holds (32 MB per entry, as for any note or attachment).
+export const ZIP_MAX_ENTRIES = 10_000;
+export const ZIP_MAX_BYTES = 256 * 1024 * 1024;
+const ZIP_ENTRY_MAX_BYTES = 32 * 1024 * 1024;
+export const ZIP_TOO_LARGE_MESSAGE = 'This zip is too large to import. Split it into smaller zips and import them one at a time.';
+export const zipImportGate = (keep: (name: string) => boolean) => {
+  let entries = 0;
+  let bytes = 0;
+  return (f: { name: string; originalSize: number }) => {
+    if (!keep(f.name)) return false;
+    entries += 1;
+    bytes += f.originalSize;
+    if (entries > ZIP_MAX_ENTRIES || bytes > ZIP_MAX_BYTES || !(f.originalSize <= ZIP_ENTRY_MAX_BYTES)) throw new Error(ZIP_TOO_LARGE_MESSAGE);
+    return true;
+  };
+};

@@ -8,6 +8,7 @@ import {
   Note,
   fileName,
   isNoteFile,
+  zipImportGate,
   markdownToNote,
   noteToMarkdown,
   notesToJson,
@@ -80,15 +81,7 @@ const ATTACHMENT_ZIP_ENTRY_RE = /^attachments\/([0-9a-fA-F]{64})(?:-(.+))?$/;
 
 export const notesFromZipBytes = async (zipBytes: Uint8Array): Promise<any[]> => {
   const entries = unzipSync(zipBytes, {
-    filter: f => {
-      if (ATTACHMENT_ZIP_ENTRY_RE.test(f.name)) {
-        if (f.originalSize > MAX_ATTACHMENT_BYTES) {
-          throw new Error(ATTACHMENT_TOO_LARGE_MESSAGE);
-        }
-        return true;
-      }
-      return !f.name.startsWith('attachments/') && isNoteFile(f.name);
-    },
+    filter: zipImportGate(name => ATTACHMENT_ZIP_ENTRY_RE.test(name) || (!name.startsWith('attachments/') && isNoteFile(name))),
   });
 
   const noteEntries: [string, Uint8Array][] = [];
