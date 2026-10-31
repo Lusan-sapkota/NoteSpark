@@ -4,18 +4,14 @@ import { ActivityIndicator, Button, Icon, IconButton, Text } from 'react-native-
 import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { shape, space } from '../theme/theme';
-import { t as translate } from '@notespark/core';
+import { attachmentImageHash, extractImageRefs, t as translate } from '@notespark/core';
 import { useCachedImage } from '../utils/imageCache';
 
 // Image references in note content: Markdown `![alt](uri)` and, for plain notes, `[Image: uri]`.
-export const extractImageUris = (content: string, includePlain = false) => {
-  // The address ends at the first space, so an optional Markdown title (`![a](url "title")`) isn't part of it.
-  const uris = Array.from(content.matchAll(/!\[[^\]]*\]\(([^)\s]+)[^)]*\)/g), m => m[1].trim());
-  if (includePlain) uris.push(...Array.from(content.matchAll(/\[Image: ([^\]]+)\]/g), m => m[1].trim()));
-  return uris.filter(Boolean);
-};
+export const extractImageUris = extractImageRefs;
 
 const imageLabel = (uri: string) => {
+  if (attachmentImageHash(uri)) return ''; // a stored picture has no address worth showing
   if (uri.startsWith('file:///')) return translate('note.imageOnDevice', { name: uri.split('/').pop() ?? '' });
   return uri.length > 40 ? `${uri.slice(0, 18)}…${uri.slice(-18)}` : uri;
 };
@@ -53,9 +49,11 @@ const NoteImage: React.FC<{ uri: string; onOpen: (src: string) => void }> = ({ u
           {image.status !== 'off' && <Button mode="text" onPress={image.retry}>{t('common.tryAgain')}</Button>}
         </View>
       )}
-      <Text variant="bodySmall" numberOfLines={1} style={[styles.caption, { color: theme.colors.onSurfaceVariant }]}>
-        {imageLabel(uri)}
-      </Text>
+      {!!imageLabel(uri) && (
+        <Text variant="bodySmall" numberOfLines={1} style={[styles.caption, { color: theme.colors.onSurfaceVariant }]}>
+          {imageLabel(uri)}
+        </Text>
+      )}
     </View>
   );
 };

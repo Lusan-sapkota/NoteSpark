@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
+import { attachmentImageHash, attachmentImageLoader } from '@notespark/core';
+import { readAttachment } from '../storage/attachments';
 import { isWebImagesOn } from './webImages';
 
 // Web images are kept in app storage (Android may clear the OS cache) so they show offline.
@@ -10,6 +12,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const KEEP_MS = 30 * DAY_MS;
 
 export const isWebImage = (uri: string) => /^https?:\/\//i.test(uri);
+
+// Pictures added to a note are stored attachments (`attachment:<hash>`): shown from the stored copy, which sync carries like a document.
+const loadAttachmentImage = attachmentImageLoader(readAttachment);
 
 // ponytail: two 32-bit hashes name the file; a collision shows the wrong image. Use SHA-256 if that matters.
 const fileNameFor = (url: string) => {
@@ -153,12 +158,20 @@ export type CachedImage = {
 // Device images (file://, content://, data:) pass straight through; web images resolve to their cached copy.
 export const useCachedImage = (uri: string): CachedImage => {
   const web = isWebImage(uri);
+  const stored = attachmentImageHash(uri);
   const [state, setState] = useState<{ src: string | null; status: CachedImage['status'] }>(
-    web ? { src: null, status: 'loading' } : { src: uri, status: 'ready' }
+    web || stored ? { src: null, status: 'loading' } : { src: uri, status: 'ready' }
   );
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
+    if (stored) {
+      // Not there yet is normal on a device the picture is still syncing to; Try again shows it once it has arrived.
+      let active = true;
+      setState({ src: null, status: 'loading' });
+      loadAttachmentImage(stored).then(src => active && setState(src ? { src, status: 'ready' } : { src: null, status: 'failed' }));
+      return () => { active = false; };
+    }
     if (!web) {
       setState({ src: uri, status: 'ready' });
       return;
@@ -172,7 +185,7 @@ export const useCachedImage = (uri: string): CachedImage => {
     return () => {
       active = false;
     };
-  }, [uri, web, attempt]);
+  }, [uri, web, stored, attempt]);
 
   const retry = useCallback(() => setAttempt(a => a + 1), []);
   const onError = useCallback(() => {

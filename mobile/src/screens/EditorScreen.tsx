@@ -26,8 +26,7 @@ import {
   appendAttachmentLink,
   removeAttachmentLink,
 } from '../storage/attachments';
-import { keepDeviceImage } from '../utils/imageCache';
-import { addDays, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
+import { addDays, formatAttachmentImage, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
 import { isMeaningSearchAvailable, relatedToText } from '../storage/semanticSearch';
 import { isLiveRelatedOn } from '../utils/liveRelated';
 import { toPreview } from '../components/NoteItem';
@@ -338,8 +337,10 @@ const EditorScreen: React.FC = () => {
     });
     if (!result.canceled && result.assets?.[0]?.uri) {
       try {
-        const uri = await keepDeviceImage(result.assets[0].uri);
-        insert(isMarkdown ? `![Image](${uri})` : `[Image: ${uri}]`);
+        // Stored like a document (encrypted, in the profile's attachments), so it syncs with the note.
+        const asset = result.assets[0];
+        const added = await addAttachment({ uri: asset.uri, name: asset.fileName || 'image.jpg', size: asset.fileSize });
+        insert(isMarkdown ? formatAttachmentImage(added.hash) : `[Image: attachment:${added.hash}]`);
       } catch {
         alert(t('editor.addImageFailedTitle'), t('editor.addImageFailedMessage'));
       }

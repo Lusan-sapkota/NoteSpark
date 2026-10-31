@@ -3,6 +3,7 @@ import { existsSync, readdirSync, readFileSync, utimesSync, writeFileSync } from
 import { join } from 'node:path';
 import { test } from 'node:test';
 import { fileURLToPath } from 'node:url';
+import { formatAttachmentImage } from '@notespark/core';
 import {
   attachments,
   crdt,
@@ -12,6 +13,7 @@ import {
   profiles,
   reopen,
   sample,
+  sync,
 } from './helpers.ts';
 
 const noteFilesDir = () => join(process.env.NOTESPARK_DIR!, 'note-files');
@@ -278,4 +280,19 @@ test('crash between attachment write and note save leaves valid blob and clean d
   }
   const leftoverTmp = readdirSync(noteFilesDir()).filter(f => f.includes('.tmp.'));
   assert.deepEqual(leftoverTmp, [], 'failed atomic write must clean up its .tmp file');
+});
+
+test('a picture stored as an attachment is kept by pruning, found by sync, and is not listed as a document', async () => {
+  await freshProfile(true);
+  const png = Uint8Array.from([0x89, 0x50, 0x4e, 0x47, ...makeBytes(600, 7)]);
+  const { hash } = await attachments.addAttachment({ bytes: png, name: 'photo.png' });
+  const old = (Date.now() - 48 * 3600 * 1000) / 1000;
+  utimesSync(join(noteFilesDir(), hash), old, old);
+  const content = `Trip\n${formatAttachmentImage(hash)}\nplain: [Image: attachment:${hash}]`;
+  await notes.saveNote(sample('Picture', { content }));
+  assert.deepEqual(sync.extractBlobHashes([{ content }]), [hash], 'sync sends the picture with the note');
+  assert.deepEqual(attachments.parseAttachmentLinks(content), [], 'no document card for a picture');
+  await attachments.pruneAttachments();
+  assert.equal(await attachments.hasAttachment(hash), true, 'a picture a note shows is not pruned');
+  assert.deepEqual([...(await attachments.readAttachment(hash))], [...png], 'and it opens to the same bytes');
 });
