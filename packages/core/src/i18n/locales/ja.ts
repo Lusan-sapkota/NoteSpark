@@ -986,6 +986,7 @@ const catalog: Record<string, string> = {
   "sync.diagnosticsCopied": "診断情報をコピーしました",
   "sync.noWifiTitle": "Wi-Fi がありませんか？",
   "sync.noWifiBody": "スマートフォンのホットスポットをオンにしてパソコンを接続するか、スマートフォンをパソコンにケーブルでつないで USB テザリングをオンにします。そのあと、いつもどおりペアリングしてください。ほかのプライベートネットワークと同じように使えます。",
+  "sync.serviceBody": "ノートをパソコンと同じ状態に保っています。",
   "sync.linkTitle": "ノートを統合しますか？",
   "sync.linkBody": "このスマートフォンに {here} 件、パソコンに {there} 件のノートがあります。{same} 件は同じで、統合されます。",
   "sync.linkConfirm": "統合して同期",

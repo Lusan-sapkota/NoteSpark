@@ -1187,6 +1187,7 @@ const catalog: Record<string, string> = {
   "sync.diagnosticsCopied": "تم نسخ معلومات التشخيص",
   "sync.noWifiTitle": "لا يوجد Wi-Fi؟",
   "sync.noWifiBody": "شغّل نقطة اتصال هاتفك (هوت سبوت) وصِل حاسوبك بها، أو وصّل هاتفك بحاسوبك بكبل وشغّل التوصيل عبر USB. ثم أقرِن كالمعتاد. يعمل ذلك مثل أي شبكة خاصة أخرى.", // REVIEW
+  "sync.serviceBody": "نحافظ على تطابق ملاحظاتك مع حاسوبك.", // REVIEW
   "sync.linkTitle": "دمج ملاحظاتك؟",
   "sync.linkBody": "{here} ملاحظة على هذا الهاتف و{there} على الحاسوب. {same} متطابقة وسيتم دمجها.",
   "sync.linkConfirm": "دمج ومزامنة",

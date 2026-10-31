@@ -45,6 +45,7 @@ export default {
   'sync.diagnosticsCopied': 'Diagnostics copied',
   'sync.noWifiTitle': 'No Wi-Fi?',
   'sync.noWifiBody': "Turn on your phone's hotspot and connect your computer to it, or plug your phone into your computer and turn on USB tethering. Then pair as usual. It works like any other private network.",
+  'sync.serviceBody': 'Keeping your notes in step with your computer.',
   'sync.linkTitle': 'Join your notes?',
   'sync.linkBody': '{here} notes on this phone, {there} on the computer. {same} are the same and will be joined.',
   'sync.linkConfirm': 'Join and sync',

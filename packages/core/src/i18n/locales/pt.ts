@@ -1067,6 +1067,7 @@ const catalog: Record<string, string> = {
   "sync.diagnosticsCopied": "Diagnóstico copiado",
   "sync.noWifiTitle": "Sem Wi-Fi?",
   "sync.noWifiBody": "Ative o ponto de acesso do celular e conecte o computador a ele, ou ligue o celular ao computador com um cabo e ative o tethering USB. Depois, pareie como de costume. Funciona como qualquer outra rede privada.",
+  "sync.serviceBody": "Mantendo suas notas em dia com seu computador.",
   "sync.linkTitle": "Juntar suas notas?",
   "sync.linkBody": "{here} notas neste celular, {there} no computador. {same} são iguais e serão juntadas.",
   "sync.linkConfirm": "Juntar e sincronizar",

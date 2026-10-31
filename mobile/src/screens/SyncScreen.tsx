@@ -16,7 +16,7 @@ import { controlTheme, readingWidth, shape, space } from '../theme/theme';
 import { db } from '../storage/database';
 import { getActiveProfile } from '../storage/profiles';
 import { type HubRecord, forgetHub, getHubs, saveHub, setProfileSync, syncedProfiles } from '../sync/pairings';
-import { getPendingLink, getSyncStatus, reconcileSync, setPairingToken, subscribeSync, syncDiagnostics, syncNow } from '../sync/syncRuntime';
+import { askBackgroundPermission, getPendingLink, getSyncStatus, reconcileSync, setPairingToken, subscribeSync, syncDiagnostics, syncNow } from '../sync/syncRuntime';
 
 const SyncScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -57,6 +57,7 @@ const SyncScreen: React.FC = () => {
     const record = await saveHub(link);
     if (profile) await setProfileSync(profile.id, record.id);
     setPairingToken(link.token); // kept in memory for the first session only
+    await askBackgroundPermission(); // asked now that sync is turned on; refused means sync while the app is open
     setCode('');
     setRepair(false);
     await load();
@@ -86,6 +87,7 @@ const SyncScreen: React.FC = () => {
   const toggle = async (value: boolean) => {
     if (!profile || !hub) return;
     setOn(value);
+    if (value) await askBackgroundPermission();
     await setProfileSync(profile.id, value ? hub.id : null);
     await reconcileSync();
   };

@@ -74,6 +74,7 @@
         }
       ],
       "./plugins/withNoMlKitDownload",
+      "./plugins/withSyncService",
       "onnxruntime-react-native",
       [
         "expo-secure-store",

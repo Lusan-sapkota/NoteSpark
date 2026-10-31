@@ -986,6 +986,7 @@ const catalog: Record<string, string> = {
   "sync.diagnosticsCopied": "진단 정보를 복사했어요",
   "sync.noWifiTitle": "Wi-Fi가 없나요?",
   "sync.noWifiBody": "휴대폰의 핫스팟을 켜고 컴퓨터를 연결하거나, 휴대폰을 컴퓨터에 케이블로 연결하고 USB 테더링을 켜세요. 그런 다음 평소처럼 페어링하세요. 다른 사설 네트워크와 똑같이 작동해요.",
+  "sync.serviceBody": "노트를 컴퓨터와 같은 상태로 유지하고 있어요.",
   "sync.linkTitle": "메모를 합칠까요?",
   "sync.linkBody": "이 휴대폰에 메모 {here}개, 컴퓨터에 {there}개 있어요. {same}개는 같으며 합쳐져요.",
   "sync.linkConfirm": "합치고 동기화",

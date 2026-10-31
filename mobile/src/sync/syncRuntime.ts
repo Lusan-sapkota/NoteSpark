@@ -1,7 +1,10 @@
 // What is running: at most one Client, for the profile that is open, while the app is in front and that profile's sync
 // switch is on. Screens read the status and call `reconcileSync()` after anything that could change what should run.
 // ponytail: one profile at a time, like the desktop (F45); other profiles sync while they are the open one.
-import { AppState } from 'react-native';
+import * as Notifications from 'expo-notifications';
+import { AppState, Platform } from 'react-native';
+import BackgroundService from 'react-native-background-actions';
+import { firefly, t } from '@notespark/core';
 import type { Client, ClientState, LinkPlan } from '@notespark/sync-protocol';
 import { linkedSyncId } from '../storage/crdt';
 import * as database from '../storage/database';
@@ -20,6 +23,8 @@ let client: Client | null = null;
 let runningKey = '';
 let token: Uint8Array | undefined; // from the scanned or pasted link; used by the first session only, never stored
 let pendingLink: PendingLink | null = null;
+const SERVICE_MS = 5 * 60 * 60 * 1000; // Android 15 limits a data sync service to about 6 hours a day; we stop first, and it starts again when the app is opened
+let serviceOn = false;
 const listeners = new Set<() => void>();
 const events: string[] = []; // diagnostics: states and codes only, never note text or titles
 
@@ -34,6 +39,42 @@ export const syncDiagnostics = () => events.join('\n');
 export const setPairingToken = (t: Uint8Array | undefined) => { token?.fill(0); token = t; };
 export const syncNow = () => client?.nudge();
 
+const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
+
+// Asked when the person turns sync on, never at start. Refused: sync still runs while the app is open.
+export const askBackgroundPermission = async (): Promise<boolean> => {
+  if (Platform.OS !== 'android') return false;
+  const have = await Notifications.getPermissionsAsync();
+  return have.granted || (have.canAskAgain && (await Notifications.requestPermissionsAsync()).granted);
+};
+
+const stopService = async () => {
+  serviceOn = false;
+  if (BackgroundService.isRunning()) await BackgroundService.stop().catch(() => {});
+};
+
+// The task only keeps the service alive; the client itself runs in the app's own JS. Only started while the app is in front (Android 12+).
+const startService = async () => {
+  if (Platform.OS !== 'android' || serviceOn || BackgroundService.isRunning()) return;
+  if (!(await Notifications.getPermissionsAsync()).granted) return;
+  try {
+    await BackgroundService.start(async () => {
+      const end = Date.now() + SERVICE_MS;
+      while (BackgroundService.isRunning() && Date.now() < end) await sleep(30_000);
+      log('service ended');
+      await stopService();
+      if (AppState.currentState !== 'active') stop(); // back to "sync while open"
+    }, {
+      taskName: 'notespark-sync', taskTitle: t('sync.title'), taskDesc: t('sync.serviceBody'),
+      taskIcon: { name: 'notification_icon', type: 'drawable' }, color: firefly.light.primary, foregroundServiceType: ['dataSync'],
+    });
+    serviceOn = true;
+    log('service started');
+  } catch {
+    log('service not started');
+  }
+};
+
 const stop = () => {
   client?.stop();
   client = null;
@@ -46,12 +87,14 @@ export const reconcileSync = async () => {
   const profileId = database.getOpenProfileId();
   const hubId = (await syncedProfiles())[profileId];
   const hub = hubId ? (await getHubs()).find(h => h.id === hubId) ?? null : null;
-  const wanted = AppState.currentState === 'active' && !!hub;
+  const wanted = (AppState.currentState === 'active' || serviceOn) && !!hub;
   const key = `${profileId}:${hub?.id}`;
   if (!wanted) {
     stop();
+    if (!hub) await stopService();
     return set({ state: hub ? 'off' : 'unpaired', hub, profileId, problem: false });
   }
+  if (AppState.currentState === 'active') await startService();
   if (client && key === runningKey) return;
   stop();
   runningKey = key;
@@ -74,5 +117,5 @@ export const reconcileSync = async () => {
   c.start();
 };
 
-// Foreground only for now: stop when the app goes to the background, start when it comes back (the foreground service replaces this).
-AppState.addEventListener('change', state => { if (state === 'active') void reconcileSync(); else stop(); });
+// In the background the client keeps running only while the foreground service does; otherwise it stops and restarts when the app comes back.
+AppState.addEventListener('change', state => { if (state === 'active') void reconcileSync(); else if (!serviceOn) stop(); });

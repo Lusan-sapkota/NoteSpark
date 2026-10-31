@@ -987,6 +987,7 @@ const catalog: Record<string, string> = {
   "sync.diagnosticsCopied": "Diagnostik disalin",
   "sync.noWifiTitle": "Tidak ada Wi-Fi?",
   "sync.noWifiBody": "Aktifkan hotspot ponsel Anda dan sambungkan komputer ke sana, atau colokkan ponsel ke komputer dan aktifkan tethering USB. Lalu pasangkan seperti biasa. Cara ini bekerja seperti jaringan pribadi lainnya.",
+  "sync.serviceBody": "Menjaga catatan Anda tetap sama dengan komputer Anda.",
   "sync.linkTitle": "Gabungkan catatan Anda?",
   "sync.linkBody": "{here} catatan di ponsel ini, {there} di komputer. {same} sama dan akan digabungkan.",
   "sync.linkConfirm": "Gabungkan dan sinkronkan",
