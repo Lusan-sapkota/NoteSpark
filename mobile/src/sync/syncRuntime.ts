@@ -1,7 +1,6 @@
 // What is running: at most one Client, for the profile that is open, while the app is in front and that profile's sync
 // switch is on. Screens read the status and call `reconcileSync()` after anything that could change what should run.
 // ponytail: one profile at a time, like the desktop (F45); other profiles sync while they are the open one.
-import * as Notifications from 'expo-notifications';
 import { AppState, Platform } from 'react-native';
 import BackgroundService from 'react-native-background-actions';
 import { firefly, t } from '@notespark/core';
@@ -10,6 +9,7 @@ import { linkedSyncId } from '../storage/crdt';
 import * as database from '../storage/database';
 import { getActiveProfile } from '../storage/profiles';
 import { storageStore } from '../storage/syncStore';
+import { Notifications } from '../utils/notifications'; // null in Expo Go on Android: no background service there
 import { deviceKey } from './deviceKey';
 import { type HubRecord, getHubs, syncedProfiles } from './pairings';
 import { createSyncClient } from './SyncManager';
@@ -43,7 +43,7 @@ const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
 // Asked when the person turns sync on, never at start. Refused: sync still runs while the app is open.
 export const askBackgroundPermission = async (): Promise<boolean> => {
-  if (Platform.OS !== 'android') return false;
+  if (Platform.OS !== 'android' || !Notifications) return false;
   const have = await Notifications.getPermissionsAsync();
   return have.granted || (have.canAskAgain && (await Notifications.requestPermissionsAsync()).granted);
 };
@@ -55,7 +55,7 @@ const stopService = async () => {
 
 // The task only keeps the service alive; the client itself runs in the app's own JS. Only started while the app is in front (Android 12+).
 const startService = async () => {
-  if (Platform.OS !== 'android' || serviceOn || BackgroundService.isRunning()) return;
+  if (Platform.OS !== 'android' || !Notifications || serviceOn || BackgroundService.isRunning()) return;
   if (!(await Notifications.getPermissionsAsync()).granted) return;
   try {
     await BackgroundService.start(async () => {
