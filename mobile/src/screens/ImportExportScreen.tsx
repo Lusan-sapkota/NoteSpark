@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, View, ScrollView, Share, RefreshControl } from 'react-native';
+import { Platform, StyleSheet, View, ScrollView, Share, RefreshControl } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -18,6 +18,7 @@ import { AutoBackupSettings, BACKUPS_KEPT, folderName, getAutoBackup, pickBackup
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header, { useHeaderElevation } from '../components/Header';
 import GroupedRow from '../components/GroupedRow';
+import SyncFile from '../components/SyncFile';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, lightTheme, readingWidth, shape, space } from '../theme/theme';
@@ -613,6 +614,9 @@ const ImportExportScreen: React.FC = () => {
               isLast
             />
           </View>
+
+          {/* The desktop needs its own file handling for this (docs/todo.md), so it is the phone's for now. */}
+          {Platform.OS !== 'web' && <SyncFile />}
 
           <Text variant="titleSmall" accessibilityRole="header" style={[styles.sectionTitle, { color: theme.colors.primary }]}>
             {t('importExport.automaticBackups')}

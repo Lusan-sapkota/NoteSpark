@@ -132,6 +132,10 @@ const SyncScreen: React.FC = () => {
         <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('sync.noWifiTitle')}</Text>
       </View>
       <Text variant="bodyMedium" style={muted}>{t('sync.noWifiBody')}</Text>
+      <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />
+      <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('sync.noNetworkTitle')}</Text>
+      <Text variant="bodyMedium" style={muted}>{t('sync.noNetworkBody')}</Text>
+      <Button mode="text" icon="swap-vertical" onPress={() => navigation.navigate('ImportExport' as never)} style={styles.tipAction} contentStyle={styles.buttonContent}>{t('sync.noNetworkAction')}</Button>
     </View>
   );
 
@@ -237,6 +241,8 @@ const styles = StyleSheet.create({
   statusRow: { flexDirection: 'row', alignItems: 'flex-start', gap: space.sm },
   statusText: { flex: 1 },
   tips: { gap: space.sm, padding: space.lg, borderRadius: shape.group },
+  divider: { height: StyleSheet.hairlineWidth, marginVertical: space.sm },
+  tipAction: { alignSelf: 'flex-start' },
   tipsHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
 });
 
