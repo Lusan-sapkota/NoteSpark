@@ -86,19 +86,19 @@
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Profile PINs: only a scrambled form of each PIN (a salted hash) is kept, in Android's secure storage. The PIN itself isn't stored, so it can't be recovered if you forget it. A profile with a PIN also has its notes encrypted on your phone, with a key kept in Android's secure storage.</span>
+            <span>Profile PINs (optional): only a scrambled form of each PIN (a salted hash) is kept, in Android's secure storage. The PIN itself isn't stored, so it can't be recovered if you forget it. A profile with a PIN also has its notes encrypted on your phone, with a key kept in Android's secure storage.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>A copy of each PIN's hash, and of the profile's key wrapped with that PIN, is also kept in the app's ordinary storage so a restored phone can unlock the profile. Android's backup can include it, so someone who can read a backup could try every 4-digit PIN.</span>
+            <span>If you set a PIN on a profile, a copy of its hash, and of the profile's key wrapped with that PIN, is also kept in the app's ordinary storage so a restored phone can unlock the profile. Android's backup can include it, so someone who can read a backup could try every 4-digit PIN.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>The computer you paired for sync: its name, its public key and its addresses, plus this phone's own sync key, kept in Android's secure storage. No note text is stored for this.</span>
+            <span>If you pair a computer for sync (optional), the phone also keeps that computer's name, public key and addresses, plus its own sync key in Android's secure storage. No note text is stored for this.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Documents you attach to a note (up to 32 MB each) are copied into NoteSpark's own storage and stored encrypted. They are not uploaded anywhere. If you turn on sync, a document goes with its note to the devices you paired. A copy is deleted once no note uses it.</span>
+            <span>If you attach documents to a note (optional, up to 32 MB each), they are copied into NoteSpark's own storage and stored encrypted. They are not uploaded anywhere. If you turn on sync, a document goes with its note to the devices you paired. A copy is deleted once no note uses it.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
@@ -134,7 +134,7 @@
       </section>
 
       <section class="policy-section" aria-labelledby="sec-sync">
-        <h2 id="sec-sync" class="title-medium">Sync between your devices</h2>
+        <h2 id="sec-sync" class="title-medium">Sync between your devices (optional)</h2>
         <p class="body-large policy-text">Sync is off for every profile until you turn it on in Settings under Sync and pair this phone with your computer.</p>
         <ul class="policy-bullets body-large">
           <li class="policy-bullet">
@@ -169,19 +169,19 @@
         <ul class="policy-bullets body-large">
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Notifications: to tell you things like an export finishing, and to remind you of tasks on their due date. These notifications are created and scheduled on your device; NoteSpark doesn't use push notifications. Reminders for profiles with a PIN don't show the task text.</span>
+            <span>Notifications (optional): to tell you things like an export finishing, and to remind you of tasks on their due date. These notifications are created and scheduled on your device; NoteSpark doesn't use push notifications. Reminders for profiles with a PIN don't show the task text.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Photos: only the images you pick when adding an image to a note.</span>
+            <span>Photos (optional): only the images you pick when adding an image to a note.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Files: only the backup or note files you pick when importing notes, and the folder you pick for automatic backups.</span>
+            <span>Files (optional): only the backup or note files you pick when importing notes, and the folder you pick for automatic backups.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Fingerprint: only if you turn on fingerprint unlock for a profile. Android checks your fingerprint; NoteSpark never sees or stores it.</span>
+            <span>Fingerprint (optional): only if you turn on fingerprint unlock for a profile. Android checks your fingerprint; NoteSpark never sees or stores it.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
@@ -189,11 +189,11 @@
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Camera: only while you scan a pairing code on the Sync screen. NoteSpark asks when you tap Scan, records and saves nothing, and you can paste the code instead.</span>
+            <span>Camera (optional): only while you scan a pairing code on the Sync screen. NoteSpark asks when you tap Scan, records and saves nothing, and you can paste the code instead.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Running in the background: only while sync is on, so your devices stay up to date when NoteSpark is closed. Android shows a notification while it runs. If you say no, sync works while NoteSpark is open.</span>
+            <span>Running in the background (optional): only while sync is on, so your devices stay up to date when NoteSpark is closed. Android shows a notification while it runs. If you say no, sync works while NoteSpark is open.</span>
           </li>
         </ul>
       </section>
