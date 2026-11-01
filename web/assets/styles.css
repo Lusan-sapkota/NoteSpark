@@ -301,13 +301,22 @@ code {
 .progress { display: flex; align-items: center; gap: 12px; margin-top: 12px; color: var(--on-surface-variant); font-size: 12px; }
 .progress span { display: block; width: 96px; height: 4px; border-radius: var(--shape-full); background: var(--secondary); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
-/* Home in front on the left, the note behind it on the right, overlapping a little so both read. */
-.hero-phones { position: relative; min-height: 640px; }
-.hero-phones .phone { position: absolute; left: 0; top: 0; width: 56%; max-width: 300px; z-index: 1; }
-.hero-phones .phone-back { left: auto; right: 0; top: 88px; width: 50%; max-width: 268px; z-index: 0; }
+/* One laptop with a phone in front of its corner: the same notes on every device. */
+.hero-devices { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1 / 0.8; justify-self: end; }
+.laptop { position: absolute; left: 0; top: 4%; width: 88%; }
+.laptop-screen {
+  border-radius: 16px 16px 6px 6px; padding: 8px; background: var(--surface-container-highest);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+.laptop-screen img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; border-radius: 9px 9px 2px 2px; }
+.laptop-base { height: 12px; margin: 0 -5%; border-radius: 2px 2px 14px 14px; background: var(--outline-variant); position: relative; }
+.laptop-base::after { content: ""; position: absolute; left: 50%; top: 0; width: 18%; height: 5px; transform: translateX(-50%); border-radius: 0 0 8px 8px; background: var(--surface-container-highest); }
+.hero-devices .phone { position: absolute; right: 0; bottom: 0; width: 27%; padding: 5px; border-radius: 22px; }
+.hero-devices .phone img { border-radius: 17px; }
+[data-theme="dark"] .laptop-screen { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
 @media (max-width: 900px) {
   .hero { grid-template-columns: 1fr; gap: 40px; padding-top: 24px; }
-  .hero-phones { min-height: 0; aspect-ratio: 1 / 1.12; max-width: 520px; }
+  .hero-devices { justify-self: center; }
 }
 
 /* ---------- Sections ---------- */
