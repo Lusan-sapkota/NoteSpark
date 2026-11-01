@@ -51,9 +51,10 @@
     var ua = navigator.userAgent;
     var platform = /Android/i.test(ua) ? 'and' : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? 'lin' : '';
     var label = document.getElementById('dl-main-label');
-    if (platform === 'and') label.textContent = 'Download for Android';
-    if (platform === 'lin') label.textContent = 'Download for Linux';
-    if (!platform) document.getElementById('dl-note').textContent += ' Windows and macOS builds do not exist yet.';
+    var dlNote = document.getElementById('dl-note');
+    if (label && platform === 'and') label.textContent = 'Download for Android';
+    if (label && platform === 'lin') label.textContent = 'Download for Linux';
+    if (dlNote && !platform) dlNote.textContent += ' Windows and macOS builds do not exist yet.';
 
     // Download tabs: with JavaScript one panel shows at a time, starting with the visitor's device.
     var tabs = [].slice.call(document.querySelectorAll('[data-tab]'));

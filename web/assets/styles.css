@@ -497,3 +497,11 @@ code {
 .step .rows { margin-top: 16px; }
 .step .rows li { padding: 12px 14px; }
 .step h3::before { content: counter(s) " of 5"; }
+
+/* Help page */
+.help-toc ul { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+.help-toc a { display: inline-flex; align-items: center; min-height: 48px; padding: 0 16px; border-radius: var(--shape-full); background: var(--surface-container-high); color: var(--on-surface); text-decoration: none; font: 500 14px/20px var(--font-ui); }
+.help-toc a:hover { background: var(--secondary-container); }
+.help-steps { margin: 8px 0; padding-left: 24px; display: grid; gap: 10px; }
+.help-steps li::marker { color: var(--primary); font-weight: 600; }
+.policy-section[id] { scroll-margin-top: 80px; }
