@@ -113,80 +113,86 @@
       </section>
     </div>
 
-    <section class="section" aria-labelledby="inside-title">
+    <section class="section showcase" aria-labelledby="inside-title">
       <div class="container">
         <div class="section-head">
           <h2 id="inside-title" class="headline-medium">A look inside</h2>
-          <p class="body-large muted">Real screens from the app on a phone and on a computer, in the same light or dark theme as this page.</p>
+          <p class="body-large muted">Real screens from the app on a computer and a phone, in the same light or dark theme as this page. Scroll to move through them.</p>
         </div>
-        <h3 class="title-small shots-label">On your phone</h3>
-        <div class="screens" tabindex="0" aria-label="App screens, scroll sideways for more">
-          <figure>
-            <div class="phone">
-              <img class="shot-light" src="./assets/screens/home-light.webp" alt="Home: notes, pins and tag filters" width="540" height="1200" loading="lazy" />
-              <img class="shot-dark" src="./assets/screens/home-dark.webp" alt="Home: notes, pins and tag filters" width="540" height="1200" loading="lazy" />
+        <div class="show">
+          <div class="show-stage">
+            <div class="hero-devices show-devices" role="group" aria-label="NoteSpark screens on a laptop and a phone">
+              <div class="laptop">
+                <div class="laptop-screen layers">
+                <span class="layer is-on">
+                  <img class="shot-light" src="./assets/screens/desktop-home-light.webp" alt="The desktop app's Home: a search bar, tag filters, an older note to rediscover, and pinned notes in green" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-home-dark.webp" alt="The desktop app's Home: a search bar, tag filters, an older note to rediscover, and pinned notes in green" width="1440" height="960" loading="lazy" />
+                </span>
+                <span class="layer" aria-hidden="true">
+                  <img class="shot-light" src="./assets/screens/desktop-note-light.webp" alt="The desktop app showing a note titled Launch checklist, with ticked and open tasks, due dates and a progress bar" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-note-dark.webp" alt="The desktop app showing a note titled Launch checklist, with ticked and open tasks, due dates and a progress bar" width="1440" height="960" loading="lazy" />
+                </span>
+                <span class="layer" aria-hidden="true">
+                  <img class="shot-light" src="./assets/screens/desktop-tasks-light.webp" alt="The desktop Tasks screen, grouped as overdue, today and upcoming" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-tasks-dark.webp" alt="The desktop Tasks screen, grouped as overdue, today and upcoming" width="1440" height="960" loading="lazy" />
+                </span>
+                <span class="layer" aria-hidden="true">
+                  <img class="shot-light" src="./assets/screens/desktop-scratchpad-light.webp" alt="The desktop Scratchpad with a few quick lines of text" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-scratchpad-dark.webp" alt="The desktop Scratchpad with a few quick lines of text" width="1440" height="960" loading="lazy" />
+                </span>
+                <span class="layer" aria-hidden="true">
+                  <img class="shot-light" src="./assets/screens/desktop-settings-light.webp" alt="The desktop Settings screen with appearance, language and notes-and-tasks options" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-settings-dark.webp" alt="The desktop Settings screen with appearance, language and notes-and-tasks options" width="1440" height="960" loading="lazy" />
+                </span>
+                </div>
+                <div class="laptop-base" aria-hidden="true"></div>
+              </div>
+              <div class="phone layers">
+                <span class="layer is-on">
+                  <img class="shot-light" src="./assets/screens/home-light.webp" alt="Home: notes, pins and tag filters" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/home-dark.webp" alt="Home: notes, pins and tag filters" width="540" height="1200" loading="lazy" />
+                </span>
+                <span class="layer" aria-hidden="true">
+                  <img class="shot-light" src="./assets/screens/note-light.webp" alt="A note with tasks and due dates" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/note-dark.webp" alt="A note with tasks and due dates" width="540" height="1200" loading="lazy" />
+                </span>
+                <span class="layer" aria-hidden="true">
+                  <img class="shot-light" src="./assets/screens/tasks-light.webp" alt="Tasks from every note, by due date" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/tasks-dark.webp" alt="Tasks from every note, by due date" width="540" height="1200" loading="lazy" />
+                </span>
+                <span class="layer" aria-hidden="true">
+                  <img class="shot-light" src="./assets/screens/scratchpad-light.webp" alt="The scratchpad with a few quick lines" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/scratchpad-dark.webp" alt="The scratchpad with a few quick lines" width="540" height="1200" loading="lazy" />
+                </span>
+                <span class="layer" aria-hidden="true">
+                  <img class="shot-light" src="./assets/screens/settings-light.webp" alt="Settings: profiles, optional sync on your own network, backup and storage, privacy policy" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/settings-dark.webp" alt="Settings: profiles, optional sync on your own network, backup and storage, privacy policy" width="540" height="1200" loading="lazy" />
+                </span>
+              </div>
             </div>
-            <figcaption><strong>Home</strong><span>Pinned notes first, tags to filter, and an older note to rediscover.</span></figcaption>
-          </figure>
-          <figure>
-            <div class="phone">
-              <img class="shot-light" src="./assets/screens/note-light.webp" alt="A note with tasks and due dates" width="540" height="1200" loading="lazy" />
-              <img class="shot-dark" src="./assets/screens/note-dark.webp" alt="A note with tasks and due dates" width="540" height="1200" loading="lazy" />
-            </div>
-            <figcaption><strong>A note</strong><span>Set in Literata for reading. Tick tasks right where you wrote them.</span></figcaption>
-          </figure>
-          <figure>
-            <div class="phone">
-              <img class="shot-light" src="./assets/screens/tasks-light.webp" alt="Tasks from every note, by due date" width="540" height="1200" loading="lazy" />
-              <img class="shot-dark" src="./assets/screens/tasks-dark.webp" alt="Tasks from every note, by due date" width="540" height="1200" loading="lazy" />
-            </div>
-            <figcaption><strong>Tasks</strong><span>Every open task from every note, by due date or by note.</span></figcaption>
-          </figure>
-          <figure>
-            <div class="phone">
-              <img class="shot-light" src="./assets/screens/scratchpad-light.webp" alt="The scratchpad with a few quick lines" width="540" height="1200" loading="lazy" />
-              <img class="shot-dark" src="./assets/screens/scratchpad-dark.webp" alt="The scratchpad with a few quick lines" width="540" height="1200" loading="lazy" />
-            </div>
-            <figcaption><strong>Scratchpad</strong><span>Somewhere to jot things down before they become notes.</span></figcaption>
-          </figure>
-          <figure>
-            <div class="phone">
-              <img class="shot-light" src="./assets/screens/settings-light.webp" alt="Settings: profiles, optional sync on your own network, backup and storage, privacy policy" width="540" height="1200" loading="lazy" />
-              <img class="shot-dark" src="./assets/screens/settings-dark.webp" alt="Settings: profiles, optional sync on your own network, backup and storage, privacy policy" width="540" height="1200" loading="lazy" />
-            </div>
-            <figcaption><strong>Settings</strong><span>Profiles, optional sync on your own network, backups and the bin.</span></figcaption>
-          </figure>
-        </div>
-        <h3 class="title-small shots-label">On your computer</h3>
-        <div class="windows">
-          <figure>
-            <div class="window">
-              <img class="shot-light" src="./assets/screens/desktop-home-light.webp" alt="The desktop app's Home: a search bar, tag filters, an older note to rediscover, and pinned notes in green" width="1440" height="960" loading="lazy" />
-              <img class="shot-dark" src="./assets/screens/desktop-home-dark.webp" alt="The desktop app's Home: a search bar, tag filters, an older note to rediscover, and pinned notes in green" width="1440" height="960" loading="lazy" />
-            </div>
-            <figcaption><strong>Home</strong><span>Search, tag filters, pinned notes and an older note to rediscover.</span></figcaption>
-          </figure>
-          <figure>
-            <div class="window">
-              <img class="shot-light" src="./assets/screens/desktop-note-light.webp" alt="The desktop app showing a note titled Launch checklist in dark theme, with two ticked tasks, two open tasks with due dates, and a progress bar" width="1440" height="960" loading="lazy" />
-              <img class="shot-dark" src="./assets/screens/desktop-note-dark.webp" alt="The desktop app showing a note titled Launch checklist in dark theme, with two ticked tasks, two open tasks with due dates, and a progress bar" width="1440" height="960" loading="lazy" />
-            </div>
-            <figcaption><strong>A note</strong><span>The same Literata page, with tasks you can tick and due dates.</span></figcaption>
-          </figure>
-          <figure>
-            <div class="window">
-              <img class="shot-light" src="./assets/screens/desktop-tasks-light.webp" alt="The desktop Tasks screen in light theme, grouped as overdue, today and upcoming" width="1440" height="960" loading="lazy" />
-              <img class="shot-dark" src="./assets/screens/desktop-tasks-dark.webp" alt="The desktop Tasks screen in light theme, grouped as overdue, today and upcoming" width="1440" height="960" loading="lazy" />
-            </div>
-            <figcaption><strong>Tasks</strong><span>Every open task from every note, by due date or by note.</span></figcaption>
-          </figure>
-          <figure>
-            <div class="window">
-              <img class="shot-light" src="./assets/screens/desktop-settings-light.webp" alt="The desktop Settings screen in dark theme, with appearance, language and notes-and-tasks options" width="1440" height="960" loading="lazy" />
-              <img class="shot-dark" src="./assets/screens/desktop-settings-dark.webp" alt="The desktop Settings screen in dark theme, with appearance, language and notes-and-tasks options" width="1440" height="960" loading="lazy" />
-            </div>
-            <figcaption><strong>Settings</strong><span>Appearance, language and the options for notes and tasks.</span></figcaption>
-          </figure>
+          </div>
+          <ol class="show-steps">
+          <li class="step is-on" data-step="0">
+            <h3 class="headline-small">Home</h3>
+            <p class="reading muted">Pinned notes first, tags to filter, and an older note to rediscover.</p>
+          </li>
+          <li class="step" data-step="1">
+            <h3 class="headline-small">A note</h3>
+            <p class="reading muted">Set in Literata for reading. Tick tasks right where you wrote them.</p>
+          </li>
+          <li class="step" data-step="2">
+            <h3 class="headline-small">Tasks</h3>
+            <p class="reading muted">Every open task from every note, by due date or by note.</p>
+          </li>
+          <li class="step" data-step="3">
+            <h3 class="headline-small">Scratchpad</h3>
+            <p class="reading muted">Somewhere to jot things down before they become notes.</p>
+          </li>
+          <li class="step" data-step="4">
+            <h3 class="headline-small">Settings</h3>
+            <p class="reading muted">Profiles, optional sync on your own network, backups and the bin.</p>
+          </li>
+          </ol>
         </div>
       </div>
     </section>

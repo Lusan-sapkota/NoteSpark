@@ -87,6 +87,25 @@
       });
     });
 
+    // A look inside: the step nearest the middle of the screen decides which screens show.
+    var steps = [].slice.call(document.querySelectorAll('.step'));
+    if (steps.length && 'IntersectionObserver' in window) {
+      var layers = [].slice.call(document.querySelectorAll('.show .layers'));
+      var showStep = function (i) {
+        steps.forEach(function (st, n) { st.classList.toggle('is-on', n === i); });
+        layers.forEach(function (box) {
+          [].slice.call(box.children).forEach(function (l, n) {
+            l.classList.toggle('is-on', n === i);
+            l.setAttribute('aria-hidden', String(n !== i));
+          });
+        });
+      };
+      var stepIo = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) showStep(steps.indexOf(en.target)); });
+      }, { rootMargin: '-45% 0px -45% 0px' });
+      steps.forEach(function (st) { stepIo.observe(st); });
+    }
+
     // Pause button for the hero loop (moving content needs one).
     var stage = document.querySelector('.hero-stage');
     var pause = document.getElementById('stage-pause');
@@ -119,7 +138,7 @@
           if (en.isIntersecting) { en.target.classList.add('is-in'); io.unobserve(en.target); }
         });
       }, { rootMargin: '0px 0px -10% 0px' });
-      document.querySelectorAll('.section-head, .windows figure, .groups .group, .band').forEach(function (el) {
+      document.querySelectorAll('.section-head, .groups .group, .band').forEach(function (el) {
         el.classList.add('will-reveal');
         io.observe(el);
       });
