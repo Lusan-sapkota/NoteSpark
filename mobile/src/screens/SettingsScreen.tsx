@@ -1,6 +1,6 @@
 import { reconcileSync } from '../sync/syncRuntime';
 import React, { useCallback, useEffect, useState } from 'react';
-import { Platform, StyleSheet, View, ScrollView } from 'react-native';
+import { Platform, StyleSheet, View, ScrollView, useWindowDimensions } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Dialog, Icon, IconButton, List, RadioButton, SegmentedButtons, Text, TextInput } from 'react-native-paper';
@@ -25,7 +25,7 @@ import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, readingWidth, shape, space } from '../theme/theme';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
 type SettingsScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Settings'>;
 
@@ -60,7 +60,10 @@ const SettingsScreen: React.FC = () => {
   const [liveRelated, setLiveRelated] = useState(false);
   const [startScreen, setStartScreenState] = useState<StartScreen>('Home');
   // A pick-one dialog (reminder time, auto-lock); kept after closing so it doesn't change while fading.
-  const [choice, setChoice] = useState<{ title: string; options: { label: string; value: string | number }[]; value: string | number; onPick: (value: any) => void; open: boolean } | null>(null);
+  const [choice, setChoice] = useState<{ title: string; options: { label: string; value: string | number }[]; value: string | number; onPick: (value: any) => void; open: boolean; searchable?: boolean } | null>(null);
+  const [choiceQuery, setChoiceQuery] = useState('');
+  const insets = useSafeAreaInsets();
+  const { height: windowHeight } = useWindowDimensions();
   // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ profile: Profile; name: string; open: boolean } | null>(null);
   const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; mode: 'unlock' | 'makeDefault' | 'delete'; open: boolean } | null>(null);
@@ -125,11 +128,13 @@ const SettingsScreen: React.FC = () => {
       open: true,
     });
   const languageName = LANGUAGES.find(l => l.code === language)?.name ?? '';
-  const pickLanguage = () =>
+  const pickLanguage = () => {
+    setChoiceQuery('');
     setChoice({
       title: t('settings.language'),
       options: [{ label: t('settings.languageSystem'), value: 'system' }, ...LANGUAGES.map(l => ({ label: l.name, value: l.code }))],
       value: preference,
+      searchable: true,
       onPick: value => {
         setPreference(value as typeof preference)
           .then(restart => { if (restart) alert(t('settings.languageRestartTitle'), t('settings.languageRestartBody')); })
@@ -137,6 +142,7 @@ const SettingsScreen: React.FC = () => {
       },
       open: true,
     });
+  };
   const pickAutoLock = () =>
     setChoice({
       title: t('settings.lockAgain'),
@@ -714,8 +720,27 @@ const SettingsScreen: React.FC = () => {
             <Button onPress={handleRename} disabled={!nameDialog?.name.trim()}>{t('common.rename')}</Button>
           </Dialog.Actions>
         </Dialog>
-        <Dialog visible={!!choice?.open} onDismiss={() => setChoice(c => c && { ...c, open: false })}>
-          <Dialog.Title>{choice?.title}</Dialog.Title>
+        {/* Keep the dialog between the status bar and the navigation bar (edge-to-edge windows include both). */}
+        <Dialog
+          visible={!!choice?.open}
+          onDismiss={() => setChoice(c => c && { ...c, open: false })}
+          style={{ maxHeight: windowHeight - insets.top - insets.bottom - 48 }}
+        >
+          <View style={styles.choiceHeader}>
+            <Dialog.Title style={styles.choiceTitle}>{choice?.title}</Dialog.Title>
+            {choice?.searchable && (
+              <TextInput
+                mode="outlined"
+                dense
+                value={choiceQuery}
+                onChangeText={setChoiceQuery}
+                placeholder={t('common.search')}
+                accessibilityLabel={t('common.search')}
+                left={<TextInput.Icon icon="magnify" />}
+                style={styles.choiceSearch}
+              />
+            )}
+          </View>
           <Dialog.ScrollArea style={styles.choiceList}>
             {/* The area only caps the height; the list has to scroll inside it (the language list is 14 rows). */}
             <ScrollView>
@@ -727,7 +752,9 @@ const SettingsScreen: React.FC = () => {
                   setChoice(c => c && { ...c, value: picked, open: false });
                 }}
               >
-                {choice?.options.map(o => <RadioButton.Item key={o.value} label={o.label} value={String(o.value)} />)}
+                {choice?.options
+                  .filter(o => !choiceQuery.trim() || o.label.toLowerCase().includes(choiceQuery.trim().toLowerCase()))
+                  .map(o => <RadioButton.Item key={o.value} label={o.label} value={String(o.value)} />)}
               </RadioButton.Group>
             </ScrollView>
           </Dialog.ScrollArea>
@@ -779,6 +806,18 @@ const styles = StyleSheet.create({
   },
   choiceList: {
     paddingHorizontal: 0,
+  },
+  choiceHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: space.lg,
+  },
+  choiceTitle: {
+    flexShrink: 0,
+  },
+  choiceSearch: {
+    flex: 1,
+    marginLeft: space.sm,
   },
   rowActions: {
     flexDirection: 'row',
