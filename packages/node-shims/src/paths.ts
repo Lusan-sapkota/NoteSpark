@@ -1,4 +1,5 @@
 import { createRequire } from 'node:module';
+import { existsSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 
 // Electron is loaded lazily, only inside the desktop.
@@ -14,4 +15,13 @@ export const dataDir = () => {
   if (process.env.NOTESPARK_DIR) return process.env.NOTESPARK_DIR;
   return electron().app.getPath('userData');
 };
-export const databaseDir = () => join(dataDir(), 'databases');
+// Not "databases": Chromium deletes a folder of that name in its profile (old WebSQL storage) at startup, which wiped the notes.
+// Notes kept in "databases" by earlier versions are moved over once.
+export const databaseDir = () => {
+  const dir = join(dataDir(), 'notes-data');
+  const old = join(dataDir(), 'databases');
+  if (!existsSync(dir) && existsSync(old)) {
+    try { renameSync(old, dir); } catch { /* the old folder stays; a new one is made */ }
+  }
+  return dir;
+};
