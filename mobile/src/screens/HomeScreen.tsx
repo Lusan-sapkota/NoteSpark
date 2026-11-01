@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, useDeferredValue } from 'react';
 import { BackHandler, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { AnimatedFAB, Appbar, Badge, Button, Chip, Dialog, Divider, Icon, IconButton, List, Portal, Searchbar, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import Snackbar from '../components/Snackbar';
@@ -73,6 +73,7 @@ const HomeScreen: React.FC = () => {
   const [dailyVisible, setDailyVisible] = useState(false);
   const [templateVisible, setTemplateVisible] = useState(false);
   const [fabExtended, setFabExtended] = useState(true);
+  const insets = useSafeAreaInsets();
   const [snackbar, setSnackbar] = useState('');
   // What the snackbar's Undo does, if it has one.
   const [undo, setUndo] = useState<(() => Promise<void>) | null>(null);
@@ -730,8 +731,8 @@ const HomeScreen: React.FC = () => {
         </Appbar.Header>
       ) : (
         <Header elevated={elevated}
-          title={profiles.length > 1 && activeProfile ? activeProfile.name : 'NoteSpark'}
-          // With two or more profiles the title is the switcher; with one there is nothing to switch.
+          title={activeProfile?.name ?? 'NoteSpark'}
+          // The title is always the open profile's name; with two or more profiles it is also the switcher.
           onTitlePress={profiles.length > 1 && activeProfile ? () => setProfileDialogVisible(true) : undefined}
           titleLabel={t('home.switchProfileLabel', { name: activeProfile?.name ?? '' })}
           rightActions={
@@ -938,7 +939,7 @@ const HomeScreen: React.FC = () => {
           animateFrom="right"
           accessibilityLabel={t('home.newNote')}
           // The firefly: a soft primary glow under the FAB in dark mode (Android 9+ tints elevation shadows).
-          style={[styles.fab, isDarkMode && { shadowColor: theme.colors.primary }]}
+          style={[styles.fab, { bottom: space.lg + insets.bottom }, isDarkMode && { shadowColor: theme.colors.primary }]}
         />
       )}
 

@@ -775,7 +775,7 @@ const NoteViewScreen: React.FC = () => {
         </Dialog>
       </Portal>
 
-      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={2000} wrapperStyle={{ bottom: 80 + insets.bottom }}>
+      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={2000} wrapperStyle={{ bottom: 80 }}>
         {snackbar}
       </Snackbar>
     </SafeAreaView>

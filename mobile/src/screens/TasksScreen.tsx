@@ -1,6 +1,6 @@
 import React, { useCallback, useMemo, useRef, useState } from 'react';
 import { NativeScrollEvent, NativeSyntheticEvent, RefreshControl, StyleSheet, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
@@ -77,6 +77,7 @@ const TaskMenu: React.FC<{ title: string; onEdit: () => void; onOpen: () => void
 const TasksScreen: React.FC = () => {
   const navigation = useNavigation<TasksScreenNavigationProp>();
   const { theme, isDarkMode } = useTheme();
+  const insets = useSafeAreaInsets();
   const { t, language } = useI18n();
   const { elevated, onScroll: onHeaderScroll } = useHeaderElevation();
   // Same as Home: the extended FAB collapses while scrolling down and expands on scroll up or at the top.
@@ -337,16 +338,17 @@ const TasksScreen: React.FC = () => {
         animateFrom="right"
         accessibilityLabel={t('tasks.addTask')}
         // The firefly glow in dark mode, as on Home's New note button.
-        style={[styles.fab, isDarkMode && { shadowColor: theme.colors.primary }]}
+        style={[styles.fab, { bottom: space.lg + insets.bottom }, isDarkMode && { shadowColor: theme.colors.primary }]}
       />
       <AddTaskDialog visible={adding} onDismiss={() => setAdding(false)} onAdd={addTask} />
       <AddTaskDialog visible={!!editing} task={editing ?? undefined} onDismiss={() => setEditing(null)} onAdd={saveEdit} />
-      <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={4000} action={{ label: t('common.undo'), onPress: undoDelete }}>{t('tasks.deleted')}</Snackbar>
-      <Snackbar visible={!!added} onDismiss={() => setAdded('')} duration={3000}>{t('tasks.addedTo', { name: added })}</Snackbar>
+      <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={4000} wrapperStyle={styles.snackbar} action={{ label: t('common.undo'), onPress: undoDelete }}>{t('tasks.deleted')}</Snackbar>
+      <Snackbar visible={!!added} onDismiss={() => setAdded('')} duration={3000} wrapperStyle={styles.snackbar}>{t('tasks.addedTo', { name: added })}</Snackbar>
       <Snackbar
         visible={!!lastDone}
         onDismiss={() => setLastDone(null)}
         duration={4000}
+        wrapperStyle={styles.snackbar}
         action={{ label: t('common.undo'), onPress: undoLastDone }}
       >
         {lastDone?.next ? t('tasks.nextDue', { date: formatDue(lastDone.next) }) : t('tasks.doneSnack')}
@@ -367,7 +369,9 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: space.lg,
-    bottom: space.lg,
+  },
+  snackbar: {
+    bottom: 80,
   },
   listContent: {
     flexGrow: 1,
