@@ -396,3 +396,48 @@ code {
 /* Line icons drawn inline (no icon font, no network). */
 .i { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .hero-actions + p { margin: 16px 0 0; }
+
+/* ---------- Redesign: download buttons, fireflies, tilt, reveal, download cards ---------- */
+.btn-lg { min-height: 56px; padding: 0 28px; font-size: 16px; border-radius: var(--shape-full); }
+.btn-text { background: transparent; color: var(--primary); padding: 0 16px; }
+.btn-text:hover { background: var(--surface-container-high); }
+.hero-actions { align-items: center; }
+.dl-note { margin: 16px 0 0; max-width: 34em; }
+
+/* Pointer tilt: JS sets --rx and --ry in the range -1 to 1 */
+.hero-devices { perspective: 1200px; }
+.laptop { transform: rotateY(calc(var(--rx, 0) * 5deg)) rotateX(calc(var(--ry, 0) * -4deg)); transition: transform 200ms ease-out; }
+.hero-devices .phone { transform: translate(calc(var(--rx, 0) * 10px), calc(var(--ry, 0) * 8px)) rotateY(calc(var(--rx, 0) * -7deg)); transition: transform 200ms ease-out; }
+
+/* Reveal on scroll (only added by JS, so the page is complete without it) */
+.will-reveal { opacity: 0; transform: translateY(24px); transition: opacity 500ms ease-out, transform 500ms ease-out; }
+.will-reveal.is-in { opacity: 1; transform: none; }
+
+/* Download cards */
+.dl-grid { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 760px) { .dl-grid { grid-template-columns: 1fr; } }
+.dl-card {
+  display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; align-items: start; padding: 24px;
+  background: var(--surface-container-low); border-radius: var(--shape-group); border: 2px solid transparent;
+}
+.dl-card > .btn, .dl-card > .status { grid-column: 1 / -1; justify-self: start; margin-top: 12px; }
+.dl-card.is-recommended { border-color: var(--primary); background: var(--surface-container); }
+.dl-later { background: transparent; border: 1px dashed var(--outline-variant); }
+.dl-icon { width: 48px; height: 48px; border-radius: var(--shape-full); display: grid; place-items: center; background: var(--primary-container); color: var(--on-primary-container); }
+.dl-later .dl-icon { background: var(--surface-container-high); color: var(--on-surface-variant); }
+.dl-icon svg { width: 24px; height: 24px; }
+.dl-body h3 { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; margin: 0 0 4px; }
+.dl-body p { margin: 4px 0 0; }
+.chip-rec { background: var(--primary-container); color: var(--on-primary-container); }
+.chip-rec[hidden] { display: none; }
+.dl-foot { margin: 20px 4px 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .laptop, .hero-devices .phone { transform: none !important; transition: none; }
+  .will-reveal { opacity: 1; transform: none; transition: none; }
+}
+.section[id] { scroll-margin-top: 80px; }
+.hero-actions { margin-top: 28px; } .promises { margin-top: 32px; }
+.laptop-screen .shot-dark { display: none; }
+[data-theme="dark"] .laptop-screen .shot-dark { display: block; }
+[data-theme="dark"] .laptop-screen .shot-light { display: none; }
