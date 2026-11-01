@@ -76,7 +76,11 @@ const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   // Wide screens (tablets): controls and FAB line up with the centred list column.
   const { width: windowWidth } = useWindowDimensions();
-  const sidePad = Math.max(space.lg, (windowWidth - readingWidth) / 2 + space.lg);
+  const twoPane = windowWidth >= twoPaneMinWidth;
+  const sidePad = twoPane ? space.lg : Math.max(space.lg, (windowWidth - readingWidth) / 2 + space.lg);
+  // Two panes: the open note shows beside the list instead of replacing it.
+  const [paneNoteId, setPaneNoteId] = useState<string | null>(null);
+  const NoteViewScreen = twoPane ? require('./NoteViewScreen').default : null;
   const [snackbar, setSnackbar] = useState('');
   // What the snackbar's Undo does, if it has one.
   const [undo, setUndo] = useState<(() => Promise<void>) | null>(null);
@@ -488,9 +492,13 @@ const HomeScreen: React.FC = () => {
 
   // A text search carries over: the note opens finding it.
   const handleNotePress = useCallback((noteId: number) => {
+    if (twoPane) {
+      setPaneNoteId(noteId.toString());
+      return;
+    }
     const find = deferredSearch.trim() || undefined;
     navigation.navigate('NoteView', { noteId: noteId.toString(), find });
-  }, [navigation, deferredSearch]);
+  }, [navigation, deferredSearch, twoPane]);
 
   const showBinned = (noteId: number) => {
     setUndo(() => async () => {
@@ -534,6 +542,7 @@ const HomeScreen: React.FC = () => {
           onPress: async () => {
             try {
               await moveNoteToBin(noteId);
+              setPaneNoteId(open => (open === String(noteId) ? null : open));
               await loadNotes();
               showBinned(noteId);
             } catch (error) {
@@ -611,7 +620,7 @@ const HomeScreen: React.FC = () => {
           onTransfer={profiles.length > 1 ? handleTransferNote : undefined}
           onSelect={handleSelect}
           selecting={selecting}
-          selected={selectedIds.includes(item.id)}
+          selected={selectedIds.includes(item.id) || (twoPane && String(item.id) === paneNoteId)}
           isFirst={!prev || index === relatedFrom || prev.isPinned !== isPinned}
           isLast={!next || index + 1 === relatedFrom || next.isPinned !== isPinned}
           showCreated={sortType === 'created'}
@@ -627,7 +636,7 @@ const HomeScreen: React.FC = () => {
         </>
       );
     },
-    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, filteredNotes, sortType, relatedFrom, theme, t]
+    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, twoPane, paneNoteId, filteredNotes, sortType, relatedFrom, theme, t]
   );
 
   useEffect(() => {
@@ -709,7 +718,8 @@ const HomeScreen: React.FC = () => {
   );
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
+    <SafeAreaView style={[styles.container, twoPane && styles.row, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
+      <View style={twoPane ? { width: listPaneWidth } : styles.container}>
       {selecting ? (
         <Appbar.Header mode="small" elevated>
           <Appbar.Action icon="close" accessibilityLabel={t('home.cancelSelection')} onPress={clearSelection} />
@@ -945,6 +955,26 @@ const HomeScreen: React.FC = () => {
           style={[styles.fab, { right: sidePad, bottom: space.lg + insets.bottom }, isDarkMode && { shadowColor: theme.colors.primary }]}
         />
       )}
+      </View>
+      {twoPane && (
+        <View style={[styles.notePane, { borderLeftColor: theme.colors.outlineVariant }]}>
+          {paneNoteId ? (
+            <NoteViewScreen
+              key={paneNoteId}
+              pane={{
+                noteId: paneNoteId,
+                open: setPaneNoteId,
+                binned: (id: number) => { setPaneNoteId(null); loadNotes(); showBinned(id); },
+                tag: (tag: string) => { setFilter(`tag:${tag}`); setSearchText(''); },
+              }}
+            />
+          ) : (
+            <View style={styles.notePaneEmpty}>
+              <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>{t('home.selectNote')}</Text>
+            </View>
+          )}
+        </View>
+      )}
 
       <Portal>
         <DailyNoteDialog visible={dailyVisible} notes={notes} onDismiss={() => setDailyVisible(false)} onPick={openDailyNote} />
@@ -1043,10 +1073,27 @@ const HomeScreen: React.FC = () => {
   );
 };
 
+// Window width (dp) from which the list and the open note sit side by side.
+const twoPaneMinWidth = 840;
+const listPaneWidth = 380;
+
 const styles = StyleSheet.create({
   taskBadge: { position: 'absolute', top: 6, right: 4, fontSize: 11 }, // Paper sizes badge text at half the badge, too small to read
   container: {
     flex: 1,
+  },
+  row: {
+    flexDirection: 'row',
+  },
+  notePane: {
+    flex: 1,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+  },
+  notePaneEmpty: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: space.xl,
   },
   controls: {
     paddingHorizontal: space.lg,

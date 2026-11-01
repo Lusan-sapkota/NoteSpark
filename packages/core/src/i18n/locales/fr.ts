@@ -197,6 +197,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "« {title} » restera 30 jours dans la corbeille. Vous pouvez la restaurer depuis Corbeille dans Réglages.",
   "home.moveNoteToBinFailed": "Impossible de mettre la note à la corbeille",
   "home.noteMovedToBin": "Note mise à la corbeille",
+  "home.selectNote": "Choisissez une note pour la lire",
   "home.restoreFailedTitle": "Impossible de restaurer la note",
   "home.restoreFailedMessage": "Ouvrez Corbeille dans Réglages pour la restaurer.",
   "home.pinNoteFailed": "Impossible d'épingler la note",

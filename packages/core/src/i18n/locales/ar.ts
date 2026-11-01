@@ -245,6 +245,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "ستبقى \"{title}\" في السلة لمدة 30 يومًا. يمكنك استعادتها من «السلة» في الإعدادات.",
   "home.moveNoteToBinFailed": "تعذّر نقل الملاحظة إلى السلة",
   "home.noteMovedToBin": "تم نقل الملاحظة إلى السلة",
+  "home.selectNote": "اختر ملاحظة لقراءتها",
   "home.restoreFailedTitle": "تعذّرت استعادة الملاحظة",
   "home.restoreFailedMessage": "افتح «السلة» في الإعدادات لاستعادتها.",
   "home.pinNoteFailed": "تعذّر تثبيت الملاحظة",

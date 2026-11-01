@@ -164,6 +164,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "「{title}」は30日間ゴミ箱に残ります。設定のゴミ箱から復元できます。",
   "home.moveNoteToBinFailed": "ノートをゴミ箱に移動できませんでした",
   "home.noteMovedToBin": "ノートをゴミ箱に移動しました",
+  "home.selectNote": "ノートを選んで読む",
   "home.restoreFailedTitle": "ノートを復元できませんでした",
   "home.restoreFailedMessage": "設定のゴミ箱を開いて復元してください。",
   "home.pinNoteFailed": "ノートをピン留めできませんでした",

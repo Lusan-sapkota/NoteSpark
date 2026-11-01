@@ -98,7 +98,15 @@ const linkRegex = /(https?:\/\/[^\s)]+|www\.[^\s)]+|\b[a-zA-Z0-9.-]+\.[a-zA-Z]{2
 // Plain notes: a [[note link]] (group 1) or a web link.
 const plainLinkRegex = new RegExp(`${noteLinkPattern.source}|${linkRegex.source}`, 'g');
 
-const NoteViewScreen: React.FC = () => {
+// Set when Home shows the note beside its list (wide screens): the note comes from Home, not the route, and these replace navigating.
+export interface NotePane {
+  noteId: string;
+  open: (noteId: string) => void;
+  binned: (noteId: number) => void;
+  tag: (tag: string) => void;
+}
+
+const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
   const navigation = useNavigation<NoteViewScreenNavigationProp>();
   const route = useRoute<NoteViewScreenRouteProp>();
   const { theme } = useTheme();
@@ -128,6 +136,7 @@ const NoteViewScreen: React.FC = () => {
   const [showChanges, setShowChanges] = useState(true);
   // Find in note: the query and current match; lines are drawn plain while finding so each can be measured.
   const [find, setFind] = useState<{ query: string; index: number } | null>(null);
+  const noteId: string | undefined = pane?.noteId ?? (route.params as any)?.noteId;
   const findParam: string | undefined = (route.params as any)?.find;
   const scrollRef = useRef<React.ComponentRef<typeof ScrollView>>(null);
   const bodyY = useRef(0);
@@ -156,9 +165,9 @@ const NoteViewScreen: React.FC = () => {
   // The spinner only shows for a pull; opening or returning to the note reloads quietly.
   const reloadNote = async (pulled = false) => {
     if (pulled) setRefreshing(true);
-    if ((route.params as any)?.noteId) {
+    if (noteId) {
       try {
-        const fetchedNote = await getNoteById((route.params as any).noteId);
+        const fetchedNote = await getNoteById(noteId as any);
         setNote(fetchedNote);
         if (fetchedNote) {
           const linking = await getNotesWithLinks();
@@ -181,14 +190,15 @@ const NoteViewScreen: React.FC = () => {
   useFocusEffect(
     useCallback(() => {
       reloadNote();
-    }, [(route.params as any)?.noteId])
+    }, [noteId])
   );
 
   // No confirmation here: the note goes to the bin, and Home offers Undo.
   const handleDelete = async () => {
     try {
       await moveNoteToBin(note!.id);
-      navigation.popTo('Home', { binnedNoteId: note!.id });
+      if (pane) pane.binned(note!.id);
+      else navigation.popTo('Home', { binnedNoteId: note!.id });
     } catch (error) {
       alert(t('note.binFailedTitle'), t('common.tryAgainRestart'));
     }
@@ -253,7 +263,7 @@ const NoteViewScreen: React.FC = () => {
     try {
       const target = findNoteByTitle(await getNotes(), title);
       if (target) {
-        navigation.push('NoteView', { noteId: String(target.id) });
+        openNote(String(target.id));
         return;
       }
       alert(t('note.noNoteCalled', { title }), t('note.startNewNote'), [
@@ -357,6 +367,7 @@ const NoteViewScreen: React.FC = () => {
   };
 
   const goBack = () => navigation.goBack();
+  const openNote = (id: string) => (pane ? pane.open(id) : navigation.push('NoteView', { noteId: id }));
 
   // Opened from a Home search: start finding that text, if the note has it.
   const findOpened = useRef(false);
@@ -420,7 +431,7 @@ const NoteViewScreen: React.FC = () => {
   if (!note) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-        <Header elevated={elevated} title="" showBackButton onBackPress={goBack} />
+        <Header elevated={elevated} title="" showBackButton={!pane} onBackPress={goBack} />
         <View style={styles.loading}>
           <ActivityIndicator size="large" />
         </View>
@@ -446,7 +457,7 @@ const NoteViewScreen: React.FC = () => {
       <Header
         elevated={elevated}
         title={titleInBar ? note.title : ''}
-        showBackButton
+        showBackButton={!pane}
         onBackPress={goBack}
         rightActions={
           <>
@@ -555,7 +566,7 @@ const NoteViewScreen: React.FC = () => {
             {extractTags(content).map(tag => (
               <TouchableRipple
                 key={tag}
-                onPress={() => navigation.popTo('Home', { tag })}
+                onPress={() => (pane ? pane.tag(tag) : navigation.popTo('Home', { tag }))}
                 accessibilityRole="button"
                 accessibilityLabel={t('note.showTagged', { tag })}
                 hitSlop={12}
@@ -625,7 +636,7 @@ const NoteViewScreen: React.FC = () => {
                   title={b.title || t('common.untitledNote')}
                   description={toPreview(b.content) || undefined}
                   icon="link-variant"
-                  onPress={() => navigation.push('NoteView', { noteId: String(b.id) })}
+                  onPress={() => openNote(String(b.id))}
                   isFirst={i === 0}
                   isLast={i === backlinks.length - 1}
                 />
@@ -643,7 +654,7 @@ const NoteViewScreen: React.FC = () => {
                   title={m.title || t('common.untitledNote')}
                   description={toPreview(m.content) || undefined}
                   icon="text-search"
-                  onPress={() => navigation.push('NoteView', { noteId: String(m.id) })}
+                  onPress={() => openNote(String(m.id))}
                   right={
                     <Button compact onPress={() => linkFromMention(m)} accessibilityLabel={t('note.linkFrom', { title: m.title || t('common.untitledNote') })}>
                       {t('note.link')}
@@ -666,7 +677,7 @@ const NoteViewScreen: React.FC = () => {
                   title={r.title || t('common.untitledNote')}
                   description={toPreview(r.content) || undefined}
                   icon="note-text-outline"
-                  onPress={() => navigation.push('NoteView', { noteId: String(r.id) })}
+                  onPress={() => openNote(String(r.id))}
                   isFirst={i === 0}
                   isLast={i === related.length - 1}
                 />

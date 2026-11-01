@@ -181,6 +181,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "„{title}“ bleibt 30 Tage im Papierkorb. Du kannst sie in den Einstellungen unter „Papierkorb“ wiederherstellen.",
   "home.moveNoteToBinFailed": "Notiz konnte nicht in den Papierkorb verschoben werden",
   "home.noteMovedToBin": "Notiz in den Papierkorb verschoben",
+  "home.selectNote": "Wähle eine Notiz zum Lesen aus",
   "home.restoreFailedTitle": "Notiz konnte nicht wiederhergestellt werden",
   "home.restoreFailedMessage": "Öffne in den Einstellungen den Papierkorb, um sie wiederherzustellen.",
   "home.pinNoteFailed": "Notiz konnte nicht angeheftet werden",

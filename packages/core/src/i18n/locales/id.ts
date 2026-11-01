@@ -165,6 +165,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "\"{title}\" akan tersimpan di tempat sampah selama 30 hari. Anda dapat memulihkannya dari Tempat sampah di Pengaturan.",
   "home.moveNoteToBinFailed": "Catatan tidak dapat dipindahkan ke tempat sampah",
   "home.noteMovedToBin": "Catatan dipindahkan ke tempat sampah",
+  "home.selectNote": "Pilih catatan untuk membacanya",
   "home.restoreFailedTitle": "Catatan tidak dapat dipulihkan",
   "home.restoreFailedMessage": "Buka Tempat sampah di Pengaturan untuk memulihkannya.",
   "home.pinNoteFailed": "Catatan tidak dapat disematkan",

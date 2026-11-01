@@ -181,6 +181,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "\"{title}\" 30 दिन तक बिन में रहेगा। आप इसे सेटिंग में बिन से वापस ला सकते हैं।",
   "home.moveNoteToBinFailed": "नोट बिन में नहीं डाला जा सका",
   "home.noteMovedToBin": "नोट बिन में डाल दिया गया",
+  "home.selectNote": "पढ़ने के लिए कोई नोट चुनें",
   "home.restoreFailedTitle": "नोट वापस नहीं लाया जा सका",
   "home.restoreFailedMessage": "इसे वापस लाने के लिए सेटिंग में बिन खोलें।",
   "home.pinNoteFailed": "नोट पिन नहीं हो सका",

@@ -180,6 +180,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "\"{title}\" ৩০ দিন বিনে থাকবে। সেটিংসের বিন থেকে ফিরিয়ে আনতে পারবেন।",
   "home.moveNoteToBinFailed": "নোট বিনে সরানো যায়নি",
   "home.noteMovedToBin": "নোট বিনে সরানো হয়েছে",
+  "home.selectNote": "পড়তে একটি নোট বেছে নিন",
   "home.restoreFailedTitle": "নোট ফিরিয়ে আনা যায়নি",
   "home.restoreFailedMessage": "ফিরিয়ে আনতে সেটিংসের বিন খুলুন।",
   "home.pinNoteFailed": "নোট পিন করা যায়নি",

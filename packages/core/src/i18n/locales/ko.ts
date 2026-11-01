@@ -164,6 +164,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "\"{title}\"은(는) 휴지통에 30일 동안 보관돼요. 설정의 휴지통에서 복원할 수 있어요.",
   "home.moveNoteToBinFailed": "메모를 휴지통으로 옮기지 못했어요",
   "home.noteMovedToBin": "메모를 휴지통으로 옮겼어요",
+  "home.selectNote": "읽을 메모를 선택하세요",
   "home.restoreFailedTitle": "메모를 복원하지 못했어요",
   "home.restoreFailedMessage": "설정의 휴지통을 열어 복원해 주세요.",
   "home.pinNoteFailed": "메모를 고정하지 못했어요",

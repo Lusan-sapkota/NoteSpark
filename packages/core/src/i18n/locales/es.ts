@@ -197,6 +197,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "\"{title}\" se quedará en la papelera 30 días. Puedes restaurarla desde Papelera, en Ajustes.",
   "home.moveNoteToBinFailed": "No se pudo mover la nota a la papelera",
   "home.noteMovedToBin": "Nota movida a la papelera",
+  "home.selectNote": "Elige una nota para leerla",
   "home.restoreFailedTitle": "No se pudo restaurar la nota",
   "home.restoreFailedMessage": "Abre Papelera en Ajustes para restaurarla.",
   "home.pinNoteFailed": "No se pudo fijar la nota",

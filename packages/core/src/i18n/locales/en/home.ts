@@ -164,6 +164,7 @@ export default {
   'home.moveNoteToBinMessage': '"{title}" will stay in the bin for 30 days. You can restore it from Bin in Settings.',
   'home.moveNoteToBinFailed': "Couldn't move the note to the bin",
   'home.noteMovedToBin': 'Note moved to bin',
+  'home.selectNote': 'Select a note to read it',
   'home.restoreFailedTitle': "Couldn't restore the note",
   'home.restoreFailedMessage': 'Open Bin in Settings to restore it.',
   'home.pinNoteFailed': "Couldn't pin the note",

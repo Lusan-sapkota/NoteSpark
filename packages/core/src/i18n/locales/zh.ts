@@ -164,6 +164,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "“{title}”将在回收站中保留30天，期间可在“设置”的回收站中恢复。",
   "home.moveNoteToBinFailed": "无法将笔记移到回收站",
   "home.noteMovedToBin": "笔记已移到回收站",
+  "home.selectNote": "选择一条笔记来阅读",
   "home.restoreFailedTitle": "无法恢复笔记",
   "home.restoreFailedMessage": "请在“设置”中打开回收站进行恢复。",
   "home.pinNoteFailed": "无法置顶笔记",

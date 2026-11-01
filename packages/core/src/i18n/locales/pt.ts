@@ -197,6 +197,7 @@ const catalog: Record<string, string> = {
   "home.moveNoteToBinMessage": "\"{title}\" ficará na lixeira por 30 dias. Você pode restaurá-la em Lixeira, nas Configurações.",
   "home.moveNoteToBinFailed": "Não foi possível mover a nota para a lixeira",
   "home.noteMovedToBin": "Nota movida para a lixeira",
+  "home.selectNote": "Escolha uma nota para lê-la",
   "home.restoreFailedTitle": "Não foi possível restaurar a nota",
   "home.restoreFailedMessage": "Abra Lixeira nas Configurações para restaurá-la.",
   "home.pinNoteFailed": "Não foi possível fixar a nota",
