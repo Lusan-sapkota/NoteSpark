@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Chip, Dialog, List, TextInput } from 'react-native-paper';
+import { Button, Chip, List, TextInput } from 'react-native-paper';
+import Dialog from './Dialog';
 import { addDays, formatDue, Repeat, t, today } from '@notespark/core';
 import DateCalendar from './DateCalendar';
 import Menu from './Menu';

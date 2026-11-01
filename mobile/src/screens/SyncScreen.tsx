@@ -2,7 +2,8 @@ import React, { useCallback, useEffect, useState, useSyncExternalStore } from 'r
 import { Clipboard, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { Button, Dialog, HelperText, Icon, Portal, Text, TextInput } from 'react-native-paper';
+import { Button, HelperText, Icon, Portal, Text, TextInput } from 'react-native-paper';
+import Dialog from '../components/Dialog';
 import { PairingError, type PairingLink, deviceId, parsePairing } from '@notespark/sync-protocol';
 import Header, { useHeaderElevation } from '../components/Header';
 import ScanCode from '../components/ScanCode';

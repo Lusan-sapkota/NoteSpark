@@ -3,7 +3,8 @@ import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking, Nativ
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Appbar, Button, Dialog, Divider, FAB, Icon, IconButton, List, Modal, Portal, ProgressBar, Searchbar, Text, TouchableRipple } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Button, Divider, FAB, Icon, IconButton, List, Modal, Portal, ProgressBar, Searchbar, Text, TouchableRipple } from 'react-native-paper';
+import Dialog from '../components/Dialog';
 import { useReducedMotion } from 'react-native-reanimated';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';

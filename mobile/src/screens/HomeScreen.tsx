@@ -2,7 +2,8 @@ import React, { useState, useEffect, useMemo, useCallback, useRef, useDeferredVa
 import { BackHandler, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
-import { AnimatedFAB, Appbar, Badge, Button, Chip, Dialog, Divider, Icon, IconButton, List, Portal, Searchbar, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { AnimatedFAB, Appbar, Badge, Button, Chip, Divider, Icon, IconButton, List, Portal, Searchbar, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import Dialog from '../components/Dialog';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';

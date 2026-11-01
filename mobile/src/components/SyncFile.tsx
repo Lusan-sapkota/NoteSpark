@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Dialog, HelperText, Portal, Text, TextInput } from 'react-native-paper';
+import { Button, HelperText, Portal, Text, TextInput } from 'react-native-paper';
+import Dialog from './Dialog';
 import GroupedRow from './GroupedRow';
 import M3Switch from './M3Switch';
 import Snackbar from './Snackbar';

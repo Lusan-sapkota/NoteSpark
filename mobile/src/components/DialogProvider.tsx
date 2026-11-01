@@ -1,5 +1,6 @@
 import React, { createContext, useCallback, useContext, useState } from 'react';
-import { Button, Dialog, Portal, Text } from 'react-native-paper';
+import { Button, Portal, Text } from 'react-native-paper';
+import Dialog from './Dialog';
 import { useTheme } from '../theme/ThemeContext';
 import { useI18n } from '../i18n/I18nContext';
 

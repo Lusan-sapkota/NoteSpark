@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
-import { Button, Dialog, Portal, Text, TextInput } from 'react-native-paper';
+import { Button, Portal, Text, TextInput } from 'react-native-paper';
+import Dialog from '../../../../mobile/src/components/Dialog';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import qrcode from 'qrcode-generator';
 import { firefly } from '@notespark/core';
@@ -9,7 +10,7 @@ import GroupedRow from '../../../../mobile/src/components/GroupedRow';
 import M3Switch from '../../../../mobile/src/components/M3Switch';
 import { useAlert } from '../../../../mobile/src/components/DialogProvider';
 import { useTheme } from '../../../../mobile/src/theme/ThemeContext';
-import { space } from '../../../../mobile/src/theme/theme';
+import { readingWidth, space } from '../../../../mobile/src/theme/theme';
 import { invoke } from './bridge';
 import { useNavigation } from './nav';
 import { fill, text } from './syncText';
@@ -272,7 +273,7 @@ const SyncScreen = () => {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: space.lg, paddingBottom: space.xl },
-  column: { width: '100%', maxWidth: 720, alignSelf: 'flex-start', gap: space.lg },
+  column: { width: '100%', maxWidth: readingWidth, alignSelf: 'center', gap: space.lg },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
   editRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm, borderRadius: 16 },
   banner: { flexDirection: 'row', alignItems: 'center', padding: space.md, borderRadius: 16, gap: space.sm },

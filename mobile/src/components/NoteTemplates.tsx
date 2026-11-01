@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
-import { Button, Dialog, List } from 'react-native-paper';
+import { Button, List } from 'react-native-paper';
+import Dialog from './Dialog';
 import { isDayTitle, TemplateKind, today } from '@notespark/core';
 import DateCalendar from './DateCalendar';
 import { Note } from '../types';
