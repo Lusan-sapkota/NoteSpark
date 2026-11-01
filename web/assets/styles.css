@@ -453,13 +453,13 @@ code {
 .laptop-screen { position: relative; }
 .find { position: absolute; inset: 0; pointer-events: none; opacity: 0; animation: find-in 15s infinite; }
 @keyframes find-in { 0%, 30% { opacity: 0; } 34%, 62% { opacity: 1; } 66%, 100% { opacity: 0; } }
-.find-bar { position: absolute; left: 2.5%; right: 2.5%; top: 14%; height: 7.2%; display: flex; align-items: center; gap: 6px; padding: 0 3%; border-radius: var(--shape-full); background: var(--surface-container-highest); box-shadow: 0 0 0 2px var(--primary); color: var(--on-surface); font: 400 clamp(8px, 1.1vw, 11px)/14px var(--font-ui); }
+.find-bar { position: absolute; left: 1.6%; right: 68.4%; top: 14.2%; height: 7%; display: flex; align-items: center; gap: 6px; padding: 0 3%; border-radius: var(--shape-full); background: var(--surface-container-highest); box-shadow: 0 0 0 2px var(--primary); color: var(--on-surface); font: 400 clamp(6px, .72vw, 9px)/12px var(--font-ui); }
 .find-bar .i { width: 11px; height: 11px; flex: none; color: var(--on-surface-variant); }
 .find-typed { display: inline-block; overflow: hidden; white-space: nowrap; width: 0; border-right: 2px solid var(--primary); animation: type 15s steps(20) infinite; }
 @keyframes type { 0%, 36% { width: 0; } 46%, 100% { width: 20ch; } }
-.find-card { position: absolute; left: 6%; right: 30%; top: 24%; padding: 2.5% 3.5%; border-radius: var(--shape-group); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); background: var(--primary-container); color: var(--on-primary-container); opacity: 0; animation: card-in 15s infinite; }
-.find-card strong { display: block; font: 600 clamp(9px, 1.3vw, 12px)/16px var(--font-ui); }
-.find-card span { display: block; font: 400 clamp(8px, 1.05vw, 10px)/14px var(--font-ui); }
+.find-card { position: absolute; left: 1.6%; right: 68.4%; top: 23%; padding: 2% 2.4%; border-radius: var(--shape-group); box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25); background: var(--primary-container); color: var(--on-primary-container); opacity: 0; animation: card-in 15s infinite; }
+.find-card strong { display: block; font: 600 clamp(7px, .85vw, 10px)/13px var(--font-ui); }
+.find-card span { display: block; font: 400 clamp(6px, .7vw, 9px)/12px var(--font-ui); }
 @keyframes card-in { 0%, 50% { opacity: 0; translate: 0 12px; } 55%, 62% { opacity: 1; translate: 0 0; } 66%, 100% { opacity: 0; } }
 
 .is-paused, .is-paused * { animation-play-state: paused !important; }
