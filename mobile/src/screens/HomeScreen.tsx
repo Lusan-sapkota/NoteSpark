@@ -76,7 +76,7 @@ const HomeScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   // Wide screens (tablets): controls and FAB line up with the centred list column.
   const { width: windowWidth } = useWindowDimensions();
-  const sidePad = Math.max(space.lg, (windowWidth - readingWidth) / 2);
+  const sidePad = Math.max(space.lg, (windowWidth - readingWidth) / 2 + space.lg);
   const [snackbar, setSnackbar] = useState('');
   // What the snackbar's Undo does, if it has one.
   const [undo, setUndo] = useState<(() => Promise<void>) | null>(null);
