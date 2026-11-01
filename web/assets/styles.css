@@ -276,6 +276,20 @@ code {
 [data-theme="dark"] .shot-dark { display: block; }
 [data-theme="dark"] .shot-light { display: none; }
 
+/* Desktop screenshots: a window frame, 3:2 */
+.window {
+  border-radius: 16px; padding: 6px; background: var(--surface-container-highest);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+[data-theme="dark"] .window { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
+.window img { border-radius: 11px; width: 100%; height: auto; aspect-ratio: 3 / 2; }
+.windows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 32px 24px; }
+.windows figure { margin: 0; }
+.windows figcaption { margin-top: 16px; }
+.windows figcaption strong { display: block; font: 600 16px/24px var(--font-ui); }
+.windows figcaption span { display: block; color: var(--on-surface-variant); font-size: 14px; line-height: 20px; margin-top: 2px; }
+@media (max-width: 760px) { .windows { grid-template-columns: 1fr; } }
+
 /* ---------- Hero: set like a note in the app ---------- */
 .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 48px; align-items: center; padding: 40px 0 72px; }
 .note-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
