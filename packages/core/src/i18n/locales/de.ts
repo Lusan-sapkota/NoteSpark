@@ -833,7 +833,7 @@ const catalog: Record<string, string> = {
   "about.logo": "NoteSpark-Logo",
   "about.version": "Version {version}",
   "about.versionUnknown": "Unbekannt",
-  "about.description": "Eine private Notiz-App, die offline funktioniert. Kein Konto, keine Cloud, keine Werbung. Schreibe in reinem Text oder Markdown und sichere deine Notizen jederzeit als JSON-Datei.",
+  "about.description": "Eine private Notiz-App, die offline funktioniert. Kein Konto, keine Cloud, keine Werbung. Schreibe in reinem Text oder Markdown, behalte Aufgaben direkt in deinen Notizen, finde sie nach Bedeutung und sperre Profile mit einer PIN. Die Synchronisierung zwischen deinen eigenen Geräten ist optional, und nichts verlässt dein eigenes Netzwerk.",
   "about.developer": "Entwickler",
   "about.email": "E-Mail",
   "about.website": "Website",

@@ -799,7 +799,7 @@ const catalog: Record<string, string> = {
   "about.logo": "NoteSparkのロゴ",
   "about.version": "バージョン {version}",
   "about.versionUnknown": "不明",
-  "about.description": "オフラインで動く、プライベートなノートアプリです。アカウントもクラウドも広告もありません。プレーンテキストやMarkdownで書き、ノートはいつでもJSONファイルとしてバックアップできます。",
+  "about.description": "オフラインで動く、プライベートなノートアプリです。アカウントもクラウドも広告もありません。プレーンテキストやMarkdownで書き、タスクをノートの中に置き、意味でノートを探し、PINでプロフィールをロックできます。自分のデバイス間の同期は任意で、データは自分のネットワークの外に出ません。",
   "about.developer": "開発者",
   "about.email": "メール",
   "about.website": "ウェブサイト",

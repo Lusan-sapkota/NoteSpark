@@ -799,7 +799,7 @@ const catalog: Record<string, string> = {
   "about.logo": "NoteSpark 로고",
   "about.version": "버전 {version}",
   "about.versionUnknown": "알 수 없음",
-  "about.description": "오프라인에서 작동하는 비공개 메모 앱이에요. 계정도, 클라우드도, 광고도 없어요. 일반 텍스트나 Markdown으로 작성하고, 원할 때마다 메모를 JSON 파일로 백업할 수 있어요.",
+  "about.description": "오프라인에서 작동하는 비공개 메모 앱이에요. 계정도, 클라우드도, 광고도 없어요. 일반 텍스트나 Markdown으로 작성하고, 메모 안에 할 일을 담고, 의미로 메모를 찾고, PIN으로 프로필을 잠글 수 있어요. 내 기기 간 동기화는 선택 사항이며, 아무것도 내 네트워크 밖으로 나가지 않아요.",
   "about.developer": "개발자",
   "about.email": "이메일",
   "about.website": "웹사이트",

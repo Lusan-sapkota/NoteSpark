@@ -800,7 +800,7 @@ const catalog: Record<string, string> = {
   "about.logo": "Logo NoteSpark",
   "about.version": "Versi {version}",
   "about.versionUnknown": "Tidak diketahui",
-  "about.description": "Aplikasi catatan pribadi yang berjalan offline. Tanpa akun, tanpa cloud, tanpa iklan. Tulis dalam teks biasa atau Markdown, dan cadangkan catatan sebagai file JSON kapan saja.",
+  "about.description": "Aplikasi catatan pribadi yang berjalan offline. Tanpa akun, tanpa cloud, tanpa iklan. Tulis dalam teks biasa atau Markdown, simpan tugas di dalam catatan, temukan catatan berdasarkan makna, dan kunci profil dengan PIN. Sinkronisasi antar perangkat Anda sendiri bersifat opsional, dan tidak ada yang keluar dari jaringan Anda sendiri.",
   "about.developer": "Pengembang",
   "about.email": "Email",
   "about.website": "Situs web",

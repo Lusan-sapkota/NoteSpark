@@ -915,7 +915,7 @@ const catalog: Record<string, string> = {
   "about.logo": "Logotipo do NoteSpark",
   "about.version": "Versão {version}",
   "about.versionUnknown": "Desconhecida",
-  "about.description": "Um app de notas privado que funciona offline. Sem conta, sem nuvem, sem anúncios. Escreva em texto simples ou Markdown e faça backup das suas notas em um arquivo JSON quando quiser.",
+  "about.description": "Um app de notas privado que funciona offline. Sem conta, sem nuvem, sem anúncios. Escreva em texto simples ou Markdown, mantenha tarefas dentro das suas notas, encontre-as pelo significado e proteja perfis com um PIN. A sincronização entre os seus próprios dispositivos é opcional, e nada sai da sua própria rede.",
   "about.developer": "Desenvolvedor",
   "about.email": "E-mail",
   "about.website": "Site",

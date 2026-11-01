@@ -799,7 +799,7 @@ const catalog: Record<string, string> = {
   "about.logo": "NoteSpark 标志",
   "about.version": "版本 {version}",
   "about.versionUnknown": "未知",
-  "about.description": "一款可离线使用的私密笔记应用。无需账号，没有云端，没有广告。可用纯文本或 Markdown 写作，并随时将笔记备份为 JSON 文件。",
+  "about.description": "一款可离线使用的私密笔记应用。无需账号，没有云端，没有广告。可用纯文本或 Markdown 写作，把任务放在笔记里，按含义查找笔记，并用 PIN 锁定个人资料。你自己设备之间的同步是可选的，任何内容都不会离开你自己的网络。",
   "about.developer": "开发者",
   "about.email": "电子邮件",
   "about.website": "网站",

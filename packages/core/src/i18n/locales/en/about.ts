@@ -3,7 +3,7 @@ export default {
   'about.logo': 'NoteSpark logo',
   'about.version': 'Version {version}',
   'about.versionUnknown': 'Unknown',
-  'about.description': 'A private notes app that works offline. No account, no cloud, no ads. Write in plain text or Markdown, and back up your notes as a JSON file whenever you like.',
+  'about.description': 'A private notes app that works offline. No account, no cloud, no ads. Write in plain text or Markdown, keep tasks inside your notes, find them by meaning, and lock profiles with a PIN. Sync between your own devices is optional, and nothing leaves your own network.',
   'about.developer': 'Developer',
   'about.email': 'Email',
   'about.website': 'Website',
