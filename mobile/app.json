@@ -95,6 +95,7 @@
           "widgets": [
             {
               "name": "PinnedNotes",
+              "previewImage": "./assets/widget-preview/pinned-notes.png",
               "label": "NoteSpark",
               "description": "New note and your pinned notes",
               "minWidth": "250dp",
@@ -107,6 +108,7 @@
             },
             {
               "name": "DueTasks",
+              "previewImage": "./assets/widget-preview/due-tasks.png",
               "label": "NoteSpark tasks",
               "description": "Tasks due today and overdue",
               "minWidth": "250dp",
