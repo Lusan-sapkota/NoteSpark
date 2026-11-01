@@ -8,7 +8,7 @@ Private, offline notes. No accounts, no ads, no tracking: your notes stay on you
 
 | Folder | What it is | Status |
 |---|---|---|
-| [`mobile/`](./mobile) | The Android app (Expo, React Native, TypeScript) | Coming soon to Google Play and F-Droid |
+| [`mobile/`](./mobile) | The Android app (Expo, React Native, TypeScript) | Coming soon on GitHub releases, then Google Play |
 | [`desktop/`](./desktop) | Desktop app for Linux, Windows and macOS (Electron), syncing with the phone over your own network | Coming soon |
 | [`docker/`](./docker) | Self-hosted sync hub that keeps every note as Markdown | Coming soon |
 | [`web/`](./web) | The website, [notespark.lusansapkota.com.np](https://notespark.lusansapkota.com.np) | Live |
