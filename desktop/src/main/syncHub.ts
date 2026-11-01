@@ -31,10 +31,10 @@ export interface HubSettings {
   mirrorFolder: string | null;
   webLan: boolean; // the web view also listens on the Wi-Fi (private LAN) addresses
 }
-const defaults = (): HubSettings => ({ format: 1, on: false, name: 'My computer', port: DEFAULT_PORT, tunnelName: '', acceptNew: false, profiles: [], syncIds: {}, mirrorFolder: null, webLan: false });
+const defaults = (): HubSettings => ({ format: 1, on: false, name: 'My computer', port: DEFAULT_PORT, tunnelName: '', acceptNew: true, profiles: [], syncIds: {}, mirrorFolder: null, webLan: false });
 
 const str = (v: unknown, max: number, fallback: string) => (typeof v === 'string' && v.length <= max ? v : fallback);
-// A damaged file means defaults (sync off), never "more open": every field is checked.
+// A damaged file means defaults (sync off): every field is checked. A new profile from a paired device is accepted by default, since profile ids differ on each device.
 export const readSettings = (path: string): HubSettings => {
   const d = defaults();
   let j: any;
@@ -43,7 +43,7 @@ export const readSettings = (path: string): HubSettings => {
   return {
     format: 1, on: j.on === true, name: str(j.name, 64, d.name), tunnelName: str(j.tunnelName, 253, ''),
     port: Number.isInteger(j.port) && j.port >= 1024 && j.port <= 65535 ? j.port : d.port,
-    acceptNew: j.acceptNew === true, webLan: j.webLan === true,
+    acceptNew: typeof j.acceptNew === 'boolean' ? j.acceptNew : d.acceptNew, webLan: j.webLan === true,
     profiles: Array.isArray(j.profiles) ? j.profiles.filter((p: unknown) => typeof p === 'string' && p.length <= 64) : [],
     syncIds: j.syncIds && typeof j.syncIds === 'object' ? Object.fromEntries(Object.entries(j.syncIds).filter(([k, v]) => typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v as string) && k.length <= 64)) as Record<string, string> : {},
     mirrorFolder: typeof j.mirrorFolder === 'string' && j.mirrorFolder.length < 4096 ? j.mirrorFolder : null,

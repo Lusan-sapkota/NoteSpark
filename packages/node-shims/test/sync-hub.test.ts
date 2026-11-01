@@ -169,7 +169,7 @@ test('a protected profile that is locked is never opened and its key never reach
   await hub.stop();
 });
 
-test('hub.json: a damaged file means sync off, odd values are dropped, nothing is read as "more open"', async () => {
+test('hub.json: a damaged file means sync off, odd values fall back to the defaults (accept new profiles is on by default)', async () => {
   const { readSettings } = await import('../../../desktop/src/main/syncHub.ts');
   const { writeFileSync } = await import('node:fs');
   const p = join(dir, 'probe-hub.json');
@@ -177,7 +177,7 @@ test('hub.json: a damaged file means sync off, odd values are dropped, nothing i
   assert.equal(readSettings(p).on, false);
   writeFileSync(p, JSON.stringify({ format: 1, on: 'yes', port: 80, acceptNew: 1, profiles: ['a', 7, { x: 1 }], syncIds: { a: 'bad', b: '00000000-0000-4000-8000-000000000000' }, mirrorFolder: 5 }));
   const s = readSettings(p);
-  assert.deepEqual([s.on, s.port, s.acceptNew, s.profiles, Object.keys(s.syncIds), s.mirrorFolder], [false, 4578, false, ['a'], ['b'], null]);
+  assert.deepEqual([s.on, s.port, s.acceptNew, s.profiles, Object.keys(s.syncIds), s.mirrorFolder], [false, 4578, true, ['a'], ['b'], null]);
   assert.ok(crdt);
 });
 
