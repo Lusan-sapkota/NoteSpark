@@ -238,7 +238,7 @@
       <div class="container">
         <div class="section-head">
           <h2 id="get-title" class="headline-medium">Download NoteSpark</h2>
-          <p class="body-large muted">Pick your device. A package manager (winget, Homebrew) is the easiest way. A file you download yourself can need extra steps, such as marking an AppImage as executable with <code>chmod +x</code>. Each format says whether it is ready.</p>
+          <p class="body-large muted">Pick your device. GitHub releases come first, so you can have it before the stores. Each format says whether it is ready.</p>
         </div>
         <div class="dl-tabs" role="tablist" aria-label="Choose your device"><button type="button" role="tab" id="tab-android" aria-controls="panel-android" aria-selected="false" data-tab="android">Android</button><button type="button" role="tab" id="tab-windows" aria-controls="panel-windows" aria-selected="false" data-tab="windows">Windows</button><button type="button" role="tab" id="tab-macos" aria-controls="panel-macos" aria-selected="false" data-tab="macos">macOS</button><button type="button" role="tab" id="tab-linux" aria-controls="panel-linux" aria-selected="false" data-tab="linux">Linux</button><button type="button" role="tab" id="tab-docker" aria-controls="panel-docker" aria-selected="false" data-tab="docker">Docker</button></div>
         <div class="dl-panel" role="tabpanel" id="panel-android" aria-labelledby="tab-android">
@@ -256,7 +256,7 @@
         <div class="dl-panel" role="tabpanel" id="panel-windows" aria-labelledby="tab-windows">
           <ul class="rows">
             <li>
-              <div class="row-text"><div class="row-title">winget</div><div class="row-desc">The easiest way: one command to install and update.</div></div>
+              <div class="row-text"><div class="row-title">winget</div><div class="row-desc">The easiest way: no extra steps, one command to install and update.</div></div>
               <div class="row-end"><span class="status status-soon">Planned</span></div>
             </li>
             <li>
@@ -268,7 +268,7 @@
         <div class="dl-panel" role="tabpanel" id="panel-macos" aria-labelledby="tab-macos">
           <ul class="rows">
             <li>
-              <div class="row-text"><div class="row-title">Homebrew</div><div class="row-desc">The easiest way: one command to install and update.</div></div>
+              <div class="row-text"><div class="row-title">Homebrew</div><div class="row-desc">The easiest way: no extra steps, one command to install and update.</div></div>
               <div class="row-end"><span class="status status-soon">Planned</span></div>
             </li>
             <li>
@@ -284,7 +284,7 @@
         <div class="dl-panel" role="tabpanel" id="panel-linux" aria-labelledby="tab-linux">
           <ul class="rows">
             <li>
-              <div class="row-text"><div class="row-title">AppImage</div><div class="row-desc">64-bit. One file, no install: mark it executable and open it.</div>
+              <div class="row-text"><div class="row-title">AppImage</div><div class="row-desc">64-bit. One file, no install. Mark it executable with <code>chmod +x</code>, then open it.</div>
               <div class="cmd"><code>chmod +x NoteSpark-*.AppImage &amp;&amp; ./NoteSpark-*.AppImage</code><button type="button" class="copy" aria-label="Copy command">Copy</button></div></div>
               <div class="row-end"><a class="btn btn-tonal" href="https://github.com/Lusan-sapkota/NoteSpark/releases" target="_blank" rel="noopener noreferrer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>Download</a></div>
             </li>
@@ -297,7 +297,7 @@
               <div class="row-end"><span class="status status-soon">Planned</span></div>
             </li>
             <li>
-              <div class="row-text"><div class="row-title">.tar.gz</div><div class="row-desc">Unpack anywhere.</div></div>
+              <div class="row-text"><div class="row-title">.tar.gz</div><div class="row-desc">Unpack anywhere. You may need <code>chmod +x</code> on the app file before it opens.</div></div>
               <div class="row-end"><span class="status status-soon">Planned</span></div>
             </li>
           </ul>
