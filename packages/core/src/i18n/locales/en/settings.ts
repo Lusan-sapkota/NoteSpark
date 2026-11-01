@@ -102,7 +102,7 @@ export default {
   'settings.about': 'About NoteSpark',
   'settings.aboutDescription': 'Version, license and source code',
   'settings.privacy': 'Privacy policy',
-  'settings.privacyDescription': 'Your notes never leave your phone',
+  'settings.privacyDescription': 'Your notes stay on your own devices',
 
   'settings.backupFolder': 'Backup folder',
   'settings.noValidNotes': 'No valid notes found in import data.',
