@@ -74,6 +74,7 @@
           "recordAudioAndroid": false
         }
       ],
+      "./plugins/withWidgetPlaceholder",
       "./plugins/withNoMlKitDownload",
       "./plugins/withSyncService",
       "onnxruntime-react-native",
