@@ -87,6 +87,17 @@
       });
     });
 
+    // Pause button for the hero loop (moving content needs one).
+    var stage = document.querySelector('.hero-stage');
+    var pause = document.getElementById('stage-pause');
+    if (stage && pause) {
+      pause.addEventListener('click', function () {
+        var on = stage.classList.toggle('is-paused');
+        pause.setAttribute('aria-pressed', String(on));
+        pause.textContent = on ? 'Play animation' : 'Pause animation';
+      });
+    }
+
     // Tilt the devices toward the pointer (mouse only).
     var devices = document.getElementById('devices');
     if (devices && !calm && window.matchMedia('(pointer: fine)').matches) {

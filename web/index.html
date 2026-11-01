@@ -88,11 +88,17 @@
           <div class="progress" aria-hidden="true"><span></span>4 of 4 done</div>
         </div>
 
+        <div class="hero-stage">
+          <div class="sync-badge" aria-hidden="true"><svg class="i" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="13" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span class="track"><i></i><i></i><i></i></span><svg class="i" viewBox="0 0 24 24"><rect x="6" y="2" width="12" height="20" rx="2.5"/><path d="M11 18h2"/></svg><span>Nothing leaves your own network</span></div>
         <div class="hero-devices" id="devices" role="group" aria-label="NoteSpark on a laptop and a phone">
           <div class="laptop">
             <div class="laptop-screen">
               <img class="shot-light" src="./assets/screens/desktop-home-light.webp" alt="The desktop app's Home: search, tag filters and pinned notes" width="1440" height="960" />
               <img class="shot-dark" src="./assets/screens/desktop-home-dark.webp" alt="The desktop app's Home: search, tag filters and pinned notes" width="1440" height="960" />
+              <div class="find" aria-hidden="true">
+                <div class="find-bar"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="find-typed">making bread at home</span></div>
+                <div class="find-card"><strong>Sourdough starter</strong><span>Feed every 12 hours: 50 g rye flour, 50 g water at 26 °C. It's ready when it doubles and smells like green apples.</span></div>
+              </div>
             </div>
             <div class="laptop-base" aria-hidden="true"></div>
           </div>
@@ -100,6 +106,9 @@
             <img class="shot-light" src="./assets/screens/note-light.webp" alt="A note on the phone, with a checklist and due dates" width="540" height="1200" />
             <img class="shot-dark" src="./assets/screens/note-dark.webp" alt="A note on the phone, with a checklist and due dates" width="540" height="1200" />
           </div>
+        </div>
+          <div class="stage-caption" aria-hidden="true"><span>Write a note and keep tasks inside it</span><span>Find it by meaning, not just words</span><span>The same notes on every device</span></div>
+          <button type="button" class="stage-pause" id="stage-pause" aria-pressed="false">Pause animation</button>
         </div>
       </section>
     </div>

@@ -452,3 +452,51 @@ code {
 .cmd-line .row-end { margin-left: 0; padding-left: 0; align-self: center; }
 @media (max-width: 600px) { .cmd-line { flex-wrap: wrap; } .cmd-line .cmd { flex-basis: 100%; } }
 .dl-panel .rows { grid-template-columns: minmax(0, 1fr); } .dl-panel .rows li, .cmd-line, .cmd { min-width: 0; }
+
+/* ---------- Hero motion: write, find, sync, 15 s loop ---------- */
+.hero-stage { justify-self: end; width: 100%; max-width: 640px; }
+@media (max-width: 900px) { .hero-stage { justify-self: center; } }
+.hero-stage .hero-devices { justify-self: auto; margin-top: 8px; }
+.sync-badge {
+  display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; padding: 0 16px;
+  border-radius: var(--shape-full); background: var(--tertiary-container); color: var(--on-tertiary-container);
+  font: 500 14px/20px var(--font-ui); width: fit-content; margin: 0 auto; opacity: 0; animation: scene-3 15s infinite;
+}
+.sync-badge .i { width: 20px; height: 20px; }
+.track { position: relative; width: 56px; height: 4px; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, var(--on-tertiary-container) 25%, transparent); }
+.track i { position: absolute; top: 0; left: -8px; width: 8px; height: 4px; border-radius: 2px; background: var(--on-tertiary-container); animation: hop 1.2s linear infinite; }
+.track i:nth-child(2) { animation-delay: -.4s; } .track i:nth-child(3) { animation-delay: -.8s; }
+@keyframes hop { to { transform: translateX(72px); } }
+.stage-caption { position: relative; height: 32px; margin-top: 16px; text-align: center; }
+.stage-caption span { position: absolute; inset: 0; opacity: 0; font: 600 16px/24px var(--font-ui); color: var(--on-surface); }
+.stage-caption span:nth-child(1) { animation: scene-1 15s infinite; }
+.stage-caption span:nth-child(2) { animation: scene-2 15s infinite; }
+.stage-caption span:nth-child(3) { animation: scene-3 15s infinite; }
+.stage-pause { display: block; margin: 4px auto 0; min-height: 48px; padding: 0 16px; border: 0; background: transparent; color: var(--on-surface-variant); font: 500 13px/16px var(--font-ui); cursor: pointer; border-radius: var(--shape-full); }
+.stage-pause:hover { background: var(--surface-container-high); }
+@keyframes scene-1 { 0% { opacity: 0; } 3%, 26% { opacity: 1; } 30%, 100% { opacity: 0; } }
+@keyframes scene-2 { 0%, 30% { opacity: 0; } 34%, 58% { opacity: 1; } 62%, 100% { opacity: 0; } }
+@keyframes scene-3 { 0%, 64% { opacity: 0; } 68%, 95% { opacity: 1; } 99%, 100% { opacity: 0; } }
+
+/* The phone slides in once; the search overlay plays on the laptop screen. */
+.hero-devices .phone { animation: phone-in 900ms cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes phone-in { from { translate: 0 48px; opacity: 0; } to { translate: 0 0; opacity: 1; } }
+.laptop-screen { position: relative; }
+.find { position: absolute; inset: 8px; border-radius: 9px; background: var(--background); padding: 8% 10%; opacity: 0; animation: find-in 15s infinite; overflow: hidden; }
+@keyframes find-in { 0%, 30% { opacity: 0; } 34%, 62% { opacity: 1; } 66%, 100% { opacity: 0; } }
+.find-bar { display: flex; align-items: center; gap: 12px; min-height: 48px; padding: 0 16px; border-radius: var(--shape-full); background: var(--surface-container-high); color: var(--on-surface); font: 400 clamp(11px, 1.9vw, 16px)/20px var(--font-ui); }
+.find-bar .i { width: 20px; height: 20px; flex: none; color: var(--on-surface-variant); }
+.find-typed { display: inline-block; overflow: hidden; white-space: nowrap; width: 0; border-right: 2px solid var(--primary); animation: type 15s steps(20) infinite; }
+@keyframes type { 0%, 36% { width: 0; } 46%, 100% { width: 20ch; } }
+.find-card { margin-top: 14px; padding: 14px 16px; border-radius: var(--shape-group); background: var(--primary-container); color: var(--on-primary-container); opacity: 0; animation: card-in 15s infinite; }
+.find-card strong { display: block; font: 600 clamp(12px, 2vw, 16px)/24px var(--font-ui); }
+.find-card span { display: block; font: 400 clamp(10px, 1.6vw, 14px)/18px var(--font-ui); }
+@keyframes card-in { 0%, 50% { opacity: 0; translate: 0 12px; } 55%, 62% { opacity: 1; translate: 0 0; } 66%, 100% { opacity: 0; } }
+
+.is-paused, .is-paused * { animation-play-state: paused !important; }
+@media (prefers-reduced-motion: reduce) {
+  .sync-badge, .stage-caption span:nth-child(3) { animation: none; opacity: 1; }
+  .stage-caption span:nth-child(1), .stage-caption span:nth-child(2), .find, .track i, .hero-devices .phone, .find-typed, .find-card { animation: none; }
+  .stage-pause { display: none; }
+}
+@media (max-width: 600px) { .sync-badge { border-radius: var(--shape-group); padding: 8px 16px; font-size: 13px; line-height: 18px; max-width: 100%; } .track { width: 32px; } @keyframes hop { to { transform: translateX(48px); } } }
