@@ -441,12 +441,14 @@ code {
 .dl-panel .rows li { align-items: center; }
 .dl-panel .row-text { flex: 1; min-width: 0; }
 .dl-panel .row-end { flex: none; }
-.cmd { display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 6px 6px 6px 12px; background: var(--surface-container-highest); border-radius: var(--shape-control); max-width: 100%; }
+.cmd { display: flex; align-items: center; gap: 8px; min-height: 48px; margin-top: 10px; padding: 6px 6px 6px 12px; background: var(--surface-container-highest); border-radius: var(--shape-control); max-width: 100%; }
 .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; background: transparent; padding: 0; font-size: 13px; }
 .copy { min-height: 36px; padding: 0 14px; border: 0; border-radius: var(--shape-full); background: var(--primary-container); color: var(--on-primary-container); font: 500 13px/16px var(--font-ui); cursor: pointer; }
 @media (max-width: 600px) { .dl-panel .rows li { flex-wrap: wrap; } }
 .shots-label { margin: 8px 4px 12px; } .windows { margin-top: 0; } .screens + .shots-label { margin-top: 32px; }
 .dl-panel .rows li.has-cmd { display: block; }
-.row-head { display: flex; align-items: center; gap: 16px; }
-.row-head .row-end { margin-left: auto; padding-left: 0; }
-.has-cmd .cmd { margin-top: 12px; }
+.cmd-line { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
+.cmd-line .cmd { flex: 1; margin-top: 0; }
+.cmd-line .row-end { margin-left: 0; padding-left: 0; align-self: center; }
+@media (max-width: 600px) { .cmd-line { flex-wrap: wrap; } .cmd-line .cmd { flex-basis: 100%; } }
+.dl-panel .rows { grid-template-columns: minmax(0, 1fr); } .dl-panel .rows li, .cmd-line, .cmd { min-width: 0; }
