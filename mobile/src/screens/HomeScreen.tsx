@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, useDeferredValue } from 'react';
-import { BackHandler, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
+import { BackHandler, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { AnimatedFAB, Appbar, Badge, Button, Chip, Dialog, Divider, Icon, IconButton, List, Portal, Searchbar, Text, TextInput, TouchableRipple } from 'react-native-paper';
@@ -24,7 +24,7 @@ import NoteItem, { toPreview } from '../components/NoteItem';
 import { hideRediscoverToday, isRediscoverHiddenToday, isRediscoverOn, pickRediscovery, Rediscovery } from '../utils/rediscover';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
-import { groupCorners, shape, space } from '../theme/theme';
+import { groupCorners, readingWidth, shape, space } from '../theme/theme';
 import { useI18n } from '../i18n/I18nContext';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -74,6 +74,9 @@ const HomeScreen: React.FC = () => {
   const [templateVisible, setTemplateVisible] = useState(false);
   const [fabExtended, setFabExtended] = useState(true);
   const insets = useSafeAreaInsets();
+  // Wide screens (tablets): controls and FAB line up with the centred list column.
+  const { width: windowWidth } = useWindowDimensions();
+  const sidePad = Math.max(space.lg, (windowWidth - readingWidth) / 2);
   const [snackbar, setSnackbar] = useState('');
   // What the snackbar's Undo does, if it has one.
   const [undo, setUndo] = useState<(() => Promise<void>) | null>(null);
@@ -775,7 +778,7 @@ const HomeScreen: React.FC = () => {
         />
       )}
 
-      <View style={[styles.controls, { backgroundColor: elevated ? theme.colors.elevation.level2 : theme.colors.background }]}>
+      <View style={[styles.controls, { paddingHorizontal: sidePad, backgroundColor: elevated ? theme.colors.elevation.level2 : theme.colors.background }]}>
         <Searchbar
           placeholder={t('home.searchNotes')}
           value={searchText}
@@ -939,7 +942,7 @@ const HomeScreen: React.FC = () => {
           animateFrom="right"
           accessibilityLabel={t('home.newNote')}
           // The firefly: a soft primary glow under the FAB in dark mode (Android 9+ tints elevation shadows).
-          style={[styles.fab, { bottom: space.lg + insets.bottom }, isDarkMode && { shadowColor: theme.colors.primary }]}
+          style={[styles.fab, { right: sidePad, bottom: space.lg + insets.bottom }, isDarkMode && { shadowColor: theme.colors.primary }]}
         />
       )}
 
@@ -1116,6 +1119,9 @@ const styles = StyleSheet.create({
   },
   listContent: {
     flexGrow: 1,
+    width: '100%',
+    maxWidth: readingWidth,
+    alignSelf: 'center',
     paddingTop: space.xs,
     paddingBottom: 96,
   },
