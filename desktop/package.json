@@ -1,6 +1,6 @@
 {
   "name": "notespark-desktop",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "private": true,
   "description": "NoteSpark for desktop",
   "author": "Lusan Sapkota",
@@ -49,6 +49,7 @@
     "asar": true,
     "publish": null,
     "linux": {
+      "artifactName": "NoteSpark-linux-x64.${ext}",
       "target": [
         "AppImage"
       ],
