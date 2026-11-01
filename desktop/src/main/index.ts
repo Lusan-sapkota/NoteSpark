@@ -65,7 +65,6 @@ const createWindow = () => {
     height: 700,
     minWidth: 480,
     minHeight: 400,
-    show: false,
     icon,
     title: 'NoteSpark',
     titleBarStyle: 'hidden',
@@ -84,7 +83,6 @@ const createWindow = () => {
   let moved: NodeJS.Timeout | undefined;
   win.on('move', () => { clearTimeout(moved); moved = setTimeout(() => void applyZoom(), 300); });
   win.on('closed', () => clearTimeout(moved));
-  win.once('ready-to-show', () => win.show());
   const tellState = () => { if (!win.isDestroyed()) win.webContents.send('window:state', { maximized: win.isMaximized() || win.isFullScreen() }); };
   for (const event of ['maximize', 'unmaximize', 'enter-full-screen', 'leave-full-screen'] as const) win.on(event as 'maximize', tellState);
   // Track focus for the auto-lock timer.

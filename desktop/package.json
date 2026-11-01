@@ -72,7 +72,7 @@
         ]
       }
     ],
-    "compression": "maximum"
+    "compression": "normal"
   },
   "dependencies": {
     "@expo/vector-icons": "15.1.1",
