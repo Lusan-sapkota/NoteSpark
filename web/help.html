@@ -215,7 +215,7 @@
         <ul class="policy-bullets body-large">
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span><strong>Linux today.</strong> The app ships as an AppImage; mark it executable with <code>chmod +x</code>, then open it. Windows and macOS are not built yet.</span>
+            <span><strong>Linux today.</strong> The app ships as an AppImage; mark it executable with <code>chmod +x</code>, then open it. On Ubuntu 22.04 and newer, an AppImage needs <code>libfuse2</code> (<code>sudo apt install libfuse2</code>), or start it with <code>--appimage-extract-and-run</code>. On Ubuntu 23.10 and newer, the sandbox may also need an AppArmor profile; if it stops with "No usable sandbox", see the desktop README. The AppImage does not update itself. Windows and macOS are not built yet.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>

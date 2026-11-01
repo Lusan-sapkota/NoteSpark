@@ -89,7 +89,7 @@
             <a class="btn btn-tonal btn-lg" href="#get">All downloads</a>
             <a class="btn btn-text btn-lg" href="https://github.com/Lusan-sapkota/NoteSpark" target="_blank" rel="noopener noreferrer">View the source</a>
           </div>
-          <p class="body-medium muted dl-note" id="dl-note">Free and open source (GPLv3). Builds are published on GitHub releases as they are ready, with Google Play to follow.</p>
+          <p class="body-medium muted dl-note" id="dl-note">Free and open source (GPLv3). Download the Android APK or the Linux AppImage from GitHub releases. Google Play is coming.</p>
           <ul class="promises" aria-label="What NoteSpark promises">
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor"/><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="var(--on-primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>No account to create</li>
             <li><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3" fill="currentColor"/><path d="m7.5 12.5 3 3 6-7" fill="none" stroke="var(--on-primary)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>No ads, analytics or tracking</li>
@@ -289,8 +289,8 @@
         <div class="dl-panel" role="tabpanel" id="panel-android" aria-labelledby="tab-android">
           <ul class="rows">
             <li>
-              <div class="row-text"><div class="row-title">APK</div><div class="row-desc">Install the file directly. Android may ask you to allow installs from your browser or files app.</div></div>
-              <div class="row-end"><a class="btn btn-tonal" href="https://github.com/Lusan-sapkota/NoteSpark/releases" target="_blank" rel="noopener noreferrer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>Download</a></div>
+              <div class="row-text"><div class="row-title">APK</div><div class="row-desc">Install the file directly. Android may ask you to allow installs from your browser or files app. It does not update itself: download the next version when you want it. It is signed differently from the Play version, so you can't switch between the two without uninstalling first.</div></div>
+              <div class="row-end"><a class="btn btn-tonal" href="https://github.com/Lusan-sapkota/NoteSpark/releases/latest/download/NoteSpark-android.apk" target="_blank" rel="noopener noreferrer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>Download</a></div>
             </li>
             <li>
               <div class="row-text"><div class="row-title">Google Play</div><div class="row-desc">Updates through the Play Store, after the GitHub release.</div></div>
@@ -329,10 +329,10 @@
         <div class="dl-panel" role="tabpanel" id="panel-linux" aria-labelledby="tab-linux">
           <ul class="rows">
             <li class="has-cmd">
-              <div class="row-text"><div class="row-title">AppImage</div><div class="row-desc">64-bit. One file, no install. Mark it executable with <code>chmod +x</code>, then open it.</div></div>
+              <div class="row-text"><div class="row-title">AppImage</div><div class="row-desc">64-bit. One file, no install. Mark it executable with <code>chmod +x</code>, then open it. It does not update itself. If it won't start on Ubuntu 22.04 or newer, install <code>libfuse2</code> or run it with <code>--appimage-extract-and-run</code>.</div></div>
               <div class="cmd-line">
                 <div class="cmd"><code>chmod +x NoteSpark-*.AppImage &amp;&amp; ./NoteSpark-*.AppImage</code><button type="button" class="copy" aria-label="Copy command">Copy</button></div>
-                <div class="row-end"><a class="btn btn-tonal" href="https://github.com/Lusan-sapkota/NoteSpark/releases" target="_blank" rel="noopener noreferrer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>Download</a></div>
+                <div class="row-end"><a class="btn btn-tonal" href="https://github.com/Lusan-sapkota/NoteSpark/releases/latest/download/NoteSpark-linux-x64.AppImage" target="_blank" rel="noopener noreferrer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>Download</a></div>
               </div>
             </li>
             <li>
@@ -357,7 +357,7 @@
             </li>
           </ul>
         </div>
-        <p class="body-medium muted dl-foot">Releases are listed at <a href="https://github.com/Lusan-sapkota/NoteSpark/releases" target="_blank" rel="noopener noreferrer">github.com/Lusan-sapkota/NoteSpark/releases</a>. Nothing is downloaded until you choose to.</p>
+        <p class="body-medium muted dl-foot">Each release has a <code>SHA256SUMS</code> file so you can check your download. Releases are listed at <a href="https://github.com/Lusan-sapkota/NoteSpark/releases" target="_blank" rel="noopener noreferrer">github.com/Lusan-sapkota/NoteSpark/releases</a>. Nothing is downloaded until you choose to.</p>
       </div>
     </section>
 

@@ -59,6 +59,10 @@
     var ua = navigator.userAgent;
     var platform = /Android/i.test(ua) ? 'and' : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? 'lin' : '';
     var label = document.getElementById('dl-main-label');
+    var dlMain = document.getElementById('dl-main');
+    var direct = 'https://github.com/Lusan-sapkota/NoteSpark/releases/latest/download/';
+    if (dlMain && platform === 'and') dlMain.href = direct + 'NoteSpark-android.apk';
+    if (dlMain && platform === 'lin') dlMain.href = direct + 'NoteSpark-linux-x64.AppImage';
     var dlNote = document.getElementById('dl-note');
     if (label && platform === 'and') label.textContent = 'Download for Android';
     if (label && platform === 'lin') label.textContent = 'Download for Linux';
