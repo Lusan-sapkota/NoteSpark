@@ -214,7 +214,7 @@ code {
 .reading { font-family: var(--font-note); font-size: 19px; line-height: 31px; }
 .muted { color: var(--on-surface-variant); }
 
-.container { width: 100%; max-width: 1160px; margin: 0 auto; padding: 0 24px; }
+.container { width: 100%; max-width: 1320px; margin: 0 auto; padding: 0 24px; }
 @media (max-width: 600px) { .container { padding: 0 16px; } }
 
 /* ---------- Header ---------- */
@@ -505,3 +505,28 @@ code {
 .help-steps { margin: 8px 0; padding-left: 24px; display: grid; gap: 10px; }
 .help-steps li::marker { color: var(--primary); font-weight: 600; }
 .policy-section[id] { scroll-margin-top: 80px; }
+
+/* ---------- Text pages on wide screens: contents rail + centred reading column ---------- */
+.doc-toc { display: none; }
+.doc-layout .reading-column { padding: 0; }
+.doc-toc .title-small { margin-bottom: 8px; padding-left: 12px; }
+.doc-toc ul { list-style: none; margin: 0; padding: 0; }
+.doc-toc ul ul { margin: 2px 0 6px 12px; }
+.doc-toc a { display: flex; align-items: center; min-height: 40px; padding: 6px 12px; border-radius: var(--shape-control); color: var(--on-surface-variant); text-decoration: none; font: 500 14px/20px var(--font-ui); }
+.doc-toc ul ul a { min-height: 36px; font-weight: 400; }
+.doc-toc a:hover { background: var(--surface-container-high); color: var(--on-surface); }
+.doc-layout h2[id], .doc-layout h3[id], .doc-layout section[id] { scroll-margin-top: 88px; }
+@media (min-width: 1100px) {
+  .doc-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 680px) minmax(0, 1fr); gap: 0 48px; align-items: start; }
+  .doc-toc { display: block; position: sticky; top: 88px; grid-column: 1; max-width: 260px; max-height: calc(100vh - 112px); overflow-y: auto; }
+  .doc-layout .reading-column { grid-column: 2; }
+  .help-toc { display: none; }
+}
+@media (min-width: 1100px) and (max-width: 1299px) { .doc-layout { grid-template-columns: 220px minmax(0, 680px); justify-content: center; } }
+
+/* Very wide screens: a wider shared container (header, pages, footer) and larger hero devices */
+@media (min-width: 1800px) {
+  .container { max-width: 1480px; }
+  .hero { gap: 72px; }
+  .hero-stage, .hero-devices { max-width: 760px; }
+}
