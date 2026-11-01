@@ -295,6 +295,12 @@ const Shell = () => {
   }, [refresh]);
   // Native window colors (scrollbars, dialogs) follow the choice; only the desktop window owns that.
   useEffect(() => { if (isDesktop) invoke('theme:set', themeType); }, [themeType]);
+  // Scrollbars use the theme's own colors; the system's dark scrollbar is not applied on every desktop (the track stayed white).
+  useEffect(() => {
+    const root = document.documentElement.style;
+    root.setProperty('--scroll-thumb', theme.colors.outlineVariant);
+    root.setProperty('--scroll-track', theme.colors.background);
+  }, [theme]);
   if (lock?.phase === 'ready') opened.current = true;
 
   const unlock = async (pin: string) => {
