@@ -57,7 +57,7 @@
             "enableMinifyInReleaseBuilds": true,
             "enableShrinkResourcesInReleaseBuilds": true,
             "usesCleartextTraffic": true,
-            "extraProguardRules": "-keep class * extends androidx.room.RoomDatabase { <init>(); }"
+            "extraProguardRules": "-keep class * extends androidx.room.RoomDatabase { <init>(); }\n-keep class ai.onnxruntime.** { *; }"
           }
         }
       ],
