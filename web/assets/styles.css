@@ -289,8 +289,8 @@ code {
 .progress span { display: block; width: 96px; height: 4px; border-radius: var(--shape-full); background: var(--secondary); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
 /* One laptop with a phone in front of its corner: the same notes on every device. */
-.hero-devices { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1 / 0.8; justify-self: end; }
-.laptop { position: absolute; left: 0; top: 4%; width: 88%; }
+.hero-devices { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1 / 0.87; justify-self: end; }
+.laptop { position: absolute; left: 0; top: 0; width: 93.6%; }
 .laptop-screen {
   border-radius: 16px 16px 6px 6px; padding: 8px; background: var(--surface-container-highest);
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.12);
@@ -298,7 +298,7 @@ code {
 .laptop-screen img { display: block; width: 100%; height: auto; aspect-ratio: 3 / 2; border-radius: 9px 9px 2px 2px; }
 .laptop-base { height: 12px; margin: 0 -5%; border-radius: 2px 2px 14px 14px; background: var(--outline-variant); position: relative; }
 .laptop-base::after { content: ""; position: absolute; left: 50%; top: 0; width: 18%; height: 5px; transform: translateX(-50%); border-radius: 0 0 8px 8px; background: var(--surface-container-highest); }
-.hero-devices .phone { position: absolute; right: 0; bottom: 0; width: 27%; padding: 5px; border-radius: 22px; }
+.hero-devices .phone { position: absolute; right: 0; bottom: 0; width: 26.6%; padding: 5px; border-radius: 22px; }
 .hero-devices .phone img { border-radius: 17px; }
 [data-theme="dark"] .laptop-screen { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
 @media (max-width: 900px) {
@@ -429,7 +429,7 @@ code {
 .sync-badge {
   display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; padding: 0 16px;
   border-radius: var(--shape-full); background: var(--tertiary-container); color: var(--on-tertiary-container);
-  font: 500 14px/20px var(--font-ui); width: fit-content; margin: 0 auto; opacity: 0; animation: scene-4 24s infinite;
+  font: 500 14px/20px var(--font-ui); width: fit-content; margin: 0 auto; opacity: 0; animation: scene-1 24s infinite;
 }
 .sync-badge .i { width: 20px; height: 20px; }
 .track { position: relative; width: 56px; height: 4px; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, var(--on-tertiary-container) 25%, transparent); }
@@ -468,7 +468,7 @@ code {
 .is-paused, .is-paused * { animation-play-state: paused !important; }
 @media (prefers-reduced-motion: reduce) {
   .sync-badge, .stage-caption span:nth-child(4) { animation: none; opacity: 1; }
-  .stage-caption span:nth-child(1), .stage-caption span:nth-child(2), .stage-caption span:nth-child(3), .swap, .find, .track i, .hero-devices .phone, .find-typed, .find-card { animation: none; }
+  .stage-caption span:nth-child(1), .stage-caption span:nth-child(2), .stage-caption span:nth-child(3), .ovl, .find, .track i, .hero-devices .phone, .find-typed, .find-card { animation: none; }
   .stage-pause { display: none; }
 }
 @media (max-width: 600px) { .sync-badge { border-radius: var(--shape-group); padding: 8px 16px; font-size: 13px; line-height: 18px; max-width: 100%; } .track { width: 32px; } @keyframes hop { to { transform: translateX(48px); } } }
@@ -534,18 +534,41 @@ code {
   .hero-stage, .hero-devices { max-width: 760px; }
 }
 
-/* Hero: the tasks screens fade in over the note screens in scene 2. */
-.swap { position: absolute; inset: 0; opacity: 0; animation: scene-2 24s infinite; background: var(--background); }
-.laptop-screen .swap { inset: 8px; border-radius: 9px 9px 2px 2px; overflow: hidden; }
-.hero-devices .phone .swap { inset: 5px; border-radius: 17px; overflow: hidden; }
-.swap img { width: 100%; height: 100%; object-fit: cover; }
-.laptop-screen .swap .shot-dark { display: none; }
-[data-theme="dark"] .laptop-screen .swap .shot-dark { display: block; }
-[data-theme="dark"] .laptop-screen .swap .shot-light { display: none; }
-@media (prefers-reduced-motion: reduce) { .swap { animation: none; opacity: 0; } }
+
+/* ---------- Hero: one 24 s loop, four 6 s scenes ----------
+   1 Tick a task: the laptop, then the tablet, then the phone follow (the sync badge shows).
+   2 Tasks: the Tasks screens wipe in from the right, one after another.
+   3 Find: search types on the laptop; the tablet and phone wipe to their search and list screens.
+   4 Light, dark, or your system: a circle of the other theme opens from the top right on each device, then closes. */
+.ovl { position: absolute; inset: 0; opacity: 0; pointer-events: none; background: var(--background); }
+.laptop-screen .ovl { inset: 8px; border-radius: 9px 9px 2px 2px; overflow: hidden; }
+.hero-devices .tablet .ovl { inset: 5px; border-radius: 11px; overflow: hidden; }
+.hero-devices .phone .ovl { inset: 5px; border-radius: 17px; overflow: hidden; }
+.ovl img { width: 100%; height: 100%; object-fit: cover; vertical-align: top; }
+.o-flip .fl-light { display: none; }
+[data-theme="dark"] .o-flip .fl-light { display: block; }
+[data-theme="dark"] .o-flip .fl-dark { display: none; }
+.hero-devices .tablet img.shot-light, .hero-devices .tablet img.shot-dark { width: 100%; height: auto; aspect-ratio: 16 / 10; border-radius: 11px; vertical-align: top; }
+.hero-devices .tablet .ovl img { height: 100%; aspect-ratio: auto; border-radius: 0; }
+.o-tick-L { animation: tick-L 24s infinite; } .o-tick-T { animation: tick-T 24s infinite; } .o-tick-P { animation: tick-P 24s infinite; }
+.o-tasks-L { animation: tasks-L 24s infinite; } .o-tasks-T { animation: tasks-T 24s infinite; } .o-tasks-P { animation: tasks-P 24s infinite; }
+.o-find-T { animation: find-T 24s infinite; } .o-find-P { animation: find-P 24s infinite; }
+.o-flip-L { animation: flip-L 24s infinite; } .o-flip-T { animation: flip-T 24s infinite; } .o-flip-P { animation: flip-P 24s infinite; }
+@keyframes tick-L { 0%, 8% { opacity: 0; } 9.5%, 97% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tasks-L { 0%, 25% { opacity: 1; clip-path: inset(0 0 0 100%); } 28.5%, 48% { opacity: 1; clip-path: inset(0); } 50%, 100% { opacity: 0; clip-path: inset(0); } }
+@keyframes flip-L { 0%, 76% { opacity: 1; clip-path: circle(0% at 90% 8%); } 83%, 94% { opacity: 1; clip-path: circle(150% at 90% 8%); } 99%, 100% { opacity: 1; clip-path: circle(0% at 90% 8%); } }
+@keyframes tick-T { 0%, 11% { opacity: 0; } 12.5%, 97% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tasks-T { 0%, 26.5% { opacity: 1; clip-path: inset(0 0 0 100%); } 30.0%, 48% { opacity: 1; clip-path: inset(0); } 50%, 100% { opacity: 0; clip-path: inset(0); } }
+@keyframes flip-T { 0%, 77.5% { opacity: 1; clip-path: circle(0% at 90% 8%); } 84.5%, 94% { opacity: 1; clip-path: circle(150% at 90% 8%); } 99%, 100% { opacity: 1; clip-path: circle(0% at 90% 8%); } }
+@keyframes find-T { 0%, 52% { opacity: 1; clip-path: inset(0 0 0 100%); } 55.5%, 73% { opacity: 1; clip-path: inset(0); } 75%, 100% { opacity: 0; clip-path: inset(0); } }
+@keyframes tick-P { 0%, 14% { opacity: 0; } 15.5%, 97% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes tasks-P { 0%, 28% { opacity: 1; clip-path: inset(0 0 0 100%); } 31.5%, 48% { opacity: 1; clip-path: inset(0); } 50%, 100% { opacity: 0; clip-path: inset(0); } }
+@keyframes flip-P { 0%, 79% { opacity: 1; clip-path: circle(0% at 90% 8%); } 86%, 94% { opacity: 1; clip-path: circle(150% at 90% 8%); } 99%, 100% { opacity: 1; clip-path: circle(0% at 90% 8%); } }
+@keyframes find-P { 0%, 53.5% { opacity: 1; clip-path: inset(0 0 0 100%); } 57.0%, 73% { opacity: 1; clip-path: inset(0); } 75%, 100% { opacity: 0; clip-path: inset(0); } }
+@media (prefers-reduced-motion: reduce) { .ovl { animation: none; opacity: 0; } }
 
 /* Showcase: a tablet in front of the laptop's lower left, between laptop and phone. */
-.hero-devices .tablet { position: absolute; left: 5%; bottom: 0; width: 46%; padding: 5px; border-radius: 16px; background: var(--surface-container-highest); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.14); }
+.hero-devices .tablet { position: absolute; left: 23.9%; bottom: 0; width: 48.8%; padding: 5px; border-radius: 16px; background: var(--surface-container-highest); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 12px 32px rgba(0, 0, 0, 0.14); }
 [data-theme="dark"] .hero-devices .tablet { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
 .tablet.layers img { aspect-ratio: 16 / 10; border-radius: 11px; }
-.show-devices { aspect-ratio: 1 / 0.92; }
+
