@@ -572,3 +572,17 @@ code {
 [data-theme="dark"] .hero-devices .tablet { box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5); }
 .tablet.layers img { aspect-ratio: 16 / 10; border-radius: 11px; }
 
+
+/* ---------- Small screens: the main links in a menu (the desktop nav is hidden under 760 px) ---------- */
+.nav-menu { display: none; position: relative; }
+.nav-menu summary { list-style: none; width: 48px; height: 48px; display: grid; place-items: center; border-radius: var(--shape-control); cursor: pointer; color: var(--on-surface); }
+.nav-menu summary::-webkit-details-marker { display: none; }
+.nav-menu summary:hover { background: var(--surface-container-high); }
+.nav-menu[open] summary { background: var(--secondary-container); color: var(--on-secondary-container); }
+.nav-menu summary svg { width: 24px; height: 24px; }
+.nav-menu nav { position: absolute; right: 0; top: calc(100% + 8px); z-index: 6; min-width: 220px; display: grid; gap: 2px; padding: 8px; border-radius: var(--shape-group); background: var(--surface-container-high); box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1), 0 12px 32px rgba(0, 0, 0, 0.18); }
+.nav-menu nav a { display: flex; align-items: center; min-height: 48px; padding: 0 16px; border-radius: var(--shape-control); color: var(--on-surface); text-decoration: none; font: 500 15px/20px var(--font-ui); }
+.nav-menu nav a:hover { background: var(--surface-container-highest); }
+.nav-menu nav a[aria-current="page"] { background: var(--secondary-container); color: var(--on-secondary-container); }
+@media (max-width: 760px) { .nav-menu { display: block; } .header-inner { gap: 8px; } }
+@media (max-width: 400px) { .brand span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }

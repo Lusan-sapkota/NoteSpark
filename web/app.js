@@ -38,6 +38,14 @@
       });
     });
 
+    // Small-screen menu: close after choosing a link, on Escape and on a tap outside.
+    var menu = document.querySelector('.nav-menu');
+    if (menu) {
+      menu.addEventListener('click', function (e) { if (e.target.closest('a')) menu.removeAttribute('open'); });
+      document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && menu.open) { menu.removeAttribute('open'); menu.querySelector('summary').focus(); } });
+      document.addEventListener('click', function (e) { if (menu.open && !menu.contains(e.target)) menu.removeAttribute('open'); });
+    }
+
     var header = document.querySelector('.site-header');
     var onScroll = function () {
       header.classList.toggle('is-scrolled', window.scrollY > 4);
