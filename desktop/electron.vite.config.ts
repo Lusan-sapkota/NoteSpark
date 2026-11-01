@@ -99,11 +99,6 @@ export default defineConfig({
             if (!code.includes(from)) throw new Error(`desktop-copy: "${from.slice(0, 50)}" not found in ${id}`);
             code = code.replaceAll(from, to);
           };
-          if (id.endsWith('mobile/src/screens/HomeScreen.tsx')) {
-            // The desktop header already carries the app's name and logo; this row names the place.
-            replace(": 'NoteSpark'}", ": 'Notes'}");
-            return code;
-          }
           if (id.endsWith('mobile/src/screens/ProfileLockScreen.tsx')) {
             // No fingerprint on desktop (no cross-platform Electron API): drop it and make PIN last.
             const start = code.indexOf('<LockChoice\n              icon={fingerprintReady');
