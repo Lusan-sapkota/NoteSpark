@@ -43,12 +43,12 @@ There is an 80-second [demo video](./web/assets/notespark-demo.mp4) as well.
 
 ## Get it
 
-Builds are published on [GitHub releases](https://github.com/Lusan-sapkota/NoteSpark/releases) as they are ready, with Google Play to follow.
+Download the Android APK or the Linux AppImage from [GitHub releases](https://github.com/Lusan-sapkota/NoteSpark/releases) (each release has a `SHA256SUMS` file). Neither updates itself. Google Play is coming.
 
 | | Status |
 |---|---|
-| Android app (`mobile/`) | APK on GitHub releases, then Google Play |
-| Desktop app (`desktop/`) | Linux AppImage first. Windows and macOS are not built yet |
+| Android app (`mobile/`) | APK on GitHub releases now, Google Play coming |
+| Desktop app (`desktop/`) | Linux AppImage on GitHub releases now. Windows and macOS are not built yet |
 | Self-hosted hub (`docker/`) | Planned |
 
 More on the [website](https://notespark.lusansapkota.com.np): [help](https://notespark.lusansapkota.com.np/help.html), [privacy policy](https://notespark.lusansapkota.com.np/privacy.html) and the [changelog](https://notespark.lusansapkota.com.np/changelog.html).
