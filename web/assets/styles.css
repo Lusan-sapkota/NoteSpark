@@ -445,5 +445,8 @@ code {
 .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; background: transparent; padding: 0; font-size: 13px; }
 .copy { min-height: 36px; padding: 0 14px; border: 0; border-radius: var(--shape-full); background: var(--primary-container); color: var(--on-primary-container); font: 500 13px/16px var(--font-ui); cursor: pointer; }
 @media (max-width: 600px) { .dl-panel .rows li { flex-wrap: wrap; } }
-.dl-panel .rows li:has(.cmd) .row-end { align-self: flex-start; }
 .shots-label { margin: 8px 4px 12px; } .windows { margin-top: 0; } .screens + .shots-label { margin-top: 32px; }
+.dl-panel .rows li.has-cmd { display: block; }
+.row-head { display: flex; align-items: center; gap: 16px; }
+.row-head .row-end { margin-left: auto; padding-left: 0; }
+.has-cmd .cmd { margin-top: 12px; }
