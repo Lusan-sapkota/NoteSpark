@@ -4,11 +4,11 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Privacy policy — NoteSpark</title>
-  <meta name="description" content="NoteSpark is an offline notes app. It has no account, no ads, no analytics and no tracking. Everything you write stays on your phone." />
+  <meta name="description" content="NoteSpark is an offline notes app. It has no account, no ads, no analytics and no tracking. Everything you write stays on your own devices." />
   <meta name="theme-color" content="#fbfaee" />
   <link rel="canonical" href="https://notespark.lusansapkota.com.np/privacy.html" />
   <meta property="og:title" content="Privacy policy — NoteSpark" />
-  <meta property="og:description" content="NoteSpark is an offline notes app. Everything you write stays on your phone." />
+  <meta property="og:description" content="NoteSpark is an offline notes app. Everything you write stays on your own devices." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://notespark.lusansapkota.com.np/privacy.html" />
   <link rel="icon" type="image/svg+xml" href="./assets/round.svg" />
@@ -59,10 +59,10 @@
   <main class="page-main" id="main">
     <article class="reading-column">
       <h1 class="headline-small" style="margin-bottom: var(--space-xs);">Privacy policy</h1>
-      <p class="body-small policy-text">Effective October 31, 2026</p>
+      <p class="body-small policy-text">Effective November 1, 2026</p>
 
       <p class="body-large policy-lead">
-        NoteSpark is an offline notes app. It has no account, no ads, no analytics and no tracking. Everything you write stays on your phone, or goes only to your own computer if you turn on sync. This policy explains what the app stores and where.
+        NoteSpark is an offline notes app, on Android and on a computer. It has no account, no ads, no analytics and no tracking. Everything you write stays on your own devices, and goes between them only over your own network if you turn on sync. This policy explains what the app stores and where. Where the two differ, it says On Android or On a computer.
       </p>
 
       <section class="policy-section" aria-labelledby="sec-stores">
@@ -70,7 +70,7 @@
         <ul class="policy-bullets body-large">
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Your notes: the title, text, format, whether they are pinned, and the dates they were created and edited, and your scratchpad. They are kept in a database on your device, one for each profile.</span>
+            <span>Your notes: the title, text, format, whether they are pinned, and the dates they were created and edited, and your scratchpad. They are kept in a database on your device, one for each profile. <strong>On a computer:</strong> The database is in NoteSpark's folder (on Linux, ~/.config/NoteSpark).</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
@@ -78,27 +78,39 @@
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>If you add an image from your phone to a note (optional), it is copied into NoteSpark's own storage on your device and stored encrypted, like a document, so it keeps showing if the original is moved or your phone clears its cache. It isn't uploaded. If you turn on sync, the image goes with its note to the devices you paired. A copy is deleted once no note uses it.</span>
-          </li>
-          <li class="policy-bullet">
-            <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Your profile names, which profile is open, your theme choice, whether you've finished the welcome screens, and a list of your last 20 imports and exports. These are also kept on your device.</span>
-          </li>
-          <li class="policy-bullet">
-            <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Profile PINs (optional): only a scrambled form of each PIN (a salted hash) is kept, in Android's secure storage. The PIN itself isn't stored, so it can't be recovered if you forget it. A profile with a PIN also has its notes encrypted on your phone, with a key kept in Android's secure storage.</span>
-          </li>
-          <li class="policy-bullet">
-            <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>If you set a PIN on a profile, a copy of its hash, and of the profile's key wrapped with that PIN, is also kept in the app's ordinary storage so a restored phone can unlock the profile. Android's backup can include it, so someone who can read a backup could try every 4-digit PIN.</span>
-          </li>
-          <li class="policy-bullet">
-            <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>If you pair a computer for sync (optional), the phone also keeps that computer's name, public key and addresses, plus its own sync key in Android's secure storage. No note text is stored for this.</span>
+            <span>If you add an image to a note (optional), it is copied into NoteSpark's own storage on your device and stored encrypted, like a document, so it keeps showing if the original is moved. <strong>On Android:</strong> It also keeps showing if the phone clears its cache. It isn't uploaded. If you turn on sync, the image goes with its note to the devices you paired. A copy is deleted once no note uses it.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
             <span>If you attach documents to a note (optional, up to 32 MB each), they are copied into NoteSpark's own storage and stored encrypted. They are not uploaded anywhere. If you turn on sync, a document goes with its note to the devices you paired. A copy is deleted once no note uses it.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Your profile names, which profile is open, your theme choice, whether you've finished the welcome screens, and a list of your last 20 imports and exports. These are also kept on your device, <strong>On a computer:</strong> In the same folder, along with your backup settings if you use automatic backups.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Profile PINs (optional): only a scrambled form of each PIN (a salted hash) is kept. The PIN itself isn't stored, so it can't be recovered if you forget it. A profile with a PIN also has its notes encrypted on your device.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On Android:</strong> The hash, and the key that encrypts a protected profile, are kept in Android's secure storage.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> The key for a protected profile is kept by your system's keyring (such as KWallet or GNOME Keyring). If no keyring is available, NoteSpark won't create a protected profile.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On Android:</strong> If you set a PIN on a profile, a copy of its hash, and of the profile's key wrapped with that PIN, is also kept in the app's ordinary storage so a restored phone can unlock the profile. Android's backup can include it, so someone who can read a backup could try every 4-digit PIN.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> If you set a PIN on a profile, a copy of its hash, and of the profile's key wrapped with that PIN, is also kept in NoteSpark's settings file in the same folder, so a restored folder can unlock the profile. Someone who can read that folder, or a backup of it, could try every 4-digit PIN.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>If you pair a device for sync (optional), NoteSpark also keeps that device's name and public key, plus its own sync key. No note text is stored for this. <strong>On Android:</strong> It also keeps the other device's addresses, and its sync key is in Android's secure storage. <strong>On a computer:</strong> The sync key is kept by your system's keyring.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
@@ -110,17 +122,15 @@
 
       <section class="policy-section" aria-labelledby="sec-nothing-leaves">
         <h2 id="sec-nothing-leaves" class="title-medium">Nothing leaves your device</h2>
-        <p class="body-large policy-text">
-          NoteSpark stays offline by design. It makes no requests to the internet of its own: no analytics, no crash reporting and no update checks. App updates come only through the store you installed it from. Sync is off until you turn it on, and then nothing leaves your own network (see Sync between your devices).
-        </p>
+        <p class="body-large policy-text">NoteSpark stays offline by design. It makes no requests to the internet of its own: no analytics, no crash reporting and no update checks. <strong>On Android:</strong> updates come only through the store you installed it from. <strong>On a computer:</strong> new versions come only as a new installer that you download yourself. Sync is off until you turn it on, and then nothing leaves your own network (see Sync between your devices).</p>
         <ul class="policy-bullets body-large">
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Web images are off by default. If you turn on Show web images in Settings, a picture that a note links from a web address is requested from that website the first time you view the note, so that website sees your connection. It is then kept on your phone so it shows offline, even if the website removes it. Turn it off and no website is contacted. A saved copy is deleted once no note uses it and it hasn't been viewed for 30 days.</span>
+            <span>Web images are off by default. If you turn on Show web images in Settings, a picture that a note links from a web address is requested from that website the first time you view the note, so that website sees your connection. Turn it off and no website is contacted. <strong>On Android:</strong> The picture is then kept on your phone so it shows offline, even if the website removes it, and a saved copy is deleted once no note uses it and it hasn't been viewed for 30 days.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>When you export or share notes, the file goes only where you choose in the share sheet.</span>
+            <span>When you export notes, or save a backup or a PDF, the file goes only where you choose. <strong>On Android:</strong> When you share notes, the file goes only where you choose in the share sheet.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
@@ -128,26 +138,42 @@
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Android's own backup: if backup is turned on in your phone's settings, Android may copy NoteSpark's data, including your notes, to your Google account, so it can be restored on a new phone. This is a feature of Android that you control in your phone's settings; NoteSpark doesn't send anything itself.</span>
+            <span><strong>On a computer:</strong> If you choose a Markdown folder for sync (optional), NoteSpark keeps a Markdown file for every note of the profiles that sync in that folder. Protected profiles are not mirrored.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> When you click a link in a note, it opens in your own browser, which then contacts that website. NoteSpark doesn't.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On Android:</strong> If Android's own backup is turned on in your phone's settings, Android may copy NoteSpark's data, including your notes, to your Google account, so it can be restored on a new phone. This is a feature of Android that you control in your phone's settings; NoteSpark doesn't send anything itself.</span>
           </li>
         </ul>
       </section>
 
       <section class="policy-section" aria-labelledby="sec-sync">
         <h2 id="sec-sync" class="title-medium">Sync between your devices (optional)</h2>
-        <p class="body-large policy-text">Sync is off for every profile until you turn it on in Settings under Sync and pair this phone with your computer.</p>
+        <p class="body-large policy-text">Sync is off for every profile until you turn it on in Settings under Sync and pair two devices.</p>
         <ul class="policy-bullets body-large">
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>When it is on, this phone talks only to the computer you paired, at its address on your own network: your home or office Wi-Fi, a hotspot, USB tethering or a VPN. Everything is encrypted so nobody on the network can read it, and NoteSpark never connects to a public internet address. Nothing leaves your own network.</span>
+            <span>When it is on, your devices talk only to the devices you paired, at their addresses on your own network: your home or office Wi-Fi, a hotspot, USB tethering or a VPN. Everything is encrypted so nobody on the network can read it, and NoteSpark never connects to a public internet address. Nothing leaves your own network.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>There is no account and no server of ours. This phone's sync key stays in Android's secure storage and is left out of Android backups, so a restored phone has to pair again.</span>
+            <span><strong>On a computer:</strong> The computer listens on private network addresses only, for the devices you paired, and talks to them directly.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>A computer you did not pair gets no answer, and this phone ignores anything that is not from the computer it paired with.</span>
+            <span>There is no account and no server of ours. A device you did not pair gets no answer.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On Android:</strong> The phone's sync key stays in Android's secure storage and is left out of Android backups, so a restored phone has to pair again. The phone ignores anything that is not from a device it paired with.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> A device can sync only into profiles you already have on the computer. If you turn on Accept new profiles from devices, a device can add a profile there, and it starts without a PIN.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
@@ -159,7 +185,30 @@
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Turn sync off for a profile, or forget the computer, at any time. Notes already on this phone stay on it.</span>
+            <span>Turn sync off for a profile, or forget or remove a device, at any time. Notes already on a device stay on it.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="policy-section" aria-labelledby="sec-web">
+        <h2 id="sec-web" class="title-medium">The web view on a computer (optional)</h2>
+        <p class="body-large policy-text">The web view is off until you turn it on, and off again when you stop it or quit NoteSpark. It lets a browser on another device use your notes while NoteSpark runs on the computer.</p>
+        <ul class="policy-bullets body-large">
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>By default it answers only that computer and VPN addresses such as Tailscale or WireGuard. A separate switch in Settings under Sync, Web view on Wi-Fi, also lets devices on your home or office network in. It is off unless you turn it on, and NoteSpark warns you each time. Requests from public internet addresses are always refused.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Opening it needs a link with a random code that changes every time you turn it on. Anyone who has the link can read and edit your notes, so share it only with yourself.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>Through a VPN or Tailscale the connection is encrypted by the VPN. With the Wi-Fi switch on it is not encrypted (plain HTTP), so other people on that network could read what is sent.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span>A profile with a PIN is opened and locked on the computer only. The web view works with the profile that is open there.</span>
           </li>
         </ul>
       </section>
@@ -169,31 +218,47 @@
         <ul class="policy-bullets body-large">
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Notifications (optional): to tell you things like an export finishing, and to remind you of tasks on their due date. These notifications are created and scheduled on your device; NoteSpark doesn't use push notifications. Reminders for profiles with a PIN don't show the task text.</span>
+            <span><strong>On Android:</strong> Notifications (optional): to tell you things like an export finishing, and to remind you of tasks on their due date. These notifications are created and scheduled on your device; NoteSpark doesn't use push notifications. Reminders for profiles with a PIN don't show the task text.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Photos (optional): only the images you pick when adding an image to a note.</span>
+            <span><strong>On Android:</strong> Photos (optional): only the images you pick when adding an image to a note.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Files (optional): only the backup or note files you pick when importing notes, and the folder you pick for automatic backups.</span>
+            <span><strong>On Android:</strong> Files (optional): only the backup or note files you pick when importing notes, and the folder you pick for automatic backups.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Fingerprint (optional): only if you turn on fingerprint unlock for a profile. Android checks your fingerprint; NoteSpark never sees or stores it.</span>
+            <span><strong>On Android:</strong> Fingerprint (optional): only if you turn on fingerprint unlock for a profile. Android checks your fingerprint; NoteSpark never sees or stores it.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Network access: to show images from web addresses that you add to notes (only if you turn on Show web images), and, if you turn on sync, to talk to your own computer on your own network. NoteSpark also allows plain http web addresses for those images, so use https addresses when you can.</span>
+            <span><strong>On Android:</strong> Network access: to show images from web addresses that you add to notes (only if you turn on Show web images), and, if you turn on sync, to talk to your own devices on your own network. NoteSpark also allows plain http web addresses for those images, so use https addresses when you can.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Camera (optional): only while you scan a pairing code on the Sync screen. NoteSpark asks when you tap Scan, records and saves nothing, and you can paste the code instead.</span>
+            <span><strong>On Android:</strong> Camera (optional): only while you scan a pairing code on the Sync screen. NoteSpark asks when you tap Scan, records and saves nothing, and you can paste the code instead.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Running in the background (optional): only while sync is on, so your devices stay up to date when NoteSpark is closed. Android shows a notification while it runs. If you say no, sync works while NoteSpark is open.</span>
+            <span><strong>On Android:</strong> Running in the background (optional): only while sync is on, so your devices stay up to date when NoteSpark is closed. Android shows a notification while it runs. If you say no, sync works while NoteSpark is open.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> Notifications (optional): to remind you of tasks on their due date. They are created on the computer; NoteSpark uses no push notifications. Reminders for profiles with a PIN don't show the task text.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> Files and clipboard (optional): only the files you pick when importing, the folders you pick for backups, the Markdown folder and exports, and the clipboard only when you choose Save clipboard from the tray icon.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> Keyring (optional): your system's keyring (such as KWallet or GNOME Keyring) keeps the keys NoteSpark needs for protected profiles and sync. Without one, NoteSpark won't create a protected profile or turn sync on.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> Network access: only for sync on your own network, for the web view if you turn it on, and for web images if you turn on Show web images. NoteSpark never listens on a public address.</span>
           </li>
         </ul>
       </section>
@@ -211,23 +276,23 @@
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span>Uninstalling NoteSpark deletes all of its data from your device. The developer has no copy, so deleted notes can't be recovered unless you exported them or Android's backup restores them.</span>
+            <span><strong>On Android:</strong> Uninstalling NoteSpark deletes all of its data from your device. The developer has no copy, so deleted notes can't be recovered unless you exported them or Android's backup restores them.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> Removing NoteSpark's folder erases everything. The developer has no copy, so deleted notes can't be recovered unless you exported them.</span>
           </li>
         </ul>
       </section>
 
       <section class="policy-section" aria-labelledby="sec-children">
         <h2 id="sec-children" class="title-medium">Children</h2>
-        <p class="body-large policy-text">
-          NoteSpark doesn't collect personal information from anyone, including children under 13.
-        </p>
+        <p class="body-large policy-text">NoteSpark doesn't collect personal information from anyone, including children under 13.</p>
       </section>
 
       <section class="policy-section" aria-labelledby="sec-changes">
         <h2 id="sec-changes" class="title-medium">Changes to this policy</h2>
-        <p class="body-large policy-text">
-          If this policy changes, the new version will appear here and on notespark.lusansapkota.com.np with a new effective date.
-        </p>
+        <p class="body-large policy-text">If this policy changes, the new version will appear here and on notespark.lusansapkota.com.np with a new effective date.</p>
       </section>
 
       <section class="policy-section" aria-labelledby="sec-contact">
