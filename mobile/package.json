@@ -8,7 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "eas-build-post-install": "npm ci --prefix ../packages/sync && npm ci --prefix ../packages/sync-protocol"
+    "eas-build-post-install": "sed -i 's/VersionNumber.parse(REACT_NATIVE_VERSION) < VersionNumber.parse(\"0.71\")/false/' node_modules/onnxruntime-react-native/android/build.gradle && npm ci --prefix ../packages/sync && npm ci --prefix ../packages/sync-protocol"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",
