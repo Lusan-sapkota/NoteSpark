@@ -23,6 +23,7 @@ export const rawFromWs = (ws: WebSocket, clock: Clock = realClock): RawSocket =>
   let last = clock.now();
   let stop = () => {};
   const raw: RawSocket = {
+    opened: ws.readyState === WebSocket.OPEN,
     send: d => { if (ws.readyState === WebSocket.CONNECTING) queued.push(d); else if (ws.readyState === WebSocket.OPEN) ws.send(d, { binary: true }); },
     close: graceful => {
       if (graceful && ws.readyState === WebSocket.OPEN) { ws.close(1000); const cancel = clock.after(CLOSE_GRACE, () => ws.terminate()); ws.once('close', cancel); } else ws.terminate();
@@ -37,7 +38,7 @@ export const rawFromWs = (ws: WebSocket, clock: Clock = realClock): RawSocket =>
   };
   stop = clock.after(PING_EVERY, tick);
   ws.on('pong', () => { last = clock.now(); });
-  ws.on('open', () => { for (const d of queued.splice(0)) ws.send(d, { binary: true }); });
+  ws.on('open', () => { raw.opened = true; for (const d of queued.splice(0)) ws.send(d, { binary: true }); });
   ws.on('message', (data, isBinary) => {
     last = clock.now();
     const b = isBinary ? toBytes(data) : null;
@@ -69,6 +70,7 @@ const deferred = (target: Promise<WebSocket | null>, clock?: Clock): RawSocket =
   const held: Uint8Array[] = [];
   let inner: RawSocket | null = null, closed = false;
   const raw: RawSocket = {
+    opened: false,
     send: d => { if (inner) inner.send(d); else if (!closed) held.push(d); },
     close: g => { closed = true; held.length = 0; inner ? inner.close(g) : raw.onClose(); },
     onMessage: () => {},
@@ -77,8 +79,10 @@ const deferred = (target: Promise<WebSocket | null>, clock?: Clock): RawSocket =
   target.then(ws => {
     if (!ws || closed) { ws?.terminate(); if (!closed) { closed = true; raw.onClose(); } return; }
     inner = rawFromWs(ws, clock);
+    raw.opened = inner.opened;
+    ws.on('open', () => { raw.opened = true; });
     inner.onMessage = d => raw.onMessage(d);
-    inner.onClose = () => { closed = true; raw.onClose(); };
+    inner.onClose = () => { raw.opened = inner?.opened; closed = true; raw.onClose(); };
     for (const d of held.splice(0)) inner.send(d);
   }, () => { if (!closed) { closed = true; raw.onClose(); } });
   return raw;

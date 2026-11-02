@@ -278,9 +278,13 @@ export const applyRemote = async (db: DB, deltas: Delta[]): Promise<void> => {
 
 // First link: adopted notes take the hub's uuids, the rest get docs, sync turns on.
 export const linkProfile = async (db: DB, syncId: string, adopt: Map<string, string>): Promise<void> => {
+  if ((await linkedSyncId(db)) === syncId) return;
   const wasOn = await syncOn(db);
   try {
     await transact(db, async sync => {
+      if (adopt.size > 0) {
+        await db.execAsync('DELETE FROM crdt_updates; DELETE FROM crdt_materialized; DELETE FROM crdt_adopted');
+      }
       for (const [from, to] of adopt) {
         const r = await db.runAsync('UPDATE notes SET uuid = ? WHERE uuid = ? AND NOT EXISTS (SELECT 1 FROM notes WHERE uuid = ?)', [to, from, to]);
         if (r.changes) await db.runAsync('INSERT OR IGNORE INTO crdt_adopted (docId) VALUES (?)', [to]);

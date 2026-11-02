@@ -2,7 +2,7 @@ import { type SyncStore, extractBlobHashes } from '@notespark/sync';
 import { type Hash, fingerprints, planAdoption } from './adopt.ts';
 import type { Channel } from './channel.ts';
 import type { Clock } from './clock.ts';
-import { CHUNK, type Frame, type LinkEntry, MAX_BUFFERED, MAX_DOCS_IN_FLIGHT, MAX_DOC_BYTES, MAX_LINK_ENTRIES, type PairEntry, ProtocolError, Reassembler, T, bytesToHash, chunkBlob, chunkUpdate, decodeFrame, encodeFrame, isUuid } from './wire.ts';
+import { CHUNK, type Frame, type LinkEntry, MAX_BUFFERED, MAX_DOCS_IN_FLIGHT, MAX_DOC_BYTES, MAX_LINK_ENTRIES, type PairEntry, type ProfileEntry, ProtocolError, Reassembler, T, bytesToHash, chunkBlob, chunkUpdate, decodeFrame, encodeFrame, isUuid } from './wire.ts';
 
 export const PING_EVERY = 15_000;
 export const DEAD_AFTER = 45_000;
@@ -20,6 +20,21 @@ export interface LinkPlan {
   hubNotes: number;
   pairs: PairEntry[];
 }
+
+export type ProfileMatch =
+  | { kind: 'join'; profile: ProfileEntry }
+  | { kind: 'create'; lockedMatch: boolean }
+  | { kind: 'ambiguous'; matches: ProfileEntry[] };
+
+// Decision A: exact name match after trimming, ignoring case. PIN-locked profiles are never matched.
+export const chooseProfileMatch = (localName: string, remote: ProfileEntry[]): ProfileMatch => {
+  const norm = localName.trim().toLowerCase();
+  const same = norm ? remote.filter(p => p.name.trim().toLowerCase() === norm) : [];
+  const unlocked = same.filter(p => !p.locked);
+  if (unlocked.length === 1) return { kind: 'join', profile: unlocked[0] };
+  if (unlocked.length > 1) return { kind: 'ambiguous', matches: unlocked };
+  return { kind: 'create', lockedMatch: same.some(p => p.locked) };
+};
 
 export interface FanOut {
   forward(syncId: string, doc: string, bytes: Uint8Array, from: Session | null): void;
@@ -39,6 +54,8 @@ export interface SessionOptions {
   // client: the linked profile, or how to link one and whether to accept the plan
   syncId?: string;
   link?: { syncId: string; name: string };
+  chooseLink?: (profiles: ProfileEntry[]) => Promise<{ syncId: string; name: string } | null>;
+  relinkIfMissing?: boolean;
   confirmLink?: (plan: LinkPlan) => Promise<boolean>;
   hub?: FanOut;
   onState?: (state: SessionState) => void;
@@ -101,9 +118,17 @@ export class Session {
     });
   }
   private fail(e: unknown) {
-    const code = e instanceof ProtocolError ? e.code : 500;
-    this.send({ type: T.ERROR, code, message: code === 500 ? 'internal error' : (e as Error).message });
-    this.close(`failed ${code}`, code);
+    const errCode = (e as { code?: string })?.code;
+    const p = e instanceof ProtocolError ? e : errCode === 'LOCKED' ? new ProtocolError(423, 'profile is locked') : errCode === 'NEW_REFUSED' ? new ProtocolError(403, 'new profiles off') : null;
+    const code = p ? p.code : 500;
+    const message = p ? p.message : 'internal error';
+    this.send({ type: T.ERROR, code, message });
+    this.close(message, code);
+  }
+  bye(reason = 'shutting down') {
+    if (this.state === 'closed') return;
+    this.send({ type: T.BYE, reason });
+    this.close('hub stopped', 503);
   }
   close(reason: string, code = 0) {
     if (this.state === 'closed') return;
@@ -138,6 +163,8 @@ export class Session {
     this.lastRecv = this.o.clock.now();
     let f: Frame;
     try { f = decodeFrame(data); } catch (e) { return this.fail(e); }
+    if (f.type === T.ERROR) return this.close(f.message || `peer error ${f.code}`, f.code);
+    if (f.type === T.BYE) return this.close(f.reason || 'shutting down', 503);
     // Counted before the queue, so a flood is refused.
     if (f.type === T.SV && f.doc !== 'catalog' && !this.answering.has(f.doc)) {
       if (this.answering.size >= MAX_DOCS_IN_FLIGHT) return this.fail(new ProtocolError(400, 'too many documents in flight'));
@@ -162,8 +189,8 @@ export class Session {
     switch (f.type) {
       case T.PING: return this.send({ type: T.PONG, nonce: f.nonce });
       case T.PONG: return;
-      case T.ERROR: return this.close(`peer error ${f.code}`, f.code);
-      case T.BYE: return this.close(`peer closed: ${f.reason}`);
+      case T.ERROR: return this.close(f.message || `peer error ${f.code}`, f.code);
+      case T.BYE: return this.close(f.reason || 'shutting down', 503);
     }
     if (this.o.role === 'hub') return this.handleAsHub(f);
     return this.handleAsClient(f);
@@ -221,15 +248,23 @@ export class Session {
         if (this.state !== 'start') return;
         if (this.o.syncId) {
           const mine = f.profiles.find(p => p.syncId === this.o.syncId);
-          if (!mine) throw new ProtocolError(403, 'profile not linked');
-          if (mine.locked) throw new ProtocolError(423, 'profile is locked');
-          return this.subscribe(this.o.syncId);
+          if (mine) {
+            if (mine.locked) throw new ProtocolError(423, 'profile is locked');
+            return this.subscribe(this.o.syncId);
+          }
+          if (!this.o.relinkIfMissing || (!this.o.chooseLink && !this.o.link)) {
+            throw new ProtocolError(403, 'profile not linked');
+          }
         }
-        if (!this.o.link) throw new ProtocolError(403, 'no profile to sync');
+        this.phase(CONFIRM_TIMEOUT);
+        const chosen = this.o.chooseLink ? await this.o.chooseLink(f.profiles) : (this.o.link ?? null);
+        if (this.state === 'closed') return;
+        if (!chosen) return this.close('link declined');
+        if (!chosen.syncId) throw new ProtocolError(403, 'no profile to sync');
         this.setState('linking');
         const entries = fingerprints(await this.o.store.plainNotes(''), this.o.hash);
         for (let i = 0; i === 0 || i < entries.length; i += MAX_LINK_ENTRIES)
-          this.send({ type: T.LINK, syncId: this.o.link.syncId, name: this.o.link.name, more: i + MAX_LINK_ENTRIES < entries.length, entries: entries.slice(i, i + MAX_LINK_ENTRIES) });
+          this.send({ type: T.LINK, syncId: chosen.syncId, name: chosen.name, more: i + MAX_LINK_ENTRIES < entries.length, entries: entries.slice(i, i + MAX_LINK_ENTRIES) });
         this.phase(PHASE_TIMEOUT);
         return;
       }
@@ -273,7 +308,10 @@ export class Session {
       case T.UPDATE: {
         const bytes = this.assembler.add(f);
         if (!bytes) return;
-        try { await this.o.store.apply(this.syncId, f.doc, [bytes]); } catch (e) { throw new ProtocolError(400, 'bad update'); }
+        try { await this.o.store.apply(this.syncId, f.doc, [bytes]); } catch (e) {
+          if ((e as { code?: string })?.code === 'LOCKED') throw new ProtocolError(423, 'profile is locked');
+          throw new ProtocolError(400, 'bad update');
+        }
         this.o.hub?.forward(this.syncId, f.doc, bytes, this);
         if (f.doc !== 'catalog' && this.state === 'live' && this.o.store.blobs) {
           const note = await this.o.store.note(this.syncId, f.doc);

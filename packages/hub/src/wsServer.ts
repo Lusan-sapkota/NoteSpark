@@ -25,6 +25,7 @@ export interface ServerOptions {
   hub: Hub;
   authorize: (clientKey: Uint8Array, hello: HelloPayload) => boolean; // false: unknown device, closed with no reply
   stillKnown?: (clientKey: Uint8Array) => boolean; // asked again when the device confirms, so a revoke in between wins
+  onSubscribed?: (clientKey: Uint8Array, name: string, syncId: string) => void;
   clock?: Clock;
   limits?: Partial<Limits>;
   peerAddress?: (socket: Socket) => string; // a test seam
@@ -135,7 +136,12 @@ export class HubServer {
           const id = hex(channel.peer!.staticKey);
           if (!this.byDevice.has(id)) this.byDevice.set(id, new Set());
           this.byDevice.get(id)!.add(channel);
-          this.o.hub.accept(channel, {
+          const session = this.o.hub.accept(channel, {
+            onState: state => {
+              if (state === 'syncing' && session.syncId && channel.peer) {
+                this.o.onSubscribed?.(channel.peer.staticKey, channel.peer.name, session.syncId);
+              }
+            },
             onClosed: () => {
               const set = this.byDevice.get(id);
               set?.delete(channel);

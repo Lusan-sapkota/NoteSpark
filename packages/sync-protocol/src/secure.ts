@@ -20,6 +20,7 @@ export interface RawSocket {
   close(graceful?: boolean): void;
   onMessage: (data: Uint8Array) => void;
   onClose: () => void;
+  opened?: boolean;
 }
 
 export interface PeerInfo { name: string; version: number; minVersion: number; staticKey: Uint8Array; hash: Uint8Array }
@@ -50,7 +51,12 @@ export class SecureChannel implements Channel {
     this.authorize = authorize;
     this.onReady = onReady;
     raw.onMessage = d => this.receive(d);
-    raw.onClose = () => this.shut(false);
+    raw.onClose = () => {
+      if (!this.authorize && !this.ready && !this.closed && this.raw.opened !== false) {
+        try { this.onMessage(encodeFrame({ type: T.ERROR, code: 401, message: 'key mismatch' })); } catch { /* ignore */ }
+      }
+      this.shut(false);
+    };
   }
 
   // Initiator: knows the hub's key, speaks first.
@@ -143,7 +149,12 @@ export class SecureChannel implements Channel {
         this.raw.send(this.t!.send.encrypt(NONE, Uint8Array.of(2))); // confirm: proves this side holds its keys
         this.flush();
       }
-    } catch { this.shut(true); }
+    } catch {
+      if (!this.authorize && !this.ready && !this.closed) {
+        try { this.onMessage(encodeFrame({ type: T.ERROR, code: 401, message: 'key mismatch' })); } catch { /* ignore */ }
+      }
+      this.shut(true);
+    }
   }
 
   private finish(theirs: HelloPayload) {

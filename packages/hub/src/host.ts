@@ -21,7 +21,11 @@ export interface HostOptions {
   hash: (d: Uint8Array) => Uint8Array;
   onEvent?: (e: HostEvent) => void;
 }
-export type HostEvent = { type: 'paired'; name: string } | { type: 'log'; line: string } | { type: 'mirror'; syncId: string; status: MirrorStatus };
+export type HostEvent =
+  | { type: 'paired'; name: string }
+  | { type: 'subscribed'; syncId: string; key: string; id: string; name: string }
+  | { type: 'log'; line: string }
+  | { type: 'mirror'; syncId: string; status: MirrorStatus };
 
 const RING = 500;
 const hex = (b: Uint8Array) => Array.from(b, x => x.toString(16).padStart(2, '0')).join('');
@@ -68,6 +72,11 @@ export class HubHost {
         return ok;
       },
       stillKnown: key => this.devices.has(key),
+      onSubscribed: (key, name, syncId) => {
+        const keyHex = hex(key);
+        const saved = this.devices.list().find(d => d.key === keyHex)?.name ?? name;
+        this.o.onEvent?.({ type: 'subscribed', syncId, key: keyHex, id: deviceId(key), name: saved });
+      },
       log: e => this.log(e),
     });
   }

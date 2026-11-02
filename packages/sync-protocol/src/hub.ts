@@ -51,6 +51,6 @@ export class Hub implements FanOut {
   stop() {
     for (const off of this.watching.values()) off();
     this.watching.clear();
-    for (const s of [...this.open]) s.close('hub stopped');
+    for (const s of [...this.open]) s.bye('shutting down');
   }
 }

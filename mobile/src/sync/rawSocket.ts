@@ -38,6 +38,7 @@ export const rawFromRN = (ws: WS, clock: Clock = realClock): RawSocket => {
   };
   const kill = () => { try { ws.close(1000); } catch { /* already closed */ } finish(); };
   const raw: RawSocket = {
+    opened: ws.readyState === OPEN,
     send: d => { if (done) return; if (ws.readyState === CONNECTING) queued.push(d); else if (ws.readyState === OPEN) ws.send(d); },
     close: () => { queued.length = 0; kill(); }, // no terminate() in React Native, so even a graceful close ends the session at once
     onMessage: () => {},
@@ -45,7 +46,7 @@ export const rawFromRN = (ws: WS, clock: Clock = realClock): RawSocket => {
   };
   ws.binaryType = 'arraybuffer';
   cancel = clock.after(OPEN_TIMEOUT, kill); // the handshake window; cleared on open
-  ws.onopen = () => { cancel(); for (const d of queued.splice(0)) ws.send(d); };
+  ws.onopen = () => { cancel(); raw.opened = true; for (const d of queued.splice(0)) ws.send(d); };
   ws.onmessage = e => {
     const d = e.data;
     if (!(d instanceof ArrayBuffer) || d.byteLength > MAX_MESSAGE) return kill(); // text frames and oversized messages are never valid

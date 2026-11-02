@@ -114,11 +114,18 @@ export class MemoryStore implements SyncStore {
     if (!this.profilesById.has(syncId)) this.profilesById.set(syncId, { name, replica: new Replica(this.clientId), blobs: new Map() });
   }
   async plainNotes(syncId: string): Promise<PlainNote[]> {
-    const source = this.profilesById.get(syncId)?.replica.notes() ?? Object.fromEntries(this.plain);
-    return Object.entries(source).map(([uuid, n]) => ({ uuid, title: n.title, content: n.content, isMarkdown: n.isMarkdown }));
+    const fallback = !syncId && this.plain.size === 0 && this.profilesById.size === 1 ? [...this.profilesById.values()][0].replica.notes() : null;
+    const source = this.profilesById.get(syncId)?.replica.notes() ?? fallback ?? Object.fromEntries(this.plain);
+    return Object.entries(source).filter(([, n]) => !n.deletedAt).map(([uuid, n]) => ({ uuid, title: n.title, content: n.content, isMarkdown: n.isMarkdown }));
   }
   async link(syncId: string, adopt: Map<string, string>) {
     if (this.profilesById.has(syncId)) return;
+    if (this.plain.size === 0 && this.profilesById.size === 1) {
+      const [oldId, oldProfile] = [...this.profilesById.entries()][0];
+      for (const [u, n] of Object.entries(oldProfile.replica.notes())) this.plain.set(u, n);
+      for (const [h, b] of oldProfile.blobs) this.plainBlobs.set(h, b.slice());
+      this.profilesById.delete(oldId);
+    }
     const replica = new Replica(this.clientId);
     for (const [uuid, state] of this.plain) if (!adopt.has(uuid)) replica.save(uuid, state);
     const blobs = new Map<string, Uint8Array>();
@@ -126,6 +133,15 @@ export class MemoryStore implements SyncStore {
     this.profilesById.set(syncId, { name: 'Profile', replica, blobs });
     this.plain.clear();
     this.plainBlobs.clear();
+  }
+  unlink(syncId?: string) {
+    const id = syncId ?? (this.profilesById.size === 1 ? [...this.profilesById.keys()][0] : undefined);
+    if (!id) return;
+    const p = this.profilesById.get(id);
+    if (!p) return;
+    for (const [u, n] of Object.entries(p.replica.notes())) this.plain.set(u, n);
+    for (const [h, b] of p.blobs) this.plainBlobs.set(h, b.slice());
+    this.profilesById.delete(id);
   }
   async docs(syncId: string) {
     const r = this.profile(syncId);

@@ -15,6 +15,10 @@ export class LockedError extends Error {
   code = 'LOCKED';
   constructor() { super('profile is locked'); }
 }
+export class NewProfileRefusedError extends Error {
+  code = 'NEW_REFUSED';
+  constructor() { super('This computer does not accept new profiles from devices'); }
+}
 
 export const multiStore = (source: ProfileSource) => {
   let map: Map<string, string> | null = null; // sync id -> local profile id
@@ -73,7 +77,7 @@ export const multiStore = (source: ProfileSource) => {
         if (!map) await listAll();
         if (map!.has(syncId)) return;
         const id = await source.adopt(syncId, name);
-        if (!id) throw new Error('This computer does not accept new profiles from devices');
+        if (!id) throw new NewProfileRefusedError();
         map = null;
       };
       const next = (creating.get(syncId) ?? Promise.resolve()).then(run, run);
