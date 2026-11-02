@@ -1,4 +1,4 @@
-import { reconcileSync } from '../sync/syncRuntime';
+import { reconcileSync, syncedProfileWarning } from '../sync/syncRuntime';
 import React, { useCallback, useEffect, useState } from 'react';
 import { Platform, StyleSheet, View, ScrollView, useWindowDimensions } from 'react-native';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -284,9 +284,12 @@ const SettingsScreen: React.FC = () => {
       return;
     }
     closePinDialog();
+    const linkedDevs = await syncedProfileWarning(profile.id);
     alert(
       t('settings.deleteProfileTitle'),
-      t('settings.deleteProfileBody', { name: profile.name, days: BIN_DAYS }),
+      linkedDevs?.length
+        ? t('settings.deleteSyncedProfileBody', { name: profile.name, devices: linkedDevs.join(', '), days: BIN_DAYS })
+        : t('settings.deleteProfileBody', { name: profile.name, days: BIN_DAYS }),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -316,10 +319,13 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  const handleDeleteProfileForever = (profile: Profile) => {
+  const handleDeleteProfileForever = async (profile: Profile) => {
+    const linkedDevs = await syncedProfileWarning(profile.id);
     alert(
       t('settings.deleteForeverTitle'),
-      t('settings.deleteForeverBody', { name: profile.name }),
+      linkedDevs?.length
+        ? t('settings.deleteSyncedForeverBody', { name: profile.name, devices: linkedDevs.join(', ') })
+        : t('settings.deleteForeverBody', { name: profile.name }),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -339,10 +345,13 @@ const SettingsScreen: React.FC = () => {
     );
   };
 
-  const handleMoveAllToBin = () => {
+  const handleMoveAllToBin = async () => {
+    const linkedDevs = await syncedProfileWarning(activeId);
     alert(
       t('settings.moveAllTitle'),
-      t('settings.moveAllBody', { name: activeName }),
+      linkedDevs?.length
+        ? t('settings.moveAllSyncedBody', { name: activeName, devices: linkedDevs.join(', ') })
+        : t('settings.moveAllBody', { name: activeName }),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {
@@ -361,10 +370,13 @@ const SettingsScreen: React.FC = () => {
     );
   };
 
-  const handleDeleteAllForever = () => {
+  const handleDeleteAllForever = async () => {
+    const linkedDevs = await syncedProfileWarning(activeId);
     alert(
       t('settings.deleteAllTitle'),
-      t('settings.deleteAllBody', { name: activeName }),
+      linkedDevs?.length
+        ? t('settings.deleteAllSyncedBody', { name: activeName, devices: linkedDevs.join(', ') })
+        : t('settings.deleteAllBody', { name: activeName }),
       [
         { text: t('common.cancel'), style: 'cancel' },
         {

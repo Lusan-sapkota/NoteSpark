@@ -15,8 +15,8 @@ import { invoke } from './bridge';
 import { useNavigation } from './nav';
 import { fill, text } from './syncText';
 
-type Profile = { id: string; name: string; synced: boolean; isProtected: boolean; locked: boolean; mirror: { state: string; message: string } | null };
-type Status = { on: boolean; state: string; message: string | null; port: number | null; hosts: string[]; name: string; tunnelName: string; acceptNew: boolean; webLan: boolean; mirrorFolder: string | null; hubId: string | null; paired: string | null; profiles: Profile[] };
+type Profile = { id: string; name: string; synced: boolean; isProtected: boolean; locked: boolean; devices?: string[]; mirror: { state: string; message: string } | null };
+type Status = { on: boolean; state: string; message: string | null; port: number | null; hosts: string[]; name: string; tunnelName: string; acceptNew: boolean; webLan: boolean; mirrorFolder: string | null; hubId: string | null; paired: string | null; pairedDevices?: string[]; profiles: Profile[] };
 type Device = { key: string; id: string; name: string; lastSeen: string | null };
 type Pair = { uri: string; code: string; hubId: string; expiresAt: number };
 
@@ -187,7 +187,7 @@ const SyncScreen = () => {
     ]);
   };
 
-  const statusText = !st ? '' : !st.on ? text.off : st.state === 'problem' ? `${st.message ?? ''} ${text.problemTail}`.trim() : st.state === 'restarting' ? text.restarting : st.state === 'running' ? text.ready : text.starting;
+  const statusText = !st ? '' : !st.on ? text.off : st.state === 'problem' ? (st.message?.includes('No system keyring') ? text.noKeyring : `${st.message ?? ''} ${text.problemTail}`.trim()) : st.state === 'restarting' ? text.restarting : st.state === 'running' ? text.ready : text.starting;
   const hosts = (st?.hosts ?? []).filter(h => h !== '127.0.0.1');
 
   return (
@@ -232,12 +232,20 @@ const SyncScreen = () => {
           <Text variant="titleMedium">{text.profiles}</Text>
           <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: -space.sm }}>{text.profilesHelp}</Text>
           <View>
-            {(st?.profiles ?? []).map((p, i, all) => (
-              <GroupedRow key={p.id} title={p.name} icon={p.isProtected ? 'lock-outline' : 'notebook-outline'} isFirst={i === 0} isLast={i === all.length - 1}
-                description={p.isProtected && p.locked ? fill(text.profileLocked, { name: p.name }) : p.synced && p.mirror ? p.mirror.message : undefined}
-                right={<M3Switch value={p.synced} disabled={!st?.on || (p.isProtected && p.locked && !p.synced)} onValueChange={v => void run('profileSync', { id: p.id, on: v })} accessibilityLabel={`${text.title}: ${p.name}`} />}
-                onPress={st?.on ? () => void run('profileSync', { id: p.id, on: !p.synced }) : undefined} />
-            ))}
+            {(st?.profiles ?? []).map((p, i, all) => {
+              const devDesc = p.synced ? (p.devices?.length ? fill(text.linkedDevices, { devices: p.devices.join(', ') }) : text.noLinkedDevices) : '';
+              const desc = p.isProtected && p.locked
+                ? fill(text.profileLocked, { name: p.name })
+                : p.synced
+                  ? [devDesc, p.mirror?.message].filter(Boolean).join('\n') || undefined
+                  : undefined;
+              return (
+                <GroupedRow key={p.id} title={p.name} icon={p.isProtected ? 'lock-outline' : 'notebook-outline'} isFirst={i === 0} isLast={i === all.length - 1}
+                  description={desc}
+                  right={<M3Switch value={p.synced} disabled={!st?.on || (p.isProtected && p.locked && !p.synced)} onValueChange={v => void run('profileSync', { id: p.id, on: v })} accessibilityLabel={`${text.title}: ${p.name}`} />}
+                  onPress={st?.on ? () => void run('profileSync', { id: p.id, on: !p.synced }) : undefined} />
+              );
+            })}
           </View>
           <GroupedRow title={text.acceptNew} description={text.acceptNewHelp} icon="account-plus-outline" isFirst isLast
             right={<M3Switch value={!!st?.acceptNew} onValueChange={v => void run('update', { acceptNew: v })} accessibilityLabel={text.acceptNew} />} onPress={() => void run('update', { acceptNew: !st?.acceptNew })} />

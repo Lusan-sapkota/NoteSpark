@@ -6,7 +6,7 @@ import { chmodSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'n
 import { networkInterfaces } from 'node:os';
 import { dirname, join } from 'node:path';
 import * as SecureStore from 'expo-secure-store';
-import { HubController, type IfaceMap, type ProfileSource, type Spawned, listenAddresses, multiStore, sameSet } from '@notespark/hub';
+import { DeviceList, HubController, type IfaceMap, type ProfileSource, type Spawned, listenAddresses, multiStore, sameSet } from '@notespark/hub';
 import { deviceId, generateKeypair, keypairFromPrivate, realClock } from '@notespark/sync-protocol';
 import { dataDir } from '@notespark/node-shims/paths';
 import { linkProfile, linkedSyncId } from '../../../mobile/src/storage/crdt';
@@ -28,10 +28,11 @@ export interface HubSettings {
   acceptNew: boolean; // a device may add a profile here
   profiles: string[]; // local profile ids with sync on
   syncIds: Record<string, string>; // local profile id -> sync id, remembered so a locked profile can still be named
+  profileDevices: Record<string, string[]>; // sync id -> device public keys (hex) that have linked/subscribed to this profile
   mirrorFolder: string | null;
   webLan: boolean; // the web view also listens on the Wi-Fi (private LAN) addresses
 }
-const defaults = (): HubSettings => ({ format: 1, on: false, name: 'My computer', port: DEFAULT_PORT, tunnelName: '', acceptNew: true, profiles: [], syncIds: {}, mirrorFolder: null, webLan: false });
+const defaults = (): HubSettings => ({ format: 1, on: false, name: 'My computer', port: DEFAULT_PORT, tunnelName: '', acceptNew: true, profiles: [], syncIds: {}, profileDevices: {}, mirrorFolder: null, webLan: false });
 
 const str = (v: unknown, max: number, fallback: string) => (typeof v === 'string' && v.length <= max ? v : fallback);
 // A damaged file means defaults (sync off): every field is checked. A new profile from a paired device is accepted by default, since profile ids differ on each device.
@@ -40,12 +41,21 @@ export const readSettings = (path: string): HubSettings => {
   let j: any;
   try { j = JSON.parse(readFileSync(path, 'utf8')); } catch { return d; }
   if (!j || j.format !== 1) return d;
+  const profileDevices: Record<string, string[]> = {};
+  if (j.profileDevices && typeof j.profileDevices === 'object') {
+    for (const [k, v] of Object.entries(j.profileDevices)) {
+      if (/^[0-9a-f-]{36}$/.test(k) && Array.isArray(v)) {
+        profileDevices[k] = v.filter((x: unknown): x is string => typeof x === 'string' && /^[0-9a-f]{64}$/.test(x));
+      }
+    }
+  }
   return {
     format: 1, on: j.on === true, name: str(j.name, 64, d.name), tunnelName: str(j.tunnelName, 253, ''),
     port: Number.isInteger(j.port) && j.port >= 1024 && j.port <= 65535 ? j.port : d.port,
     acceptNew: typeof j.acceptNew === 'boolean' ? j.acceptNew : d.acceptNew, webLan: j.webLan === true,
     profiles: Array.isArray(j.profiles) ? j.profiles.filter((p: unknown) => typeof p === 'string' && p.length <= 64) : [],
     syncIds: j.syncIds && typeof j.syncIds === 'object' ? Object.fromEntries(Object.entries(j.syncIds).filter(([k, v]) => typeof v === 'string' && /^[0-9a-f-]{36}$/.test(v as string) && k.length <= 64)) as Record<string, string> : {},
+    profileDevices,
     mirrorFolder: typeof j.mirrorFolder === 'string' && j.mirrorFolder.length < 4096 ? j.mirrorFolder : null,
   };
 };
@@ -91,6 +101,14 @@ export class SyncHub {
       onEvent: ev => {
         if (ev?.type === 'paired') { this.paired = String(ev.name).slice(0, 64); d.announce?.(); }
         else if (ev?.type === 'mirror') { this.mirror[ev.syncId] = ev.status; d.announce?.(); }
+        else if (ev?.type === 'subscribed' && typeof ev.syncId === 'string' && typeof ev.key === 'string') {
+          const list = this.settings.profileDevices[ev.syncId] ?? [];
+          if (!list.includes(ev.key)) {
+            this.settings.profileDevices[ev.syncId] = [...list, ev.key];
+            this.save();
+          }
+          d.announce?.();
+        }
       },
     });
   }
@@ -235,18 +253,29 @@ export class SyncHub {
     try { return deviceId(keypairFromPrivate(Uint8Array.from(Buffer.from(await this.key(), 'hex'))).pub); } catch { return null; }
   }
 
+  private async pairedList(): Promise<{ key: string; name: string }[]> {
+    if (this.controller.status.state === 'running') {
+      try { return (await this.controller.call('devices')) as { key: string; name: string }[]; } catch { /* fall through */ }
+    }
+    try { return DeviceList.open(join(this.dir, 'devices.json'), realClock).list(); } catch { return []; }
+  }
+
   // Everything the Sync screen shows. Never contains the pairing token or any key.
   async status() {
     const s = this.settings, c = this.controller.status;
+    const devs = await this.pairedList();
+    const devMap = new Map(devs.map(d => [d.key, d.name]));
     const list = [];
     for (const p of await profiles.getProfiles()) {
       const isProtected = await profiles.hasProfilePin(p.id);
-      list.push({ id: p.id, name: p.name, synced: s.profiles.includes(p.id), isProtected, locked: isProtected && !(database.isProfileDatabaseOpen(p.id) && this.d.isReady()), mirror: s.syncIds[p.id] ? this.mirror[s.syncIds[p.id]] ?? null : null });
+      const syncId = s.syncIds[p.id];
+      const devices = syncId ? (s.profileDevices[syncId] ?? []).map(k => devMap.get(k)).filter((n): n is string => !!n) : [];
+      list.push({ id: p.id, name: p.name, synced: s.profiles.includes(p.id), isProtected, locked: isProtected && !(database.isProfileDatabaseOpen(p.id) && this.d.isReady()), devices, mirror: syncId ? this.mirror[syncId] ?? null : null });
     }
     return {
       on: s.on, state: s.on ? c.state : 'stopped', message: c.message ?? null, port: c.port ?? null, hosts: c.hosts ?? [],
       name: s.name, tunnelName: s.tunnelName, acceptNew: s.acceptNew, mirrorFolder: s.mirrorFolder, webLan: s.webLan, hubId: s.on ? await this.hubId() : null,
-      restarts: this.controller.restarts, paired: this.paired, profiles: list,
+      restarts: this.controller.restarts, paired: this.paired, pairedDevices: devs.map(d => d.name), profiles: list,
     };
   }
 
@@ -266,7 +295,15 @@ export class SyncHub {
       case 'pairState': { const r = (await this.controller.call('pairState')) as { active: boolean }; if (!r.active) this.lastCode = null; return r; }
       case 'devices': return this.controller.call('devices');
       case 'rename': return this.controller.call('rename', { key: key(a?.key), name: String(a?.name ?? '').slice(0, 64) });
-      case 'revoke': return this.controller.call('revoke', { key: key(a?.key) });
+      case 'revoke': {
+        const k = key(a?.key);
+        const r = await this.controller.call('revoke', { key: k });
+        for (const [sid, keys] of Object.entries(this.settings.profileDevices)) {
+          if (keys.includes(k)) this.settings.profileDevices[sid] = keys.filter(x => x !== k);
+        }
+        this.save();
+        return r;
+      }
       case 'profileSync': await this.setProfileSync(String(a?.id), a?.on === true); return this.status();
       case 'chooseFolder': { const f = await this.d.chooseFolder?.(); if (f) { this.update({ mirrorFolder: f }); await this.applyMirror(); } return this.status(); }
       case 'clearFolder': this.update({ mirrorFolder: null }); await this.applyMirror(); return this.status();
