@@ -256,8 +256,9 @@ const encryptAsLocked = async (id: string, pin?: string) => {
 };
 
 // Startup: also converts profiles whose PIN predates encryption.
-export const syncProfileEncryption = async (): Promise<void> => {
-  for (const profile of await getStoredProfiles()) await encryptAsLocked(profile.id);
+export const syncProfileEncryption = async (onlyId?: string): Promise<void> => {
+  const list = await getStoredProfiles();
+  for (const profile of onlyId ? list.filter(p => p.id === onlyId) : list) await encryptAsLocked(profile.id);
 };
 
 // Setting, changing or removing (null) a PIN needs the current one when the profile has one.

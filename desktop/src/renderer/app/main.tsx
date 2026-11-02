@@ -16,26 +16,27 @@ import { ThemeProvider, useTheme } from '../../../../mobile/src/theme/ThemeConte
 import { readingWidth, shape, space } from '../../../../mobile/src/theme/theme';
 import { DialogProvider, useAlert } from '../../../../mobile/src/components/DialogProvider';
 import { getStartScreen, StartScreen, startRoutes } from '../../../../mobile/src/utils/startScreen';
-import LandscapeScreen from '../../../../mobile/src/screens/LandscapeScreen';
-import ReviewScreen from '../../../../mobile/src/screens/ReviewScreen';
-import TidyScreen from '../../../../mobile/src/screens/TidyScreen';
-import AskScreen from '../../../../mobile/src/screens/AskScreen';
 import HomeScreen from '../../../../mobile/src/screens/HomeScreen';
-import NoteViewScreen from '../../../../mobile/src/screens/NoteViewScreen';
-import TasksScreen from '../../../../mobile/src/screens/TasksScreen';
-import BinScreen from '../../../../mobile/src/screens/BinScreen';
-import EditorScreen from '../../../../mobile/src/screens/EditorScreen';
-import ImportExportScreen from '../../../../mobile/src/screens/ImportExportScreen';
-import ScratchpadScreen from '../../../../mobile/src/screens/ScratchpadScreen';
-import SettingsScreen from '../../../../mobile/src/screens/SettingsScreen';
-import ProfileLockScreen from '../../../../mobile/src/screens/ProfileLockScreen';
-import ProfileUnlockScreen from '../../../../mobile/src/screens/ProfileUnlockScreen';
-import AboutScreen from '../../../../mobile/src/screens/AboutScreen';
-import PrivacyScreen from '../../../../mobile/src/screens/PrivacyScreen';
-import SyncScreen from './SyncScreen';
 import { text as syncText } from './syncText';
-import OnboardingScreen from '../../../../mobile/src/screens/OnboardingScreen';
 import { DESKTOP_KEYS, setKeyOverrides } from '@notespark/core';
+
+const LandscapeScreen = React.lazy(() => import('../../../../mobile/src/screens/LandscapeScreen'));
+const ReviewScreen = React.lazy(() => import('../../../../mobile/src/screens/ReviewScreen'));
+const TidyScreen = React.lazy(() => import('../../../../mobile/src/screens/TidyScreen'));
+const AskScreen = React.lazy(() => import('../../../../mobile/src/screens/AskScreen'));
+const NoteViewScreen = React.lazy(() => import('../../../../mobile/src/screens/NoteViewScreen'));
+const TasksScreen = React.lazy(() => import('../../../../mobile/src/screens/TasksScreen'));
+const BinScreen = React.lazy(() => import('../../../../mobile/src/screens/BinScreen'));
+const EditorScreen = React.lazy(() => import('../../../../mobile/src/screens/EditorScreen'));
+const ImportExportScreen = React.lazy(() => import('../../../../mobile/src/screens/ImportExportScreen'));
+const ScratchpadScreen = React.lazy(() => import('../../../../mobile/src/screens/ScratchpadScreen'));
+const SettingsScreen = React.lazy(() => import('../../../../mobile/src/screens/SettingsScreen'));
+const ProfileLockScreen = React.lazy(() => import('../../../../mobile/src/screens/ProfileLockScreen'));
+const ProfileUnlockScreen = React.lazy(() => import('../../../../mobile/src/screens/ProfileUnlockScreen'));
+const AboutScreen = React.lazy(() => import('../../../../mobile/src/screens/AboutScreen'));
+const PrivacyScreen = React.lazy(() => import('../../../../mobile/src/screens/PrivacyScreen'));
+const SyncScreen = React.lazy(() => import('./SyncScreen'));
+const OnboardingScreen = React.lazy(() => import('../../../../mobile/src/screens/OnboardingScreen'));
 
 // Where the phone's texts say "phone", the desktop says "computer" (every language).
 setKeyOverrides(DESKTOP_KEYS);
@@ -237,6 +238,12 @@ const UnreadableProfile = ({ profileName, onRetry, onErase }: { profileName: str
 
 type LockState = { phase: 'starting' | 'ready' | 'locked' | 'unreadable'; profile: { id: string; name: string } | null };
 
+// Kick off startup backend calls at module load time so they run in parallel with I18nProvider and ThemeProvider.
+let initialLockPromise: Promise<LockState> | null = invoke<LockState>('lock:status');
+const initialSearchPromise = invoke<boolean>('search:available').then(setMeaningSearchAvailable, () => setMeaningSearchAvailable(false));
+const initialStartScreenPromise = getStartScreen();
+const initialOnboardedPromise = invoke<string | null>('settings', { op: 'get', key: 'onboarded' }).then(v => v !== 'true', () => false);
+
 const Shell = () => {
   const { theme, themeType, setThemeType } = useTheme();
   const { t, language } = useI18n();
@@ -275,13 +282,15 @@ const Shell = () => {
   const opened = useRef(false); // once the notes have been open, a lock covers them instead of replacing them
 
   const refresh = useCallback(() => {
-    invoke<LockState>('lock:status').then(s => { setError(null); setLock(s); }, e => setError(String(e.message ?? e)));
+    const p = initialLockPromise ?? invoke<LockState>('lock:status');
+    initialLockPromise = null;
+    p.then(s => { setError(null); setLock(s); }, e => setError(String(e.message ?? e)));
   }, []);
   useEffect(() => {
     refresh();
-    invoke<boolean>('search:available').then(setMeaningSearchAvailable, () => setMeaningSearchAvailable(false)).finally(() => setSearchKnown(true));
-    getStartScreen().then(setStartScreen);
-    invoke<string | null>('settings', { op: 'get', key: 'onboarded' }).then(v => setOnboarding(v !== 'true'), () => setOnboarding(false));
+    initialSearchPromise.finally(() => setSearchKnown(true));
+    initialStartScreenPromise.then(setStartScreen);
+    initialOnboardedPromise.then(setOnboarding);
     // Re-check whenever the window comes back, a call finds the profile locked, or the app locks it.
     window.addEventListener('focus', refresh);
     window.addEventListener('notespark-lock', refresh);
@@ -310,7 +319,9 @@ const Shell = () => {
   };
   const erase = async () => { await invoke('lock:erase'); refresh(); };
   const unlockScreen = lock?.profile && (
-    <ProfileUnlockScreen profileId={lock.profile.id} profileName={lock.profile.name} onUnlock={unlock} onForgotPin={erase} />
+    <React.Suspense fallback={null}>
+      <ProfileUnlockScreen profileId={lock.profile.id} profileName={lock.profile.name} onUnlock={unlock} onForgotPin={erase} />
+    </React.Suspense>
   );
   const finishOnboarding = () => { invoke('settings', { op: 'set', key: 'onboarded', value: 'true' }).catch(() => {}); setOnboarding(false); };
 
@@ -330,7 +341,7 @@ const Shell = () => {
   } else if (lock.phase === 'locked' && !opened.current) {
     body = unlockScreen;
   } else if (onboarding) {
-    body = <OnboardingScreen onFinish={finishOnboarding} />;
+    body = <React.Suspense fallback={null}><OnboardingScreen onFinish={finishOnboarding} /></React.Suspense>;
   } else {
     body = (
       <>

@@ -219,12 +219,18 @@ const AppContent = () => {
 
   useEffect(() => {
     const setupApp = async () => {
+      const prefsPromise = Promise.all([
+        AsyncStorage.getItem('onboarded').catch(() => 'true'),
+        getStartScreen(),
+      ]);
       try {
-        await setupNotificationWorker();
-        await syncProfileEncryption();
+        const def = await getDefaultProfile();
+        await syncProfileEncryption(def.id);
         await openDefaultProfile();
-        await purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
-        await clearAttachmentTempDir().catch(() => {});
+        void setupNotificationWorker().catch(() => {});
+        void syncProfileEncryption().catch(() => {});
+        void purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
+        void clearAttachmentTempDir().catch(() => {});
         // Reads every profile's notes; waits so it doesn't compete with Home's first load.
         setTimeout(() => {
           getAllProfilesNoteContents().then(pruneImageCache).catch(() => {});
@@ -236,8 +242,8 @@ const AppContent = () => {
         const fallback = await getDefaultProfile().catch(() => ({ id: 'default', name: 'Personal' }));
         setUnreadableProfile(fallback);
       } finally {
-        const onboarded = await AsyncStorage.getItem('onboarded').catch(() => 'true');
-        setStartScreen(await getStartScreen());
+        const [onboarded, start] = await prefsPromise;
+        setStartScreen(start);
         setShowOnboarding(onboarded !== 'true');
         setDbInitialized(true);
       }

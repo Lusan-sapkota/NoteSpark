@@ -2,8 +2,6 @@
 import { execFile } from 'node:child_process';
 import { clipboard, Notification } from 'electron';
 import { buildReminders, getLanguage, REMINDER_ID_PREFIX, t, type ProfileTasks } from '@notespark/core';
-import * as notes from '../../../mobile/src/storage/notes';
-import * as profiles from '../../../mobile/src/storage/profiles';
 import AsyncStorage from '@notespark/node-shims/async-storage';
 import { syncLanguage } from './language';
 
@@ -30,6 +28,10 @@ export const startReminders = (open: () => void) => {
   const tick = async () => {
     await syncLanguage();
     await (await import('./storage')).lockStatus(); // storage has started: profiles converted and the default one open
+    const [notes, profiles] = await Promise.all([
+      import('../../../mobile/src/storage/notes'),
+      import('../../../mobile/src/storage/profiles'),
+    ]);
     const stored = Number(await AsyncStorage.getItem('reminderHour'));
     const chosen = HOURS.includes(stored) ? stored : 9;
     if (notes.getNotesVersion() !== version || chosen !== hour || getLanguage() !== language || Date.now() - readAt > RECHECK_MS) {

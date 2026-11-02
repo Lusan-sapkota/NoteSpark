@@ -54,10 +54,14 @@ const openDefault = async () => {
 const start = () =>
   (starting ??= (async () => {
     try {
-      await profiles.syncProfileEncryption();
+      const def = await profiles.getDefaultProfile();
+      await profiles.syncProfileEncryption(def.id);
       await openDefault();
-      await profiles.purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
-      await attachments.clearAttachmentTempDir().catch(() => {});
+      void (async () => {
+        await profiles.syncProfileEncryption().catch(() => {});
+        await profiles.purgeProfileBin().catch(error => console.warn('Profile bin purge failed:', error));
+        await attachments.clearAttachmentTempDir().catch(() => {});
+      })();
       setTimeout(() => attachments.pruneAttachments().catch(() => {}), 10_000).unref?.();
     } catch (error) {
       console.error('Failed to initialize database:', error);

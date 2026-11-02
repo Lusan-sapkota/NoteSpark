@@ -35,23 +35,25 @@ const applyDirection = (language: LanguageCode): boolean => {
   return true;
 };
 
+const initialCode = languageFor('system');
+setLanguage(initialCode);
+const savedLanguagePromise = AsyncStorage.getItem(KEY).catch(() => null);
+
 export const I18nProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [preference, setPreferenceState] = useState<LanguagePreference>('system');
-  const [language, setLanguageState] = useState<LanguageCode>('en');
+  const [language, setLanguageState] = useState<LanguageCode>(initialCode);
   const [loaded, setLoaded] = useState(false);
 
   useEffect(() => {
-    AsyncStorage.getItem(KEY)
-      .catch(() => null)
-      .then(saved => {
-        const pref = (saved as LanguagePreference | null) ?? 'system';
-        const code = languageFor(pref);
-        setLanguage(code);
-        applyDirection(code);
-        setPreferenceState(pref);
-        setLanguageState(code);
-        setLoaded(true);
-      });
+    savedLanguagePromise.then(saved => {
+      const pref = (saved as LanguagePreference | null) ?? 'system';
+      const code = languageFor(pref);
+      setLanguage(code);
+      applyDirection(code);
+      setPreferenceState(pref);
+      setLanguageState(code);
+      setLoaded(true);
+    });
   }, []);
 
   const setPreference = useCallback(async (pref: LanguagePreference) => {

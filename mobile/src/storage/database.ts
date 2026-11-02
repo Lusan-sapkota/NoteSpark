@@ -184,26 +184,34 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
       isMarkdown INTEGER NOT NULL,
       createdAt TEXT NOT NULL,
       updatedAt TEXT NOT NULL,
-      isPinned INTEGER NOT NULL DEFAULT 0
+      isPinned INTEGER NOT NULL DEFAULT 0,
+      deletedAt TEXT,
+      isArchived INTEGER NOT NULL DEFAULT 0,
+      uuid TEXT
     )`
   );
-  await db.execAsync('ALTER TABLE notes ADD COLUMN createdAt TEXT').catch(() => {});
-  await db.execAsync('ALTER TABLE notes ADD COLUMN updatedAt TEXT').catch(() => {});
-  await db.execAsync('ALTER TABLE notes ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0').catch(() => {});
-  await db.execAsync('ALTER TABLE notes ADD COLUMN deletedAt TEXT').catch(() => {});
-  await db.execAsync('ALTER TABLE notes ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0').catch(() => {});
+  const cols = new Set((await db.getAllAsync<{ name: string }>('PRAGMA table_info(notes)')).map(c => c.name));
+  if (!cols.has('createdAt')) await db.execAsync('ALTER TABLE notes ADD COLUMN createdAt TEXT').catch(() => {});
+  if (!cols.has('updatedAt')) await db.execAsync('ALTER TABLE notes ADD COLUMN updatedAt TEXT').catch(() => {});
+  if (!cols.has('isPinned')) await db.execAsync('ALTER TABLE notes ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0').catch(() => {});
+  if (!cols.has('deletedAt')) await db.execAsync('ALTER TABLE notes ADD COLUMN deletedAt TEXT').catch(() => {});
+  if (!cols.has('isArchived')) await db.execAsync('ALTER TABLE notes ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0').catch(() => {});
   // The global id sync uses; backfilled once, then set by every INSERT (UUID_SQL) and never changed.
-  await db.execAsync('ALTER TABLE notes ADD COLUMN uuid TEXT').catch(() => {});
-  await db.execAsync(`UPDATE notes SET uuid = ${UUID_SQL} WHERE uuid IS NULL OR uuid = ''`);
+  if (!cols.has('uuid')) await db.execAsync('ALTER TABLE notes ADD COLUMN uuid TEXT').catch(() => {});
+  if (await db.getFirstAsync("SELECT 1 FROM notes WHERE uuid IS NULL OR uuid = '' LIMIT 1")) {
+    await db.execAsync(`UPDATE notes SET uuid = ${UUID_SQL} WHERE uuid IS NULL OR uuid = ''`);
+  }
   await db.execAsync('CREATE UNIQUE INDEX IF NOT EXISTS notes_uuid ON notes (uuid)');
   await initCrdt(db);
   const now = new Date().toISOString();
   const cutoff = [new Date(Date.now() - BIN_DAYS * 86400000).toISOString()];
-  await transact(db, async sync => {
-    const purged = await uuidsWhere(db, 'deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
-    await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
-    await sync.erase(purged);
-  });
+  if (await db.getFirstAsync('SELECT 1 FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ? LIMIT 1', cutoff)) {
+    await transact(db, async sync => {
+      const purged = await uuidsWhere(db, 'deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
+      await db.runAsync('DELETE FROM notes WHERE deletedAt IS NOT NULL AND deletedAt < ?', cutoff);
+      await sync.erase(purged);
+    });
+  }
   // Earlier versions of each note (see saveVersion in notes.ts).
   await db.execAsync(
     `CREATE TABLE IF NOT EXISTS note_versions (
@@ -214,15 +222,16 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
       isMarkdown INTEGER NOT NULL,
       savedAt TEXT NOT NULL
     );
-    CREATE INDEX IF NOT EXISTS note_versions_note ON note_versions (noteId, savedAt);`
+    CREATE INDEX IF NOT EXISTS note_versions_note ON note_versions (noteId, savedAt);
+    CREATE TABLE IF NOT EXISTS scratchpad (id INTEGER PRIMARY KEY CHECK (id = 1), content TEXT NOT NULL, updatedAt TEXT NOT NULL);`
   );
-  await db.runAsync('DELETE FROM note_versions WHERE noteId NOT IN (SELECT id FROM notes)');
-  // The profile's scratchpad: one row, plain text (see getScratchpad in notes.ts).
-  await db.execAsync(
-    `CREATE TABLE IF NOT EXISTS scratchpad (id INTEGER PRIMARY KEY CHECK (id = 1), content TEXT NOT NULL, updatedAt TEXT NOT NULL)`
-  );
-  await db.runAsync("UPDATE notes SET createdAt = ? WHERE createdAt IS NULL OR createdAt = ''", [now]);
-  await db.runAsync("UPDATE notes SET updatedAt = ? WHERE updatedAt IS NULL OR updatedAt = ''", [now]);
+  if (await db.getFirstAsync('SELECT 1 FROM note_versions WHERE noteId NOT IN (SELECT id FROM notes) LIMIT 1')) {
+    await db.runAsync('DELETE FROM note_versions WHERE noteId NOT IN (SELECT id FROM notes)');
+  }
+  if (await db.getFirstAsync("SELECT 1 FROM notes WHERE createdAt IS NULL OR createdAt = '' OR updatedAt IS NULL OR updatedAt = '' LIMIT 1")) {
+    await db.runAsync("UPDATE notes SET createdAt = ? WHERE createdAt IS NULL OR createdAt = ''", [now]);
+    await db.runAsync("UPDATE notes SET updatedAt = ? WHERE updatedAt IS NULL OR updatedAt = ''", [now]);
+  }
   await reconcileOnce(db);
   await initSearchIndex(db);
 };

@@ -20,11 +20,12 @@ export const initCrdt = async (db: DB): Promise<void> => {
       createdAt TEXT NOT NULL
     );
     CREATE INDEX IF NOT EXISTS crdt_updates_doc ON crdt_updates (docId, id);
-    CREATE TABLE IF NOT EXISTS sync_state (id INTEGER PRIMARY KEY CHECK (id = 1), clientId INTEGER NOT NULL);
+    CREATE TABLE IF NOT EXISTS sync_state (id INTEGER PRIMARY KEY CHECK (id = 1), clientId INTEGER NOT NULL, syncId TEXT);
     CREATE TABLE IF NOT EXISTS crdt_materialized (docId TEXT PRIMARY KEY, stateVector BLOB NOT NULL);
     CREATE TABLE IF NOT EXISTS crdt_adopted (docId TEXT PRIMARY KEY);`
   );
-  await db.execAsync('ALTER TABLE sync_state ADD COLUMN syncId TEXT').catch(() => {});
+  const cols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(sync_state)');
+  if (!cols.some(c => c.name === 'syncId')) await db.execAsync('ALTER TABLE sync_state ADD COLUMN syncId TEXT').catch(() => {});
 };
 
 // New random Yjs client id for every opened connection, never stored (F2).
@@ -193,6 +194,16 @@ export const eraseNotes = (db: DB, uuids: string[]): Promise<void> => transact(d
 
 const sameBytes = (a: Uint8Array, b: Uint8Array) => a.length === b.length && a.every((v, i) => v === b[i]);
 
+const sameNote = (a: NoteState, b: NoteState) =>
+  a.title === b.title &&
+  a.content === b.content &&
+  a.isMarkdown === b.isMarkdown &&
+  a.isPinned === b.isPinned &&
+  a.isArchived === b.isArchived &&
+  a.deletedAt === b.deletedAt &&
+  a.createdAt === b.createdAt &&
+  a.updatedAt === b.updatedAt;
+
 // A doc ahead of its row rebuilds the row instead of being overwritten.
 // ponytail: loads every doc; runs when sync is turned on and once per connection.
 export const reconcile = async (db: DB): Promise<void> => {
@@ -200,13 +211,19 @@ export const reconcile = async (db: DB): Promise<void> => {
   const ids = (await db.getAllAsync<{ id: number }>('SELECT id FROM notes')).map(r => r.id);
   for (let i = 0; i < ids.length; i += 100) {
     await transact(db, async sync => {
+      const { known } = readCatalog(await loadUpdates(db, CATALOG));
       const aheadOfRow: number[] = [];
       for (const id of ids.slice(i, i + 100)) {
-        const row = await db.getFirstAsync<{ uuid: string | null }>('SELECT uuid FROM notes WHERE id = ?', [id]);
+        const row = await db.getFirstAsync<any>('SELECT * FROM notes WHERE id = ?', [id]);
         if (!row?.uuid) continue;
         const marker = await db.getFirstAsync<{ stateVector: Uint8Array }>('SELECT stateVector FROM crdt_materialized WHERE docId = ?', [row.uuid]);
-        if (marker && !sameBytes(marker.stateVector, noteWithStateVector(await loadUpdates(db, row.uuid)).stateVector)) await materialize(db, row.uuid);
-        else aheadOfRow.push(id);
+        if (marker) {
+          const current = noteWithStateVector(await loadUpdates(db, row.uuid));
+          if (!sameBytes(marker.stateVector, current.stateVector)) await materialize(db, row.uuid, current);
+          else if (!known.has(row.uuid) || !sameNote(stateOf(row), current.note)) aheadOfRow.push(id);
+        } else {
+          aheadOfRow.push(id);
+        }
       }
       await sync.capture(aheadOfRow);
     });
@@ -214,7 +231,7 @@ export const reconcile = async (db: DB): Promise<void> => {
   const orphans = await db.getAllAsync<{ docId: string }>(
     `SELECT DISTINCT docId FROM crdt_updates WHERE docId != ? AND docId NOT IN (SELECT uuid FROM notes WHERE uuid IS NOT NULL)`, [CATALOG]
   );
-  await eraseNotes(db, orphans.map(o => o.docId));
+  if (orphans.length > 0) await eraseNotes(db, orphans.map(o => o.docId));
 };
 
 const reconciled = new WeakSet<DB>();
@@ -224,8 +241,8 @@ export const reconcileOnce = async (db: DB) => {
   await reconcile(db);
 };
 
-const materialize = async (db: DB, uuid: string): Promise<void> => {
-  const { note: n, stateVector } = noteWithStateVector(await loadUpdates(db, uuid));
+const materialize = async (db: DB, uuid: string, preloaded?: { note: NoteState; stateVector: Uint8Array }): Promise<void> => {
+  const { note: n, stateVector } = preloaded ?? noteWithStateVector(await loadUpdates(db, uuid));
   await db.runAsync(
     `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived, deletedAt, uuid)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)

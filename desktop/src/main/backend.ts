@@ -1,7 +1,16 @@
 import { clipboard, dialog, nativeTheme } from 'electron';
+import AsyncStorage from '@notespark/node-shims/async-storage';
 import { touch } from './activity';
 import { renderPdf, saveImage } from './assets';
 import { startWebView, stopWebView, webViewStatus } from './web';
+
+const runSettings = async ({ op, key, value }: { op: 'get' | 'set' | 'remove'; key: string; value?: string }) => {
+  if (typeof key !== 'string' || /pin|key|secret|token|backup/i.test(key)) throw new Error('Bad key');
+  if (op === 'get') return AsyncStorage.getItem(key);
+  if (op === 'set') return AsyncStorage.setItem(key, String(value));
+  if (op === 'remove') return AsyncStorage.removeItem(key);
+  throw new Error('Bad operation');
+};
 
 // One API for both transports: Electron IPC (the window) and HTTP (the web view).
 // `local` handlers run only for the desktop window, never from the browser.
@@ -17,7 +26,7 @@ const handlers: Record<string, Handler> = {
   'lock:unlock': { local: true, run: async args => (await import('./storage')).unlock(args) },
   'lock:erase': { local: true, run: async () => (await import('./storage')).eraseLocked() },
   'lock:retry': { local: true, run: async () => (await import('./storage')).retryOpen() },
-  settings: { run: async args => (await import('./storage')).callSettings(args as any) },
+  settings: { run: async args => runSettings(args as any) },
   'pdf:render': { run: args => renderPdf(args) },
   'images:save': { run: args => saveImage(args) },
   'theme:get': { local: true, run: () => nativeTheme.themeSource },

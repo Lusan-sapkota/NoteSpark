@@ -9,8 +9,6 @@ import { buildAppMenu, MenuAction } from './menu';
 import AsyncStorage from '@notespark/node-shims/async-storage';
 import { syncLanguage } from './language';
 import { startWebView, stopWebView, webViewStatus } from './web';
-import { stopSync, syncHub } from './sync';
-import { onProfilesChanged } from './storage';
 
 // The app stays offline and the renderer loads only local content or the development server.
 const devUrl = process.env.ELECTRON_RENDERER_URL;
@@ -117,7 +115,6 @@ else {
   });
 
   app.whenReady().then(async () => {
-    await syncLanguage(); // before the menu and tray are built
     protocol.handle('app', async request => {
       const url = new URL(request.url);
       const asset = url.host === 'notespark' ? await serveAsset(url.pathname) : null;
@@ -140,8 +137,6 @@ else {
       return invoke(channel, args, 'ipc');
     });
 
-    tray = new Tray(icon.resize({ width: 22, height: 22 }));
-    tray.setToolTip('NoteSpark');
     const refreshTray = async () => {
       await syncLanguage();
       refreshMenuFn?.();
@@ -164,12 +159,7 @@ else {
         { label: t('desktop.quit'), click: () => app.quit() },
       ]));
     };
-    void refreshTray();
-    tray.on('click', showWindow);
-    app.on('before-quit', () => { void stopWebView(); void stopSync(); });
-    // Sync starts with the app when it was left on; the storage code opens first, the hub only follows it.
-    onProfilesChanged(() => void syncHub().profilesChanged().catch(() => {}));
-    void invoke('lock:status', undefined, 'ipc').then(() => syncHub().start()).catch(() => {});
+
     ipcMain.handle('menu:ready', e => {
       if (e.sender !== window?.webContents) return;
       windowReady = true;
@@ -187,6 +177,11 @@ else {
       if (!window || e.sender !== window.webContents || typeof x !== 'number' || typeof y !== 'number') return;
       Menu.getApplicationMenu()?.popup({ window, x: Math.round(x), y: Math.round(y) });
     });
+
+    // Open the window immediately so Chromium starts loading the renderer in parallel with menu/tray/storage setup.
+    createWindow();
+
+    await syncLanguage(); // before the menu and tray are built
     const refreshMenu = () => Menu.setApplicationMenu(buildAppMenu({
       send: action => {
         if (action.type !== 'theme') return deliver(action);
@@ -201,7 +196,20 @@ else {
     refreshMenuFn = refreshMenu;
     refreshMenu();
     nativeTheme.on('updated', refreshMenu);
-    createWindow();
+
+    tray = new Tray(icon.resize({ width: 22, height: 22 }));
+    tray.setToolTip('NoteSpark');
+    void refreshTray();
+    tray.on('click', showWindow);
+    app.on('before-quit', () => {
+      void stopWebView();
+      void import('./sync').then(m => m.stopSync()).catch(() => {});
+    });
+    // Sync starts with the app when it was left on; the storage code opens first, the hub only follows it.
+    void Promise.all([import('./storage'), import('./sync')]).then(([storage, sync]) => {
+      storage.onProfilesChanged(() => void sync.syncHub().profilesChanged().catch(() => {}));
+      return invoke('lock:status', undefined, 'ipc').then(() => sync.syncHub().start());
+    }).catch(() => {});
     startReminders(() => deliver({ type: 'go', routes: ['Home', 'Tasks'] }));
   });
 }

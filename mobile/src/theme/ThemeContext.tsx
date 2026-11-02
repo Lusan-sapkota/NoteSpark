@@ -19,35 +19,29 @@ const ThemeContext = createContext<ThemeContextType>({
   isDarkMode: false,
 });
 
+const savedThemePromise = AsyncStorage.getItem('themePreference').catch(() => null);
+
 export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const colorScheme = useColorScheme();
-  const [themeType, setThemeType] = useState<ThemeType>('system');
+  const [themeType, setThemeTypeState] = useState<ThemeType>('system');
   const [theme, setTheme] = useState(colorScheme === 'dark' ? darkTheme : lightTheme);
   
   useEffect(() => {
-    const loadThemePreference = async () => {
-      try {
-        const savedTheme = await AsyncStorage.getItem('themePreference');
-        if (savedTheme) {
-          setThemeType(savedTheme as ThemeType);
-        }
-      } catch (error) {
-        console.error('Failed to load theme preference:', error);
+    savedThemePromise.then(savedTheme => {
+      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'system') {
+        setThemeTypeState(savedTheme);
       }
-    };
-    
-    loadThemePreference();
+    });
   }, []);
+
+  const setThemeType = (type: ThemeType) => {
+    setThemeTypeState(type);
+    AsyncStorage.setItem('themePreference', type).catch(error => {
+      console.error('Failed to save theme preference:', error);
+    });
+  };
   
   useEffect(() => {
-    const saveThemePreference = async () => {
-      try {
-        await AsyncStorage.setItem('themePreference', themeType);
-      } catch (error) {
-        console.error('Failed to save theme preference:', error);
-      }
-    };
-    
     let newTheme = lightTheme;
     
     if (themeType === 'system') {
@@ -59,7 +53,6 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     }
     
     setTheme(newTheme);
-    saveThemePreference();
   }, [themeType, colorScheme]);
   
   const isDarkMode = 

@@ -105,7 +105,7 @@ export const Navigator: React.FC<{ initial: string | string[]; screens: Record<s
   const Screen = screens[top.name];
   useEffect(() => { publish({ nav, route: top }); }, [nav, top]);
   useEffect(() => () => publish(null), []);
-  const content = Screen ? <Screen key={top.key} /> : null;
+  const content = Screen ? <React.Suspense fallback={null}><Screen key={top.key} /></React.Suspense> : null;
   return <NavContext.Provider value={{ nav, route: top, guard }}>{content}</NavContext.Provider>;
 };
 

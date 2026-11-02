@@ -5,14 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { TouchableOpacity } from 'react-native';
 import { RootStackParamList } from '../types';
 import HomeScreen from '../screens/HomeScreen';
-import EditorScreen from '../screens/EditorScreen';
-import SettingsScreen from '../screens/SettingsScreen';
-import ImportExportScreen from '../screens/ImportExportScreen';
-import AboutScreen from '../screens/AboutScreen';
-import PrivacyScreen from '../screens/PrivacyScreen';
-import SyncScreen from '../screens/SyncScreen';
-import TasksScreen from '../screens/TasksScreen';
-import BinScreen from '../screens/BinScreen';
 import { useTheme } from '../theme/ThemeContext';
 import { navDarkTheme, navLightTheme } from '../theme/theme';
 import { Notifications } from '../utils/notifications';
@@ -49,91 +41,91 @@ const AppNavigator: React.FC<{ onReady?: () => void; start?: StartScreen; reopen
         />
         <Stack.Screen
           name="Editor"
-          component={EditorScreen}
+          getComponent={() => require('../screens/EditorScreen').default}
           options={{
             headerShown: false,
           }}
         />
         <Stack.Screen
           name="NoteView"
-          component={require('../screens/NoteViewScreen').default}
+          getComponent={() => require('../screens/NoteViewScreen').default}
           options={{
             headerShown: false,
           }}
         />
         <Stack.Screen
           name="Scratchpad"
-          component={require('../screens/ScratchpadScreen').default}
+          getComponent={() => require('../screens/ScratchpadScreen').default}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Settings"
-          component={SettingsScreen}
+          getComponent={() => require('../screens/SettingsScreen').default}
           options={{
             headerShown: false,
           }}
         />
         <Stack.Screen
           name="ProfileLock"
-          component={require('../screens/ProfileLockScreen').default}
+          getComponent={() => require('../screens/ProfileLockScreen').default}
           options={{ headerShown: false, animation: 'slide_from_bottom' }}
         />
         <Stack.Screen
           name="ImportExport"
-          component={ImportExportScreen}
+          getComponent={() => require('../screens/ImportExportScreen').default}
           options={{
             headerShown: false,
           }}
         />
         <Stack.Screen
           name="About"
-          component={AboutScreen}
+          getComponent={() => require('../screens/AboutScreen').default}
           options={{
             headerShown: false,
           }}
         />
         <Stack.Screen
           name="Sync"
-          component={SyncScreen}
+          getComponent={() => require('../screens/SyncScreen').default}
           options={{
             headerShown: false,
           }}
         />
         <Stack.Screen
           name="Privacy"
-          component={PrivacyScreen}
+          getComponent={() => require('../screens/PrivacyScreen').default}
           options={{
             headerShown: false,
           }}
         />
         <Stack.Screen
           name="Tasks"
-          component={TasksScreen}
+          getComponent={() => require('../screens/TasksScreen').default}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Ask"
-          component={require('../screens/AskScreen').default}
+          getComponent={() => require('../screens/AskScreen').default}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Landscape"
-          component={require('../screens/LandscapeScreen').default}
+          getComponent={() => require('../screens/LandscapeScreen').default}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Review"
-          component={require('../screens/ReviewScreen').default}
+          getComponent={() => require('../screens/ReviewScreen').default}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Tidy"
-          component={require('../screens/TidyScreen').default}
+          getComponent={() => require('../screens/TidyScreen').default}
           options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Bin"
-          component={BinScreen}
+          getComponent={() => require('../screens/BinScreen').default}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
