@@ -1125,6 +1125,23 @@ const catalog: Record<string, string> = {
   "privacy.permD3": "キーリング（任意）：お使いのシステムのキーリング（KWallet や GNOME Keyring など）が、保護されたプロフィールと同期に NoteSpark が必要とする鍵を保管します。キーリングがない場合、NoteSpark は保護されたプロフィールを作成せず、同期もオンにしません。",  // REVIEW (legal)
   "privacy.permD4": "ネットワークアクセス：自分のネットワーク上での同期、オンにした場合のウェブビュー、「ウェブ画像を表示」をオンにした場合のウェブ画像のためだけです。NoteSpark が公開アドレスで待ち受けることはありません。",  // REVIEW (legal)
   "home.tasksDueCount": "今日が期限または期限切れ：{count}",
+  "sync.stateKeyMismatch": "ペアリングしたパソコンではありません。パソコンで NoteSpark を再インストールしたか、このスマートフォンを削除した場合は、もう一度ペアリングしてください。このスマートフォン内のノートは安全です。", // REVIEW
+  "sync.stateNewProfilesOff": "パソコン側でデバイスからの新しいプロフィールを受け入れない設定になっています。パソコンの「設定 > 同期」で「デバイスからの新しいプロフィールを受け入れる」をオンにしてから、「今すぐ同期」をタップしてください。", // REVIEW
+  "sync.stateTooLarge": "ノートまたは添付ファイルが大きすぎて同期できません（上限 32 MB）。このスマートフォンに残したまま、他のノートを同期します。", // REVIEW
+  "sync.stateRateLimit": "同期が混み合っています。少し待ってから再開します。", // REVIEW
+  "sync.stateShuttingDown": "パソコンの NoteSpark が終了中です。再度開くと同期が再開します。", // REVIEW
+  "sync.stateMalformed": "同期中に問題が発生したため再試行します。このスマートフォン内のノートは安全です。", // REVIEW
+  "sync.lockedMatchNotice": "パソコンの「{name}」プロフィールは PIN でロックされているため、パソコン側に新しいプロフィールを作成しました。", // REVIEW
+  "sync.pickTitle": "パソコンのプロフィールを選択", // REVIEW
+  "sync.pickBody": "パソコンに「{name}」プロフィールが複数あります。どれと結合するか選ぶか、新しいプロフィールを作成してください。", // REVIEW
+  "sync.pickRow": "{name}（{notes} 件のノート）", // REVIEW
+  "sync.pickNew": "新しいプロフィールを作成", // REVIEW
+  "dsync.linkedDevices": "{devices} とリンク済み", // REVIEW
+  "dsync.noLinkedDevices": "リンクされたデバイスはまだありません", // REVIEW
+  "settings.deleteSyncedProfileBody": "{name} は {devices} と同期されています。ゴミ箱に移動すると {devices} はこのプロフィールから切り離されますが、すでに {devices} にあるノートはそのまま残ります。{days} 日間は設定から復元できます。", // REVIEW
+  "settings.deleteSyncedForeverBody": "{name} は {devices} と同期されています。完全に削除すると {devices} はこのプロフィールから切り離されますが、すでに {devices} にあるノートはそのまま残ります。この操作は元に戻せません。", // REVIEW
+  "settings.moveAllSyncedBody": "{name} プロフィールのすべてのノートが、ここと {devices} でゴミ箱に移動します。30 日間はゴミ箱から復元できます。", // REVIEW
+  "settings.deleteAllSyncedBody": "{name} プロフィールのすべてのノートが、ゴミ箱に入らずにここと {devices} で今すぐ消去されます。すでにゴミ箱にあるノートはそのまま残ります。この操作は元に戻せません。", // REVIEW
 };
 
 export default catalog;

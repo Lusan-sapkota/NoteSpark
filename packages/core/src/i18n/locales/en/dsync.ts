@@ -64,4 +64,6 @@ export default {
   'dsync.diagnostics': 'Copy diagnostics',
   'dsync.diagnosticsHelp': 'Events only. Never note text or titles.',
   'dsync.usbTip': 'No Wi-Fi? Turn on USB tethering on your phone and plug it in. It works like any other private network.',
+  'dsync.linkedDevices': 'Linked with {devices}',
+  'dsync.noLinkedDevices': 'No devices linked yet',
 } as const;

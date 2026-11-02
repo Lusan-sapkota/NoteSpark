@@ -1206,6 +1206,23 @@ const catalog: Record<string, string> = {
   "privacy.permD3": "Chaveiro (opcional): o chaveiro do seu sistema (como KWallet ou GNOME Keyring) guarda as chaves de que o NoteSpark precisa para perfis protegidos e sincronização. Sem um, o NoteSpark não cria um perfil protegido nem ativa a sincronização.",  // REVIEW (legal)
   "privacy.permD4": "Acesso à rede: só para sincronizar na sua própria rede, para a visualização web se você a ativar e para imagens da web se você ativar Mostrar imagens da web. O NoteSpark nunca escuta em um endereço público.",  // REVIEW (legal)
   "home.tasksDueCount": "Para hoje ou atrasadas: {count}",
+  "sync.stateKeyMismatch": "Este não é o computador com que você pareou. Se você reinstalou o NoteSpark ou removeu este celular lá, pareie novamente. Suas notas estão seguras neste celular.", // REVIEW
+  "sync.stateNewProfilesOff": "Seu computador está configurado para não aceitar novos perfis de dispositivos. Ative Aceitar novos perfis de dispositivos em Configurações, Sincronização no computador e toque em Sincronizar agora.", // REVIEW
+  "sync.stateTooLarge": "Uma nota ou anexo é grande demais para sincronizar (limite de 32 MB). Fica neste celular enquanto todo o resto sincroniza.", // REVIEW
+  "sync.stateRateLimit": "A sincronização está ocupada e continuará em instantes.", // REVIEW
+  "sync.stateShuttingDown": "O NoteSpark está fechando no seu computador. A sincronização continua quando ele abrir novamente.", // REVIEW
+  "sync.stateMalformed": "A sincronização encontrou um problema e tentará novamente. Suas notas estão seguras neste celular.", // REVIEW
+  "sync.lockedMatchNotice": "O perfil {name} no seu computador está bloqueado com PIN, então um novo perfil foi criado lá.", // REVIEW
+  "sync.pickTitle": "Escolha um perfil no seu computador", // REVIEW
+  "sync.pickBody": "Há mais de um perfil {name} no seu computador. Escolha a qual se juntar ou crie um novo perfil.", // REVIEW
+  "sync.pickRow": "{name} ({notes} notas)", // REVIEW
+  "sync.pickNew": "Criar um novo perfil", // REVIEW
+  "dsync.linkedDevices": "Vinculado com {devices}", // REVIEW
+  "dsync.noLinkedDevices": "Nenhum dispositivo vinculado ainda", // REVIEW
+  "settings.deleteSyncedProfileBody": "{name} está sincronizado com {devices}. Movê-lo para a lixeira cortará {devices} deste perfil, embora as notas que já estão em {devices} continuem lá. Você pode restaurá-lo nas Configurações por {days} dias.", // REVIEW
+  "settings.deleteSyncedForeverBody": "{name} está sincronizado com {devices}. Excluí-lo definitivamente cortará {devices} deste perfil, embora as notas que já estão em {devices} continuem lá. Isso não pode ser desfeito.", // REVIEW
+  "settings.moveAllSyncedBody": "Todas as notas do perfil {name} vão para a lixeira aqui e em {devices}. Você pode restaurá-las na Lixeira por 30 dias.", // REVIEW
+  "settings.deleteAllSyncedBody": "Todas as notas do perfil {name} serão apagadas agora aqui e em {devices}, sem passar pela lixeira. As notas que já estão na lixeira continuam lá. Isso não pode ser desfeito.", // REVIEW
 };
 
 export default catalog;

@@ -1126,6 +1126,23 @@ const catalog: Record<string, string> = {
   "privacy.permD3": "Keyring (opsional): keyring sistem Anda (seperti KWallet atau GNOME Keyring) menyimpan kunci yang dibutuhkan NoteSpark untuk profil terlindungi dan sinkronisasi. Tanpanya, NoteSpark tidak membuat profil terlindungi atau menyalakan sinkronisasi.",  // REVIEW (legal)
   "privacy.permD4": "Akses jaringan: hanya untuk sinkronisasi di jaringan Anda sendiri, untuk tampilan web jika Anda menyalakannya, dan untuk gambar web jika Anda menyalakan Tampilkan gambar web. NoteSpark tidak pernah mendengarkan pada alamat publik.",  // REVIEW (legal)
   "home.tasksDueCount": "Jatuh tempo hari ini atau terlambat: {count}",
+  "sync.stateKeyMismatch": "Ini bukan komputer yang Anda pasangkan. Jika Anda menginstal ulang NoteSpark atau menghapus ponsel ini di sana, pasangkan lagi. Catatan Anda aman di ponsel ini.", // REVIEW
+  "sync.stateNewProfilesOff": "Komputer Anda diatur untuk tidak menerima profil baru dari perangkat. Nyalakan Terima profil baru dari perangkat di Pengaturan, Sinkronisasi pada komputer Anda, lalu ketuk Sinkronkan sekarang.", // REVIEW
+  "sync.stateTooLarge": "Catatan atau lampiran terlalu besar untuk disinkronkan (batas 32 MB). Item tersebut tetap di ponsel ini sementara yang lain disinkronkan.", // REVIEW
+  "sync.stateRateLimit": "Sinkronisasi sedang sibuk dan akan berlanjut sebentar lagi.", // REVIEW
+  "sync.stateShuttingDown": "NoteSpark sedang ditutup di komputer Anda. Sinkronisasi berlanjut saat dibuka kembali.", // REVIEW
+  "sync.stateMalformed": "Sinkronisasi mengalami masalah dan akan mencoba lagi. Catatan Anda aman di ponsel ini.", // REVIEW
+  "sync.lockedMatchNotice": "Profil {name} di komputer Anda dikunci dengan PIN, jadi profil baru dibuat di sana.", // REVIEW
+  "sync.pickTitle": "Pilih profil di komputer Anda", // REVIEW
+  "sync.pickBody": "Ada lebih dari satu profil {name} di komputer Anda. Pilih mana yang ingin digabungkan, atau buat profil baru.", // REVIEW
+  "sync.pickRow": "{name} ({notes} catatan)", // REVIEW
+  "sync.pickNew": "Buat profil baru", // REVIEW
+  "dsync.linkedDevices": "Terhubung dengan {devices}", // REVIEW
+  "dsync.noLinkedDevices": "Belum ada perangkat terhubung", // REVIEW
+  "settings.deleteSyncedProfileBody": "{name} disinkronkan dengan {devices}. Memindahkannya ke tempat sampah akan memutus {devices} dari profil ini, meski catatan yang sudah ada di {devices} tetap di sana. Anda dapat memulihkannya dari Pengaturan selama {days} hari.", // REVIEW
+  "settings.deleteSyncedForeverBody": "{name} disinkronkan dengan {devices}. Menghapusnya selamanya akan memutus {devices} dari profil ini, meski catatan yang sudah ada di {devices} tetap di sana. Tindakan ini tidak dapat dibatalkan.", // REVIEW
+  "settings.moveAllSyncedBody": "Setiap catatan di profil {name} dipindahkan ke tempat sampah di sini dan di {devices}. Anda dapat memulihkannya dari Tempat Sampah selama 30 hari.", // REVIEW
+  "settings.deleteAllSyncedBody": "Setiap catatan di profil {name} dihapus sekarang di sini dan di {devices}, tanpa masuk ke tempat sampah. Catatan yang sudah ada di tempat sampah tetap di sana. Tindakan ini tidak dapat dibatalkan.", // REVIEW
 };
 
 export default catalog;

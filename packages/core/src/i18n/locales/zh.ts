@@ -1125,6 +1125,23 @@ const catalog: Record<string, string> = {
   "privacy.permD3": "密钥环（可选）：你系统的密钥环（如 KWallet 或 GNOME Keyring）保管 NoteSpark 为受保护档案和同步所需的密钥。没有密钥环时，NoteSpark 不会创建受保护档案，也不会打开同步。",  // REVIEW (legal)
   "privacy.permD4": "网络访问：仅用于在你自己网络上的同步、你打开的网页视图，以及你打开“显示网络图片”时的网络图片。NoteSpark 从不在公共地址上监听。",  // REVIEW (legal)
   "home.tasksDueCount": "今天到期或已逾期：{count}",
+  "sync.stateKeyMismatch": "这不是你之前配对的电脑。如果你在电脑上重新安装了 NoteSpark 或移除了这部手机，请重新配对。你的笔记在这部手机上是安全的。", // REVIEW
+  "sync.stateNewProfilesOff": "你的电脑已设置为不接受来自设备的新档案。请在电脑的“设置 > 同步”中开启“接受来自设备的新档案”，然后点按“立即同步”。", // REVIEW
+  "sync.stateTooLarge": "有笔记或附件太大，无法同步（上限 32 MB）。它会留在这部手机上，其余内容照常同步。", // REVIEW
+  "sync.stateRateLimit": "同步正忙，稍后将继续。", // REVIEW
+  "sync.stateShuttingDown": "电脑上的 NoteSpark 正在关闭。重新打开后同步将继续。", // REVIEW
+  "sync.stateMalformed": "同步遇到了问题，将自动重试。你的笔记在这部手机上是安全的。", // REVIEW
+  "sync.lockedMatchNotice": "你电脑上的“{name}”档案已用 PIN 锁定，因此已在电脑上新建了一个档案。", // REVIEW
+  "sync.pickTitle": "选择电脑上的档案", // REVIEW
+  "sync.pickBody": "你的电脑上有多个名为“{name}”的档案。请选择要加入哪一个，或新建一个档案。", // REVIEW
+  "sync.pickRow": "{name}（{notes} 条笔记）", // REVIEW
+  "sync.pickNew": "新建档案", // REVIEW
+  "dsync.linkedDevices": "已关联 {devices}", // REVIEW
+  "dsync.noLinkedDevices": "尚无关联设备", // REVIEW
+  "settings.deleteSyncedProfileBody": "{name} 已与 {devices} 同步。将它移到回收站会断开 {devices} 与此档案的连接，不过已在 {devices} 上的笔记会留在那里。你可以在 {days} 天内从“设置”恢复它。", // REVIEW
+  "settings.deleteSyncedForeverBody": "{name} 已与 {devices} 同步。永久删除它会断开 {devices} 与此档案的连接，不过已在 {devices} 上的笔记会留在那里。此操作无法撤销。", // REVIEW
+  "settings.moveAllSyncedBody": "{name} 档案中的每条笔记都会在这里和 {devices} 上移到回收站。你可以在 30 天内从“回收站”恢复它们。", // REVIEW
+  "settings.deleteAllSyncedBody": "{name} 档案中的每条笔记现在都会在这里和 {devices} 上直接抹掉，不进入回收站。已在回收站中的笔记会留在那里。此操作无法撤销。", // REVIEW
 };
 
 export default catalog;

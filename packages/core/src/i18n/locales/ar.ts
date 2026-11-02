@@ -1326,6 +1326,23 @@ const catalog: Record<string, string> = {
   "privacy.permD3": "سلسلة المفاتيح (اختياري): تحتفظ سلسلة مفاتيح نظامك (مثل KWallet أو GNOME Keyring) بالمفاتيح التي يحتاجها NoteSpark للملفات الشخصية المحمية والمزامنة. بدونها لا ينشئ NoteSpark ملفًا شخصيًا محميًا ولا يفعّل المزامنة.",  // REVIEW (legal)
   "privacy.permD4": "الوصول إلى الشبكة: فقط للمزامنة على شبكتك الخاصة، ولعرض الويب إذا فعّلته، ولصور الويب إذا فعّلت «عرض صور الويب». لا يستمع NoteSpark أبدًا على عنوان عام.",  // REVIEW (legal)
   "home.tasksDueCount": "المستحقة اليوم أو المتأخرة: {count}",
+  "sync.stateKeyMismatch": "هذا ليس الحاسوب الذي اقترنت به. إذا أعدت تثبيت NoteSpark أو أزلت هذا الهاتف هناك، فاقترن من جديد. ملاحظاتك بأمان على هذا الهاتف.", // REVIEW
+  "sync.stateNewProfilesOff": "حاسوبك مضبوط على عدم قبول ملفات شخصية جديدة من الأجهزة. فعّل «قبول ملفات شخصية جديدة من الأجهزة» في الإعدادات، المزامنة على حاسوبك، ثم انقر فوق «مزامنة الآن».", // REVIEW
+  "sync.stateTooLarge": "ملاحظة أو مرفق أكبر من أن يُزامَن (الحد 32 ميغابايت). يبقى على هذا الهاتف بينما يُزامَن كل شيء آخر.", // REVIEW
+  "sync.stateRateLimit": "المزامنة مشغولة وستستمر بعد لحظات.", // REVIEW
+  "sync.stateShuttingDown": "يتم إغلاق NoteSpark على حاسوبك. تُستأنف المزامنة عند فتحه مرة أخرى.", // REVIEW
+  "sync.stateMalformed": "واجهت المزامنة مشكلة وستحاول مرة أخرى. ملاحظاتك بأمان على هذا الهاتف.", // REVIEW
+  "sync.lockedMatchNotice": "الملف الشخصي {name} على حاسوبك مقفل برمز PIN، لذلك أُنشئ ملف شخصي جديد هناك.", // REVIEW
+  "sync.pickTitle": "اختر ملفًا شخصيًا على حاسوبك", // REVIEW
+  "sync.pickBody": "يوجد أكثر من ملف شخصي باسم {name} على حاسوبك. اختر أيها تريد الانضمام إليه، أو أنشئ ملفًا شخصيًا جديدًا.", // REVIEW
+  "sync.pickRow": "{name} ({notes} ملاحظات)", // REVIEW
+  "sync.pickNew": "إنشاء ملف شخصي جديد", // REVIEW
+  "dsync.linkedDevices": "مرتبط مع {devices}", // REVIEW
+  "dsync.noLinkedDevices": "لا توجد أجهزة مرتبطة بعد", // REVIEW
+  "settings.deleteSyncedProfileBody": "{name} متزامن مع {devices}. نقله إلى المهملات سيقطع {devices} عن هذا الملف الشخصي، مع بقاء الملاحظات الموجودة بالفعل على {devices} هناك. يمكنك استعادته من الإعدادات لمدة {days} يومًا.", // REVIEW
+  "settings.deleteSyncedForeverBody": "{name} متزامن مع {devices}. حذفه نهائيًا سيقطع {devices} عن هذا الملف الشخصي، مع بقاء الملاحظات الموجودة بالفعل على {devices} هناك. لا يمكن التراجع عن هذا الإجراء.", // REVIEW
+  "settings.moveAllSyncedBody": "تنتقل كل ملاحظة في الملف الشخصي {name} إلى المهملات هنا وعلى {devices}. يمكنك استعادتها من المهملات لمدة 30 يومًا.", // REVIEW
+  "settings.deleteAllSyncedBody": "تُمحى كل ملاحظة في الملف الشخصي {name} الآن هنا وعلى {devices} دون المرور بالمهملات. الملاحظات الموجودة بالفعل في المهملات تبقى هناك. لا يمكن التراجع عن هذا الإجراء.", // REVIEW
 };
 
 export default catalog;

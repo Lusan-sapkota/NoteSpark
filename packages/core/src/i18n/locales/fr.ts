@@ -1206,6 +1206,23 @@ const catalog: Record<string, string> = {
   "privacy.permD3": "Trousseau (facultatif) : le trousseau de votre système (comme KWallet ou GNOME Keyring) conserve les clés dont NoteSpark a besoin pour les profils protégés et la synchronisation. Sans trousseau, NoteSpark ne crée pas de profil protégé et n'active pas la synchronisation.",  // REVIEW (legal)
   "privacy.permD4": "Accès au réseau : seulement pour la synchronisation sur votre propre réseau, pour la vue web si vous l'activez et pour les images web si vous activez Afficher les images web. NoteSpark n'écoute jamais sur une adresse publique.",  // REVIEW (legal)
   "home.tasksDueCount": "À faire aujourd'hui ou en retard : {count}",
+  "sync.stateKeyMismatch": "Ce n'est pas l'ordinateur auquel vous vous êtes associé. Si vous avez réinstallé NoteSpark ou retiré ce téléphone là-bas, associez-le à nouveau. Vos notes sont en sécurité sur ce téléphone.", // REVIEW
+  "sync.stateNewProfilesOff": "Votre ordinateur est configuré pour refuser les nouveaux profils venant des appareils. Activez Accepter les nouveaux profils des appareils dans Réglages, Synchronisation sur votre ordinateur, puis touchez Synchroniser maintenant.", // REVIEW
+  "sync.stateTooLarge": "Une note ou une pièce jointe dépasse la limite de 32 Mo pour la synchronisation. Elle reste sur ce téléphone pendant que tout le reste se synchronise.", // REVIEW
+  "sync.stateRateLimit": "La synchronisation est occupée et reprendra dans un instant.", // REVIEW
+  "sync.stateShuttingDown": "NoteSpark se ferme sur votre ordinateur. La synchronisation reprendra dès sa réouverture.", // REVIEW
+  "sync.stateMalformed": "La synchronisation a rencontré un problème et va réessayer. Vos notes sont en sécurité sur ce téléphone.", // REVIEW
+  "sync.lockedMatchNotice": "Le profil {name} sur votre ordinateur est verrouillé par un code PIN ; un nouveau profil y a donc été créé.", // REVIEW
+  "sync.pickTitle": "Choisir un profil sur votre ordinateur", // REVIEW
+  "sync.pickBody": "Il y a plusieurs profils {name} sur votre ordinateur. Choisissez lequel rejoindre ou créez un nouveau profil.", // REVIEW
+  "sync.pickRow": "{name} ({notes} notes)", // REVIEW
+  "sync.pickNew": "Créer un nouveau profil", // REVIEW
+  "dsync.linkedDevices": "Associé à {devices}", // REVIEW
+  "dsync.noLinkedDevices": "Aucun appareil associé pour le moment", // REVIEW
+  "settings.deleteSyncedProfileBody": "{name} est synchronisé avec {devices}. Le mettre à la corbeille coupera {devices} de ce profil, même si les notes déjà présentes sur {devices} y restent. Vous pouvez le restaurer depuis Réglages pendant {days} jours.", // REVIEW
+  "settings.deleteSyncedForeverBody": "{name} est synchronisé avec {devices}. Le supprimer définitivement coupera {devices} de ce profil, même si les notes déjà présentes sur {devices} y restent. Cette action est irréversible.", // REVIEW
+  "settings.moveAllSyncedBody": "Toutes les notes du profil {name} vont à la corbeille ici et sur {devices}. Vous pouvez les restaurer depuis la Corbeille pendant 30 jours.", // REVIEW
+  "settings.deleteAllSyncedBody": "Toutes les notes du profil {name} sont effacées maintenant ici et sur {devices}, sans passer par la corbeille. Les notes déjà dans la corbeille y restent. Cette action est irréversible.", // REVIEW
 };
 
 export default catalog;

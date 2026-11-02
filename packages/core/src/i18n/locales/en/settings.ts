@@ -106,4 +106,8 @@ export default {
 
   'settings.backupFolder': 'Backup folder',
   'settings.noValidNotes': 'No valid notes found in import data.',
+  'settings.deleteSyncedProfileBody': '{name} is synced with {devices}. Moving it to the bin will cut {devices} off from this profile, though notes already on {devices} stay there. You can restore it from Settings for {days} days.',
+  'settings.deleteSyncedForeverBody': "{name} is synced with {devices}. Deleting it forever will cut {devices} off from this profile, though notes already on {devices} stay there. This can't be undone.",
+  'settings.moveAllSyncedBody': 'Every note in the {name} profile moves to the bin here and on {devices}. You can restore them from Bin for 30 days.',
+  'settings.deleteAllSyncedBody': "Every note in the {name} profile is erased now here and on {devices}, without going to the bin. Notes already in the bin stay there. This can't be undone.",
 } as const;

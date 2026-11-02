@@ -1125,6 +1125,23 @@ const catalog: Record<string, string> = {
   "privacy.permD3": "키링 (선택 사항): 시스템의 키링(KWallet이나 GNOME Keyring 등)이 보호된 프로필과 동기화에 NoteSpark가 필요한 키를 보관합니다. 키링이 없으면 NoteSpark는 보호된 프로필을 만들지 않고 동기화도 켜지 않습니다.",  // REVIEW (legal)
   "privacy.permD4": "네트워크 접근: 내 네트워크에서의 동기화, 켠 경우의 웹 보기, ‘웹 이미지 표시’를 켠 경우의 웹 이미지에만 사용합니다. NoteSpark는 공개 주소에서 대기하지 않습니다.",  // REVIEW (legal)
   "home.tasksDueCount": "오늘 마감 또는 지난 항목: {count}",
+  "sync.stateKeyMismatch": "페어링했던 컴퓨터가 아닙니다. 컴퓨터에서 NoteSpark를 다시 설치했거나 이 휴대폰을 제거했다면 다시 페어링하세요. 노트는 이 휴대폰에 안전하게 보관되어 있습니다.", // REVIEW
+  "sync.stateNewProfilesOff": "컴퓨터가 기기에서 온 새 프로필을 받지 않도록 설정되어 있습니다. 컴퓨터의 설정 > 동기화에서 ‘기기에서 온 새 프로필 받기’를 켠 다음 지금 동기화를 누르세요.", // REVIEW
+  "sync.stateTooLarge": "노트나 첨부 파일이 너무 커서 동기화할 수 없습니다(제한 32 MB). 해당 항목은 이 휴대폰에 남고 나머지 항목만 동기화됩니다.", // REVIEW
+  "sync.stateRateLimit": "동기화 작업이 많아 잠시 후 계속됩니다.", // REVIEW
+  "sync.stateShuttingDown": "컴퓨터에서 NoteSpark가 닫히는 중입니다. 다시 열면 동기화가 재개됩니다.", // REVIEW
+  "sync.stateMalformed": "동기화 중 문제가 발생하여 다시 시도합니다. 노트는 이 휴대폰에 안전하게 보관되어 있습니다.", // REVIEW
+  "sync.lockedMatchNotice": "컴퓨터의 {name} 프로필이 PIN으로 잠겨 있어 컴퓨터에 새 프로필을 만들었습니다.", // REVIEW
+  "sync.pickTitle": "컴퓨터의 프로필 선택", // REVIEW
+  "sync.pickBody": "컴퓨터에 {name} 프로필이 여러 개 있습니다. 합칠 프로필을 고르거나 새 프로필을 만드세요.", // REVIEW
+  "sync.pickRow": "{name} (노트 {notes}개)", // REVIEW
+  "sync.pickNew": "새 프로필 만들기", // REVIEW
+  "dsync.linkedDevices": "{devices}와 연결됨", // REVIEW
+  "dsync.noLinkedDevices": "아직 연결된 기기 없음", // REVIEW
+  "settings.deleteSyncedProfileBody": "{name} 프로필은 {devices}와 동기화되어 있습니다. 휴지통으로 옮기면 {devices}와 이 프로필의 연결이 끊어지지만, 이미 {devices}에 있는 노트는 그대로 남습니다. {days}일 동안 설정에서 복원할 수 있습니다.", // REVIEW
+  "settings.deleteSyncedForeverBody": "{name} 프로필은 {devices}와 동기화되어 있습니다. 영구 삭제하면 {devices}와 이 프로필의 연결이 끊어지지만, 이미 {devices}에 있는 노트는 그대로 남습니다. 이 작업은 되돌릴 수 없습니다.", // REVIEW
+  "settings.moveAllSyncedBody": "{name} 프로필의 모든 노트가 여기와 {devices}에서 휴지통으로 이동합니다. 30일 동안 휴지통에서 복원할 수 있습니다.", // REVIEW
+  "settings.deleteAllSyncedBody": "{name} 프로필의 모든 노트가 휴지통을 거치지 않고 여기와 {devices}에서 즉시 삭제됩니다. 이미 휴지통에 있는 노트는 그대로 남습니다. 이 작업은 되돌릴 수 없습니다.", // REVIEW
 };
 
 export default catalog;

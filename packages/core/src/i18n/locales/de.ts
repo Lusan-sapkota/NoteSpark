@@ -1166,6 +1166,23 @@ const catalog: Record<string, string> = {
   "privacy.permD3": "Schlüsselbund (optional): Der Schlüsselbund deines Systems (z. B. KWallet oder GNOME Keyring) bewahrt die Schlüssel auf, die NoteSpark für geschützte Profile und die Synchronisierung braucht. Ohne ihn legt NoteSpark kein geschütztes Profil an und schaltet die Synchronisierung nicht ein.",  // REVIEW (legal)
   "privacy.permD4": "Netzwerkzugriff: nur für die Synchronisierung in deinem eigenen Netzwerk, für die Webansicht, wenn du sie einschaltest, und für Webbilder, wenn du Webbilder anzeigen einschaltest. NoteSpark lauscht nie auf einer öffentlichen Adresse.",  // REVIEW (legal)
   "home.tasksDueCount": "Heute fällig oder überfällig: {count}",
+  "sync.stateKeyMismatch": "Das ist nicht der Computer, mit dem du gekoppelt hast. Wenn du NoteSpark dort neu installiert oder dieses Telefon entfernt hast, kopple erneut. Deine Notizen sind auf diesem Telefon sicher.", // REVIEW
+  "sync.stateNewProfilesOff": "Dein Computer nimmt keine neuen Profile von Geräten an. Schalte Neue Profile von Geräten annehmen in den Einstellungen unter Synchronisierung auf deinem Computer ein und tippe dann auf Jetzt synchronisieren.", // REVIEW
+  "sync.stateTooLarge": "Eine Notiz oder ein Anhang ist zum Synchronisieren zu groß (Limit 32 MB). Sie bleibt auf diesem Telefon, während alles andere synchronisiert wird.", // REVIEW
+  "sync.stateRateLimit": "Die Synchronisierung ist ausgelastet und wird gleich fortgesetzt.", // REVIEW
+  "sync.stateShuttingDown": "NoteSpark wird auf deinem Computer geschlossen. Die Synchronisierung geht weiter, sobald es wieder geöffnet ist.", // REVIEW
+  "sync.stateMalformed": "Bei der Synchronisierung ist ein Problem aufgetreten; es wird erneut versucht. Deine Notizen sind auf diesem Telefon sicher.", // REVIEW
+  "sync.lockedMatchNotice": "Das Profil {name} auf deinem Computer ist mit einer PIN gesperrt, daher wurde dort ein neues Profil angelegt.", // REVIEW
+  "sync.pickTitle": "Profil auf deinem Computer auswählen", // REVIEW
+  "sync.pickBody": "Auf deinem Computer gibt es mehr als ein Profil namens {name}. Wähle aus, welchem du beitreten möchtest, oder lege ein neues Profil an.", // REVIEW
+  "sync.pickRow": "{name} ({notes} Notizen)", // REVIEW
+  "sync.pickNew": "Neues Profil anlegen", // REVIEW
+  "dsync.linkedDevices": "Verknüpft mit {devices}", // REVIEW
+  "dsync.noLinkedDevices": "Noch keine Geräte verknüpft", // REVIEW
+  "settings.deleteSyncedProfileBody": "{name} wird mit {devices} synchronisiert. Wenn du es in den Papierkorb verschiebst, wird {devices} von diesem Profil getrennt; Notizen, die bereits auf {devices} sind, bleiben dort. Du kannst es in den Einstellungen {days} Tage lang wiederherstellen.", // REVIEW
+  "settings.deleteSyncedForeverBody": "{name} wird mit {devices} synchronisiert. Wenn du es endgültig löschst, wird {devices} von diesem Profil getrennt; Notizen, die bereits auf {devices} sind, bleiben dort. Das kann nicht rückgängig gemacht werden.", // REVIEW
+  "settings.moveAllSyncedBody": "Jede Notiz im Profil {name} wird hier und auf {devices} in den Papierkorb verschoben. Du kannst sie 30 Tage lang aus dem Papierkorb wiederherstellen.", // REVIEW
+  "settings.deleteAllSyncedBody": "Jede Notiz im Profil {name} wird jetzt hier und auf {devices} sofort gelöscht, ohne in den Papierkorb zu gelangen. Notizen, die schon im Papierkorb sind, bleiben dort. Das kann nicht rückgängig gemacht werden.", // REVIEW
 };
 
 export default catalog;
