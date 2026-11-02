@@ -19,7 +19,8 @@
       "package": "com.lusansapkota.notespark",
       "blockedPermissions": [
         "android.permission.RECORD_AUDIO",
-        "android.permission.SYSTEM_ALERT_WINDOW"
+        "android.permission.SYSTEM_ALERT_WINDOW",
+        "com.google.android.c2dm.permission.RECEIVE"
       ]
     },
     "web": {
