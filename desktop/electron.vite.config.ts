@@ -149,6 +149,11 @@ export default defineConfig({
         name: 'inline-requires',
         enforce: 'pre',
         transform: (code, id) => {
+          if (id.endsWith('mobile/src/screens/HomeScreen.tsx') && code.includes("require('./NoteViewScreen').default")) {
+            return code
+              .replace('const HomeScreen: React.FC = () => {', "const __LazyNoteView = React.lazy(() => import('./NoteViewScreen'));\nconst HomeScreen: React.FC = () => {")
+              .replace("require('./NoteViewScreen').default", '__LazyNoteView');
+          }
           const rewrite = (file: string, module: string, name: string) =>
             id.endsWith(file) && code.includes(`require('${module}')`) ? `import * as ${name} from '${module}';\n${code.replaceAll(`require('${module}')`, name)}` : null;
           return rewrite('mobile/src/screens/ImportExportScreen.tsx', 'expo-print', '__expoPrint') ?? rewrite('mobile/src/components/MarkdownRenderer.tsx', 'react-native', '__reactNative');

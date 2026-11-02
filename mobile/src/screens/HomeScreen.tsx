@@ -81,7 +81,7 @@ const HomeScreen: React.FC = () => {
   const sidePad = twoPane ? space.lg : Math.max(space.lg, (windowWidth - readingWidth) / 2 + space.lg);
   // Two panes: the open note shows beside the list instead of replacing it.
   const [paneNoteId, setPaneNoteId] = useState<string | null>(null);
-  const NoteViewScreen = twoPane ? require('./NoteViewScreen').default : null;
+  const NoteViewScreen = twoPane && paneNoteId ? require('./NoteViewScreen').default : null;
   const [snackbar, setSnackbar] = useState('');
   // What the snackbar's Undo does, if it has one.
   const [undo, setUndo] = useState<(() => Promise<void>) | null>(null);
@@ -959,16 +959,18 @@ const HomeScreen: React.FC = () => {
       </View>
       {twoPane && (
         <View style={[styles.notePane, { borderLeftColor: theme.colors.outlineVariant }]}>
-          {paneNoteId ? (
-            <NoteViewScreen
-              key={paneNoteId}
-              pane={{
-                noteId: paneNoteId,
-                open: setPaneNoteId,
-                binned: (id: number) => { setPaneNoteId(null); loadNotes(); showBinned(id); },
-                tag: (tag: string) => { setFilter(`tag:${tag}`); setSearchText(''); },
-              }}
-            />
+          {paneNoteId && NoteViewScreen ? (
+            <React.Suspense fallback={null}>
+              <NoteViewScreen
+                key={paneNoteId}
+                pane={{
+                  noteId: paneNoteId,
+                  open: setPaneNoteId,
+                  binned: (id: number) => { setPaneNoteId(null); loadNotes(); showBinned(id); },
+                  tag: (tag: string) => { setFilter(`tag:${tag}`); setSearchText(''); },
+                }}
+              />
+            </React.Suspense>
           ) : (
             <View style={styles.notePaneEmpty}>
               <Text variant="bodyLarge" style={{ color: theme.colors.onSurfaceVariant }}>{t('home.selectNote')}</Text>
