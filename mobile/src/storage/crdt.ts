@@ -298,4 +298,7 @@ export const linkProfile = async (db: DB, syncId: string, adopt: Map<string, str
 export const linkedSyncId = async (db: DB): Promise<string | null> =>
   (await db.getFirstAsync<{ syncId: string | null }>('SELECT syncId FROM sync_state WHERE id = 1').catch(() => null))?.syncId ?? null;
 
+// Drops a profile's link to a computer's profile, so its next sync links again (as a new profile on the computer).
+export const unlinkSyncId = async (db: DB): Promise<void> => { await db.runAsync('UPDATE sync_state SET syncId = NULL WHERE id = 1'); };
+
 export const docUpdates = loadUpdates;

@@ -5,7 +5,7 @@ import { AppState, Platform } from 'react-native';
 import BackgroundService from 'react-native-background-actions';
 import { firefly, t } from '@notespark/core';
 import type { Client, ClientState, LinkPlan } from '@notespark/sync-protocol';
-import { linkedSyncId } from '../storage/crdt';
+import { linkedSyncId, unlinkSyncId } from '../storage/crdt';
 import * as database from '../storage/database';
 import { getActiveProfile } from '../storage/profiles';
 import { storageStore } from '../storage/syncStore';
@@ -80,6 +80,14 @@ const stop = () => {
   client = null;
   runningKey = '';
   if (pendingLink) { pendingLink.answer(false); pendingLink = null; }
+};
+
+// The open profile forgets which profile it was linked to on the computer (deleted there, say) and links again as a new one.
+export const relinkOpenProfile = async () => {
+  stop();
+  runningKey = '';
+  await unlinkSyncId(database.db);
+  await reconcileSync();
 };
 
 // Starts, keeps or stops the client to match: open profile, its sync switch, the paired computer, and the app being in front.

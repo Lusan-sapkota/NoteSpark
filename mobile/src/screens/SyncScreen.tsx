@@ -17,7 +17,7 @@ import { controlTheme, readingWidth, shape, space } from '../theme/theme';
 import { db } from '../storage/database';
 import { getActiveProfile } from '../storage/profiles';
 import { type HubRecord, forgetHub, getHubs, saveHub, setProfileSync, syncedProfiles } from '../sync/pairings';
-import { askBackgroundPermission, getPendingLink, getSyncStatus, reconcileSync, setPairingToken, subscribeSync, syncDiagnostics, syncNow } from '../sync/syncRuntime';
+import { askBackgroundPermission, getPendingLink, getSyncStatus, reconcileSync, relinkOpenProfile, setPairingToken, subscribeSync, syncDiagnostics, syncNow } from '../sync/syncRuntime';
 
 const SyncScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -190,7 +190,8 @@ const SyncScreen: React.FC = () => {
                     right={<M3Switch value={on} onValueChange={toggle} accessibilityLabel={t('sync.profileSwitch', { name: profile.name })} />}
                     isFirst isLast={!on}
                   />
-                  {on && <GroupedRow title={t('sync.syncNow')} icon="refresh" onPress={syncNow} isFirst={false} isLast />}
+                  {on && <GroupedRow title={t('sync.syncNow')} icon="refresh" onPress={syncNow} isFirst={false} isLast={status.state !== 'notLinked'} />}
+                  {on && status.state === 'notLinked' && <GroupedRow title={t('sync.relink')} icon="link-plus" onPress={() => void relinkOpenProfile()} isFirst={false} isLast />}
                 </View>
               )}
 
