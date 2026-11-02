@@ -258,7 +258,7 @@ export class Session {
         }
         this.phase(CONFIRM_TIMEOUT);
         const chosen = this.o.chooseLink ? await this.o.chooseLink(f.profiles) : (this.o.link ?? null);
-        if (this.state === 'closed') return;
+        if ((this.state as SessionState) === 'closed') return;
         if (!chosen) return this.close('link declined');
         if (!chosen.syncId) throw new ProtocolError(403, 'no profile to sync');
         this.setState('linking');

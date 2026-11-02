@@ -4,7 +4,7 @@
 import { AppState, Platform } from 'react-native';
 import BackgroundService from 'react-native-background-actions';
 import { firefly, t } from '@notespark/core';
-import type { Client, ClientState, LinkPlan } from '@notespark/sync-protocol';
+import type { Client, ClientState, LinkPlan, ProfileEntry } from '@notespark/sync-protocol';
 import { linkedSyncId, unlinkSyncId } from '../storage/crdt';
 import * as database from '../storage/database';
 import { getActiveProfile } from '../storage/profiles';
@@ -15,14 +15,30 @@ import { type HubRecord, getHubs, syncedProfiles } from './pairings';
 import { createSyncClient } from './SyncManager';
 
 export type SyncState = ClientState | 'unpaired';
-export interface SyncStatus { state: SyncState; hub: HubRecord | null; profileId: string | null; lastSynced: number | null; problem: boolean; attempts: number }
+export interface SyncStatus {
+  state: SyncState;
+  hub: HubRecord | null;
+  profileId: string | null;
+  lastSynced: number | null;
+  problem: boolean;
+  problemCode: number;
+  closeCode: number;
+  closeReason: string;
+  lockedMatch: string | null;
+  attempts: number;
+}
 export interface PendingLink { plan: LinkPlan; answer: (ok: boolean) => void }
+export interface PendingPick { matches: ProfileEntry[]; name: string; answer: (syncId: string | null) => void }
 
-let status: SyncStatus = { state: 'off', hub: null, profileId: null, lastSynced: null, problem: false, attempts: 0 };
+let status: SyncStatus = {
+  state: 'off', hub: null, profileId: null, lastSynced: null,
+  problem: false, problemCode: 0, closeCode: 0, closeReason: '', lockedMatch: null, attempts: 0,
+};
 let client: Client | null = null;
 let runningKey = '';
 let token: Uint8Array | undefined; // from the scanned or pasted link; used by the first session only, never stored
 let pendingLink: PendingLink | null = null;
+let pendingPick: PendingPick | null = null;
 const SERVICE_MS = 5 * 60 * 60 * 1000; // Android 15 limits a data sync service to about 6 hours a day; we stop first, and it starts again when the app is opened
 let serviceOn = false;
 const listeners = new Set<() => void>();
@@ -35,9 +51,12 @@ const log = (e: string) => { events.push(`${new Date().toISOString()} ${e}`); if
 export const subscribeSync = (l: () => void) => { listeners.add(l); return () => void listeners.delete(l); };
 export const getSyncStatus = () => status;
 export const getPendingLink = () => pendingLink;
+export const getPendingPick = () => pendingPick;
+export const clearLockedMatch = () => set({ lockedMatch: null });
 export const syncDiagnostics = () => events.join('\n');
 export const setPairingToken = (t: Uint8Array | undefined) => { token?.fill(0); token = t; };
 export const syncNow = () => client?.nudge();
+export const syncedProfileWarning = async (_profileId: string): Promise<string[] | null> => null;
 
 const sleep = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
 
@@ -80,6 +99,7 @@ const stop = () => {
   client = null;
   runningKey = '';
   if (pendingLink) { pendingLink.answer(false); pendingLink = null; }
+  if (pendingPick) { pendingPick.answer(null); pendingPick = null; }
 };
 
 // The open profile forgets which profile it was linked to on the computer (deleted there, say) and links again as a new one.
@@ -96,11 +116,11 @@ export const reconcileSync = async () => {
   const hubId = (await syncedProfiles())[profileId];
   const hub = hubId ? (await getHubs()).find(h => h.id === hubId) ?? null : null;
   const wanted = (AppState.currentState === 'active' || serviceOn) && !!hub;
-  const key = `${profileId}:${hub?.id}`;
+  const key = `${profileId}:${hub?.id}:${token ? 'pair' : ''}`;
   if (!wanted) {
     stop();
     if (!hub) await stopService();
-    return set({ state: hub ? 'off' : 'unpaired', hub, profileId, problem: false });
+    return set({ state: hub ? 'off' : 'unpaired', hub, profileId, problem: false, problemCode: 0, closeCode: 0, closeReason: '' });
   }
   if (AppState.currentState === 'active') await startService();
   if (client && key === runningKey) return;
@@ -111,17 +131,33 @@ export const reconcileSync = async () => {
   const store = storageStore(database.db, profile.name, profileId);
   const c = createSyncClient({
     store, deviceKey: await deviceKey(), hub: hub!, deviceName: 'Phone', token,
-    syncId: linked ?? undefined, link: linked ? undefined : { syncId: '', name: profile.name }, // ponytail: a new profile on the computer; joining an existing one comes with the profile picker
+    syncId: linked ?? undefined,
+    link: !linked || token ? { syncId: '', name: profile.name } : undefined,
+    relinkIfMissing: !!token,
+    pickProfile: (matches, name) => new Promise<string | null>(resolve => {
+      pendingPick = { matches, name, answer: picked => { pendingPick = null; emit(); resolve(picked); } };
+      emit();
+    }),
+    onLockedMatch: name => { log('locked match: creating new profile'); set({ lockedMatch: name }); },
     confirmLink: plan => new Promise<boolean>(resolve => { pendingLink = { plan, answer: ok => { pendingLink = null; emit(); resolve(ok); } }; emit(); }),
-    onProblem: p => { log(`problem code=${p.code}`); set({ problem: true }); },
+    onClose: (code, reason) => { log(`close code=${code} reason=${reason}`); set({ closeCode: code, closeReason: reason, attempts: c.attempts }); },
+    onProblem: p => { log(`problem code=${p.code}`); set({ problem: true, problemCode: p.code }); },
     onState: s => {
       log(`state ${s}`);
-      if (s === 'live' && token) setPairingToken(undefined);
-      set({ state: s, attempts: c.attempts, problem: s === 'live' ? false : status.problem, lastSynced: s === 'live' ? Date.now() : status.lastSynced });
+      if (s === 'live' && token) { setPairingToken(undefined); runningKey = `${profileId}:${hub?.id}:`; }
+      set({
+        state: s,
+        attempts: c.attempts,
+        problem: s === 'live' ? false : status.problem,
+        problemCode: s === 'live' ? 0 : status.problemCode,
+        closeCode: s === 'live' ? 0 : status.closeCode,
+        closeReason: s === 'live' ? '' : status.closeReason,
+        lastSynced: s === 'live' ? Date.now() : status.lastSynced,
+      });
     },
   });
   client = c;
-  set({ state: 'waiting', hub, profileId, problem: false });
+  set({ state: 'waiting', hub, profileId, problem: false, problemCode: 0, closeCode: 0, closeReason: '' });
   c.start();
 };
 

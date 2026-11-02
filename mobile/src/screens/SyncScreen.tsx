@@ -17,7 +17,7 @@ import { controlTheme, readingWidth, shape, space } from '../theme/theme';
 import { db } from '../storage/database';
 import { getActiveProfile } from '../storage/profiles';
 import { type HubRecord, forgetHub, getHubs, saveHub, setProfileSync, syncedProfiles } from '../sync/pairings';
-import { askBackgroundPermission, getPendingLink, getSyncStatus, reconcileSync, relinkOpenProfile, setPairingToken, subscribeSync, syncDiagnostics, syncNow } from '../sync/syncRuntime';
+import { askBackgroundPermission, clearLockedMatch, getPendingLink, getPendingPick, getSyncStatus, reconcileSync, relinkOpenProfile, setPairingToken, subscribeSync, syncDiagnostics, syncNow } from '../sync/syncRuntime';
 
 const SyncScreen: React.FC = () => {
   const navigation = useNavigation();
@@ -27,6 +27,7 @@ const SyncScreen: React.FC = () => {
   const { elevated, onScroll } = useHeaderElevation();
   const status = useSyncExternalStore(subscribeSync, getSyncStatus);
   const pendingLink = useSyncExternalStore(subscribeSync, getPendingLink);
+  const pendingPick = useSyncExternalStore(subscribeSync, getPendingPick);
   const [hubs, setHubs] = useState<HubRecord[]>([]);
   const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
   const [on, setOn] = useState(false);
@@ -48,6 +49,12 @@ const SyncScreen: React.FC = () => {
   useEffect(() => {
     if (pendingLink) db.getFirstAsync<{ n: number }>('SELECT count(*) AS n FROM notes').then(r => setHere(r?.n ?? 0), () => {});
   }, [pendingLink]);
+  useEffect(() => {
+    if (status.lockedMatch) {
+      setSnackbar(t('sync.lockedMatchNotice', { name: status.lockedMatch }));
+      clearLockedMatch();
+    }
+  }, [status.lockedMatch, t]);
 
   const errorFor = (e: unknown) => {
     const reason = e instanceof PairingError ? e.reason : 'format';
@@ -105,26 +112,35 @@ const SyncScreen: React.FC = () => {
 
   const statusText = () => {
     if (!on) return t('sync.stateOff');
+    if (status.problem && status.problemCode === 413) return t('sync.stateTooLarge');
     if (status.problem && status.state !== 'locked' && status.state !== 'notLinked' && status.state !== 'needsUpdate') return t('sync.stateProblem');
     switch (status.state) {
       case 'live': return t('sync.stateLive', { time: new Date(status.lastSynced ?? Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) });
       case 'connecting': return t('sync.stateSearching');
       case 'syncing': return t('sync.stateSyncing');
-      case 'notLinked': return t('sync.stateNeedsPairing');
+      case 'notLinked': return status.closeReason === 'new profiles off' ? t('sync.stateNewProfilesOff') : t('sync.stateNeedsPairing');
       case 'needsUpdate': return t('sync.stateNeedsUpdate');
       case 'locked': return t('sync.stateLocked');
-      default: return t('sync.stateWaiting');
+      default:
+        if (status.closeCode === 401) return t('sync.stateKeyMismatch');
+        if (status.closeCode === 413) return t('sync.stateTooLarge');
+        if (status.closeCode === 429) return t('sync.stateRateLimit');
+        if (status.closeCode === 503) return t('sync.stateShuttingDown');
+        if (status.closeCode === 400 || status.closeCode === 500) return t('sync.stateMalformed');
+        return t('sync.stateWaiting');
     }
   };
 
   const muted = { color: theme.colors.onSurfaceVariant };
   const paired = !!hub && !repair;
-  const problem = on && (status.problem || status.state === 'notLinked' || status.state === 'needsUpdate');
+  const keyMismatch = on && status.state === 'waiting' && status.closeCode === 401;
+  const canRelink = on && status.state === 'notLinked' && status.closeReason !== 'new profiles off';
+  const problem = on && (status.problem || status.state === 'notLinked' || status.state === 'needsUpdate' || keyMismatch);
   const live = on && status.state === 'live' && !problem;
   const statusIcon = !on ? 'sync-off' : problem ? 'alert-circle-outline' : status.state === 'live' ? 'check-circle-outline'
     : status.state === 'locked' ? 'lock-outline' : status.state === 'waiting' ? 'lan-disconnect' : 'sync';
   const card = problem ? { bg: theme.colors.errorContainer, fg: theme.colors.onErrorContainer } : { bg: theme.colors.surfaceContainer, fg: theme.colors.onSurface };
-  const slow = on && status.state === 'waiting' && status.attempts >= 3;
+  const slow = on && status.state === 'waiting' && !keyMismatch && status.attempts >= 3;
 
   const tips = (
     <View style={[styles.tips, { backgroundColor: theme.colors.surfaceContainerLow }]}>
@@ -190,8 +206,8 @@ const SyncScreen: React.FC = () => {
                     right={<M3Switch value={on} onValueChange={toggle} accessibilityLabel={t('sync.profileSwitch', { name: profile.name })} />}
                     isFirst isLast={!on}
                   />
-                  {on && <GroupedRow title={t('sync.syncNow')} icon="refresh" onPress={syncNow} isFirst={false} isLast={status.state !== 'notLinked'} />}
-                  {on && status.state === 'notLinked' && <GroupedRow title={t('sync.relink')} icon="link-plus" onPress={() => void relinkOpenProfile()} isFirst={false} isLast />}
+                  {on && <GroupedRow title={t('sync.syncNow')} icon="refresh" onPress={syncNow} isFirst={false} isLast={!canRelink} />}
+                  {canRelink && <GroupedRow title={t('sync.relink')} icon="link-plus" onPress={() => void relinkOpenProfile()} isFirst={false} isLast />}
                 </View>
               )}
 
@@ -209,6 +225,23 @@ const SyncScreen: React.FC = () => {
 
       <ScanCode visible={scanning} onClose={() => setScanning(false)} onCode={text => { setScanning(false); handleLink(text); }} />
       <Portal>
+        <Dialog visible={!!pendingPick} onDismiss={() => pendingPick?.answer(null)}>
+          <Dialog.Title>{t('sync.pickTitle')}</Dialog.Title>
+          <Dialog.Content style={{ gap: space.xs }}>
+            <Text variant="bodyMedium">{t('sync.pickBody', { name: pendingPick?.name ?? '' })}</Text>
+            {(pendingPick?.matches ?? []).map(m => (
+              <Button key={m.syncId} mode="outlined" onPress={() => pendingPick?.answer(m.syncId)} style={styles.button} contentStyle={styles.buttonContent}>
+                {t('sync.pickRow', { name: m.name, notes: m.notes })}
+              </Button>
+            ))}
+            <Button mode="text" onPress={() => pendingPick?.answer('')} style={styles.button} contentStyle={styles.buttonContent}>
+              {t('sync.pickNew')}
+            </Button>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={() => pendingPick?.answer(null)}>{t('common.cancel')}</Button>
+          </Dialog.Actions>
+        </Dialog>
         <Dialog visible={!!pendingLink} onDismiss={() => pendingLink?.answer(false)}>
           <Dialog.Title>{t('sync.linkTitle')}</Dialog.Title>
           <Dialog.Content>
