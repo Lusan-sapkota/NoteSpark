@@ -59,7 +59,7 @@ test('a protected profile that is locked is never opened: it reports locked, eve
 
 test('a new profile from a device is made only when the switch allows it', async () => {
   const { state, store, stores } = await rig();
-  await assert.rejects(store.createProfile(SNEW, 'Phone notes'), /does not accept new profiles/);
+  await assert.rejects(store.createProfile(SNEW, 'Phone notes'), (e: any) => e.code === 'NEW_REFUSED' && /does not accept new profiles/.test(e.message));
   state.allowNew = true;
   await store.createProfile(SNEW, 'Phone notes');
   await store.createProfile(SNEW, 'Phone notes'); // idempotent

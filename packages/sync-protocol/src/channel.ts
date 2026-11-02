@@ -49,7 +49,7 @@ export class Net {
         if (this.rng() < f.drop) return;
         const copies = this.rng() < f.duplicate ? 2 : 1;
         for (let c = 0; c < copies; c++)
-          this.clock.after(this.latency + Math.floor(this.rng() * (f.delayMax + 1)), () => { if (open) peer.onMessage(data.slice()); });
+          this.clock.after(this.latency + Math.floor(this.rng() * (f.delayMax + 1)), () => peer.onMessage(data.slice()));
       };
     });
     return [ends[0], ends[1]];

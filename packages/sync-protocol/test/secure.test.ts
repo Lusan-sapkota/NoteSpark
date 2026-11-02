@@ -122,3 +122,26 @@ test('endless empty continuation fragments close the channel', async () => {
   for (let i = 0; i < 5; i++) await tick();
   assert.ok(closed);
 });
+
+test('wrong hub key (key mismatch / reinstalled computer) delivers 401 key mismatch frame to client before closing', async () => {
+  const realHub = generateKeypair(), wrongHub = generateKeypair(), dev = generateKeypair();
+  const [ra, rb] = pair();
+  ra.opened = true; // WebSocket opened to a NoteSpark hub
+  const got: Uint8Array[] = [];
+  let closed = false;
+  const c = SecureChannel.client(ra, { s: dev, hubKey: wrongHub.pub, name: 'Phone' });
+  c.onMessage = d => got.push(d);
+  c.onClose = () => { closed = true; };
+  // The hub has a different static key (realHub), so it cannot decrypt message 1 and closes the socket
+  SecureChannel.hub(rb, { s: realHub, name: 'Hub', authorize: () => true, onReady: () => {} });
+  for (let i = 0; i < 10; i++) await tick();
+  assert.ok(closed);
+  assert.equal(got.length, 1, 'delivered synthetic ERROR frame on handshake close');
+  const { decodeFrame, T } = await import('../src/wire.ts');
+  const f = decodeFrame(got[0]);
+  assert.equal(f.type, T.ERROR);
+  if (f.type === T.ERROR) {
+    assert.equal(f.code, 401);
+    assert.equal(f.message, 'key mismatch');
+  }
+});

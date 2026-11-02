@@ -222,3 +222,272 @@ test('a catalog key that is not a note uuid (from a hostile device or file) cann
   assert.equal(b.client!.state, 'live');
   assert.equal(b.store.peek(syncId, uuid(1))!.title, 'One');
 });
+
+test('first-link rule (decision A): same name (trimmed, case-insensitive) joins and merges notes; empty phone or empty computer works', async () => {
+  // 1. Same name with whitespace & case difference -> joins existing profile and merges notes
+  const w1 = new World();
+  const desk1 = await linked(w1, { [uuid(1)]: note('Shared'), [uuid(2)]: note('Desk only') }, '', { link: { syncId: '', name: 'Personal' } });
+  const sid1 = desk1.client!.syncId!;
+  const phone1 = await linked(w1, { [uuid(10)]: note('Shared'), [uuid(11)]: note('Phone only') }, '', { link: { syncId: '', name: '  personal  ' } });
+  assert.equal(phone1.client!.state, 'live');
+  assert.equal(phone1.client!.syncId, sid1, 'joined existing same-name profile instead of creating a second one');
+  assert.equal((await w1.hubStore.profiles()).length, 1);
+  assert.deepEqual(Object.values(phone1.store.notes(sid1)).map(n => n.title).sort(), ['Desk only', 'Phone only', 'Shared']);
+
+  // 2. Empty phone profile joining populated computer profile
+  const w2 = new World();
+  const desk2 = await linked(w2, { [uuid(1)]: note('From computer') }, '', { link: { syncId: '', name: 'Work' } });
+  const sid2 = desk2.client!.syncId!;
+  const phone2 = await linked(w2, {}, '', { link: { syncId: '', name: 'work' } });
+  assert.equal(phone2.client!.syncId, sid2);
+  assert.deepEqual(Object.values(phone2.store.notes(sid2)).map(n => n.title), ['From computer']);
+
+  // 3. Populated phone profile joining empty computer profile
+  const w3 = new World();
+  const sid3 = uuid(900);
+  await w3.hubStore.createProfile(sid3, 'Study');
+  const phone3 = await linked(w3, { [uuid(1)]: note('From phone') }, '', { link: { syncId: '', name: 'STUDY' } });
+  assert.equal(phone3.client!.syncId, sid3);
+  assert.deepEqual(Object.values(w3.hubStore.notes(sid3)).map(n => n.title), ['From phone']);
+});
+
+test('first-link rule (decision A): different name makes a new profile; several matches ask pickProfile; locked match makes a new profile and notifies', async () => {
+  const w = new World();
+  const sidA = uuid(801), sidB = uuid(802), sidLocked = uuid(803);
+  await w.hubStore.createProfile(sidA, 'Personal');
+  w.hubStore.edit(sidA, uuid(1), note('In A'));
+  await w.hubStore.createProfile(sidB, 'personal');
+  w.hubStore.edit(sidB, uuid(2), note('In B'));
+  await w.hubStore.createProfile(sidLocked, 'Secret');
+  const origProfiles = w.hubStore.profiles.bind(w.hubStore);
+  w.hubStore.profiles = async () => (await origProfiles()).map(p => (p.syncId === sidLocked ? { ...p, protected: true, locked: true } : p));
+
+  // Different name -> creates a new profile on the hub
+  const diff = await linked(w, { [uuid(10)]: note('Trip') }, '', { link: { syncId: '', name: 'Travel' } });
+  assert.equal(diff.client!.state, 'live');
+  assert.ok(![sidA, sidB, sidLocked].includes(diff.client!.syncId!));
+
+  // Several matches -> calls pickProfile; choosing sidB links to sidB
+  let offered: string[] = [];
+  const multi = await linked(w, { [uuid(20)]: note('Picked') }, '', {
+    link: { syncId: '', name: 'Personal' },
+    pickProfile: async candidates => { offered = candidates.map(c => c.syncId); return sidB; },
+  });
+  assert.deepEqual(offered, [sidA, sidB]);
+  assert.equal(multi.client!.syncId, sidB);
+  assert.deepEqual(Object.values(multi.store.notes(sidB)).map(n => n.title).sort(), ['In B', 'Picked']);
+
+  // Locked match -> does NOT match sidLocked; creates a new profile and fires onLockedMatch
+  let lockedNoticed = '';
+  const lockedPhone = await linked(w, { [uuid(30)]: note('Safe') }, '', {
+    link: { syncId: '', name: 'secret' },
+    onLockedMatch: name => { lockedNoticed = name; },
+  });
+  assert.equal(lockedNoticed, 'Secret');
+  assert.equal(lockedPhone.client!.state, 'live');
+  assert.notEqual(lockedPhone.client!.syncId, sidLocked);
+});
+
+test('first-link rule (decision A): acceptNew off refuses creating a new profile (403 new profiles off) but allows joining an existing same-name profile', async () => {
+  const w = new World();
+  const sid = uuid(700);
+  await w.hubStore.createProfile(sid, 'Personal');
+  w.hubStore.edit(sid, uuid(1), note('Desk note'));
+  let acceptNew = false;
+  const origCreate = w.hubStore.createProfile.bind(w.hubStore);
+  w.hubStore.createProfile = async (id, name) => {
+    if (!acceptNew) throw Object.assign(new Error('This computer does not accept new profiles from devices.'), { code: 'NEW_REFUSED' });
+    return origCreate(id, name);
+  };
+
+  // Joining existing same-name profile works even when acceptNew is false
+  const joiner = await linked(w, { [uuid(2)]: note('Phone note') }, '', { link: { syncId: '', name: 'Personal' } });
+  assert.equal(joiner.client!.state, 'live');
+  assert.equal(joiner.client!.syncId, sid);
+
+  // Creating a new profile with a different name is refused with 403 'new profiles off' and stops retrying
+  const maker = w.device();
+  maker.store.plain.set(uuid(3), note('Novel'));
+  maker.start({ link: { syncId: '', name: 'Recipes' } });
+  await w.run(5000);
+  assert.equal(maker.client!.state, 'notLinked');
+  assert.equal(maker.client!.closeCode, 403);
+  assert.equal(maker.client!.closeReason, 'new profiles off');
+
+  // Once the user turns acceptNew on and nudges, it links and syncs
+  acceptNew = true;
+  maker.client!.nudge();
+  await w.run(5000);
+  assert.equal(maker.client!.state, 'live');
+  assert.equal(w.hubStore.peek(maker.client!.syncId!, uuid(3))?.title, 'Novel');
+});
+
+test('kill or disconnect in the middle of first-time linking is idempotent (reuses newId, no duplicate profiles or notes)', async () => {
+  const w = new World();
+  let dropConfirm = true;
+  const origPair = w.net.pair.bind(w.net);
+  w.net.pair = () => {
+    const [a, b] = origPair();
+    const origSend = a.send.bind(a);
+    a.send = d => {
+      if (dropConfirm && d[0] === T.LINK_CONFIRM) {
+        dropConfirm = false;
+        a.close();
+        return;
+      }
+      origSend(d);
+    };
+    return [a, b];
+  };
+  const d = await linked(w, { [uuid(1)]: note('Once only') }, '', { link: { syncId: '', name: 'NewOne' } });
+  await w.run(15_000);
+  assert.equal(d.client!.state, 'live');
+  const profiles = await w.hubStore.profiles();
+  assert.equal(profiles.length, 1, 'only one profile created on the hub across the interrupted attempt and retry');
+  assert.equal(Object.keys(w.hubStore.notes(profiles[0].syncId)).length, 1);
+});
+
+test('delete profile on hub then reconnect -> 403 notLinked; unlink + reconnect recreates the profile and restores all notes (I8); rename keeps syncing; hub.stop sends 503', async () => {
+  const w = new World();
+  const a = await linked(w, { [uuid(1)]: note('Survivor'), [uuid(2)]: note('Second') }, '', { link: { syncId: '', name: 'Journal' } });
+  const firstSid = a.client!.syncId!;
+  assert.equal(a.client!.state, 'live');
+
+  // Renaming on the hub does not break sync (syncs by syncId)
+  const info = w.hubStore.profilesById.get(firstSid)!;
+  info.name = 'Renamed on Computer';
+  a.store.edit(firstSid, uuid(1), note('Survivor', 'updated after rename'));
+  await w.run(2000);
+  assert.equal(w.hubStore.peek(firstSid, uuid(1))?.content, 'updated after rename');
+
+  // Hub stops cleanly -> client sees 503 'shutting down'
+  w.hub.stop();
+  await w.run(100);
+  assert.equal(a.client!.closeCode, 503);
+  assert.equal(a.client!.closeReason, 'shutting down');
+
+  // Profile deleted on the hub -> reconnect sees 403 'profile not linked' (notLinked)
+  w.hubStore.profilesById.delete(firstSid);
+  a.client!.nudge();
+  await w.run(2000);
+  assert.equal(a.client!.state, 'notLinked');
+  assert.equal(a.client!.closeCode, 403);
+  assert.equal(a.client!.closeReason, 'profile not linked');
+
+  // Recovery: unlink local store and restart with link { syncId: '', name: 'Journal' } -> recreates on hub with all notes intact (I8)
+  a.client!.stop();
+  await a.store.unlink(firstSid);
+  a.syncId = undefined;
+  a.start({ link: { syncId: '', name: 'Journal' } });
+  await w.run(5000);
+  assert.equal(a.client!.state, 'live');
+  const secondSid = a.client!.syncId!;
+  assert.notEqual(secondSid, firstSid);
+  assert.deepEqual(Object.values(w.hubStore.notes(secondSid)).map(n => n.title).sort(), ['Second', 'Survivor']);
+  assert.equal(w.hubStore.peek(secondSid, uuid(1))?.content, 'updated after rename');
+
+  // Also verify relinkIfMissing (used after re-pairing when hub data folder was wiped): re-links under the existing syncId
+  const wipedHub = new World();
+  const client2 = wipedHub.device(secondSid);
+  client2.store = a.store;
+  client2.start({ syncId: secondSid, link: { syncId: '', name: 'Journal' }, relinkIfMissing: true });
+  await wipedHub.run(5000);
+  assert.equal(client2.client!.state, 'live');
+  assert.equal(client2.client!.syncId, secondSid);
+  assert.deepEqual(Object.values(wipedHub.hubStore.notes(secondSid)).map(n => n.title).sort(), ['Second', 'Survivor']);
+});
+
+test('mid-session lock on the hub returns 423 and transitions client to locked without losing edits', async () => {
+  const w = new World();
+  const a = await linked(w, { [uuid(1)]: note('Before lock') });
+  const syncId = a.client!.syncId!;
+  assert.equal(a.client!.state, 'live');
+
+  let isLocked = true;
+  const origApply = w.hubStore.apply.bind(w.hubStore);
+  const origProfiles = w.hubStore.profiles.bind(w.hubStore);
+  w.hubStore.apply = async (...args) => {
+    if (isLocked) throw Object.assign(new Error('Profile is locked'), { code: 'LOCKED' });
+    return origApply(...args);
+  };
+  w.hubStore.profiles = async () => (await origProfiles()).map(p => ({ ...p, locked: isLocked }));
+
+  a.store.edit(syncId, uuid(2), note('While locked'));
+  await w.run(2000);
+  assert.equal(a.client!.state, 'locked');
+  assert.equal(a.client!.closeCode, 423);
+
+  isLocked = false;
+  a.client!.nudge();
+  await w.run(5000);
+  assert.equal(a.client!.state, 'live');
+  assert.equal(w.hubStore.peek(syncId, uuid(2))?.title, 'While locked');
+});
+
+test('property: two clients and one hub with random disconnects, edits, bins, erases, and profile wipe+relink converge with zero lost acknowledged writes (I1, I2, I5, I8)', async () => {
+  for (let seed = 1; seed <= 5; seed++) {
+    const w = new World(seed);
+    const rand = rng(seed * 97);
+    const a = await linked(w, { [uuid(1)]: note('Seed0') }, '', { link: { syncId: '', name: 'Shared' } });
+    let syncId = a.client!.syncId!;
+    const b = await linked(w, {}, syncId, { link: { syncId, name: 'Shared' } });
+
+    const ackedTitles = new Map<string, string>(); // uuid -> latest title edited while live or kept across steps
+    const erased = new Set<string>();
+    ackedTitles.set(uuid(1), 'Seed0');
+
+    for (let step = 0; step < 30; step++) {
+      const pick = rand();
+      const dev = rand() < 0.5 ? a : b;
+      const docId = uuid(1 + Math.floor(rand() * 8));
+      if (pick < 0.45 && !erased.has(docId)) {
+        const title = `T-${seed}-${step}`;
+        const binned = rand() < 0.2 ? '2026-01-02T00:00:00.000Z' : null;
+        dev.store.edit(syncId, docId, note(title, `body ${step}`, { deletedAt: binned }));
+        ackedTitles.set(docId, title);
+      } else if (pick < 0.6 && ackedTitles.size > 1) {
+        dev.store.erase(syncId, docId);
+        erased.add(docId);
+        ackedTitles.delete(docId);
+      } else if (pick < 0.8) {
+        dev.online = !dev.online;
+        if (!dev.online) dev.client?.session?.close('random drop');
+      } else {
+        w.net.faults.drop = rand() < 0.3 ? 0.2 : 0;
+      }
+      await w.run(1500);
+    }
+
+    // Bring everyone online with clean network and converge
+    w.net.faults.drop = 0;
+    a.online = true;
+    b.online = true;
+    a.client!.nudge();
+    b.client!.nudge();
+    await w.run(90_000);
+
+    assert.equal(a.client!.state, 'live', `seed ${seed} client a live`);
+    assert.equal(b.client!.state, 'live', `seed ${seed} client b live`);
+    assert.deepEqual(a.store.notes(syncId), w.hubStore.notes(syncId), `seed ${seed} a == hub (I2)`);
+    assert.deepEqual(b.store.notes(syncId), w.hubStore.notes(syncId), `seed ${seed} b == hub (I2)`);
+
+    // Every non-erased note is present on all 3 stores (I1), every erased note is gone (I5)
+    for (const u of erased) assert.equal(w.hubStore.peek(syncId, u), null, `seed ${seed} erased ${u} stays gone (I5)`);
+    for (const u of ackedTitles.keys()) assert.ok(w.hubStore.peek(syncId, u), `seed ${seed} note ${u} preserved (I1)`);
+
+    // Simulate hub profile deletion + client a re-linking (I8): all surviving notes are restored to the hub
+    const beforeWipe = w.hubStore.notes(syncId);
+    w.hubStore.profilesById.delete(syncId);
+    a.client!.session?.close('hub wiped');
+    await w.run(3000);
+    assert.equal(a.client!.state, 'notLinked');
+    a.client!.stop();
+    await a.store.unlink(syncId);
+    a.syncId = undefined;
+    a.start({ link: { syncId: '', name: 'Shared' } });
+    await w.run(10_000);
+    assert.equal(a.client!.state, 'live');
+    syncId = a.client!.syncId!;
+    assert.deepEqual(w.hubStore.notes(syncId), beforeWipe, `seed ${seed} re-link restored every note to hub (I8)`);
+  }
+});

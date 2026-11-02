@@ -92,6 +92,8 @@ test('pair, sync notes, an erase and an attachment reference both ways; the hub 
   await until(async () => (await titles(database.db)).length === 3 && (await titles(phoneDb)).length === 3);
   assert.deepEqual(await titles(database.db), await titles(phoneDb));
   assert.equal((await hub.status()).paired, 'Pixel', 'paired event');
+  await until(async () => ((await hub.status()).profiles.find((p: any) => p.id === desk.id)?.devices ?? []).includes('Pixel'));
+  assert.deepEqual((await hub.status()).profiles.find((p: any) => p.id === desk.id)?.devices, ['Pixel'], 'linked device recorded per profile');
 
   // Both ways, through the window's own connection on the desk side.
   await notes.updateNote({ id: first, title: 'Desk first', content: `${MARK} edited at the desk`, isMarkdown: true });
@@ -127,6 +129,7 @@ test('pair, sync notes, an erase and an attachment reference both ways; the hub 
   await new Promise(r => setTimeout(r, 1500));
   assert.notEqual(client.state, 'live');
   assert.deepEqual(await hub.call('devices', undefined), []);
+  assert.deepEqual((await hub.status()).profiles.find((p: any) => p.id === desk.id)?.devices, [], 'revoked device removed from profile devices');
   assert.equal(mode(join(dir, 'devices.json')), 0o600);
 
   // No note text, title or file bytes on the wire.

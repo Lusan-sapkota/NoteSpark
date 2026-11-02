@@ -130,8 +130,8 @@ export class Client {
       if (picked === null) return null;
       return { syncId: picked || this.ensureNewId(), name: l.name };
     }
-    if (match.kind === 'create' && match.lockedMatch) this.o.onLockedMatch?.(l.name);
-    return { syncId: this.ensureNewId(), name: l.name };
+    if (match.kind === 'create' && match.lockedMatch) this.o.onLockedMatch?.(match.lockedName || l.name);
+    return { syncId: (this.o.relinkIfMissing && this.syncId) || this.ensureNewId(), name: l.name };
   }
 
   private retry() {

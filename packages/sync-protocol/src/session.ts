@@ -23,7 +23,7 @@ export interface LinkPlan {
 
 export type ProfileMatch =
   | { kind: 'join'; profile: ProfileEntry }
-  | { kind: 'create'; lockedMatch: boolean }
+  | { kind: 'create'; lockedMatch: boolean; lockedName?: string }
   | { kind: 'ambiguous'; matches: ProfileEntry[] };
 
 // Decision A: exact name match after trimming, ignoring case. PIN-locked profiles are never matched.
@@ -33,7 +33,8 @@ export const chooseProfileMatch = (localName: string, remote: ProfileEntry[]): P
   const unlocked = same.filter(p => !p.locked);
   if (unlocked.length === 1) return { kind: 'join', profile: unlocked[0] };
   if (unlocked.length > 1) return { kind: 'ambiguous', matches: unlocked };
-  return { kind: 'create', lockedMatch: same.some(p => p.locked) };
+  const locked = same.find(p => p.locked);
+  return { kind: 'create', lockedMatch: !!locked, lockedName: locked?.name };
 };
 
 export interface FanOut {
