@@ -526,7 +526,7 @@ const catalog: Record<string, string> = {
   "settings.themeLight": "فاتح",
   "settings.themeDark": "داكن",
   "settings.themeSystem": "النظام",
-  "settings.language": "اللغة",
+  "settings.language": "اللغة (بيتا)",
   "settings.languageSystem": "افتراضي النظام",
   "settings.languageSystemNamed": "{system} ({name})",
   "settings.languageRestartTitle": "أعد تشغيل NoteSpark",

@@ -436,7 +436,7 @@ const catalog: Record<string, string> = {
   "settings.themeLight": "Terang",
   "settings.themeDark": "Gelap",
   "settings.themeSystem": "Sistem",
-  "settings.language": "Bahasa",
+  "settings.language": "Bahasa (beta)",
   "settings.languageSystem": "Default sistem",
   "settings.languageSystemNamed": "{system} ({name})",
   "settings.languageRestartTitle": "Mulai ulang NoteSpark",

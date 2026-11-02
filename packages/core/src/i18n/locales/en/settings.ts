@@ -3,7 +3,7 @@ export default {
   'settings.themeLight': 'Light',
   'settings.themeDark': 'Dark',
   'settings.themeSystem': 'System',
-  'settings.language': 'Language',
+  'settings.language': 'Language (beta)',
   'settings.languageSystem': 'System default',
   'settings.languageSystemNamed': '{system} ({name})',
   'settings.languageRestartTitle': 'Restart NoteSpark',

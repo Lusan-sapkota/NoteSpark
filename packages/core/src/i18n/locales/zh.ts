@@ -435,7 +435,7 @@ const catalog: Record<string, string> = {
   "settings.themeLight": "浅色",
   "settings.themeDark": "深色",
   "settings.themeSystem": "跟随系统",
-  "settings.language": "语言",
+  "settings.language": "语言（测试版）",
   "settings.languageSystem": "系统默认",
   "settings.languageSystemNamed": "{system}（{name}）",
   "settings.languageRestartTitle": "重启 NoteSpark",

@@ -472,7 +472,7 @@ const catalog: Record<string, string> = {
   "settings.themeLight": "Claro",
   "settings.themeDark": "Oscuro",
   "settings.themeSystem": "Sistema",
-  "settings.language": "Idioma",
+  "settings.language": "Idioma (beta)",
   "settings.languageSystem": "Predeterminado del sistema",
   "settings.languageSystemNamed": "{system} ({name})",
   "settings.languageRestartTitle": "Reinicia NoteSpark",

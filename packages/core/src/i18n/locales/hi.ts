@@ -454,7 +454,7 @@ const catalog: Record<string, string> = {
   "settings.themeLight": "लाइट",
   "settings.themeDark": "डार्क",
   "settings.themeSystem": "सिस्टम",
-  "settings.language": "भाषा",
+  "settings.language": "भाषा (बीटा)",
   "settings.languageSystem": "सिस्टम की डिफ़ॉल्ट",
   "settings.languageSystemNamed": "{system} ({name})",
   "settings.languageRestartTitle": "NoteSpark दोबारा चालू करें",
