@@ -837,9 +837,9 @@ const catalog: Record<string, string> = {
   "privacy.childrenText": "NoteSpark ne collecte aucune information personnelle, y compris auprès des enfants de moins de 13 ans.",
   "privacy.changesHeading": "Modifications de cette politique",
   "privacy.changesM": "Si cette politique change, la nouvelle version apparaîtra ici et sur notespark.lusansapkota.com.np avec une nouvelle date d'entrée en vigueur.",
-  "privacy.dateM": "31 octobre 2026",
+  "privacy.dateM": "2 novembre 2026",
   "privacy.leadM": "NoteSpark est une application de notes hors ligne. Elle n'a ni compte, ni publicité, ni analyse, ni suivi. Tout ce que vous écrivez reste sur votre téléphone, ou va uniquement vers votre propre ordinateur si vous activez la synchronisation. Cette politique explique ce que l'application stocke et où.",
-  "privacy.storesD1": "Vos notes : le titre, le texte, le format, si elles sont épinglées ou archivées, les dates de création et de modification, et votre bloc-notes. Elles sont conservées dans une base de données dans le dossier de NoteSpark sur cet ordinateur, une par profil. Sous Linux, le dossier est ~/.config/NoteSpark.",
+  "privacy.storesD1": "Vos notes : le titre, le texte, le format, si elles sont épinglées ou archivées, les dates de création et de modification, et votre bloc-notes. Elles sont conservées dans une base de données dans le dossier de NoteSpark sur cet ordinateur, une par profil. Sous Linux, le dossier est ~/.config/notespark-desktop.",
   "privacy.storesD2": "Si vous ajoutez une image à une note (facultatif), elle est copiée dans le dossier propre de NoteSpark sur cet ordinateur et conservée chiffrée, comme un document. Elle n'est pas envoyée. Si vous activez la synchronisation, l'image suit sa note vers les appareils que vous avez associés. Une copie est supprimée quand aucune note ne l'utilise.",  // REVIEW (legal)
   "privacy.storesD3": "Les noms de vos profils, le profil ouvert, votre thème, si vous avez terminé les écrans de bienvenue, vos réglages de sauvegarde si vous utilisez les sauvegardes automatiques, et la liste de vos 20 derniers imports et exports. Ils sont conservés dans le même dossier.",  // REVIEW (legal)
   "privacy.storesD4": "Les PIN des profils (facultatif) : seule une forme brouillée de chaque PIN (un hachage salé) est conservée. Le PIN lui-même n'est pas stocké, il ne peut donc pas être récupéré si vous l'oubliez. Un profil avec PIN a aussi ses notes chiffrées, avec une clé que le trousseau de clés de votre système (comme KWallet ou GNOME Keyring) conserve pour NoteSpark. Si aucun trousseau n'est disponible, NoteSpark ne crée pas de profil protégé.",  // REVIEW (legal)
@@ -848,6 +848,7 @@ const catalog: Record<string, string> = {
   "privacy.leavesD1": "Les images qui pointent vers une adresse web ne sont pas chargées, sauf si vous activez Afficher les images web dans les réglages ; aucun site ne sait donc que vous avez ouvert une note.",  // REVIEW (legal)
   "privacy.leavesD2": "Quand vous exportez des notes, ou enregistrez une sauvegarde ou un PDF, le fichier va uniquement là où vous le choisissez.",
   "privacy.leavesD4": "Quand vous cliquez sur un lien dans une note, il s'ouvre dans votre propre navigateur, qui contacte alors ce site. NoteSpark ne le fait pas.",
+  "privacy.leavesDMirror": "Si vous choisissez un dossier Markdown pour la synchronisation (facultatif), NoteSpark y conserve un fichier Markdown pour chaque note des profils synchronisés. Les profils protégés ne sont pas dupliqués.",  // REVIEW (legal)
   "privacy.leavesD5": "Un fichier de synchronisation, si vous en exportez un, est enregistré uniquement là où vous le choisissez et est verrouillé par une phrase secrète que NoteSpark ne stocke jamais. NoteSpark ne l'envoie nulle part ; vous le déplacez vous-même. Sans la phrase secrète, les notes qu'il contient ne peuvent pas être lues.", // REVIEW (legal)
   "privacy.webHeading": "La vue web (facultatif)",  // REVIEW (legal)
   "privacy.webIntro": "La vue web est désactivée tant que vous ne l'activez pas, et se désactive de nouveau quand vous l'arrêtez ou quittez NoteSpark. Elle permet à un navigateur d'un autre appareil d'utiliser vos notes pendant que NoteSpark s'exécute sur cet ordinateur.",
@@ -857,7 +858,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Un profil avec PIN est ouvert et verrouillé uniquement sur cet ordinateur. La vue web fonctionne avec le profil qui est ouvert ici.",
   "privacy.controlD3": "Supprimer le dossier de NoteSpark efface tout. Le développeur n'en a aucune copie ; les notes supprimées ne peuvent donc pas être récupérées, sauf si vous les avez exportées.",
   "privacy.changesD": "Si cette politique change, la nouvelle version apparaîtra ici avec une nouvelle date d'entrée en vigueur.",
-  "privacy.dateD": "31 octobre 2026",
+  "privacy.dateD": "2 novembre 2026",
   "privacy.leadD": "NoteSpark est une application de notes hors ligne. Elle n'a ni compte, ni publicités, ni analyse d'utilisation, ni suivi. Tout ce que vous écrivez reste sur cet ordinateur. Cette politique explique ce que l'application de bureau stocke et où.",
   "privacy.title": "Politique de confidentialité",
   "privacy.effective": "En vigueur le {date}",
@@ -1197,7 +1198,7 @@ const catalog: Record<string, string> = {
   "privacy.syncIntroD": "La synchronisation est désactivée jusqu'à ce que vous l'activiez dans les réglages, sous Synchronisation, et associiez un appareil.",  // REVIEW (legal)
   "privacy.syncD1": "Lorsqu'elle est activée, cet ordinateur écoute uniquement sur des adresses de réseau privé (votre réseau domestique ou de bureau, un point d'accès, le partage USB ou un VPN) les appareils que vous avez associés, et leur parle directement. Tout est chiffré pour que personne sur le réseau ne puisse le lire, et NoteSpark ne se connecte jamais à une adresse internet publique. Rien ne quitte votre propre réseau.",  // REVIEW (legal)
   "privacy.syncD2": "Il n'y a ni compte ni serveur de notre part. Un appareil que vous n'avez pas associé ne reçoit aucune réponse.",  // REVIEW (legal)
-  "privacy.syncD3": "Un appareil ne peut se synchroniser que vers des profils que vous avez déjà ici. Si vous activez Accepter les nouveaux profils des appareils, un appareil peut ajouter un profil sur cet ordinateur, et il commence sans PIN.",  // REVIEW (legal)
+  "privacy.syncD3": "Par défaut, un appareil associé peut ajouter un profil sur cet ordinateur, et le nouveau profil commence sans PIN. Pour que les appareils ne se synchronisent que vers des profils que vous avez déjà ici, désactivez Accepter les nouveaux profils des appareils dans les réglages de synchronisation.",  // REVIEW (legal)
   "privacy.syncD4": "Désactivez la synchronisation, ou retirez un appareil, à tout moment. Les notes déjà présentes sur cet ordinateur y restent.",  // REVIEW (legal)
   "privacy.permD1": "Notifications (facultatif) : pour vous rappeler les tâches à leur échéance. Elles sont créées sur cet ordinateur ; NoteSpark n'utilise pas de notifications push. Les rappels des profils avec PIN n'affichent pas le texte de la tâche.",  // REVIEW (legal)
   "privacy.permD2": "Fichiers et presse-papiers (facultatif) : seulement les fichiers que vous choisissez à l'import, les dossiers que vous choisissez pour les sauvegardes, le miroir Markdown et les exports, et le presse-papiers seulement quand vous choisissez Enregistrer le presse-papiers dans l'icône de la barre d'état.",  // REVIEW (legal)

@@ -770,9 +770,9 @@ const catalog: Record<string, string> = {
   "privacy.childrenText": "NoteSpark 不会收集任何人的个人信息，包括13岁以下的儿童。",
   "privacy.changesHeading": "本政策的变更",
   "privacy.changesM": "如果本政策有变更，新版本将与新的生效日期一起显示在这里以及 notespark.lusansapkota.com.np。",
-  "privacy.dateM": "2026年10月31日",
+  "privacy.dateM": "2026年11月2日",
   "privacy.leadM": "NoteSpark 是一款离线笔记应用。没有账户、广告、分析或跟踪。你写的一切都留在手机上；如果开启同步，则只会传到你自己的电脑。本政策说明应用存储什么以及存储在哪里。",
-  "privacy.storesD1": "你的笔记：标题、正文、格式、是否置顶或归档、创建和编辑日期，以及草稿本。它们保存在这台电脑上 NoteSpark 文件夹中的数据库里，每个档案一个。在 Linux 上，该文件夹是 ~/.config/NoteSpark。",
+  "privacy.storesD1": "你的笔记：标题、正文、格式、是否置顶或归档、创建和编辑日期，以及草稿本。它们保存在这台电脑上 NoteSpark 文件夹中的数据库里，每个档案一个。在 Linux 上，该文件夹是 ~/.config/notespark-desktop。",
   "privacy.storesD2": "如果你把图片添加到笔记（可选），它会被复制到这台电脑上 NoteSpark 自己的文件夹中，并像文档一样加密保存。它不会被上传。如果你开启同步，图片会随其笔记一起传到你配对的设备。当没有笔记使用某份副本时，它会被删除。",  // REVIEW (legal)
   "privacy.storesD3": "你的档案名称、当前打开的档案、你的主题、你是否已完成欢迎页面、使用自动备份时的备份设置，以及你最近 20 次导入和导出的列表。这些保存在同一文件夹中。",  // REVIEW (legal)
   "privacy.storesD4": "档案PIN码（可选）：只保存每个PIN码经过加扰的形式（加盐哈希）。PIN码本身不会被存储，因此忘记后无法找回。带PIN码的档案，其笔记也会被加密，密钥由系统密钥环（如 KWallet 或 GNOME Keyring）为 NoteSpark 保管。如果没有可用的密钥环，NoteSpark 不会创建受保护的档案。",  // REVIEW (legal)
@@ -781,6 +781,7 @@ const catalog: Record<string, string> = {
   "privacy.leavesD1": "指向网址的图片不会加载，除非你在设置中打开“显示网络图片”，因此没有网站会知道你打开了笔记。",  // REVIEW (legal)
   "privacy.leavesD2": "导出笔记、保存备份或 PDF 时，文件只会保存到你选择的位置。",
   "privacy.leavesD4": "点击笔记中的链接时，它会在你自己的浏览器中打开，由浏览器联系该网站，NoteSpark 不会。",
+  "privacy.leavesDMirror": "如果你选择一个用于同步的 Markdown 文件夹（可选），NoteSpark 会在其中为同步档案的每条笔记保存一个 Markdown 文件。受保护的档案不会被镜像。",  // REVIEW (legal)
   "privacy.leavesD5": "同步文件（如果你导出了一个）只会保存到你选择的位置，并用 NoteSpark 从不存储的口令锁定。NoteSpark 不会把它发送到任何地方，需要你自己传送。没有口令，其中的笔记无法读取。", // REVIEW (legal)
   "privacy.webHeading": "网页视图（可选）",  // REVIEW (legal)
   "privacy.webIntro": "网页视图默认关闭，需要你手动开启；停止它或退出 NoteSpark 后会再次关闭。开启后，当 NoteSpark 在这台电脑上运行时，另一台设备上的浏览器可以使用你的笔记。",
@@ -790,7 +791,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "带PIN码的档案只能在这台电脑上打开和锁定。网页视图使用此处当前打开的档案。",
   "privacy.controlD3": "删除 NoteSpark 的文件夹会清除所有内容。开发者没有任何副本，因此已删除的笔记无法找回，除非你已导出。",
   "privacy.changesD": "如果本政策有变更，新版本将与新的生效日期一起显示在这里。",
-  "privacy.dateD": "2026年10月31日",
+  "privacy.dateD": "2026年11月2日",
   "privacy.leadD": "NoteSpark 是一款离线笔记应用。没有账号、没有广告、没有分析，也没有跟踪。你写的一切都只保存在这台电脑上。本政策说明桌面应用存储什么内容以及存储在哪里。",
   "privacy.title": "隐私政策",
   "privacy.effective": "{date}生效",
@@ -1116,7 +1117,7 @@ const catalog: Record<string, string> = {
   "privacy.syncIntroD": "同步在你于设置的“同步”中打开并配对一台设备之前是关闭的。",  // REVIEW (legal)
   "privacy.syncD1": "打开后，这台电脑只在私有网络地址（你的家庭或办公网络、热点、USB 网络共享或 VPN）上监听你配对的设备，并直接与它们通信。一切都经过加密，网络上的任何人都无法读取，NoteSpark 也从不连接公共互联网地址。没有任何内容离开你自己的网络。",  // REVIEW (legal)
   "privacy.syncD2": "没有账户，也没有我们的服务器。你没有配对的设备得不到任何回应。",  // REVIEW (legal)
-  "privacy.syncD3": "设备只能同步到你在这里已有的档案。如果你打开“接受来自设备的新档案”，设备就可以在这台电脑上添加档案，而它一开始没有 PIN。",  // REVIEW (legal)
+  "privacy.syncD3": "默认情况下，已配对的设备可以在这台电脑上添加档案，新档案一开始没有 PIN。若想让设备只能同步到你在这里已有的档案，请在同步设置中关闭“接受来自设备的新档案”。",  // REVIEW (legal)
   "privacy.syncD4": "你可以随时关闭同步，或移除某台设备。已在这台电脑上的笔记会留在这里。",  // REVIEW (legal)
   "privacy.permD1": "通知（可选）：用于在任务到期日提醒你。通知在这台电脑上创建；NoteSpark 不使用推送通知。带 PIN 的档案的提醒不会显示任务文字。",  // REVIEW (legal)
   "privacy.permD2": "文件和剪贴板（可选）：仅限你在导入时选择的文件、你为备份、Markdown 镜像和导出选择的文件夹，剪贴板仅在你从托盘图标选择“保存剪贴板”时使用。",  // REVIEW (legal)

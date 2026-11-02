@@ -14,9 +14,9 @@ const CONTACT_EMAIL = 'contact@lusansapkota.com.np';
 
 const sections: { heading: TKey; intro?: TKey; bullets?: TKey[]; outro?: TKey }[] = [
   { heading: 'privacy.storesHeading',
-    bullets: ['privacy.storesD1', 'privacy.storesD2', 'privacy.storesAttach', 'privacy.storesD3', 'privacy.storesDPaired', 'privacy.storesD4', 'privacy.storesDPinCopy', 'privacy.storesD5'], outro: 'privacy.storesOutro' },
+    bullets: ['privacy.storesD1', 'privacy.storesM2', 'privacy.storesD2', 'privacy.storesAttach', 'privacy.storesD3', 'privacy.storesDPaired', 'privacy.storesD4', 'privacy.storesDPinCopy', 'privacy.storesD5'], outro: 'privacy.storesOutro' },
   { heading: 'privacy.leavesHeadingD', intro: 'privacy.leavesIntroD2',
-    bullets: ['privacy.leavesWebImages', 'privacy.leavesD1', 'privacy.leavesD2', 'privacy.leavesBackups', 'privacy.leavesD4'] },
+    bullets: ['privacy.leavesWebImages', 'privacy.leavesD1', 'privacy.leavesD2', 'privacy.leavesBackups', 'privacy.leavesDMirror', 'privacy.leavesD4'] },
   { heading: 'privacy.syncHeadingM', intro: 'privacy.syncIntroD',
     bullets: ['privacy.syncD1', 'privacy.syncD2', 'privacy.syncD3', 'privacy.leavesD5', 'privacy.syncPin', 'privacy.syncD4'] },
   { heading: 'privacy.permHeading',

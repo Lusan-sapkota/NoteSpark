@@ -770,9 +770,9 @@ const catalog: Record<string, string> = {
   "privacy.childrenText": "NoteSpark는 만 13세 미만 어린이를 포함한 누구에게서도 개인정보를 수집하지 않아요.",
   "privacy.changesHeading": "방침 변경",
   "privacy.changesM": "이 방침이 변경되면 새 버전이 새 시행일과 함께 여기와 notespark.lusansapkota.com.np에 게시돼요.",
-  "privacy.dateM": "2026년 10월 31일",
+  "privacy.dateM": "2026년 11월 2일",
   "privacy.leadM": "NoteSpark는 오프라인 노트 앱입니다. 계정, 광고, 분석, 추적이 없습니다. 작성한 모든 내용은 휴대전화에 남으며, 동기화를 켜면 본인의 컴퓨터로만 전달됩니다. 이 정책은 앱이 무엇을 어디에 저장하는지 설명합니다.",
-  "privacy.storesD1": "메모: 제목, 본문, 형식, 고정 또는 보관 여부, 생성일과 수정일, 그리고 스크래치패드예요. 이 정보는 이 컴퓨터의 NoteSpark 폴더에 있는 데이터베이스에 프로필마다 하나씩 저장돼요. Linux에서 이 폴더는 ~/.config/NoteSpark예요.",
+  "privacy.storesD1": "메모: 제목, 본문, 형식, 고정 또는 보관 여부, 생성일과 수정일, 그리고 스크래치패드예요. 이 정보는 이 컴퓨터의 NoteSpark 폴더에 있는 데이터베이스에 프로필마다 하나씩 저장돼요. Linux에서 이 폴더는 ~/.config/notespark-desktop예요.",
   "privacy.storesD2": "이미지를 노트에 추가하면(선택 사항) 이 컴퓨터의 NoteSpark 자체 폴더에 복사되어 문서처럼 암호화되어 보관됩니다. 업로드되지 않습니다. 동기화를 켜면 이미지는 노트와 함께 페어링한 기기로 전달됩니다. 어떤 노트도 사용하지 않는 사본은 삭제됩니다.",  // REVIEW (legal)
   "privacy.storesD3": "프로필 이름, 열려 있는 프로필, 테마, 시작 화면을 마쳤는지 여부, 자동 백업을 사용하는 경우 백업 설정, 그리고 최근 20개의 가져오기와 내보내기 목록. 이 정보는 같은 폴더에 보관됩니다.",  // REVIEW (legal)
   "privacy.storesD4": "프로필 PIN (선택 사항): 각 PIN을 뒤섞은 형태(솔트가 적용된 해시)만 보관해요. PIN 자체는 저장되지 않으므로 잊어버리면 복구할 수 없어요. PIN이 있는 프로필은 메모도 암호화되며, 암호화 키는 시스템 키링(KWallet 또는 GNOME Keyring 등)이 NoteSpark를 위해 보관해요. 사용 가능한 키링이 없으면 NoteSpark는 보호된 프로필을 만들지 않아요.",  // REVIEW (legal)
@@ -781,6 +781,7 @@ const catalog: Record<string, string> = {
   "privacy.leavesD1": "웹 주소를 가리키는 이미지는 설정에서 ‘웹 이미지 표시’를 켜지 않는 한 불러오지 않으므로, 노트를 열었다는 사실을 어떤 웹사이트도 알지 못합니다.",  // REVIEW (legal)
   "privacy.leavesD2": "메모를 내보내거나 백업 또는 PDF로 저장하면 파일은 선택한 곳으로만 전달돼요.",
   "privacy.leavesD4": "메모의 링크를 클릭하면 사용 중인 브라우저에서 열리며, 해당 웹사이트에 연결하는 것은 브라우저예요. NoteSpark는 연결하지 않아요.",
+  "privacy.leavesDMirror": "동기화용 Markdown 폴더를 선택하면(선택 사항) 동기화하는 프로필의 모든 노트에 대해 Markdown 파일이 그 폴더에 저장됩니다. 보호된 프로필은 복사되지 않습니다.",  // REVIEW (legal)
   "privacy.leavesD5": "동기화 파일은 내보낸 경우 내가 고른 곳에만 저장되며, NoteSpark가 저장하지 않는 암호문으로 잠겨요. NoteSpark는 어디에도 보내지 않으며, 직접 옮겨야 해요. 암호문이 없으면 안의 메모를 읽을 수 없어요.", // REVIEW (legal)
   "privacy.webHeading": "웹 보기 (선택 사항)",  // REVIEW (legal)
   "privacy.webIntro": "웹 보기는 켜기 전까지 꺼져 있으며, 중지하거나 NoteSpark를 종료하면 다시 꺼져요. 이 컴퓨터에서 NoteSpark가 실행되는 동안 다른 기기의 브라우저로 메모를 사용할 수 있게 해 줘요.",
@@ -790,7 +791,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "PIN이 있는 프로필은 이 컴퓨터에서만 열고 잠글 수 있어요. 웹 보기는 이 컴퓨터에서 열려 있는 프로필로 작동해요.",
   "privacy.controlD3": "NoteSpark 폴더를 삭제하면 모든 데이터가 지워져요. 개발자에게는 사본이 없으므로, 삭제한 메모는 내보내 둔 경우가 아니면 복구할 수 없어요.",
   "privacy.changesD": "이 방침이 변경되면 새 버전이 새 시행일과 함께 여기에 게시돼요.",
-  "privacy.dateD": "2026년 10월 31일",
+  "privacy.dateD": "2026년 11월 2일",
   "privacy.leadD": "NoteSpark는 오프라인 메모 앱이에요. 계정, 광고, 분석, 추적이 없어요. 작성한 모든 내용은 이 컴퓨터에만 남아요. 이 방침은 데스크톱 앱이 무엇을 어디에 저장하는지 설명해요.",
   "privacy.title": "개인정보 처리방침",
   "privacy.effective": "시행일 {date}",
@@ -1116,7 +1117,7 @@ const catalog: Record<string, string> = {
   "privacy.syncIntroD": "동기화는 설정의 ‘동기화’에서 켜고 기기를 페어링하기 전까지 꺼져 있습니다.",  // REVIEW (legal)
   "privacy.syncD1": "켜져 있을 때 이 컴퓨터는 페어링한 기기를 위해 비공개 네트워크 주소(집이나 사무실 네트워크, 핫스팟, USB 테더링, VPN)에서만 대기하며 기기와 직접 통신합니다. 모든 것이 암호화되어 네트워크의 누구도 읽을 수 없고, NoteSpark는 공개 인터넷 주소에 연결하지 않습니다. 아무것도 내 네트워크 밖으로 나가지 않습니다.",  // REVIEW (legal)
   "privacy.syncD2": "계정도, 우리 서버도 없습니다. 페어링하지 않은 기기에는 응답하지 않습니다.",  // REVIEW (legal)
-  "privacy.syncD3": "기기는 이 컴퓨터에 이미 있는 프로필에만 동기화할 수 있습니다. ‘기기에서 온 새 프로필 받기’를 켜면 기기가 이 컴퓨터에 프로필을 추가할 수 있으며, 그 프로필은 PIN 없이 시작합니다.",  // REVIEW (legal)
+  "privacy.syncD3": "기본적으로 페어링한 기기가 이 컴퓨터에 프로필을 추가할 수 있으며, 새 프로필은 PIN 없이 시작합니다. 기기가 이 컴퓨터에 이미 있는 프로필에만 동기화하게 하려면 동기화 설정에서 ‘기기에서 온 새 프로필 받기’를 끄세요.",  // REVIEW (legal)
   "privacy.syncD4": "동기화는 언제든 끄거나 기기를 제거할 수 있습니다. 이 컴퓨터에 이미 있는 노트는 그대로 남습니다.",  // REVIEW (legal)
   "privacy.permD1": "알림 (선택 사항): 작업 마감일에 알려 주기 위한 것입니다. 알림은 이 컴퓨터에서 만들어지며 NoteSpark는 푸시 알림을 사용하지 않습니다. PIN이 있는 프로필의 알림은 작업 텍스트를 보여 주지 않습니다.",  // REVIEW (legal)
   "privacy.permD2": "파일과 클립보드 (선택 사항): 가져올 때 고르는 파일, 백업·Markdown 미러·내보내기를 위해 고르는 폴더만 사용하며, 클립보드는 트레이 아이콘에서 ‘클립보드 저장’을 선택할 때만 사용합니다.",  // REVIEW (legal)
