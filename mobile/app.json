@@ -16,7 +16,11 @@
         "monochromeImage": "./assets/adaptive-icon-monochrome.png",
         "backgroundColor": "#d7eb9b"
       },
-      "package": "com.lusansapkota.notespark"
+      "package": "com.lusansapkota.notespark",
+      "blockedPermissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.SYSTEM_ALERT_WINDOW"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
