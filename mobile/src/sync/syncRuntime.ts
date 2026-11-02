@@ -67,6 +67,10 @@ export const askBackgroundPermission = async (): Promise<boolean> => {
   return have.granted || (have.canAskAgain && (await Notifications.requestPermissionsAsync()).granted);
 };
 
+// The library keeps saying "running" after Android stops the service, so ask it every time instead of trusting our flag:
+// a stale flag would either keep sync "on" with nothing holding the app awake, or refuse to start again after a kill.
+const serviceRunning = () => Platform.OS === 'android' && !!Notifications && BackgroundService.isRunning();
+
 const stopService = async () => {
   serviceOn = false;
   if (BackgroundService.isRunning()) await BackgroundService.stop().catch(() => {});
@@ -74,7 +78,9 @@ const stopService = async () => {
 
 // The task only keeps the service alive; the client itself runs in the app's own JS. Only started while the app is in front (Android 12+).
 const startService = async () => {
-  if (Platform.OS !== 'android' || !Notifications || serviceOn || BackgroundService.isRunning()) return;
+  if (Platform.OS !== 'android' || !Notifications) return;
+  if (BackgroundService.isRunning()) { serviceOn = true; return; }
+  serviceOn = false;
   if (!(await Notifications.getPermissionsAsync()).granted) return;
   try {
     await BackgroundService.start(async () => {
@@ -90,6 +96,7 @@ const startService = async () => {
     serviceOn = true;
     log('service started');
   } catch {
+    serviceOn = false;
     log('service not started');
   }
 };
@@ -162,4 +169,9 @@ export const reconcileSync = async () => {
 };
 
 // In the background the client keeps running only while the foreground service does; otherwise it stops and restarts when the app comes back.
-AppState.addEventListener('change', state => { if (state === 'active') void reconcileSync(); else if (!serviceOn) stop(); });
+AppState.addEventListener('change', state => {
+  if (state === 'active') { void reconcileSync(); return; }
+  if (!serviceRunning()) { serviceOn = false; stop(); }
+});
+// Android can take the service away (5-hour data sync limit, low memory, app swiped away): drop the client with it.
+BackgroundService.on('expiration', () => { serviceOn = false; if (AppState.currentState !== 'active') stop(); });

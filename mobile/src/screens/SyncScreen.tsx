@@ -116,7 +116,7 @@ const SyncScreen: React.FC = () => {
     if (status.problem && status.state !== 'locked' && status.state !== 'notLinked' && status.state !== 'needsUpdate') return t('sync.stateProblem');
     switch (status.state) {
       case 'live': return t('sync.stateLive', { time: new Date(status.lastSynced ?? Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) });
-      case 'connecting': return t('sync.stateSearching');
+      case 'connecting': return status.attempts > 0 ? t('sync.stateWaiting') : t('sync.stateSearching');
       case 'syncing': return t('sync.stateSyncing');
       case 'notLinked': return status.closeReason === 'new profiles off' ? t('sync.stateNewProfilesOff') : t('sync.stateNeedsPairing');
       case 'needsUpdate': return t('sync.stateNeedsUpdate');
@@ -137,10 +137,12 @@ const SyncScreen: React.FC = () => {
   const canRelink = on && status.state === 'notLinked' && status.closeReason !== 'new profiles off';
   const problem = on && (status.problem || status.state === 'notLinked' || status.state === 'needsUpdate' || keyMismatch);
   const live = on && status.state === 'live' && !problem;
+  // A silent retry (after at least one failure) keeps the "can't reach" wording instead of flashing "looking" every minute.
+  const retrying = on && status.state === 'connecting' && status.attempts > 0;
   const statusIcon = !on ? 'sync-off' : problem ? 'alert-circle-outline' : status.state === 'live' ? 'check-circle-outline'
-    : status.state === 'locked' ? 'lock-outline' : status.state === 'waiting' ? 'lan-disconnect' : 'sync';
+    : status.state === 'locked' ? 'lock-outline' : status.state === 'waiting' || retrying ? 'lan-disconnect' : 'sync';
   const card = problem ? { bg: theme.colors.errorContainer, fg: theme.colors.onErrorContainer } : { bg: theme.colors.surfaceContainer, fg: theme.colors.onSurface };
-  const slow = on && status.state === 'waiting' && !keyMismatch && status.attempts >= 3;
+  const slow = on && (status.state === 'waiting' || retrying) && !keyMismatch && status.attempts >= 3;
 
   const tips = (
     <View style={[styles.tips, { backgroundColor: theme.colors.surfaceContainerLow }]}>
