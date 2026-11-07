@@ -89,7 +89,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   const title = note.title || t('common.untitledNote');
   const date = relativeDate(showCreated ? note.createdAt : note.updatedAt, showCreated);
   // A note's own colour comes after the selected state and before the pinned look.
-  const own = selected ? null : noteColors(theme.colors, note.color);
+  const own = selected ? null : noteColors(theme, note.color);
   const onColor = selected ? theme.colors.onSecondaryContainer : own ? own.on : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
   const onColorVariant = selected ? theme.colors.onSecondaryContainer : own ? own.on : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant;
   const background = selected ? theme.colors.secondaryContainer : own ? own.fill : isPinned ? theme.colors.primaryContainer : theme.colors.surfaceContainerLow;

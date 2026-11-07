@@ -358,9 +358,30 @@ const EditorScreen: React.FC = () => {
     setPendingSelection({ start: before.length + selStart, end: before.length + selEnd });
   };
 
+  // Wraps the selection in `marker` (bold, italic, strikethrough), or takes the markers off if it already has them.
+  // Spaces at the edges stay outside, because `** word **` isn't bold in Markdown.
   const wrapSelection = (marker: string) => {
-    const selected = content.slice(selection.start, selection.end);
-    insert(`${marker}${selected}${marker}`, marker.length, marker.length + selected.length);
+    let { start, end } = selection;
+    while (start < end && /\s/.test(content[start])) start++;
+    while (end > start && /\s/.test(content[end - 1])) end--;
+    const m = marker.length;
+    const text = content.slice(start, end);
+    let from = start;
+    let to = end;
+    let next: string;
+    if (start >= m && content.slice(start - m, start) === marker && content.slice(end, end + m) === marker) {
+      from = start - m;
+      to = end + m;
+      next = text;
+    } else if (text.length >= 2 * m && text.startsWith(marker) && text.endsWith(marker)) {
+      next = text.slice(m, text.length - m);
+    } else {
+      next = `${marker}${text}${marker}`;
+    }
+    const inner = next === `${marker}${text}${marker}` ? m : 0;
+    setContent(content.slice(0, from) + next + content.slice(to));
+    const innerLength = next.length - 2 * inner;
+    setPendingSelection({ start: from + inner, end: from + inner + innerLength });
   };
 
   const prefixLines = (prefix: string) => {
@@ -489,7 +510,7 @@ const EditorScreen: React.FC = () => {
     ? notePicker.notes.filter(n => n.title.toLowerCase().includes(notePicker.query.trim().toLowerCase())).slice(0, 6)
     : [];
 
-  const own = noteColors(theme.colors, color);
+  const own = noteColors(theme, color);
   const hasSelection = selection.start !== selection.end;
 
   // The #tag or [[link]] being typed at the cursor, and what could complete it.
@@ -703,7 +724,7 @@ const EditorScreen: React.FC = () => {
             <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('editor.colour')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatches}>
               {[null, ...NOTE_COLORS].map((key, i) => {
-                const swatch = noteColors(theme.colors, key);
+                const swatch = noteColors(theme, key);
                 const on = color === key;
                 return (
                   <Pressable
