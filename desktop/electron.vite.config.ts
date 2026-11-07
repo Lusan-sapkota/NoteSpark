@@ -12,7 +12,7 @@ const posix = (p: string) => p.replaceAll('\\', '/');
 const mobileSrc = resolve(__dirname, '../mobile/src');
 // Phone modules that can't run in a browser are swapped, by file, for the versions in src/renderer/app/overrides.
 const overrides: Record<string, string> = Object.fromEntries(
-  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'storage/attachments', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'components/Menu', 'components/MermaidDiagram', 'utils/syncFile', 'sync/syncRuntime', 'screens/PrivacyScreen'].map(m => [`${mobileSrc}/${m}`, app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
+  ['storage/notes', 'storage/profiles', 'storage/database', 'storage/semanticSearch', 'storage/autoBackup', 'storage/attachments', 'utils/exportNotes', 'utils/taskReminders', 'utils/imageCache', 'utils/notifications', 'widget/widgets', 'components/KeyboardSafePortal', 'components/Menu', 'components/MermaidDiagram', 'utils/syncFile', 'sync/syncRuntime', 'screens/PrivacyScreen'].map(m => [resolve(mobileSrc, m), app(`overrides/${m}.${/^(components|screens)/.test(m) ? 'tsx' : 'ts'}`)]),
 );
 
 // The phone's storage code runs in the main process; its Expo imports resolve to the shims in src/main/shims.
