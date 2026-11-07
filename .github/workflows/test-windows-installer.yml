@@ -1,0 +1,63 @@
+# Manual check of the Windows installer from the newest release: silent install (what winget does), start, uninstall.
+# Run it from Actions, Test the Windows installer. No secrets, read-only.
+name: Test the Windows installer
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  silent-install:
+    runs-on: windows-2022
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Download the installer from the latest release and check it against SHA256SUMS
+        shell: pwsh
+        run: |
+          $base = 'https://github.com/Lusan-sapkota/NoteSpark/releases/latest/download'
+          Invoke-WebRequest "$base/NoteSpark-windows-x64.exe" -OutFile setup.exe
+          Invoke-WebRequest "$base/SHA256SUMS" -OutFile SHA256SUMS
+          $want = ((Get-Content SHA256SUMS | Where-Object { $_ -match 'NoteSpark-windows-x64\.exe$' }) -split '\s+')[0]
+          $got = (Get-FileHash setup.exe -Algorithm SHA256).Hash.ToLower()
+          "want $want"; "got  $got"
+          if ($want -ne $got) { throw 'checksum differs' }
+      - name: Silent install (/S), as winget runs it
+        shell: pwsh
+        run: |
+          $p = Start-Process .\setup.exe -ArgumentList '/S' -Wait -PassThru
+          "installer exit code: $($p.ExitCode)"
+          if ($p.ExitCode -ne 0) { throw 'installer failed' }
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\NoteSpark'
+          Get-ChildItem $dir | Select-Object -First 12 Name, Length | Format-Table
+          if (-not (Test-Path "$dir\NoteSpark.exe")) { throw "NoteSpark.exe is not in $dir" }
+          if (-not (Test-Path "$dir\Uninstall NoteSpark.exe")) { throw 'no uninstaller' }
+          'Uninstall entries:'; Get-ChildItem 'HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall' | ForEach-Object { (Get-ItemProperty $_.PSPath).DisplayName } | Where-Object { $_ -like '*NoteSpark*' }
+      - name: Start the app, check it keeps running for 20 seconds, then close it
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\NoteSpark'
+          $app = Start-Process "$dir\NoteSpark.exe" -PassThru
+          Start-Sleep -Seconds 20
+          $running = Get-Process -Name NoteSpark -ErrorAction SilentlyContinue
+          "NoteSpark processes: $($running.Count)"
+          if (-not $running) { throw 'the app exited within 20 seconds' }
+          $running | Stop-Process -Force
+      - name: Uninstall silently and check the files are gone
+        shell: pwsh
+        run: |
+          $dir = Join-Path $env:LOCALAPPDATA 'Programs\NoteSpark'
+          $p = Start-Process "$dir\Uninstall NoteSpark.exe" -ArgumentList '/S' -Wait -PassThru
+          "uninstaller exit code: $($p.ExitCode)"
+          Start-Sleep -Seconds 10
+          if (Test-Path "$dir\NoteSpark.exe") { throw 'NoteSpark.exe is still installed' }
+      - name: winget, if this runner has it
+        shell: pwsh
+        run: |
+          $w = Get-Command winget -ErrorAction SilentlyContinue
+          if (-not $w) { 'winget is not on this runner: skipped'; exit 0 }
+          winget --version
+          bash desktop/packaging/windows/make-winget-manifest.sh "$(git ls-remote --tags origin 'v*' | ForEach-Object { ($_ -split 'refs/tags/')[1] } | Sort-Object { [version]($_ -replace '^v','') } | Select-Object -Last 1)" manifest
+          winget validate --manifest manifest
