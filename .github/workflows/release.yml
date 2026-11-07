@@ -1,0 +1,134 @@
+# Builds every desktop file when a version tag is pushed (git tag v1.2.0 && git push origin v1.2.0), then publishes the GitHub
+# release with the notes from mobile/CHANGELOG.md. The build jobs have no secrets. Only the release job can write, and only to releases.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch: # builds and keeps the files as workflow artifacts; never publishes
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: linux, os: ubuntu-22.04, cmd: 'npm run dist:linux' } # older glibc, so the AppImage runs on more systems
+          - { name: windows, os: windows-2022, cmd: 'npm run dist:win' }
+          - { name: macos-arm64, os: macos-15, cmd: 'npm run build && npx electron-builder --mac dmg --arm64' }
+          - { name: macos-x64, os: macos-15-intel, cmd: 'npm run build && npx electron-builder --mac dmg --x64' }
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            desktop/package-lock.json
+            mobile/package-lock.json
+            packages/*/package-lock.json
+      - name: Linux tools and signing key check
+        if: matrix.name == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y rpm
+          test -f desktop/packaging/linux/notespark-archive-key.asc
+      - name: Install dependencies
+        run: |
+          for d in mobile desktop packages/sync packages/sync-protocol packages/hub; do (cd "$d" && npm ci); done
+      - name: Build
+        working-directory: desktop
+        run: ${{ matrix.cmd }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist-${{ matrix.name }}
+          path: |
+            desktop/dist/NoteSpark-*.AppImage
+            desktop/dist/NoteSpark-*.deb
+            desktop/dist/NoteSpark-*.rpm
+            desktop/dist/NoteSpark-*.tar.gz
+            desktop/dist/NoteSpark-*.exe
+            desktop/dist/NoteSpark-*.zip
+            desktop/dist/NoteSpark-*.dmg
+          if-no-files-found: error
+          retention-days: 7
+
+  test-install:
+    name: Install test (${{ matrix.image }})
+    needs: build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { image: 'ubuntu:24.04', script: test-install-deb.sh }
+          - { image: 'fedora:latest', script: test-install-rpm.sh }
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist-linux
+          path: files
+      - name: Install, keep removed, remove, reinstall in a clean container
+        run: docker run --rm -v "$PWD/files:/pkg:ro" -v "$PWD/desktop/packaging/linux:/t:ro" "${{ matrix.image }}" bash "/t/${{ matrix.script }}"
+
+  release:
+    name: Publish release
+    needs: [build, test-install]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          path: files
+          pattern: dist-*
+          merge-multiple: true
+      - name: Checksums
+        run: |
+          cd files
+          sha256sum NoteSpark-* > ../new.sums
+          # The release may already hold the Android files and their checksums: keep those lines, replace ours.
+          mkdir ../old && gh release download "$TAG" -p SHA256SUMS -D ../old 2>/dev/null || true
+          cat ../old/SHA256SUMS ../new.sums 2>/dev/null | awk '{a[$2]=$0} END{for(k in a)print a[k]}' | sort -k2 > SHA256SUMS
+          cat SHA256SUMS
+      - name: Release notes from the changelog
+        run: |
+          VERSION="${TAG#v}"
+          awk -v v="$VERSION" '/^## \[/{p = index($0, "[" v "]") > 0; next} p' mobile/CHANGELOG.md > notes.md
+          [ -s notes.md ] || echo "No changelog entry for $VERSION; add one to mobile/CHANGELOG.md." > notes.md
+          cat >> notes.md <<'EOF'
+
+          ## About the downloads
+          - The `.deb` and `.rpm` also add NoteSpark's package repository (packages-notespark.lusansapkota.com.np), so `apt upgrade` or `dnf upgrade` can offer new versions. NoteSpark itself makes no update check. Remove the repository by deleting `/etc/apt/sources.list.d/notespark.sources` or `/etc/yum.repos.d/notespark.repo`, or by uninstalling the package.
+          - The AppImage and `.tar.gz` never change system settings and do not update themselves.
+          - The Windows `.exe` and `.zip` and the macOS `.dmg` files are not code-signed, so Windows or macOS may warn before opening them. Check a download against `SHA256SUMS`.
+          EOF
+      - name: Publish
+        run: |
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" files/* --clobber
+            # Keep notes the owner already wrote.
+            [ -n "$(gh release view "$TAG" --json body -q .body)" ] || gh release edit "$TAG" --notes-file notes.md
+          else
+            gh release create "$TAG" files/* --verify-tag --title "NoteSpark ${TAG#v}" --notes-file notes.md
+          fi

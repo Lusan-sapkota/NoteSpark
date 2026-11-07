@@ -1,0 +1,39 @@
+# Type checks, tests and the copy check on every push and pull request. No secrets, read-only.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            desktop/package-lock.json
+            mobile/package-lock.json
+            packages/*/package-lock.json
+      - name: Install dependencies
+        run: for d in mobile desktop packages/sync packages/sync-protocol packages/hub; do (cd "$d" && npm ci); done
+      - name: Type check
+        run: |
+          (cd mobile && npx tsc --noEmit)
+          (cd desktop && npx tsc --noEmit)
+      - name: Package tests
+        run: for d in core sync sync-protocol node-shims hub; do (cd "packages/$d" && npm test); done
+      - name: Copy check
+        run: cd desktop && npm run check:copy
