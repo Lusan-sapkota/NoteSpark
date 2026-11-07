@@ -57,16 +57,17 @@
 
     // Point the main download button at the person's device and mark the matching card.
     var ua = navigator.userAgent;
-    var platform = /Android/i.test(ua) ? 'and' : /Linux|X11/i.test(ua) && !/Android/i.test(ua) ? 'lin' : '';
+    var platform = /Android/i.test(ua) ? 'and' : /Windows/i.test(ua) ? 'win' : /Macintosh|Mac OS X/i.test(ua) ? 'mac' : /Linux|X11/i.test(ua) ? 'lin' : '';
     var label = document.getElementById('dl-main-label');
     var dlMain = document.getElementById('dl-main');
     var direct = 'https://github.com/Lusan-sapkota/NoteSpark/releases/latest/download/';
+    // Android and Windows have one file each. A Mac can't be told apart (Apple silicon or Intel) and Linux has several packages,
+    // so those two buttons open the download section with their tab, where the visitor picks.
     if (dlMain && platform === 'and') dlMain.href = direct + 'NoteSpark-android.apk';
-    if (dlMain && platform === 'lin') dlMain.href = direct + 'NoteSpark-linux-x64.AppImage';
-    var dlNote = document.getElementById('dl-note');
-    if (label && platform === 'and') label.textContent = 'Download for Android';
-    if (label && platform === 'lin') label.textContent = 'Download for Linux';
-    if (dlNote && !platform) dlNote.textContent += ' Windows and macOS builds do not exist yet.';
+    if (dlMain && platform === 'win') dlMain.href = direct + 'NoteSpark-windows-x64.exe';
+    if (dlMain && (platform === 'mac' || platform === 'lin')) { dlMain.href = '#get'; dlMain.removeAttribute('target'); dlMain.removeAttribute('rel'); }
+    var names = { and: 'Android', win: 'Windows', mac: 'Mac', lin: 'Linux' };
+    if (label && names[platform]) label.textContent = 'Download for ' + names[platform];
 
     // Download tabs: with JavaScript one panel shows at a time, starting with the visitor's device.
     var tabs = [].slice.call(document.querySelectorAll('[data-tab]'));
