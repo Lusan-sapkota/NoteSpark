@@ -8,7 +8,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
   }
 }
 import React, { useState, useEffect, useRef } from 'react';
-import { Platform, Pressable, StyleSheet, Text as RNText, View, TextInput, ScrollView } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text as RNText, View, TextInput, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import * as DocumentPicker from 'expo-document-picker';
@@ -60,14 +60,18 @@ const formatDate = (iso: string | null) =>
 
 // A bottom sheet's surface. It springs up from the bottom after a tap (the OS reduce-motion setting turns that off),
 // while Paper's Modal fades the dim backdrop behind it.
-const SheetBody: React.FC<{ color: string; bottomInset: number; children: React.ReactNode }> = ({ color, bottomInset, children }) => (
-  <Animated.View
-    entering={SlideInDown.springify().damping(24).stiffness(260).reduceMotion(ReduceMotion.System)}
-    style={[styles.sheet, { backgroundColor: color, paddingBottom: space.lg + bottomInset }]}
-  >
-    {children}
-  </Animated.View>
-);
+// The height cap is in pixels: a percentage of a parent with no set height collapsed the rows inside.
+const SheetBody: React.FC<{ color: string; bottomInset: number; children: React.ReactNode }> = ({ color, bottomInset, children }) => {
+  const { height } = useWindowDimensions();
+  return (
+    <Animated.View
+      entering={SlideInDown.springify().damping(24).stiffness(260).reduceMotion(ReduceMotion.System)}
+      style={[styles.sheet, { backgroundColor: color, paddingBottom: space.lg + bottomInset, maxHeight: height * 0.7 }]}
+    >
+      {children}
+    </Animated.View>
+  );
+};
 
 const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
@@ -893,7 +897,7 @@ const EditorScreen: React.FC = () => {
           >
             <SheetBody color={theme.colors.surfaceContainerLow} bottomInset={insets.bottom}>
             <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('editor.colour')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatches}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.swatchRow} contentContainerStyle={styles.swatches}>
               {[null, ...NOTE_COLORS].map((key, i) => {
                 const swatch = noteColors(theme, key);
                 const on = color === key;
@@ -916,7 +920,7 @@ const EditorScreen: React.FC = () => {
               })}
             </ScrollView>
             <Text variant="titleMedium" accessibilityRole="header" style={[styles.sheetSection, { color: theme.colors.onSurface }]}>{t('editor.background')}</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatches}>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.swatchRow} contentContainerStyle={styles.swatches}>
               {[null, ...NOTE_PATTERNS].map((key, i) => {
                 const on = background === key;
                 return (
@@ -1150,6 +1154,10 @@ const styles = StyleSheet.create({
   sheetSection: {
     marginTop: space.lg,
   },
+  swatchRow: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
   swatches: {
     gap: space.md,
     paddingVertical: space.sm,
@@ -1193,7 +1201,6 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: shape.extraLarge,
     borderTopRightRadius: shape.extraLarge,
     padding: space.lg,
-    maxHeight: '70%',
   },
   sheetHelp: {
     marginTop: space.xs,
