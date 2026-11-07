@@ -97,7 +97,7 @@ const EditorScreen: React.FC = () => {
   const [showLabels, setShowLabels] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [find, setFind] = useState<{ query: string; index: number } | null>(null);
-  const findRef = useRef<React.ComponentRef<typeof Searchbar>>(null);
+  const findRef = useRef<Pick<React.ComponentRef<typeof TextInput>, 'focus' | 'clear' | 'blur' | 'isFocused' | 'setNativeProps' | 'setSelection'>>(null);
   // The menu hands focus back to the note text when it closes, which would send what is typed to the note instead of
   // the search field, so the field takes focus a moment after the menu is gone (not with autoFocus).
   const findOpen = find !== null;
