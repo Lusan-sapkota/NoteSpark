@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Chip, IconButton, List, Modal, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import Dialog from '../components/Dialog';
 import { Note, RootStackParamList } from '../types';
-import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, saveNote, updateNote } from '../storage/notes';
+import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, saveNote, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
 import { getActiveProfile } from '../storage/profiles';
 import {
   ATTACHMENT_TOO_LARGE_MESSAGE,
@@ -69,6 +69,9 @@ const EditorScreen: React.FC = () => {
   const [isMarkdown, setIsMarkdown] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  // Pin and archive apply at once for a saved note; a new note gets them when it is first saved.
+  const [isPinned, setIsPinned] = useState(false);
+  const [isArchived, setIsArchived] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   // Cursor is read, not controlled: a controlled selection on Android closes the keyboard on focus.
@@ -130,6 +133,8 @@ const EditorScreen: React.FC = () => {
         if (note) {
           await showLoaded({ title: String(note.title), content: String(note.content), isMarkdown: !!note.isMarkdown });
           setIsEditing(true);
+          setIsPinned(note.isPinned);
+          setIsArchived(note.isArchived);
           setCreatedAt(note.createdAt);
           setUpdatedAt(note.updatedAt);
         } else {
@@ -219,13 +224,15 @@ const EditorScreen: React.FC = () => {
         });
       } else {
         const now = new Date().toISOString();
-        await saveNote({
+        const newId = await saveNote({
           title: noteTitle,
           content,
           isMarkdown,
           createdAt: now,
           updatedAt: now
         });
+        if (isArchived) await setNoteArchived(newId, true);
+        else if (isPinned) await setNotePinned(newId, true);
         try {
           const notes = await getNotes();
           if (notes.length === 1) {
@@ -243,6 +250,34 @@ const EditorScreen: React.FC = () => {
     } catch (error) {
       setSaving(false);
       console.error('Failed to save note:', error);
+      alert(t('editor.saveFailedTitle'), t('editor.saveFailedMessage'));
+    }
+  };
+
+  // Archiving unpins (as in storage); pinning an archived note brings it back to Home.
+  const togglePinned = async () => {
+    const pin = !isPinned;
+    try {
+      if (isEditing && noteId) {
+        if (pin && isArchived) await setNoteArchived(Number(noteId), false);
+        await setNotePinned(Number(noteId), pin);
+      }
+      setIsPinned(pin);
+      if (pin) setIsArchived(false);
+    } catch (error) {
+      console.error('Failed to pin note:', error);
+      alert(t('editor.saveFailedTitle'), t('editor.saveFailedMessage'));
+    }
+  };
+
+  const toggleArchived = async () => {
+    const archive = !isArchived;
+    try {
+      if (isEditing && noteId) await setNoteArchived(Number(noteId), archive);
+      setIsArchived(archive);
+      if (archive) setIsPinned(false);
+    } catch (error) {
+      console.error('Failed to archive note:', error);
       alert(t('editor.saveFailedTitle'), t('editor.saveFailedMessage'));
     }
   };
@@ -424,9 +459,26 @@ const EditorScreen: React.FC = () => {
           showBackButton
           onBackPress={() => navigation.goBack()}
           rightActions={
-            <Button mode="contained" onPress={() => handleSave()} theme={controlTheme} loading={saving} disabled={saving} style={styles.save}>
-              {t('common.save')}
-            </Button>
+            <View style={styles.headerActions}>
+              <IconButton
+                icon={isPinned ? 'pin' : 'pin-outline'}
+                mode={isPinned ? 'contained' : undefined}
+                selected={isPinned}
+                onPress={togglePinned}
+                disabled={saving}
+                accessibilityLabel={isPinned ? t('home.unpinNote', { title: title || t('common.untitledNote') }) : t('home.pinNote', { title: title || t('common.untitledNote') })}
+                accessibilityState={{ selected: isPinned }}
+              />
+              <IconButton
+                icon={isArchived ? 'archive-arrow-up' : 'archive-arrow-down-outline'}
+                mode={isArchived ? 'contained-tonal' : undefined}
+                selected={isArchived}
+                onPress={toggleArchived}
+                disabled={saving}
+                accessibilityLabel={isArchived ? t('home.unarchive') : t('home.archive')}
+                accessibilityState={{ selected: isArchived }}
+              />
+            </View>
           }
         />
 
@@ -683,7 +735,8 @@ const styles = StyleSheet.create({
   flex: {
     flex: 1,
   },
-  save: {
+  headerActions: {
+    flexDirection: 'row',
     marginRight: space.sm,
   },
   scrollContent: {
