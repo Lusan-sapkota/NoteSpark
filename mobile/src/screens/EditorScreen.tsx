@@ -536,7 +536,7 @@ const EditorScreen: React.FC = () => {
   return (
     <View style={styles.flex}>
       <SafeAreaView style={[styles.flex, { backgroundColor: own?.fill ?? theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-        <NotePattern pattern={background} color={own?.on ?? theme.colors.onSurface} />
+        <NotePattern pattern={background} dark={theme.dark} />
         <Header elevated={elevated} backgroundColor={own?.fill}
           title={isEditing ? t('editor.editNote') : t('editor.newNote')}
           showBackButton
@@ -753,7 +753,7 @@ const EditorScreen: React.FC = () => {
                     accessibilityState={{ selected: on }}
                     style={[styles.swatch, styles.patternSwatch, { backgroundColor: own?.fill ?? theme.colors.surfaceContainerHighest, borderColor: on ? theme.colors.primary : theme.colors.outlineVariant, borderWidth: on ? 3 : 1 }]}
                   >
-                    {key !== null && <NotePattern pattern={key} color={own?.on ?? theme.colors.onSurface} />}
+                    {key !== null && <NotePattern pattern={key} dark={theme.dark} />}
                     {(on || key === null) && <Icon source={on ? 'check' : 'image-off-outline'} size={20} color={own?.on ?? theme.colors.onSurfaceVariant} />}
                   </Pressable>
                 );

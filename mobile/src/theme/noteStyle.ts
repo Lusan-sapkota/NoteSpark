@@ -43,3 +43,30 @@ export const noteColors = (theme: Pick<MD3Theme, 'colors' | 'dark'>, key?: strin
 };
 
 export const isPattern = (key?: string | null): key is NotePatternKey => NOTE_PATTERNS.includes(key as NotePatternKey);
+
+// Colours for the pattern artwork: eight hues at three tones each (light, mid, deep), from Material tonal palettes
+// (chroma 40 to 64), the lighter set for light notes and the deeper set for dark ones. Used only by NotePattern.
+export type ArtHue = 'green' | 'teal' | 'sky' | 'violet' | 'pink' | 'coral' | 'orange' | 'gold';
+const ART: Record<'light' | 'dark', Record<ArtHue, [string, string, string]>> = {
+  light: {
+    green: ['#acd370', '#84aa4c', '#5e8229'],
+    teal: ['#75d7c8', '#49ae9f', '#0f8679'],
+    sky: ['#7cd0ff', '#3ba8db', '#0080ad'],
+    violet: ['#c6c0ff', '#9c96dd', '#756fb3'],
+    pink: ['#ffafd6', '#e37cb3', '#b6568b'],
+    coral: ['#ffb4ab', '#fa7568', '#c85045'],
+    orange: ['#ffb779', '#eb8400', '#b26300'],
+    gold: ['#ecc300', '#bc9b00', '#8e7500'],
+  },
+  dark: {
+    green: ['#91b758', '#6b8f35', '#476810'],
+    teal: ['#58bbad', '#279385', '#006a60'],
+    sky: ['#4cb6e9', '#008dbf', '#00668a'],
+    violet: ['#aaa3eb', '#827cc1', '#5c5698'],
+    pink: ['#f389c1', '#c56298', '#983d71'],
+    coral: ['#ff897d', '#d95c51', '#a73830'],
+    orange: ['#fe8f00', '#c56e00', '#8f4e00'],
+    gold: ['#cba800', '#9d8100', '#715c00'],
+  },
+};
+export const artPalette = (dark: boolean) => ART[dark ? 'dark' : 'light'];

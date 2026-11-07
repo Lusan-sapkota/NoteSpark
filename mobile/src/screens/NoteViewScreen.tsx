@@ -458,7 +458,7 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
   const own = noteColors(theme, note.color);
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: own?.fill ?? theme.colors.background }]} edges={['left', 'right']}>
-      <NotePattern pattern={note.background} color={own?.on ?? theme.colors.onSurface} />
+      <NotePattern pattern={note.background} dark={theme.dark} />
       <Header
         elevated={elevated}
         backgroundColor={own?.fill}
