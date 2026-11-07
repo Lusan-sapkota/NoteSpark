@@ -45,7 +45,7 @@ fi
 KEY_SRC='/opt/${sanitizedProductName}/resources/notespark-archive-key.asc'
 KEY='/usr/share/keyrings/notespark-archive-keyring.asc'
 MARKER='/var/lib/notespark/repo-added'
-URL='https://packages.notespark.lusansapkota.com.np'
+URL='https://packages-notespark.lusansapkota.com.np'
 if [ ! -e "$MARKER" ] && [ -f "$KEY_SRC" ]; then
   case "$1" in
     configure)

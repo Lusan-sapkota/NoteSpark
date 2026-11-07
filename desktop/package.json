@@ -62,7 +62,7 @@
       "maintainer": "Lusan Sapkota <lusan@aigeeks.dev>",
       "executableName": "notespark",
       "synopsis": "Fast, offline-first notes",
-      "description": "NoteSpark keeps your notes on your computer, with no account and no update check. The .deb and .rpm packages also add NoteSpark's package repository (https://packages.notespark.lusansapkota.com.np) so that apt or dnf can offer new versions. Remove it by deleting /etc/apt/sources.list.d/notespark.sources or /etc/yum.repos.d/notespark.repo, or by uninstalling the package.",
+      "description": "NoteSpark keeps your notes on your computer, with no account and no update check. The .deb and .rpm packages also add NoteSpark's package repository (https://packages-notespark.lusansapkota.com.np) so that apt or dnf can offer new versions. Remove it by deleting /etc/apt/sources.list.d/notespark.sources or /etc/yum.repos.d/notespark.repo, or by uninstalling the package.",
       "appArmorProfile": "packaging/apparmor/notespark"
     },
     "asarUnpack": [
