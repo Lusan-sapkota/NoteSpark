@@ -62,8 +62,7 @@
       "maintainer": "Lusan Sapkota <lusan@aigeeks.dev>",
       "executableName": "notespark",
       "synopsis": "Fast, offline-first notes",
-      "description": "NoteSpark keeps your notes on your computer, with no account and no update check. The .deb and .rpm packages also add NoteSpark's package repository (https://packages-notespark.lusansapkota.com.np) so that apt or dnf can offer new versions. Remove it by deleting /etc/apt/sources.list.d/notespark.sources or /etc/yum.repos.d/notespark.repo, or by uninstalling the package.",
-      "appArmorProfile": "packaging/apparmor/notespark"
+      "description": "NoteSpark keeps your notes on your computer, with no account and no update check. The .deb and .rpm packages also add NoteSpark's package repository (https://packages-notespark.lusansapkota.com.np) so that apt or dnf can offer new versions. Remove it by deleting /etc/apt/sources.list.d/notespark.sources or /etc/yum.repos.d/notespark.repo, or by uninstalling the package."
     },
     "asarUnpack": [
       "node_modules/onnxruntime-node/bin/**",
@@ -87,11 +86,15 @@
     "compression": "normal",
     "deb": {
       "afterInstall": "packaging/linux/after-install.sh",
-      "afterRemove": "packaging/linux/after-remove.sh"
+      "afterRemove": "packaging/linux/after-remove.sh",
+      "appArmorProfile": "packaging/apparmor/notespark",
+      "packageName": "notespark"
     },
     "rpm": {
       "afterInstall": "packaging/linux/after-install.sh",
-      "afterRemove": "packaging/linux/after-remove.sh"
+      "afterRemove": "packaging/linux/after-remove.sh",
+      "appArmorProfile": "packaging/apparmor/notespark",
+      "packageName": "notespark"
     }
   },
   "dependencies": {
@@ -109,5 +112,6 @@
     "react-native-paper": "5.15.3",
     "react-native-web": "0.21.4",
     "sqlite-vec": "0.1.9"
-  }
+  },
+  "license": "GPL-3.0"
 }
