@@ -15,8 +15,9 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, usePreventRemove, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Chip, Icon, IconButton, List, Modal, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
+import { Button, Chip, Icon, IconButton, List, Searchbar, Modal, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import Dialog from '../components/Dialog';
+import Menu from '../components/Menu';
 import { Note, RootStackParamList } from '../types';
 import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, moveNoteToBin, saveNote, setNoteArchived, setNotePinned, setNoteStyle, updateNote } from '../storage/notes';
 import { getActiveProfile } from '../storage/profiles';
@@ -92,6 +93,10 @@ const EditorScreen: React.FC = () => {
   const [background, setBackground] = useState<string | null>(null);
   const [showStyle, setShowStyle] = useState(false);
   const [showMore, setShowMore] = useState(false);
+  // Labels are the note's #tags; Find in note steps through matches by selecting them in the text.
+  const [showLabels, setShowLabels] = useState(false);
+  const [newLabel, setNewLabel] = useState('');
+  const [find, setFind] = useState<{ query: string; index: number } | null>(null);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   // Cursor is read, not controlled: a controlled selection on Android closes the keyboard on focus.
@@ -350,6 +355,41 @@ const EditorScreen: React.FC = () => {
     } catch (error) {
       alert(t('note.binFailedTitle'), t('common.tryAgainRestart'));
     }
+  };
+
+  // Labels are #tags in the text: adding appends one on its own line, removing takes it out where it stands alone.
+  const addLabel = (raw: string) => {
+    const tag = raw.trim().replace(/^#+/, '').replace(/\s+/g, '-').toLowerCase();
+    if (!tag || extractTags(content).includes(tag)) return;
+    setContent(`${content.trimEnd()}${content.trim() ? '\n' : ''}#${tag}\n`);
+  };
+
+  const removeLabel = (tag: string) => {
+    const escaped = tag.replace(/[.*+?^${}()|[\]\\/]/g, '\\$&');
+    setContent(content.replace(new RegExp(`(^|\\s)#${escaped}(?![\\p{L}\\p{N}_/-])`, 'giu'), '$1').replace(/[ \t]+$/gm, ''));
+  };
+
+  const findMatches = (() => {
+    const q = find?.query.trim().toLowerCase();
+    const out: number[] = [];
+    if (!q) return out;
+    const text = content.toLowerCase();
+    for (let i = text.indexOf(q); i !== -1; i = text.indexOf(q, i + q.length)) out.push(i);
+    return out;
+  })();
+
+  const selectMatch = (index: number, query: string) => {
+    const start = findMatches[index];
+    if (start === undefined) return;
+    bodyRef.current?.focus();
+    setPendingSelection({ start, end: start + query.trim().length });
+  };
+
+  const stepFind = (step: number) => {
+    if (!find || !findMatches.length) return;
+    const index = (find.index + step + findMatches.length) % findMatches.length;
+    setFind({ ...find, index });
+    selectMatch(index, find.query);
   };
 
   const changeStyle = async (next: { color: string | null; background: string | null }) => {
@@ -631,6 +671,35 @@ const EditorScreen: React.FC = () => {
                 accessibilityLabel={isPinned ? t('home.unpinNote', { title: title || t('common.untitledNote') }) : t('home.pinNote', { title: title || t('common.untitledNote') })}
                 accessibilityState={{ selected: isPinned }}
               />
+        {find && (
+          <View style={styles.findBar}>
+            <Searchbar
+              autoFocus
+              placeholder={t('note.findInNote')}
+              value={find.query}
+              onChangeText={text => {
+                setFind({ query: text, index: 0 });
+              }}
+              onSubmitEditing={() => stepFind(1)}
+              icon="close"
+              onIconPress={() => setFind(null)}
+              searchAccessibilityLabel={t('note.closeFind')}
+              style={{ backgroundColor: theme.colors.surfaceContainerHigh, borderRadius: shape.control }}
+              inputStyle={styles.findInput}
+              right={() => (
+                <View style={styles.findActions}>
+                  {!!find.query.trim() && (
+                    <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} accessibilityLiveRegion="polite">
+                      {findMatches.length ? t('note.matchOf', { current: (find.index % findMatches.length) + 1, total: findMatches.length }) : t('note.noMatches')}
+                    </Text>
+                  )}
+                  <IconButton icon="chevron-up" disabled={!findMatches.length} onPress={() => stepFind(-1)} accessibilityLabel={t('note.previousMatch')} />
+                  <IconButton icon="chevron-down" disabled={!findMatches.length} onPress={() => stepFind(1)} accessibilityLabel={t('note.nextMatch')} />
+                </View>
+              )}
+            />
+          </View>
+        )}
               <IconButton
                 icon={isArchived ? 'archive-arrow-up' : 'archive-arrow-down-outline'}
                 mode={isArchived ? 'contained-tonal' : undefined}
@@ -640,7 +709,17 @@ const EditorScreen: React.FC = () => {
                 accessibilityLabel={isArchived ? t('home.unarchive') : t('home.archive')}
                 accessibilityState={{ selected: isArchived }}
               />
-              <IconButton icon="dots-vertical" onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />
+              <Menu
+                visible={showMore}
+                onDismiss={() => setShowMore(false)}
+                anchor={<IconButton icon="dots-vertical" onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />}
+              >
+                <Menu.Item leadingIcon="content-copy" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
+                <Menu.Item leadingIcon="share-variant-outline" title={t('editor.send')} onPress={handleSend} />
+                <Menu.Item leadingIcon="magnify" title={t('note.findInNote')} onPress={() => { setShowMore(false); setFind({ query: '', index: 0 }); }} />
+                <Menu.Item leadingIcon="tag-outline" title={t('editor.labels')} onPress={() => { setShowMore(false); setShowLabels(true); }} />
+                <Menu.Item leadingIcon="delete-outline" title={t('note.moveToBin')} titleStyle={{ color: theme.colors.error }} onPress={handleDelete} />
+              </Menu>
             </View>
           }
         />
@@ -798,28 +877,6 @@ const EditorScreen: React.FC = () => {
 
         <Portal>
           <Modal
-            visible={showMore}
-            onDismiss={() => setShowMore(false)}
-            style={styles.sheetWrap}
-            contentContainerStyle={styles.sheetHost}
-          >
-            <SheetBody color={theme.colors.surfaceContainerLow} bottomInset={insets.bottom}>
-            {isEditing && !!updatedAt && (
-              <Text variant="titleSmall" style={{ color: theme.colors.onSurfaceVariant }}>
-                {t('home.editedOn', { date: formatDate(updatedAt) })}
-              </Text>
-            )}
-            <List.Item title={t('editor.makeCopy')} left={props => <List.Icon {...props} icon="content-copy" />} onPress={handleMakeCopy} />
-            <List.Item title={t('editor.send')} left={props => <List.Icon {...props} icon="share-variant-outline" />} onPress={handleSend} />
-            <List.Item
-              title={t('note.moveToBin')}
-              titleStyle={{ color: theme.colors.error }}
-              left={props => <List.Icon {...props} icon="delete-outline" color={theme.colors.error} />}
-              onPress={handleDelete}
-            />
-            </SheetBody>
-          </Modal>
-          <Modal
             visible={showStyle}
             onDismiss={() => setShowStyle(false)}
             style={styles.sheetWrap}
@@ -909,6 +966,43 @@ const EditorScreen: React.FC = () => {
           </Modal>
         </Portal>
         <KeyboardSafePortal>
+          <Dialog visible={showLabels} onDismiss={() => { setShowLabels(false); setNewLabel(''); }}>
+            <Dialog.Title>{t('editor.labels')}</Dialog.Title>
+            <Dialog.Content style={styles.dialogContent}>
+              <PaperTextInput
+                mode="outlined"
+                label={t('editor.newLabel')}
+                value={newLabel}
+                onChangeText={setNewLabel}
+                autoCapitalize="none"
+                autoCorrect={false}
+                onSubmitEditing={() => { addLabel(newLabel); setNewLabel(''); }}
+                right={<PaperTextInput.Icon icon="plus" onPress={() => { addLabel(newLabel); setNewLabel(''); }} accessibilityLabel={t('common.add')} />}
+              />
+              <View style={styles.labelChips}>
+                {[...new Set([...extractTags(content), ...known.tags])].map(tag => {
+                  const on = extractTags(content).includes(tag);
+                  return (
+                    <Chip
+                      key={tag}
+                      mode={on ? 'flat' : 'outlined'}
+                      selected={on}
+                      showSelectedCheck={false}
+                      icon={on ? 'check' : undefined}
+                      onPress={() => (on ? removeLabel(tag) : addLabel(tag))}
+                      accessibilityState={{ selected: on }}
+                      maxFontSizeMultiplier={1.5}
+                    >
+                      #{tag}
+                    </Chip>
+                  );
+                })}
+              </View>
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => { setShowLabels(false); setNewLabel(''); }}>{t('common.done')}</Button>
+            </Dialog.Actions>
+          </Dialog>
           <Dialog visible={showLinkDialog} onDismiss={() => setShowLinkDialog(false)}>
             <Dialog.Title>{t('editor.addLink')}</Dialog.Title>
             <Dialog.Content style={styles.dialogContent}>
@@ -1065,6 +1159,23 @@ const styles = StyleSheet.create({
   },
   sheetWrap: {
     justifyContent: 'flex-end',
+  },
+  findBar: {
+    paddingHorizontal: space.lg,
+    paddingBottom: space.sm,
+  },
+  findInput: {
+    minHeight: 0,
+  },
+  findActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  labelChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    marginTop: space.sm,
   },
   sheetHost: {
     backgroundColor: 'transparent',

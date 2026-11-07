@@ -205,6 +205,8 @@ const catalog: Record<string, string> = {
   "editor.italic": "斜体",
   "editor.heading": "标题",
   "editor.format": "文字格式",
+  "editor.labels": "标签",
+  "editor.newLabel": "新标签",
   "editor.makeCopy": "创建副本",
   "editor.copyOf": "{title} 的副本",
   "editor.copyMade": "已创建副本",

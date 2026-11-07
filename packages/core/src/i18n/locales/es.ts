@@ -238,6 +238,8 @@ const catalog: Record<string, string> = {
   "editor.italic": "Cursiva",
   "editor.heading": "Encabezado",
   "editor.format": "Formato de texto",
+  "editor.labels": "Etiquetas",
+  "editor.newLabel": "Nueva etiqueta",
   "editor.makeCopy": "Hacer una copia",
   "editor.copyOf": "Copia de {title}",
   "editor.copyMade": "Copia creada",

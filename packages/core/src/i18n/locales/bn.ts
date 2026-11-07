@@ -221,6 +221,8 @@ const catalog: Record<string, string> = {
   "editor.italic": "ইটালিক",
   "editor.heading": "শিরোনাম", // REVIEW: Heading vs Title, same word in Bengali
   "editor.format": "টেক্সট ফরম্যাটিং",
+  "editor.labels": "লেবেল",
+  "editor.newLabel": "নতুন লেবেল",
   "editor.makeCopy": "কপি করুন",
   "editor.copyOf": "{title} এর কপি",
   "editor.copyMade": "কপি তৈরি হয়েছে",

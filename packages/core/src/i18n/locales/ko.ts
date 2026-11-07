@@ -205,6 +205,8 @@ const catalog: Record<string, string> = {
   "editor.italic": "기울임",
   "editor.heading": "제목",
   "editor.format": "텍스트 서식",
+  "editor.labels": "라벨",
+  "editor.newLabel": "새 라벨",
   "editor.makeCopy": "사본 만들기",
   "editor.copyOf": "{title} 사본",
   "editor.copyMade": "사본을 만들었습니다",

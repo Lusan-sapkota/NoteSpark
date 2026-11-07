@@ -286,6 +286,8 @@ const catalog: Record<string, string> = {
   "editor.italic": "مائل",
   "editor.heading": "عنوان",
   "editor.format": "تنسيق النص",
+  "editor.labels": "التصنيفات",
+  "editor.newLabel": "تصنيف جديد",
   "editor.makeCopy": "إنشاء نسخة",
   "editor.copyOf": "نسخة من {title}",
   "editor.copyMade": "تم إنشاء النسخة",

@@ -221,6 +221,8 @@ const catalog: Record<string, string> = {
   "editor.italic": "इटालिक",
   "editor.heading": "शीर्षक",
   "editor.format": "पाठ ढाँचा",
+  "editor.labels": "लेबल",
+  "editor.newLabel": "नयाँ लेबल",
   "editor.makeCopy": "प्रतिलिपि बनाउनुहोस्",
   "editor.copyOf": "{title} को प्रतिलिपि",
   "editor.copyMade": "प्रतिलिपि बनाइयो",

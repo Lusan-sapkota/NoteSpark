@@ -206,6 +206,8 @@ const catalog: Record<string, string> = {
   "editor.italic": "Miring",
   "editor.heading": "Judul",
   "editor.format": "Format teks",
+  "editor.labels": "Label",
+  "editor.newLabel": "Label baru",
   "editor.makeCopy": "Buat salinan",
   "editor.copyOf": "Salinan {title}",
   "editor.copyMade": "Salinan dibuat",

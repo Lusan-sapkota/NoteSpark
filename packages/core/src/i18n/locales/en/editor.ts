@@ -29,6 +29,8 @@ export default {
   'editor.italic': 'Italic',
   'editor.heading': 'Heading',
   'editor.format': 'Text formatting',
+  'editor.labels': 'Labels',
+  'editor.newLabel': 'New label',
   'editor.makeCopy': 'Make a copy',
   'editor.copyOf': 'Copy of {title}',
   'editor.copyMade': 'Copy made',

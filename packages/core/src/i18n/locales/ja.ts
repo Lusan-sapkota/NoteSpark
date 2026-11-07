@@ -205,6 +205,8 @@ const catalog: Record<string, string> = {
   "editor.italic": "斜体",
   "editor.heading": "見出し",
   "editor.format": "文字の書式",
+  "editor.labels": "ラベル",
+  "editor.newLabel": "新しいラベル",
   "editor.makeCopy": "コピーを作成",
   "editor.copyOf": "{title} のコピー",
   "editor.copyMade": "コピーを作成しました",
