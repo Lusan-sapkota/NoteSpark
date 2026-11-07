@@ -99,7 +99,8 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   );
   const onSwipeOpen = (direction: SwipeDirection.LEFT | SwipeDirection.RIGHT) => {
     swipe.current?.close();
-    if (direction === SwipeDirection.LEFT) onArchiveToggle(note.id);
+    // The library reports the drag direction: dragging right opens the left (archive) panel and reports RIGHT.
+    if (direction === SwipeDirection.RIGHT) onArchiveToggle(note.id);
     else onDelete(note.id);
   };
 
@@ -207,6 +208,9 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
       containerStyle={containerStyle}
       overshootLeft={false}
       overshootRight={false}
+      // Default is 10 and there is no vertical fail zone, so a scroll that drifts sideways started a swipe and stalled the list.
+      dragOffsetFromLeft={24}
+      dragOffsetFromRight={-24}
       onSwipeableOpen={onSwipeOpen}
       renderLeftActions={() =>
         swipeAction(note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline', note.isArchived ? t('home.unarchive') : t('home.archive'), theme.colors.secondaryContainer, theme.colors.onSecondaryContainer, 'flex-start')
