@@ -85,7 +85,7 @@
       </nav>
       <article class="reading-column">
       <h1 class="headline-small" style="margin-bottom: var(--space-xs);">Privacy policy</h1>
-      <p class="body-small policy-text">Effective November 2, 2026</p>
+      <p class="body-small policy-text">Effective November 7, 2026</p>
 
       <p class="body-large policy-lead">
         NoteSpark is an offline notes app, on Android and on a computer. It has no account, no ads, no analytics and no tracking. Everything you write stays on your own devices, and goes between them only over your own network if you turn on sync. This policy explains what the app stores and where. Where the two differ, it says On Android or On a computer.
@@ -148,7 +148,7 @@
 
       <section class="policy-section" aria-labelledby="sec-nothing-leaves">
         <h2 id="sec-nothing-leaves" class="title-medium">Nothing leaves your device</h2>
-        <p class="body-large policy-text">NoteSpark stays offline by design. It makes no requests to the internet of its own: no analytics, no crash reporting and no update checks. <strong>On Android:</strong> updates come only from where you installed the app: the store, or a new APK that you download yourself. <strong>On a computer:</strong> new versions come only as a new installer that you download yourself. Sync is off until you turn it on, and then nothing leaves your own network (see Sync between your devices).</p>
+        <p class="body-large policy-text">NoteSpark stays offline by design. It makes no requests to the internet of its own: no analytics, no crash reporting and no update checks. <strong>On Android:</strong> updates come only from where you installed the app: the store, or a new APK that you download yourself. <strong>On a computer:</strong> new versions come only as a new installer that you download yourself, or, if you installed the .deb or .rpm on Linux, through your system's package manager (see below). Sync is off until you turn it on, and then nothing leaves your own network (see Sync between your devices).</p>
         <ul class="policy-bullets body-large">
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
@@ -169,6 +169,10 @@
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
             <span><strong>On a computer:</strong> When you click a link in a note, it opens in your own browser, which then contacts that website. NoteSpark doesn't.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>On a computer:</strong> If you install the .deb or .rpm on Linux, the package adds NoteSpark's package repository to your system (packages-notespark.lusansapkota.com.np, served through Cloudflare). Your system's package manager, not NoteSpark, then asks that server for updates, and the server can see those requests, including your IP address. NoteSpark itself still sends nothing. To stop this, delete /etc/apt/sources.list.d/notespark.sources or /etc/yum.repos.d/notespark.repo, or uninstall the package. The AppImage and the .tar.gz never add a repository.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>

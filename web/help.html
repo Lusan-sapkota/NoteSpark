@@ -227,7 +227,15 @@
         <ul class="policy-bullets body-large">
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>
-            <span><strong>Linux today.</strong> The app ships as an AppImage; mark it executable with <code>chmod +x</code>, then open it. On Ubuntu 22.04 and newer, an AppImage needs <code>libfuse2</code> (<code>sudo apt install libfuse2</code>), or start it with <code>--appimage-extract-and-run</code>. On Ubuntu 23.10 and newer, the sandbox may also need an AppArmor profile; if it stops with "No usable sandbox", see the desktop README. The AppImage does not update itself. Windows and macOS are not built yet.</span>
+            <span><strong>Linux, with updates (.deb and .rpm).</strong> Install the <code>.deb</code> with <code>sudo apt install ./NoteSpark-linux-x64.deb</code> (Debian, Ubuntu and relatives) or the <code>.rpm</code> with <code>sudo dnf install ./NoteSpark-linux-x64.rpm</code> (Fedora and relatives). The package adds NoteSpark's package repository once, so <code>sudo apt update &amp;&amp; sudo apt upgrade</code> or <code>sudo dnf upgrade</code> then brings new versions. NoteSpark itself still makes no update check and sends nothing: your system's package manager asks the repository (packages-notespark.lusansapkota.com.np, served through Cloudflare), and that server can see those requests. To remove the repository, delete <code>/etc/apt/sources.list.d/notespark.sources</code> or <code>/etc/yum.repos.d/notespark.repo</code>, or uninstall the package. If you delete the file yourself, upgrades do not add it back.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>Linux, without updates (AppImage and .tar.gz).</strong> These never change your system and do not update themselves: download the next version when you want it. For the AppImage, mark it executable with <code>chmod +x</code>, then open it. On Ubuntu 22.04 and newer it needs <code>libfuse2</code> (<code>sudo apt install libfuse2</code>), or start it with <code>--appimage-extract-and-run</code>. On Ubuntu 23.10 and newer, the sandbox may need an AppArmor profile (installing the <code>.deb</code> adds it); without it the AppImage may start without the sandbox, or stop with "No usable sandbox", and the desktop README explains the profile. For the <code>.tar.gz</code>, unpack it anywhere, run <code>chmod +x notespark</code> if needed, and start <code>./notespark</code>; it has no menu entry.</span>
+          </li>
+          <li class="policy-bullet">
+            <span class="policy-bullet-dot" aria-hidden="true">•</span>
+            <span><strong>Windows and macOS.</strong> The Windows installer and zip and the macOS disk images (Apple silicon and Intel) come with the same release. They are not code-signed, so Windows SmartScreen or macOS may warn before the first start, and they do not update themselves. The download page shows which are ready.</span>
           </li>
           <li class="policy-bullet">
             <span class="policy-bullet-dot" aria-hidden="true">•</span>

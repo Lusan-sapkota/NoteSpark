@@ -43,12 +43,12 @@ There is an 80-second [demo video](./web/assets/notespark-demo.mp4) as well.
 
 ## Get it
 
-Download the Android APK or the Linux AppImage from [GitHub releases](https://github.com/Lusan-sapkota/NoteSpark/releases) (each release has a `SHA256SUMS` file). Neither updates itself. Google Play is coming.
+Download from [GitHub releases](https://github.com/Lusan-sapkota/NoteSpark/releases) (each release has a `SHA256SUMS` file): the Android APK; for the desktop, the Linux AppImage, `.deb`, `.rpm` and `.tar.gz`, the Windows `.exe` and `.zip`, and the macOS `.dmg` (Apple silicon and Intel). The desktop files come with 1.2.0. The APK, AppImage, `.tar.gz`, `.exe`, `.zip` and `.dmg` do not update themselves. On Linux, the `.deb` and `.rpm` add NoteSpark's package repository (packages-notespark.lusansapkota.com.np, served through Cloudflare) once, so `apt upgrade` or `dnf upgrade` can offer new versions. The app itself makes no update check and sends nothing; your system's package manager contacts the repository. Remove it by deleting `/etc/apt/sources.list.d/notespark.sources` or `/etc/yum.repos.d/notespark.repo`, or by uninstalling the package. Google Play is coming.
 
 | | Status |
 |---|---|
 | Android app (`mobile/`) | APK on GitHub releases now, Google Play coming |
-| Desktop app (`desktop/`) | Linux AppImage on GitHub releases now. Windows and macOS are not built yet |
+| Desktop app (`desktop/`) | Linux AppImage on GitHub releases now. `.deb`, `.rpm`, `.tar.gz`, Windows and macOS files come with 1.2.0 |
 | Self-hosted hub (`docker/`) | Planned |
 
 More on the [website](https://notespark.lusansapkota.com.np): [help](https://notespark.lusansapkota.com.np/help.html), [privacy policy](https://notespark.lusansapkota.com.np/privacy.html) and the [changelog](https://notespark.lusansapkota.com.np/changelog.html).
