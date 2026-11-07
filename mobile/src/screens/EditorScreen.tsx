@@ -633,7 +633,7 @@ const EditorScreen: React.FC = () => {
   const overlayColor = own ? `${own.on}1f` : theme.colors.surfaceContainerHigh;
   // Eases the screen to a newly picked colour; the bar is see-through so it follows.
   const fillColor = own?.fill ?? theme.colors.background;
-  const fadeStyle = useAnimatedStyle(() => ({ backgroundColor: withTiming(fillColor, { duration: 240, reduceMotion: ReduceMotion.System }) }), [fillColor]);
+  const fadeStyle = useAnimatedStyle(() => ({ backgroundColor: withTiming(fillColor, { duration: 240, reduceMotion: ReduceMotion.System }) }));
   // Phone plain tab: text drawn from styled pieces (marks fade). The desktop's text box can't, so it shows the marks.
   const showStyled = !isMarkdown && Platform.OS !== 'web';
   const styledBody = showStyled
@@ -1021,7 +1021,7 @@ const EditorScreen: React.FC = () => {
               <PaperTextInput
                 mode="outlined"
                 label={t('editor.hexCode')}
-                placeholder="#4a90d9"
+                placeholder="4a90d9"
                 value={customHex ?? ''}
                 onChangeText={setCustomHex}
                 autoCapitalize="none"
