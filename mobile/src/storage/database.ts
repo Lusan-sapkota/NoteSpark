@@ -196,6 +196,9 @@ export const initDatabase = async (db: SQLite.SQLiteDatabase): Promise<void> => 
   if (!cols.has('isPinned')) await db.execAsync('ALTER TABLE notes ADD COLUMN isPinned INTEGER NOT NULL DEFAULT 0').catch(() => {});
   if (!cols.has('deletedAt')) await db.execAsync('ALTER TABLE notes ADD COLUMN deletedAt TEXT').catch(() => {});
   if (!cols.has('isArchived')) await db.execAsync('ALTER TABLE notes ADD COLUMN isArchived INTEGER NOT NULL DEFAULT 0').catch(() => {});
+  // Note colour and background pattern keys (null = default).
+  if (!cols.has('color')) await db.execAsync('ALTER TABLE notes ADD COLUMN color TEXT').catch(() => {});
+  if (!cols.has('background')) await db.execAsync('ALTER TABLE notes ADD COLUMN background TEXT').catch(() => {});
   // The global id sync uses; backfilled once, then set by every INSERT (UUID_SQL) and never changed.
   if (!cols.has('uuid')) await db.execAsync('ALTER TABLE notes ADD COLUMN uuid TEXT').catch(() => {});
   if (await db.getFirstAsync("SELECT 1 FROM notes WHERE uuid IS NULL OR uuid = '' LIMIT 1")) {

@@ -12,6 +12,7 @@ type DB = SQLite.SQLiteDatabase;
 // ponytail: bound to one profile; the hub keeps one of these per synced profile.
 const stateOf = (r: any): NoteState => ({
   title: r.title, content: r.content, isMarkdown: !!r.isMarkdown, isPinned: !!r.isPinned, isArchived: !!r.isArchived,
+  color: r.color ?? null, background: r.background ?? null,
   deletedAt: r.deletedAt ?? null, createdAt: r.createdAt, updatedAt: r.updatedAt,
 });
 

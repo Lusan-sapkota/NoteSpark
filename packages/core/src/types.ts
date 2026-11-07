@@ -6,6 +6,8 @@ export interface Note {
   isMarkdown: boolean;
   isPinned: boolean;
   isArchived: boolean; // hidden from Home (except the Archived filter) and Tasks, still exported
+  color?: string | null; // key of a note colour (see mobile/src/theme/noteStyle.ts); null or missing is the default
+  background?: string | null; // key of a background pattern
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null; // set while the note is in the bin

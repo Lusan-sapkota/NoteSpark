@@ -67,6 +67,8 @@ const stateOf = (row: any): NoteState => ({
   isMarkdown: !!row.isMarkdown,
   isPinned: !!row.isPinned,
   isArchived: !!row.isArchived,
+  color: row.color ?? null,
+  background: row.background ?? null,
   deletedAt: row.deletedAt ?? null,
   createdAt: row.createdAt,
   updatedAt: row.updatedAt,
@@ -200,6 +202,8 @@ const sameNote = (a: NoteState, b: NoteState) =>
   a.isMarkdown === b.isMarkdown &&
   a.isPinned === b.isPinned &&
   a.isArchived === b.isArchived &&
+  (a.color ?? null) === (b.color ?? null) &&
+  (a.background ?? null) === (b.background ?? null) &&
   a.deletedAt === b.deletedAt &&
   a.createdAt === b.createdAt &&
   a.updatedAt === b.updatedAt;
@@ -244,11 +248,12 @@ export const reconcileOnce = async (db: DB) => {
 const materialize = async (db: DB, uuid: string, preloaded?: { note: NoteState; stateVector: Uint8Array }): Promise<void> => {
   const { note: n, stateVector } = preloaded ?? noteWithStateVector(await loadUpdates(db, uuid));
   await db.runAsync(
-    `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived, deletedAt, uuid)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived, deletedAt, color, background, uuid)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
      ON CONFLICT(uuid) DO UPDATE SET title = excluded.title, content = excluded.content, isMarkdown = excluded.isMarkdown,
-       updatedAt = excluded.updatedAt, isPinned = excluded.isPinned, isArchived = excluded.isArchived, deletedAt = excluded.deletedAt`,
-    [n.title, n.content, n.isMarkdown ? 1 : 0, n.createdAt, n.updatedAt, n.isPinned ? 1 : 0, n.isArchived ? 1 : 0, n.deletedAt, uuid]
+       updatedAt = excluded.updatedAt, isPinned = excluded.isPinned, isArchived = excluded.isArchived, deletedAt = excluded.deletedAt,
+       color = excluded.color, background = excluded.background`,
+    [n.title, n.content, n.isMarkdown ? 1 : 0, n.createdAt, n.updatedAt, n.isPinned ? 1 : 0, n.isArchived ? 1 : 0, n.deletedAt, n.color ?? null, n.background ?? null, uuid]
   );
   await setMarker(db, uuid, stateVector);
 };

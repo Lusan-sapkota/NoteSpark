@@ -8,11 +8,14 @@ export interface NoteState {
   isMarkdown: boolean;
   isPinned: boolean;
   isArchived: boolean;
+  color?: string | null; // note colour and background pattern keys, last writer wins; absent from older devices
+  background?: string | null;
   deletedAt: string | null; // in the bin since
   createdAt: string;
   updatedAt: string;
 }
 
+const STYLE = ['color', 'background'] as const;
 const FLAGS = ['isMarkdown', 'isPinned', 'isArchived', 'deletedAt', 'updatedAt'] as const;
 
 export const readNote = (doc: Y.Doc): NoteState => {
@@ -25,6 +28,9 @@ export const readNote = (doc: Y.Doc): NoteState => {
     // Archiving unpins. A pin and an archive made at the same time on two devices both stick, so it's decided here.
     isPinned: !!meta.get('isPinned') && !archived,
     isArchived: archived,
+    // Left out when unset, so a note nobody coloured looks the same as before these fields existed.
+    ...(meta.get('color') ? { color: meta.get('color') as string } : {}),
+    ...(meta.get('background') ? { background: meta.get('background') as string } : {}),
     deletedAt: meta.get('deletedAt') ?? null,
     createdAt: meta.get('createdAt') ?? '',
     updatedAt: meta.get('updatedAt') ?? '',
@@ -42,6 +48,13 @@ export const writeNote = (doc: Y.Doc, next: NoteState): Uint8Array | null => {
     for (const key of FLAGS) {
       if (meta.get(key) !== next[key]) {
         meta.set(key, next[key]);
+        changed = true;
+      }
+    }
+    // A missing value and null are the same, so a device that doesn't know the field doesn't make changes.
+    for (const key of STYLE) {
+      if ((meta.get(key) ?? null) !== (next[key] ?? null)) {
+        meta.set(key, next[key] ?? null);
         changed = true;
       }
     }

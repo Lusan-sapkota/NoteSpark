@@ -51,6 +51,8 @@ export const getNoteById = async (id: number): Promise<Note | null> => {
         isMarkdown: Boolean(item.isMarkdown),
         isPinned: Boolean(item.isPinned),
         isArchived: Boolean(item.isArchived),
+        color: item.color ?? null,
+        background: item.background ?? null,
         createdAt: item.createdAt,
         updatedAt: item.updatedAt
       };
@@ -238,6 +240,15 @@ export const deleteNote = changesNotes(async (id: number): Promise<void> => {
 export const setNotePinned = changesNotes(async (id: number, pinned: boolean): Promise<void> => {
   await transact(db, async sync => {
     await db.runAsync('UPDATE notes SET isPinned = ? WHERE id = ?', [pinned ? 1 : 0, id]);
+    await sync.capture([id]);
+  });
+});
+
+// Colour and background aren't an edit either. Keys are checked on the way in so a bad value can't be stored.
+export const setNoteStyle = changesNotes(async (id: number, style: { color: string | null; background: string | null }): Promise<void> => {
+  for (const key of [style.color, style.background]) if (key !== null && !/^[a-z]{1,16}$/.test(key)) throw new Error('Bad note style key');
+  await transact(db, async sync => {
+    await db.runAsync('UPDATE notes SET color = ?, background = ? WHERE id = ?', [style.color, style.background, id]);
     await sync.capture([id]);
   });
 });

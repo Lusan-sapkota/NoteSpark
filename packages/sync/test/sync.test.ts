@@ -106,6 +106,20 @@ test('pin versus archive at the same time: archived wins, never both', () => {
   assert.deepEqual([a.notes().n.isPinned, a.notes().n.isArchived], [false, true]);
 });
 
+test('note colour and background sync, and a missing value is the same as null', () => {
+  const { a, b } = trio();
+  a.save('n', note({ color: 'sage', background: 'hills' }));
+  meetAll(a, b);
+  same(a, b);
+  assert.deepEqual([b.notes().n.color, b.notes().n.background], ['sage', 'hills']);
+  // The same state again is no change, and null and missing are the same.
+  assert.equal(a.save('n', note({ color: 'sage', background: 'hills' })).length, 0);
+  b.save('n', note({ color: null, background: null }));
+  meetAll(a, b);
+  same(a, b);
+  assert.deepEqual([a.notes().n.color ?? null, a.notes().n.background ?? null], [null, null]);
+});
+
 test('pin and unpin from two devices converge', () => {
   const { a, b } = trio();
   a.save('n', note({ isPinned: true }));
