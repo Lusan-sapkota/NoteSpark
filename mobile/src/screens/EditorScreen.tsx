@@ -97,6 +97,15 @@ const EditorScreen: React.FC = () => {
   const [showLabels, setShowLabels] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [find, setFind] = useState<{ query: string; index: number } | null>(null);
+  const findRef = useRef<React.ComponentRef<typeof Searchbar>>(null);
+  // The menu hands focus back to the note text when it closes, which would send what is typed to the note instead of
+  // the search field, so the field takes focus a moment after the menu is gone (not with autoFocus).
+  const findOpen = find !== null;
+  useEffect(() => {
+    if (!findOpen) return;
+    const timer = setTimeout(() => findRef.current?.focus(), 300);
+    return () => clearTimeout(timer);
+  }, [findOpen]);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   // Cursor is read, not controlled: a controlled selection on Android closes the keyboard on focus.
@@ -674,7 +683,7 @@ const EditorScreen: React.FC = () => {
         {find && (
           <View style={styles.findBar}>
             <Searchbar
-              autoFocus
+              ref={findRef}
               placeholder={t('note.findInNote')}
               value={find.query}
               onChangeText={text => {
