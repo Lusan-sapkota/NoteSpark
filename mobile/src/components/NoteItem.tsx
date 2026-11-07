@@ -8,6 +8,8 @@ import { Note } from '../types';
 import { useTheme } from '../theme/ThemeContext';
 import { useI18n } from '../i18n/I18nContext';
 import { groupCorners, shape, space } from '../theme/theme';
+import { noteColors } from '../theme/noteStyle';
+import NotePattern from './NotePattern';
 
 interface NoteItemProps {
   note: Note;
@@ -86,9 +88,11 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   const preview = useMemo(() => toPreview(note.content), [note.content]);
   const title = note.title || t('common.untitledNote');
   const date = relativeDate(showCreated ? note.createdAt : note.updatedAt, showCreated);
-  const onColor = selected ? theme.colors.onSecondaryContainer : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
-  const onColorVariant = selected ? theme.colors.onSecondaryContainer : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant;
-  const background = selected ? theme.colors.secondaryContainer : isPinned ? theme.colors.primaryContainer : theme.colors.surfaceContainerLow;
+  // A note's own colour comes after the selected state and before the pinned look.
+  const own = selected ? null : noteColors(theme.colors, note.color);
+  const onColor = selected ? theme.colors.onSecondaryContainer : own ? own.on : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurface;
+  const onColorVariant = selected ? theme.colors.onSecondaryContainer : own ? own.on : isPinned ? theme.colors.onPrimaryContainer : theme.colors.onSurfaceVariant;
+  const background = selected ? theme.colors.secondaryContainer : own ? own.fill : isPinned ? theme.colors.primaryContainer : theme.colors.surfaceContainerLow;
 
   // Swipe right to archive (no question, Home offers Undo); swipe left to move to bin (Home asks first, so the row snaps back).
   const swipeAction = (icon: string, label: string, color: string, onColor: string, align: 'flex-start' | 'flex-end') => (
@@ -106,6 +110,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
 
   const body = (
     <View style={{ backgroundColor: background }}>
+      {!selected && <NotePattern pattern={note.background} color={onColor} />}
       <TouchableRipple
         onPress={() => (selecting ? onSelect(note.id) : onPress(note.id))}
         onLongPress={() => onSelect(note.id)}

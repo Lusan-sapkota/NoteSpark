@@ -8,17 +8,17 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
   }
 }
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, TextInput, ScrollView } from 'react-native';
+import { Pressable, StyleSheet, View, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, usePreventRemove, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Chip, IconButton, List, Modal, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
+import { Button, Chip, Icon, IconButton, List, Modal, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import Dialog from '../components/Dialog';
 import { Note, RootStackParamList } from '../types';
-import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, saveNote, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
+import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, saveNote, setNoteArchived, setNotePinned, setNoteStyle, updateNote } from '../storage/notes';
 import { getActiveProfile } from '../storage/profiles';
 import {
   ATTACHMENT_TOO_LARGE_MESSAGE,
@@ -43,6 +43,8 @@ import { useAlert } from '../components/DialogProvider';
 import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, readingWidth, shape, space } from '../theme/theme';
+import { NOTE_COLORS, NOTE_PATTERNS, noteColors } from '../theme/noteStyle';
+import NotePattern from '../components/NotePattern';
 
 type EditorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Editor'>;
 type EditorScreenRouteProp = RouteProp<RootStackParamList, 'Editor'>;
@@ -72,6 +74,10 @@ const EditorScreen: React.FC = () => {
   // Pin and archive apply at once for a saved note; a new note gets them when it is first saved.
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
+  // Colour and background pattern keys; like pin and archive they apply at once for a saved note.
+  const [color, setColor] = useState<string | null>(null);
+  const [background, setBackground] = useState<string | null>(null);
+  const [showStyle, setShowStyle] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   // Cursor is read, not controlled: a controlled selection on Android closes the keyboard on focus.
@@ -137,6 +143,8 @@ const EditorScreen: React.FC = () => {
           setIsEditing(true);
           setIsPinned(note.isPinned);
           setIsArchived(note.isArchived);
+          setColor(note.color ?? null);
+          setBackground(note.background ?? null);
           setCreatedAt(note.createdAt);
           setUpdatedAt(note.updatedAt);
         } else {
@@ -235,6 +243,7 @@ const EditorScreen: React.FC = () => {
         });
         if (isArchived) await setNoteArchived(newId, true);
         else if (isPinned) await setNotePinned(newId, true);
+        if (color || background) await setNoteStyle(newId, { color, background });
         try {
           const notes = await getNotes();
           if (notes.length === 1) {
@@ -280,6 +289,17 @@ const EditorScreen: React.FC = () => {
       if (archive) setIsPinned(false);
     } catch (error) {
       console.error('Failed to archive note:', error);
+      alert(t('editor.saveFailedTitle'), t('editor.saveFailedMessage'));
+    }
+  };
+
+  const changeStyle = async (next: { color: string | null; background: string | null }) => {
+    try {
+      if (isEditing && noteId) await setNoteStyle(Number(noteId), next);
+      setColor(next.color);
+      setBackground(next.background);
+    } catch (error) {
+      console.error('Failed to change note style:', error);
       alert(t('editor.saveFailedTitle'), t('editor.saveFailedMessage'));
     }
   };
@@ -469,6 +489,7 @@ const EditorScreen: React.FC = () => {
     ? notePicker.notes.filter(n => n.title.toLowerCase().includes(notePicker.query.trim().toLowerCase())).slice(0, 6)
     : [];
 
+  const own = noteColors(theme.colors, color);
   const hasSelection = selection.start !== selection.end;
 
   // The #tag or [[link]] being typed at the cursor, and what could complete it.
@@ -493,8 +514,9 @@ const EditorScreen: React.FC = () => {
 
   return (
     <View style={styles.flex}>
-      <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
-        <Header elevated={elevated}
+      <SafeAreaView style={[styles.flex, { backgroundColor: own?.fill ?? theme.colors.background }]} edges={['left', 'right', 'bottom']}>
+        <NotePattern pattern={background} color={own?.on ?? theme.colors.onSurface} />
+        <Header elevated={elevated} backgroundColor={own?.fill}
           title={isEditing ? t('editor.editNote') : t('editor.newNote')}
           showBackButton
           onBackPress={() => navigation.goBack()}
@@ -554,7 +576,7 @@ const EditorScreen: React.FC = () => {
             </View>
 
             <TextInput
-              style={[styles.titleInput, theme.fonts.noteTitle, { color: theme.colors.onSurface }]}
+              style={[styles.titleInput, theme.fonts.noteTitle, { color: own?.on ?? theme.colors.onSurface }]}
               placeholder={t('editor.titlePlaceholder')}
               placeholderTextColor={theme.colors.onSurfaceVariant}
               value={typeof title === 'string' ? title : String(title)}
@@ -579,7 +601,7 @@ const EditorScreen: React.FC = () => {
               <View style={styles.body}>
                 <TextInput
                   ref={bodyRef}
-                  style={[styles.contentInput, theme.fonts.noteBody, { color: theme.colors.onSurface }]}
+                  style={[styles.contentInput, theme.fonts.noteBody, { color: own?.on ?? theme.colors.onSurface }]}
                   value={convertImagesToLinks(content, isMarkdown)}
                   onChangeText={handleChangeText}
                   multiline
@@ -602,7 +624,7 @@ const EditorScreen: React.FC = () => {
         {/* Rides on the keyboard via a transform; the opened offset cancels the bottom inset. */}
         {!showPreview && (
           <KeyboardStickyView offset={{ opened: insets.bottom }}>
-          <View style={[styles.toolbar, { backgroundColor: theme.colors.surfaceContainer }]}>
+          <View style={[styles.toolbar, { backgroundColor: own?.fill ?? theme.colors.surfaceContainer }]}>
             {suggestions.length > 0 && (
               <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.suggestions}>
                 {suggestions.map(word => (
@@ -660,6 +682,7 @@ const EditorScreen: React.FC = () => {
                 accessibilityLabel={t('editor.format')}
                 accessibilityState={{ expanded: showFormat }}
               />
+              <IconButton icon="palette-outline" onPress={() => setShowStyle(true)} accessibilityLabel={t('editor.noteStyle')} />
               <IconButton icon="checkbox-marked-outline" onPress={() => prefixLines('- [ ] ')} accessibilityLabel={t('editor.task')} />
               <IconButton icon="calendar-outline" onPress={() => setShowDueDialog(true)} accessibilityLabel={t('editor.dueDate')} />
               <IconButton icon="note-multiple-outline" onPress={openNotePicker} accessibilityLabel={t('editor.linkANote')} />
@@ -671,6 +694,51 @@ const EditorScreen: React.FC = () => {
         )}
 
         <Portal>
+          <Modal
+            visible={showStyle}
+            onDismiss={() => setShowStyle(false)}
+            style={styles.sheetWrap}
+            contentContainerStyle={[styles.sheet, { backgroundColor: theme.colors.surfaceContainerLow, paddingBottom: space.lg + insets.bottom }]}
+          >
+            <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('editor.colour')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatches}>
+              {[null, ...NOTE_COLORS].map((key, i) => {
+                const swatch = noteColors(theme.colors, key);
+                const on = color === key;
+                return (
+                  <Pressable
+                    key={key ?? 'none'}
+                    onPress={() => changeStyle({ color: key, background })}
+                    accessibilityRole="button"
+                    accessibilityLabel={key === null ? t('editor.noColour') : t('editor.colourN', { n: i })}
+                    accessibilityState={{ selected: on }}
+                    style={[styles.swatch, { backgroundColor: swatch?.fill ?? theme.colors.surfaceContainerHighest, borderColor: on ? theme.colors.primary : theme.colors.outlineVariant, borderWidth: on ? 3 : 1 }]}
+                  >
+                    {(on || key === null) && <Icon source={on ? 'check' : 'format-color-marker-cancel'} size={20} color={swatch?.on ?? theme.colors.onSurfaceVariant} />}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+            <Text variant="titleMedium" accessibilityRole="header" style={[styles.sheetSection, { color: theme.colors.onSurface }]}>{t('editor.background')}</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatches}>
+              {[null, ...NOTE_PATTERNS].map((key, i) => {
+                const on = background === key;
+                return (
+                  <Pressable
+                    key={key ?? 'none'}
+                    onPress={() => changeStyle({ color, background: key })}
+                    accessibilityRole="button"
+                    accessibilityLabel={key === null ? t('editor.noBackground') : t('editor.patternN', { n: i })}
+                    accessibilityState={{ selected: on }}
+                    style={[styles.swatch, styles.patternSwatch, { backgroundColor: own?.fill ?? theme.colors.surfaceContainerHighest, borderColor: on ? theme.colors.primary : theme.colors.outlineVariant, borderWidth: on ? 3 : 1 }]}
+                  >
+                    {key !== null && <NotePattern pattern={key} color={own?.on ?? theme.colors.onSurface} />}
+                    {(on || key === null) && <Icon source={on ? 'check' : 'image-off-outline'} size={20} color={own?.on ?? theme.colors.onSurfaceVariant} />}
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </Modal>
           <Modal
             visible={showRelated}
             onDismiss={() => setShowRelated(false)}
@@ -831,6 +899,25 @@ const styles = StyleSheet.create({
   },
   relatedChip: {
     marginHorizontal: space.sm,
+  },
+  sheetSection: {
+    marginTop: space.lg,
+  },
+  swatches: {
+    gap: space.md,
+    paddingVertical: space.sm,
+  },
+  swatch: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  patternSwatch: {
+    width: 72,
+    borderRadius: shape.control,
   },
   sheetWrap: {
     justifyContent: 'flex-end',

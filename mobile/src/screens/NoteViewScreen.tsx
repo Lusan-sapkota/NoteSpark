@@ -27,6 +27,8 @@ import { useAlert } from '../components/DialogProvider';
 import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { NoteText, readingWidth, shape, space } from '../theme/theme';
+import { noteColors } from '../theme/noteStyle';
+import NotePattern from '../components/NotePattern';
 
 type NoteViewScreenNavigationProp = NativeStackNavigationProp<any>;
 type NoteViewScreenRouteProp = RouteProp<any>;
@@ -453,10 +455,13 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
     </View>
   );
 
+  const own = noteColors(theme.colors, note.color);
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: own?.fill ?? theme.colors.background }]} edges={['left', 'right']}>
+      <NotePattern pattern={note.background} color={own?.on ?? theme.colors.onSurface} />
       <Header
         elevated={elevated}
+        backgroundColor={own?.fill}
         title={titleInBar ? note.title : ''}
         showBackButton={!pane}
         onBackPress={goBack}

@@ -13,6 +13,8 @@ interface HeaderProps {
   // Makes the title a button with a chevron (the profile switcher). `titleLabel` is what a screen reader says for it.
   onTitlePress?: () => void;
   titleLabel?: string;
+  // A note's colour; the bar then keeps it even while content scrolls under.
+  backgroundColor?: string;
 }
 
 // M3 small top app bar; `elevated` tints it to surfaceContainer while content scrolls under it.
@@ -24,11 +26,12 @@ const Header: React.FC<HeaderProps> = ({
   elevated = false,
   onTitlePress,
   titleLabel,
+  backgroundColor,
 }) => {
   const { t } = useI18n();
   const { theme } = useTheme();
   return (
-    <Appbar.Header mode="small" elevated={elevated}>
+    <Appbar.Header mode="small" elevated={elevated && !backgroundColor} style={backgroundColor ? { backgroundColor } : undefined}>
       {showBackButton && <Appbar.BackAction onPress={onBackPress} accessibilityLabel={t('common.back')} />}
       {onTitlePress ? (
         // The name takes the room the icons leave and ends in an ellipsis; the chevron never shrinks, so it is always there.
