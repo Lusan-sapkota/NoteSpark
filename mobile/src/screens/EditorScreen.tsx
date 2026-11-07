@@ -18,7 +18,7 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Button, Chip, Icon, IconButton, List, Modal, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import Dialog from '../components/Dialog';
 import { Note, RootStackParamList } from '../types';
-import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, saveNote, setNoteArchived, setNotePinned, setNoteStyle, updateNote } from '../storage/notes';
+import { clearDraft, getDraft, getNoteById, getNotes, saveDraft, moveNoteToBin, saveNote, setNoteArchived, setNotePinned, setNoteStyle, updateNote } from '../storage/notes';
 import { getActiveProfile } from '../storage/profiles';
 import {
   ATTACHMENT_TOO_LARGE_MESSAGE,
@@ -27,6 +27,7 @@ import {
   appendAttachmentLink,
   removeAttachmentLink,
 } from '../storage/attachments';
+import { shareNoteAsMarkdown } from '../utils/exportNotes';
 import { addDays, formatAttachmentImage, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
 import { isMeaningSearchAvailable, relatedToText } from '../storage/semanticSearch';
 import { isLiveRelatedOn } from '../utils/liveRelated';
@@ -78,6 +79,7 @@ const EditorScreen: React.FC = () => {
   const [color, setColor] = useState<string | null>(null);
   const [background, setBackground] = useState<string | null>(null);
   const [showStyle, setShowStyle] = useState(false);
+  const [showMore, setShowMore] = useState(false);
   const [createdAt, setCreatedAt] = useState<string | null>(null);
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   // Cursor is read, not controlled: a controlled selection on Android closes the keyboard on focus.
@@ -290,6 +292,44 @@ const EditorScreen: React.FC = () => {
     } catch (error) {
       console.error('Failed to archive note:', error);
       alert(t('editor.saveFailedTitle'), t('editor.saveFailedMessage'));
+    }
+  };
+
+  // The three-dots sheet works on the text as it is on screen, saved or not.
+  const asNote = (): Note => ({
+    id: Number(noteId), title, content, isMarkdown, isPinned, isArchived, color, background,
+    createdAt: createdAt ?? '', updatedAt: updatedAt ?? '',
+  });
+
+  const handleMakeCopy = async () => {
+    setShowMore(false);
+    try {
+      const now = new Date().toISOString();
+      const name = title.trim() || titleFromText(content) || t('common.untitledNote');
+      const newId = await saveNote({ title: t('editor.copyOf', { title: name }), content, isMarkdown, createdAt: now, updatedAt: now });
+      if (color || background) await setNoteStyle(newId, { color, background });
+      alert(t('editor.copyMade'));
+    } catch (error) {
+      console.error('Failed to copy note:', error);
+      alert(t('editor.saveFailedTitle'), t('editor.saveFailedMessage'));
+    }
+  };
+
+  const handleSend = () => {
+    setShowMore(false);
+    shareNoteAsMarkdown(asNote()).catch(() => alert(t('note.exportFailedTitle'), t('common.tryAgainRestart')));
+  };
+
+  // No question, like on the note screen: the note goes to the bin and Home offers Undo.
+  const handleDelete = async () => {
+    setShowMore(false);
+    try {
+      await moveNoteToBin(Number(noteId));
+      clearDraft();
+      setSaved({ title, content, isMarkdown }); // nothing left to save on the way out
+      setTimeout(() => navigation.popTo('Home', { binnedNoteId: Number(noteId) }), 0);
+    } catch (error) {
+      alert(t('note.binFailedTitle'), t('common.tryAgainRestart'));
     }
   };
 
@@ -561,6 +601,7 @@ const EditorScreen: React.FC = () => {
                 accessibilityLabel={isArchived ? t('home.unarchive') : t('home.archive')}
                 accessibilityState={{ selected: isArchived }}
               />
+              {isEditing && <IconButton icon="dots-vertical" onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />}
             </View>
           }
         />
@@ -572,7 +613,7 @@ const EditorScreen: React.FC = () => {
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
-          bottomOffset={TOOLBAR_HEIGHT + (suggestions.length ? 48 : 0) + (showFormat ? 48 : 0) + space.lg}
+          bottomOffset={TOOLBAR_HEIGHT + space.sm + (suggestions.length ? 48 : 0) + (showFormat ? 48 : 0) + space.lg}
         >
           <View style={styles.column}>
             <View style={styles.modeRow}>
@@ -645,7 +686,7 @@ const EditorScreen: React.FC = () => {
         {/* Rides on the keyboard via a transform; the opened offset cancels the bottom inset. */}
         {!showPreview && (
           <KeyboardStickyView offset={{ opened: insets.bottom }}>
-          <View style={[styles.toolbar, { backgroundColor: own?.fill ?? theme.colors.surfaceContainer }]}>
+          <View style={[styles.toolbar, { backgroundColor: own?.fill ?? theme.colors.surfaceContainerHigh, borderColor: theme.colors.outlineVariant }]}>
             {suggestions.length > 0 && (
               <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.suggestions}>
                 {suggestions.map(word => (
@@ -715,6 +756,26 @@ const EditorScreen: React.FC = () => {
         )}
 
         <Portal>
+          <Modal
+            visible={showMore}
+            onDismiss={() => setShowMore(false)}
+            style={styles.sheetWrap}
+            contentContainerStyle={[styles.sheet, { backgroundColor: theme.colors.surfaceContainerLow, paddingBottom: space.lg + insets.bottom }]}
+          >
+            {!!updatedAt && (
+              <Text variant="titleSmall" style={{ color: theme.colors.onSurfaceVariant }}>
+                {t('home.editedOn', { date: formatDate(updatedAt) })}
+              </Text>
+            )}
+            <List.Item title={t('editor.makeCopy')} left={props => <List.Icon {...props} icon="content-copy" />} onPress={handleMakeCopy} />
+            <List.Item title={t('editor.send')} left={props => <List.Icon {...props} icon="share-variant-outline" />} onPress={handleSend} />
+            <List.Item
+              title={t('note.moveToBin')}
+              titleStyle={{ color: theme.colors.error }}
+              left={props => <List.Icon {...props} icon="delete-outline" color={theme.colors.error} />}
+              onPress={handleDelete}
+            />
+          </Modal>
           <Modal
             visible={showStyle}
             onDismiss={() => setShowStyle(false)}
@@ -906,8 +967,14 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
     padding: 0,
   },
+  // Floats a little in from the screen edges, rounded, instead of running edge to edge.
   toolbar: {
+    marginHorizontal: space.md,
+    marginBottom: space.sm,
     paddingHorizontal: space.xs,
+    borderRadius: shape.extraLarge,
+    borderWidth: 1,
+    overflow: 'hidden',
   },
   toolbarContent: {
     alignItems: 'center',

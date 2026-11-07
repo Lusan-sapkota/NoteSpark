@@ -6,7 +6,8 @@ import type { MD3Theme } from 'react-native-paper';
 
 export const NOTE_COLORS = ['lime', 'sage', 'teal', 'sky', 'lavender', 'blush', 'rose', 'amber', 'sun', 'clay', 'khaki', 'slate'] as const;
 export const NOTE_PATTERNS = [
-  'hills', 'mountains', 'sunrise', 'waves', 'rings', 'bloom', 'petals', 'bubbles', 'dots', 'confetti', 'stripes', 'diamonds', 'crosses', 'lines', 'grid',
+  'seaweed', 'skyline', 'flowers', 'rain', 'stars', 'hills', 'mountains', 'sunrise', 'waves', 'rings', 'bloom', 'petals', 'bubbles', 'dots', 'confetti',
+  'stripes', 'diamonds', 'crosses', 'lines', 'grid',
 ] as const;
 
 export type NoteColorKey = (typeof NOTE_COLORS)[number];

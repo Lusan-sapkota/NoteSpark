@@ -27,6 +27,64 @@ const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean): ViewS
   const hues: ArtHue[] = ['green', 'teal', 'sky', 'violet', 'pink', 'coral', 'orange', 'gold'];
 
   switch (key) {
+    case 'seaweed': {
+      // Tall fronds along the bottom edge and two birds, like an underwater scene.
+      const frond = (color: string, x: number, height: number, deg: number, opacity: number): ViewStyle => ({
+        ...fill(color, opacity), width: 0.07 * u, height, borderRadius: 0.035 * u, left: x - 0.035 * u, top: h - height * 0.85, transform: [{ rotate: `${deg}deg` }],
+      });
+      const bird = (color: string, size: number, left: number, top: number): ViewStyle => ({
+        position: 'absolute', width: size, height: size / 2, left, top, opacity: 0.8,
+        borderBottomWidth: 2, borderBottomColor: color, borderBottomLeftRadius: size / 2, borderBottomRightRadius: size / 2,
+      });
+      const fronds = Array.from({ length: 9 }, (_, i) =>
+        frond(c(i % 2 ? 'teal' : 'green', (i % 3) as 0 | 1 | 2), w * (0.04 + i * 0.115), (0.3 + rand() * 0.3) * u, (i % 2 ? 1 : -1) * (6 + rand() * 12), 0.6));
+      return [...fronds, bird(c('violet', 2), 0.12 * u, w * 0.72, h * 0.62), bird(c('sky', 2), 0.08 * u, w * 0.84, h * 0.55)];
+    }
+    case 'skyline': {
+      // Buildings with lit windows, the lit ones in warm colours.
+      const out: ViewStyle[] = [];
+      const widths = [0.12, 0.09, 0.14, 0.1, 0.13, 0.08];
+      let x = w - 0.7 * u;
+      widths.forEach((bw, i) => {
+        const bh = (0.22 + rand() * 0.3) * u;
+        out.push({ ...fill(c((['violet', 'sky', 'teal'] as ArtHue[])[i % 3], 1), 0.55), width: bw * u, height: bh, left: x, top: h - bh });
+        for (let r = 0; r < 3; r++) {
+          for (let col = 0; col < 2; col++) {
+            if (rand() > 0.5) out.push(disc(c('gold', 0), 0.018 * u, x + 0.02 * u + col * 0.045 * u, h - bh + 0.03 * u + r * 0.05 * u, 0.9));
+          }
+        }
+        x += bw * u + 0.01 * u;
+      });
+      return out;
+    }
+    case 'flowers': {
+      const flower = (x: number, stem: number, hue: ArtHue, size: number): ViewStyle[] => [
+        { ...fill(c('green', 1), 0.7), width: 0.012 * u, height: stem, left: x - 0.006 * u, top: h - stem },
+        ...[0, 72, 144, 216, 288].map((deg): ViewStyle => {
+          const a = ((deg - 90) * Math.PI) / 180;
+          return disc(c(hue, 0), size, x + Math.cos(a) * size * 0.7 - size / 2, h - stem + Math.sin(a) * size * 0.7 - size / 2, 0.75);
+        }),
+        disc(c('gold', 1), size * 0.7, x - size * 0.35, h - stem - size * 0.35, 0.95),
+      ];
+      return [
+        ...flower(w - 0.12 * u, 0.3 * u, 'pink', 0.07 * u),
+        ...flower(w - 0.26 * u, 0.2 * u, 'orange', 0.06 * u),
+        ...flower(w - 0.38 * u, 0.26 * u, 'violet', 0.065 * u),
+      ];
+    }
+    case 'rain':
+      return Array.from({ length: 22 }, (_, i) =>
+        bar(c((['sky', 'teal', 'violet'] as ArtHue[])[i % 3], (i % 3) as 0 | 1 | 2), w * rand(), Math.min(h, 1.1 * u) * rand(), 0.07 * u, 0.012 * u, 70, 0.6));
+    case 'stars': {
+      const star = (color: string, cx: number, cy: number, size: number, opacity: number): ViewStyle[] => [
+        bar(color, cx, cy, size, size * 0.18, 0, opacity),
+        bar(color, cx, cy, size, size * 0.18, 90, opacity),
+        bar(color, cx, cy, size * 0.6, size * 0.12, 45, opacity * 0.8),
+        bar(color, cx, cy, size * 0.6, size * 0.12, 135, opacity * 0.8),
+      ];
+      return Array.from({ length: 7 }, (_, i) =>
+        star(c((['gold', 'pink', 'sky', 'violet'] as ArtHue[])[i % 4], (i % 2) as 0 | 1), w * (0.35 + rand() * 0.6), Math.min(h * 0.5, 0.7 * u) * rand() + 0.05 * u, (0.05 + rand() * 0.07) * u, 0.85)).flat();
+    }
     case 'hills':
       return [
         disc(c('gold', 0), 0.16 * u, w - 0.3 * u, 0.1 * u, 0.85),
