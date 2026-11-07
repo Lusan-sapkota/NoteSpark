@@ -8,7 +8,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
   }
 }
 import React, { useState, useEffect, useRef } from 'react';
-import { Platform, Pressable, StyleSheet, Text as RNText, View, TextInput, ScrollView, useWindowDimensions } from 'react-native';
+import { Keyboard, Platform, Pressable, StyleSheet, Text as RNText, View, TextInput, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import * as DocumentPicker from 'expo-document-picker';
@@ -46,7 +46,7 @@ import { useAlert } from '../components/DialogProvider';
 import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, readingWidth, shape, space } from '../theme/theme';
-import { NOTE_COLORS, NOTE_PATTERNS, noteColors } from '../theme/noteStyle';
+import { NOTE_COLORS, NOTE_PATTERNS, isHexColor, noteColors, parseHex } from '../theme/noteStyle';
 import NotePattern from '../components/NotePattern';
 
 type EditorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Editor'>;
@@ -95,6 +95,7 @@ const EditorScreen: React.FC = () => {
   const [color, setColor] = useState<string | null>(null);
   const [background, setBackground] = useState<string | null>(null);
   const [showStyle, setShowStyle] = useState(false);
+  const [customHex, setCustomHex] = useState<string | null>(null); // the hex dialog's text while it is open
   const [showMore, setShowMore] = useState(false);
   // Labels are the note's #tags; find selects matches in the text.
   const [showLabels, setShowLabels] = useState(false);
@@ -852,7 +853,7 @@ const EditorScreen: React.FC = () => {
                 <Chip
                   compact
                   icon="lightbulb-outline"
-                  onPress={() => setShowRelated(true)}
+                  onPress={() => { Keyboard.dismiss(); setShowRelated(true); }}
                   hitSlop={8}
                   style={[styles.relatedChip, { backgroundColor: theme.colors.tertiaryContainer }]}
                   textStyle={{ color: theme.colors.onTertiaryContainer }}
@@ -872,7 +873,7 @@ const EditorScreen: React.FC = () => {
                 accessibilityLabel={t('editor.format')}
                 accessibilityState={{ expanded: showFormat }}
               />
-              <IconButton icon="palette-outline" onPress={() => setShowStyle(true)} accessibilityLabel={t('editor.noteStyle')} />
+              <IconButton icon="palette-outline" onPress={() => { Keyboard.dismiss(); setShowStyle(true); }} accessibilityLabel={t('editor.noteStyle')} />
               <IconButton icon="checkbox-marked-outline" onPress={() => prefixLines('- [ ] ')} accessibilityLabel={t('editor.task')} />
               <IconButton icon="calendar-outline" onPress={() => setShowDueDialog(true)} accessibilityLabel={t('editor.dueDate')} />
               <IconButton icon="note-multiple-outline" onPress={openNotePicker} accessibilityLabel={t('editor.linkANote')} />
@@ -913,6 +914,15 @@ const EditorScreen: React.FC = () => {
                   </Pressable>
                 );
               })}
+              <Pressable
+                onPress={() => { setShowStyle(false); setCustomHex(isHexColor(color) ? color : '#'); }}
+                accessibilityRole="button"
+                accessibilityLabel={t('editor.customColour')}
+                accessibilityState={{ selected: isHexColor(color) }}
+                style={[styles.swatch, { backgroundColor: isHexColor(color) ? color : theme.colors.surfaceContainerHighest, borderColor: isHexColor(color) ? theme.colors.primary : theme.colors.outlineVariant, borderWidth: isHexColor(color) ? 3 : 1 }]}
+              >
+                <Icon source={isHexColor(color) ? 'check' : 'eyedropper-variant'} size={20} color={own?.on ?? theme.colors.onSurfaceVariant} />
+              </Pressable>
             </ScrollView>
             <Text variant="titleMedium" accessibilityRole="header" style={[styles.sheetSection, { color: theme.colors.onSurface }]}>{t('editor.background')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.swatchRow} contentContainerStyle={styles.swatches}>
@@ -974,6 +984,30 @@ const EditorScreen: React.FC = () => {
           </Modal>
         </Portal>
         <KeyboardSafePortal>
+          <Dialog visible={customHex !== null} onDismiss={() => setCustomHex(null)}>
+            <Dialog.Title>{t('editor.customColour')}</Dialog.Title>
+            <Dialog.Content style={styles.dialogContent}>
+              <PaperTextInput
+                mode="outlined"
+                label={t('editor.hexCode')}
+                placeholder="#4a90d9"
+                value={customHex ?? ''}
+                onChangeText={setCustomHex}
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={7}
+                error={!!customHex && customHex !== '#' && !parseHex(customHex)}
+                left={<PaperTextInput.Icon icon="circle" color={parseHex(customHex ?? '') ?? theme.colors.outlineVariant} accessibilityLabel={t('editor.customColour')} />}
+              />
+              {!!customHex && customHex !== '#' && !parseHex(customHex) && (
+                <Text variant="bodySmall" style={{ color: theme.colors.error }}>{t('editor.hexInvalid')}</Text>
+              )}
+            </Dialog.Content>
+            <Dialog.Actions>
+              <Button onPress={() => setCustomHex(null)}>{t('common.cancel')}</Button>
+              <Button disabled={!parseHex(customHex ?? '')} onPress={() => { changeStyle({ color: parseHex(customHex ?? ''), background }); setCustomHex(null); }}>{t('editor.useColour')}</Button>
+            </Dialog.Actions>
+          </Dialog>
           <Dialog visible={showLabels} onDismiss={() => { setShowLabels(false); setNewLabel(''); }}>
             <Dialog.Title>{t('editor.labels')}</Dialog.Title>
             <Dialog.Content style={styles.dialogContent}>

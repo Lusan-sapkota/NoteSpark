@@ -51,9 +51,11 @@ class Shared {
 
 export const useSharedValue = (initial: number) => React.useRef(new Shared(initial)).current as unknown as SharedValue<number>;
 export const cancelAnimation = (shared: unknown) => (shared as Shared).cancel();
-export const Easing = { linear: (t: number) => t };
-export const withTiming = (to: number, options: { duration?: number; easing?: (t: number) => number } = {}): any =>
-  ({ __animation: true, to, duration: options.duration ?? 300, easing: options.easing ?? ((t: number) => t), repeat: 1 });
+export const Easing = { linear: (t: number) => t, cubic: (t: number) => t * t * t, out: (f: (t: number) => number) => (t: number) => 1 - f(1 - t) };
+export const ReduceMotion = { System: 'system', Never: 'never', Always: 'always' } as const;
+// A colour (string) can't be tweened here, so it applies at once.
+export const withTiming = (to: number | string, options: { duration?: number; easing?: (t: number) => number; reduceMotion?: unknown } = {}): any =>
+  typeof to === 'string' ? to : { __animation: true, to, duration: options.duration ?? 300, easing: options.easing ?? ((t: number) => t), repeat: 1 });
 export const withRepeat = (animation: any, times = 1, _reverse = false): any => ({ ...animation, repeat: times });
 export const useAnimatedStyle = <T,>(factory: () => T): T => {
   const [, setTick] = React.useState(0);
@@ -64,6 +66,9 @@ export const useAnimatedStyle = <T,>(factory: () => T): T => {
 export const withSpring = (to: number, _options?: unknown): any => withTiming(to, { duration: 250, easing: (t: number) => 1 - (1 - t) ** 3 });
 
 // Entering animations are skipped on desktop; the object only has to answer the calls the screens make.
-const entering: any = { springify: () => entering, duration: () => entering, delay: () => entering };
+const entering: any = {};
+for (const name of ['springify', 'duration', 'delay', 'damping', 'stiffness', 'easing', 'reduceMotion']) entering[name] = () => entering;
 export const FadeInRight = entering;
 export const FadeIn = entering;
+export const SlideInDown = entering;
+export const ZoomIn = entering;

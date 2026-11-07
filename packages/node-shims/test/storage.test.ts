@@ -120,3 +120,18 @@ test('the Yjs client id is never stored, and no client-id warning appears', asyn
   assert.equal(warnings.filter(w => /client-id|clientID/i.test(w)).length, 0);
   await assertInStep();
 });
+
+test('note colour and background are stored, stay in step with sync docs, and bad keys are rejected', async () => {
+  await freshProfile();
+  const id = await notes.saveNote(sample('A'));
+  await notes.setNoteStyle(id, { color: 'sage', background: 'hills' });
+  const styled = await notes.getNoteById(id);
+  assert.deepEqual([styled.color, styled.background], ['sage', 'hills']);
+  await assert.rejects(notes.setNoteStyle(id, { color: 'bad key!', background: null }));
+  await crdt.enableSync(database.db);
+  await assertInStep();
+  await notes.setNoteStyle(id, { color: null, background: 'dots' });
+  await assertInStep('after a change with sync on');
+  const cleared = await notes.getNoteById(id);
+  assert.deepEqual([cleared.color, cleared.background], [null, 'dots']);
+});

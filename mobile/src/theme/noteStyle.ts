@@ -30,8 +30,32 @@ const EXTENDED: Partial<Record<NoteColorKey, { light: [string, string]; dark: [s
   slate: { light: ['#dce3ee', '#404750'], dark: ['#404750', '#dce3ee'] },
 };
 
-// The fill and its text colour for a note colour key; null for none or a key from a newer version of the app.
+export const isHexColor = (key?: string | null): key is string => /^#[0-9a-f]{6}$/i.test(key ?? '');
+
+// What a person types: with or without #, 3 or 6 digits; null if it isn't a colour.
+export const parseHex = (input: string): string | null => {
+  const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(input.trim());
+  if (!m) return null;
+  const h = m[1].length === 3 ? [...m[1]].map(c => c + c).join('') : m[1];
+  return `#${h.toLowerCase()}`;
+};
+
+const luminance = (hex: string) => {
+  const [r, g, b] = [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16) / 255).map(c => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
+// A picked colour is the same in light and dark; its text is whichever of dark ink and white reads better on it.
+const DARK_INK = '#1b1c15';
+const customColor = (hex: string) => {
+  const l = luminance(hex);
+  return { fill: hex, on: 1.05 / (l + 0.05) > (l + 0.05) / (luminance(DARK_INK) + 0.05) ? '#ffffff' : DARK_INK };
+};
+
+// The fill and its text colour for a colour key or a #rrggbb; null for none or a key from a newer version of the app.
 export const noteColors = (theme: Pick<MD3Theme, 'colors' | 'dark'>, key?: string | null): { fill: string; on: string } | null => {
+  const typed = key; // narrowing `typed` leaves `key` as the string it is for the lookups below
+  if (isHexColor(typed)) return customColor(typed.toLowerCase());
   const roles = ROLES[key as NoteColorKey];
   if (roles) return { fill: theme.colors[roles[0]] as string, on: theme.colors[roles[1]] as string };
   const extended = EXTENDED[key as NoteColorKey];
