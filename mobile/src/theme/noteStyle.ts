@@ -32,7 +32,7 @@ const EXTENDED: Partial<Record<NoteColorKey, { light: [string, string]; dark: [s
 
 export const isHexColor = (key?: string | null): key is string => /^#[0-9a-f]{6}$/i.test(key ?? '');
 
-// What a person types: with or without #, 3 or 6 digits; null if it isn't a colour.
+// Accepts 3 or 6 digits, with or without #; null if not a colour.
 export const parseHex = (input: string): string | null => {
   const m = /^#?([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(input.trim());
   if (!m) return null;
@@ -45,14 +45,14 @@ const luminance = (hex: string) => {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 };
 
-// A picked colour is the same in light and dark; its text is whichever of dark ink and white reads better on it.
+// A picked colour is the same in light and dark; text is dark ink or white by contrast.
 const DARK_INK = '#1b1c15';
 const customColor = (hex: string) => {
   const l = luminance(hex);
   return { fill: hex, on: 1.05 / (l + 0.05) > (l + 0.05) / (luminance(DARK_INK) + 0.05) ? '#ffffff' : DARK_INK };
 };
 
-// The fill and its text colour for a colour key or a #rrggbb; null for none or a key from a newer version of the app.
+// Fill and text colour for a key or #rrggbb; null for none or an unknown key.
 export const noteColors = (theme: Pick<MD3Theme, 'colors' | 'dark'>, key?: string | null): { fill: string; on: string } | null => {
   const typed = key; // narrowing `typed` leaves `key` as the string it is for the lookups below
   if (isHexColor(typed)) return customColor(typed.toLowerCase());
@@ -92,8 +92,7 @@ const ART: Record<'light' | 'dark', Record<ArtHue, [string, string, string]>> = 
 };
 export const artPalette = (dark: boolean) => ART[dark ? 'dark' : 'light'];
 
-// The theme as it should read on a note colour: text and icons in the colour's own ink, the page in its fill, and the
-// neutral surfaces (chips, fields) as 8 to 15% of that ink over it, so nothing on the note can clash with a custom colour.
+// Theme for a note colour: its ink for text, its fill for the page, 8 to 15% ink for neutral surfaces.
 export const withInk = <T extends Pick<MD3Theme, 'colors'>>(theme: T, own: { fill: string; on: string } | null): T =>
   own
     ? {
@@ -109,7 +108,7 @@ export const withInk = <T extends Pick<MD3Theme, 'colors'>>(theme: T, own: { fil
 
 export const isPictureBackground = (key?: string | null): key is string => /^attachment:[0-9a-f]{64}$/.test(key ?? '');
 
-// Contrast, so artwork and pictures never make the text on a note hard to read (WCAG: 4.5 for body text).
+// WCAG contrast (4.5 for body text) keeps artwork and pictures from hurting readability.
 const isHex6 = (c: string) => /^#[0-9a-f]{6}$/i.test(c);
 const rgb = (hex: string) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
 const mix = (under: string, over: string, alpha: number) => {
@@ -120,10 +119,10 @@ export const contrast = (a: string, b: string) => {
   const [la, lb] = [luminance(a), luminance(b)];
   return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
 };
-// A blend may never read worse than 4.5, or than the colour pair itself does if that is lower (a mid-tone custom colour).
+// Never below 4.5, or the pair's own ratio if lower (a mid-tone custom colour).
 const floorFor = (base: string, ink: string) => Math.min(4.5, contrast(base, ink)) - 0.05;
 
-// The largest opacity up to `desired` at which `art` over `base` still leaves `ink` readable; 0 if none does.
+// Largest opacity up to `desired` that keeps `ink` readable; 0 if none.
 export const safeAlpha = (base: string, ink: string, art: string, desired: number): number => {
   if (!isHex6(base) || !isHex6(ink) || !isHex6(art)) return desired * 0.5;
   const floor = floorFor(base, ink);
@@ -131,7 +130,7 @@ export const safeAlpha = (base: string, ink: string, art: string, desired: numbe
   return 0;
 };
 
-// How opaque the note's colour must be over a picture so text stays readable on the worst picture (all white or all black).
+// Opacity of the note colour over a picture so text is readable on the worst photo.
 export const scrimAlpha = (base: string, ink: string): number => {
   if (!isHex6(base) || !isHex6(ink)) return 0.92;
   const floor = floorFor(base, ink);

@@ -245,7 +245,7 @@ test('pruneAttachments respects active, trashed, versioned, <24h, >24h, and unre
   assert.equal(await attachments.hasAttachment(oldUnrefHash), false, 'unreferenced >24h attachment must be pruned');
 });
 
-// Sync off: with sync on, the stored change history still names a removed picture until it is compacted, so it stays longer.
+// Sync off: with sync on, change history keeps naming a removed picture until compacted.
 test('a picture used as a note background is kept by prune, and pruned once the background is cleared', async () => {
   await freshProfile();
   const { hash } = await attachments.addAttachment({ bytes: makeBytes(512, 909), name: 'bg.jpg' });

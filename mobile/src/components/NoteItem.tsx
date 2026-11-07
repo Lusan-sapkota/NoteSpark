@@ -66,7 +66,7 @@ const relativeDate = (dateStr: string, created: boolean) => {
   });
 };
 
-// The library draws both panels across the whole row, the later one on top, so only the panel for the drag direction may show.
+// Both panels are drawn full width; show only the one for the drag direction.
 const SwipePanel: React.FC<{ translation: SharedValue<number>; side: 'left' | 'right'; children: React.ReactNode }> = ({ translation, side, children }) => {
   const style = useAnimatedStyle(() => ({ opacity: (side === 'left' ? translation.value > 0 : translation.value < 0) ? 1 : 0 }));
   return <Animated.View style={[{ flex: 1 }, style]}>{children}</Animated.View>;

@@ -8,7 +8,7 @@ const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean, base: 
   const u = Math.min(w, Math.max(h * 1.4, 220));
   const art = artPalette(dark);
   const c = (hue: ArtHue, tone: 0 | 1 | 2 = 1) => art[hue][tone];
-  // Every opacity is capped so the text colour keeps its contrast over this shape on this note colour.
+  // Opacity is capped so the text keeps its contrast over this shape.
   const safe = (color: string, opacity: number) => safeAlpha(base, ink, color, opacity);
   const fill = (color: string, opacity: number): ViewStyle => ({ position: 'absolute', backgroundColor: color, opacity: safe(color, opacity) });
   const disc = (color: string, size: number, left: number, top: number, opacity: number): ViewStyle => ({
@@ -205,10 +205,10 @@ const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean, base: 
   }
 };
 
-// `base` and `ink` are the note's fill and text colours, which the artwork's opacity is checked against.
+// base and ink: the note's fill and text colours, which opacity is checked against.
 interface Props { pattern?: string | null; dark: boolean; base: string; ink: string }
 
-// A picture the person added: the note's own colour sits over it, opaque enough for the text to stay readable.
+// A picture the person added, under the note colour at a text-safe opacity.
 const PictureBackground: React.FC<{ uri: string; base: string; ink: string }> = ({ uri, base, ink }) => {
   const image = useCachedImage(uri);
   if (image.status !== 'ready' || !image.src) return null;

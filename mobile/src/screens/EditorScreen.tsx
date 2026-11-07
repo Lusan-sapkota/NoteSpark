@@ -416,7 +416,7 @@ const EditorScreen: React.FC = () => {
     }
   };
 
-  // The picture is stored like an attachment (encrypted, synced) and the note's background points at it.
+  // Stored as an attachment (encrypted, synced); the note's background points at it.
   const pickBackgroundPicture = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
@@ -628,7 +628,7 @@ const EditorScreen: React.FC = () => {
     ? notePicker.notes.filter(n => n.title.toLowerCase().includes(notePicker.query.trim().toLowerCase())).slice(0, 6)
     : [];
 
-  // Placeholder and find bar tints come from the note's ink, so they stay readable on a custom colour.
+  // Tints from the note's ink, readable on a custom colour.
   const placeholderColor = own ? `${own.on}99` : theme.colors.onSurfaceVariant;
   const overlayColor = own ? `${own.on}1f` : theme.colors.surfaceContainerHigh;
   // Eases the screen to a newly picked colour; the bar is see-through so it follows.

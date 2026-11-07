@@ -62,7 +62,7 @@ export interface SyncStore {
 }
 
 const BLOB_REF_RE = /attachment:([0-9a-fA-F]{64})\b/g;
-// Pictures used as a note background (`attachment:<hash>` in `background`) travel with the note like any attachment.
+// A background picture (`attachment:<hash>` in `background`) travels like an attachment.
 export const extractBlobHashes = (notes: Iterable<{ content: string; background?: string | null }>): string[] => {
   const out = new Set<string>();
   for (const n of notes) {

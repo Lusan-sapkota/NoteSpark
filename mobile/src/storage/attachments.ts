@@ -487,7 +487,7 @@ export const deleteProfileAttachments = async (profileId: string): Promise<void>
   await FileSystem.deleteAsync(profileFilesDir(profileId), { idempotent: true }).catch(() => {});
 };
 
-// `background` (a picture used as a note background) is missing from databases not opened since it was added.
+// `background` is missing from databases not opened since it was added.
 const noteRowsWithBackground = async (conn: SQLite.SQLiteDatabase) => {
   const cols = await conn.getAllAsync<{ name: string }>('PRAGMA table_info(notes)');
   return conn.getAllAsync<{ content: string; background?: string | null }>(

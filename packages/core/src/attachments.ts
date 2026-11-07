@@ -58,7 +58,7 @@ export const parseAttachmentLinks = (content: string): AttachmentLink[] => {
   return out;
 };
 
-// A note's picture background is `attachment:<hash>` in its `background` field, so that counts as used too.
+// A picture background is `attachment:<hash>` in `background`; it counts as used.
 export const referencedHashes = (notes: Iterable<{ content?: string | null; background?: string | null } | string>): Set<string> => {
   const used = new Set<string>();
   for (const item of notes) {
