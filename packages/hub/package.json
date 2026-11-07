@@ -1,6 +1,6 @@
 {
   "name": "@notespark/hub",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "private": true,
   "type": "module",
   "description": "NoteSpark's hub, Node only: the Markdown mirror (the transport comes later).",
