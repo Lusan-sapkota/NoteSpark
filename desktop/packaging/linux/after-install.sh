@@ -50,7 +50,8 @@ if [ ! -e "$MARKER" ] && [ -f "$KEY_SRC" ]; then
   case "$1" in
     configure)
       mkdir -p /etc/apt/sources.list.d
-      cp -f "$KEY_SRC" "$KEY"
+      mkdir -p /usr/share/keyrings
+      cp -f "$KEY_SRC" "$KEY" || exit 1
       cat > /etc/apt/sources.list.d/notespark.sources <<EOF
 Types: deb
 URIs: $URL/apt
@@ -63,7 +64,8 @@ EOF
       ;;
     1|2)
       mkdir -p /etc/yum.repos.d
-      cp -f "$KEY_SRC" "$KEY"
+      mkdir -p /usr/share/keyrings
+      cp -f "$KEY_SRC" "$KEY" || exit 1
       cat > /etc/yum.repos.d/notespark.repo <<EOF
 [notespark]
 name=NoteSpark
