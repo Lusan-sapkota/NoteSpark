@@ -6,6 +6,12 @@ on:
   push:
     tags: ['v*']
   workflow_dispatch: # builds and keeps the files as workflow artifacts; never publishes
+    inputs:
+      only:
+        description: Which builds to run (a tag always builds everything)
+        type: choice
+        default: all
+        options: [all, linux, windows, windows-store, macos]
 
 permissions:
   contents: read
@@ -15,19 +21,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  plan:
+    name: Plan the builds
+    runs-on: ubuntu-24.04
+    outputs:
+      matrix: ${{ steps.pick.outputs.matrix }}
+      linux: ${{ steps.pick.outputs.linux }}
+    steps:
+      - id: pick
+        env:
+          ONLY: ${{ inputs.only }}
+        run: |
+          all='[
+            {"name":"linux","os":"ubuntu-22.04","cmd":"npm run dist:linux"},
+            {"name":"windows","os":"windows-2022","cmd":"npm run dist:win"},
+            {"name":"windows-store","os":"windows-2022","cmd":"npm run dist:store","artifact":"store-windows"},
+            {"name":"macos-arm64","os":"macos-15","cmd":"npm run build && bash packaging/macos/build-dmg.sh arm64"},
+            {"name":"macos-x64","os":"macos-15-intel","cmd":"npm run build && bash packaging/macos/build-dmg.sh x64"}
+          ]'
+          case "${ONLY:-all}" in
+            all) pick=$(jq -c . <<<"$all") ;;
+            macos) pick=$(jq -c '[.[] | select(.name | startswith("macos"))]' <<<"$all") ;;
+            linux|windows|windows-store) pick=$(jq -c --arg n "$ONLY" '[.[] | select(.name == $n)]' <<<"$all") ;;
+            *) echo "unknown choice: $ONLY"; exit 1 ;;
+          esac
+          echo "matrix=$pick" >> "$GITHUB_OUTPUT"
+          echo "linux=$(jq 'any(.name == "linux")' <<<"$pick")" >> "$GITHUB_OUTPUT"
+          echo "building: $(jq -r 'map(.name) | join(", ")' <<<"$pick")"
+
   build:
     name: Build ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
+    needs: plan
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - { name: linux, os: ubuntu-22.04, cmd: 'npm run dist:linux' } # older glibc, so the AppImage runs on more systems
-          - { name: windows, os: windows-2022, cmd: 'npm run dist:win' }
-          - { name: windows-store, os: windows-2022, cmd: 'npm run dist:store', artifact: store-windows } # for Partner Center, not for the release
-          - { name: macos-arm64, os: macos-15, cmd: 'npm run build && for i in 1 2 3; do npx electron-builder --mac dmg --arm64 && exit 0; echo "dmg attempt $i failed (hdiutil is flaky on runners)"; sleep 20; done; exit 1' }
-          - { name: macos-x64, os: macos-15-intel, cmd: 'npm run build && for i in 1 2 3; do npx electron-builder --mac dmg --x64 && exit 0; echo "dmg attempt $i failed (hdiutil is flaky on runners)"; sleep 20; done; exit 1' }
+        include: ${{ fromJSON(needs.plan.outputs.matrix) }}
     defaults:
       run:
         shell: bash
@@ -70,7 +100,8 @@ jobs:
 
   test-install:
     name: Install test (${{ matrix.image }})
-    needs: build
+    needs: [plan, build]
+    if: needs.plan.outputs.linux == 'true'
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
