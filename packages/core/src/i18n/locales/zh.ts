@@ -816,7 +816,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "带PIN码的档案只能在这台电脑上打开和锁定。网页视图使用此处当前打开的档案。",
   "privacy.controlD3": "删除 NoteSpark 的文件夹会清除所有内容。开发者没有任何副本，因此已删除的笔记无法找回，除非你已导出。",
   "privacy.changesD": "如果本政策有变更，新版本将与新的生效日期一起显示在这里。",
-  "privacy.dateD": "2026年11月2日",
+  "privacy.dateD": "2026年11月7日",
   "privacy.leadD": "NoteSpark 是一款离线笔记应用。没有账号、没有广告、没有分析，也没有跟踪。你写的一切都只保存在这台电脑上。本政策说明桌面应用存储什么内容以及存储在哪里。",
   "privacy.title": "隐私政策",
   "privacy.effective": "{date}生效",

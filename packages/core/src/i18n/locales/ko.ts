@@ -816,7 +816,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "PIN이 있는 프로필은 이 컴퓨터에서만 열고 잠글 수 있어요. 웹 보기는 이 컴퓨터에서 열려 있는 프로필로 작동해요.",
   "privacy.controlD3": "NoteSpark 폴더를 삭제하면 모든 데이터가 지워져요. 개발자에게는 사본이 없으므로, 삭제한 메모는 내보내 둔 경우가 아니면 복구할 수 없어요.",
   "privacy.changesD": "이 방침이 변경되면 새 버전이 새 시행일과 함께 여기에 게시돼요.",
-  "privacy.dateD": "2026년 11월 2일",
+  "privacy.dateD": "2026년 11월 7일",
   "privacy.leadD": "NoteSpark는 오프라인 메모 앱이에요. 계정, 광고, 분석, 추적이 없어요. 작성한 모든 내용은 이 컴퓨터에만 남아요. 이 방침은 데스크톱 앱이 무엇을 어디에 저장하는지 설명해요.",
   "privacy.title": "개인정보 처리방침",
   "privacy.effective": "시행일 {date}",

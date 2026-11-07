@@ -850,7 +850,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Ein Profil mit PIN wird nur auf diesem Computer geöffnet und gesperrt. Die Webansicht arbeitet mit dem Profil, das hier geöffnet ist.",
   "privacy.controlD3": "Wenn du den Ordner von NoteSpark entfernst, wird alles gelöscht. Der Entwickler hat keine Kopie, daher können gelöschte Notizen nicht wiederhergestellt werden, es sei denn, du hast sie exportiert.",
   "privacy.changesD": "Wenn sich diese Richtlinie ändert, erscheint die neue Fassung hier mit einem neuen Datum des Inkrafttretens.",
-  "privacy.dateD": "2. November 2026",
+  "privacy.dateD": "7. November 2026",
   "privacy.leadD": "NoteSpark ist eine Offline-Notiz-App. Sie hat kein Konto, keine Werbung, keine Analyse und kein Tracking. Alles, was du schreibst, bleibt auf diesem Computer. Diese Richtlinie erklärt, was die Desktop-App speichert und wo.",
   "privacy.title": "Datenschutzerklärung",
   "privacy.effective": "Gültig ab {date}",

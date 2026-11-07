@@ -61,7 +61,7 @@ export default {
   'privacy.web4': 'A profile with a PIN is opened and locked on this computer only. The web view works with the profile that is open here.',
   'privacy.controlD3': 'Removing NoteSpark\'s folder erases everything. The developer has no copy, so deleted notes can\'t be recovered unless you exported them.',
   'privacy.changesD': 'If this policy changes, the new version will appear here with a new effective date.',
-  'privacy.dateD': 'November 2, 2026',
+  'privacy.dateD': 'November 7, 2026',
   'privacy.leadD': 'NoteSpark is an offline notes app. It has no account, no ads, no analytics and no tracking. Everything you write stays on this computer. This policy explains what the desktop app stores and where.',
   'privacy.title': 'Privacy policy',
   'privacy.effective': 'Effective {date}',

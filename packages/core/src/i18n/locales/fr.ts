@@ -883,7 +883,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Un profil avec PIN est ouvert et verrouillé uniquement sur cet ordinateur. La vue web fonctionne avec le profil qui est ouvert ici.",
   "privacy.controlD3": "Supprimer le dossier de NoteSpark efface tout. Le développeur n'en a aucune copie ; les notes supprimées ne peuvent donc pas être récupérées, sauf si vous les avez exportées.",
   "privacy.changesD": "Si cette politique change, la nouvelle version apparaîtra ici avec une nouvelle date d'entrée en vigueur.",
-  "privacy.dateD": "2 novembre 2026",
+  "privacy.dateD": "7 novembre 2026",
   "privacy.leadD": "NoteSpark est une application de notes hors ligne. Elle n'a ni compte, ni publicités, ni analyse d'utilisation, ni suivi. Tout ce que vous écrivez reste sur cet ordinateur. Cette politique explique ce que l'application de bureau stocke et où.",
   "privacy.title": "Politique de confidentialité",
   "privacy.effective": "En vigueur le {date}",

@@ -817,7 +817,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Profil ber-PIN dibuka dan dikunci hanya di komputer ini. Tampilan web bekerja dengan profil yang sedang dibuka di sini.",
   "privacy.controlD3": "Menghapus folder NoteSpark menghapus semuanya. Pengembang tidak memiliki salinan, sehingga catatan yang terhapus tidak dapat dipulihkan kecuali telah diekspor.",
   "privacy.changesD": "Jika kebijakan ini berubah, versi baru akan muncul di sini dengan tanggal berlaku baru.",
-  "privacy.dateD": "2 November 2026",
+  "privacy.dateD": "7 November 2026",
   "privacy.leadD": "NoteSpark adalah aplikasi catatan offline. Tanpa akun, tanpa iklan, tanpa analitik, dan tanpa pelacakan. Semua yang Anda tulis tetap di komputer ini. Kebijakan ini menjelaskan apa yang disimpan aplikasi desktop dan di mana.",
   "privacy.title": "Kebijakan privasi",
   "privacy.effective": "Berlaku {date}",
