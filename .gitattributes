@@ -1,0 +1,2 @@
+# Same line endings on every platform: build steps match source text that contains newlines.
+* text=auto eol=lf
