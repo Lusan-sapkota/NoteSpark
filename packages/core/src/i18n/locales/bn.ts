@@ -220,6 +220,12 @@ const catalog: Record<string, string> = {
   "editor.bold": "গাঢ়",
   "editor.italic": "ইটালিক",
   "editor.heading": "শিরোনাম", // REVIEW: Heading vs Title, same word in Bengali
+  "editor.format": "টেক্সট ফরম্যাটিং",
+  "editor.heading1": "শিরোনাম ১",
+  "editor.heading2": "শিরোনাম ২",
+  "editor.strikethrough": "মাঝখানে দাগ",
+  "editor.clearFormatting": "ফরম্যাটিং মুছুন",
+  "editor.closeFormatting": "ফরম্যাটিং বন্ধ করুন",
   "editor.bulletedList": "বুলেট তালিকা",
   "editor.addLink": "লিংক যোগ করুন",
   "editor.task": "টাস্ক",

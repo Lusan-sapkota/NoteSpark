@@ -88,6 +88,8 @@ const EditorScreen: React.FC = () => {
   // "Link a note" picker: inserts [[Title]] at the cursor.
   const [notePicker, setNotePicker] = useState<{ query: string; notes: Note[] } | null>(null);
   const [showDueDialog, setShowDueDialog] = useState(false);
+  // The text formatting bar (opened with the A button) sits above the toolbar.
+  const [showFormat, setShowFormat] = useState(false);
   // Related notes while writing (opt-in in Settings): notes close to the paragraph at the cursor, found 1.5 s after typing stops.
   const [liveRelated, setLiveRelated] = useState(false);
   const [related, setRelated] = useState<Note[]>([]);
@@ -350,6 +352,44 @@ const EditorScreen: React.FC = () => {
     setPendingSelection({ start: end, end });
   };
 
+  // Formatting is Markdown, so using it in a plain-text note switches the note to Markdown first.
+  const format = (apply: () => void) => {
+    if (!isMarkdown) setIsMarkdown(true);
+    apply();
+  };
+
+  // Makes the selected lines a heading of `level`, or plain again if they all are one already.
+  const setHeading = (level: number) => {
+    const lineStart = content.lastIndexOf('\n', selection.start - 1) + 1;
+    const lines = content.slice(lineStart, selection.end).split('\n');
+    const marker = `${'#'.repeat(level)} `;
+    const same = lines.every(line => line.startsWith(marker));
+    const changed = lines.map(line => (same ? '' : marker) + line.replace(/^#{1,6}\s+/, '')).join('\n');
+    setContent(content.slice(0, lineStart) + changed + content.slice(selection.end));
+    const end = lineStart + changed.length;
+    setPendingSelection({ start: end, end });
+  };
+
+  // Removes bold, italic, strikethrough, heading and bullet markers from the selected lines (or the cursor's line).
+  const clearFormatting = () => {
+    const lineStart = content.lastIndexOf('\n', selection.start - 1) + 1;
+    const found = content.indexOf('\n', selection.end);
+    const lineEnd = found < 0 ? content.length : found;
+    const plain = content
+      .slice(lineStart, lineEnd)
+      .split('\n')
+      .map(line =>
+        line
+          .replace(/^(\s*)(#{1,6}\s+|[-*]\s+(?!\[[ xX]\]))/, '$1')
+          .replace(/\*\*|~~/g, '')
+          .replace(/(^|\W)_(.+?)_(?=\W|$)/g, '$1$2'),
+      )
+      .join('\n');
+    setContent(content.slice(0, lineStart) + plain + content.slice(lineEnd));
+    const end = lineStart + plain.length;
+    setPendingSelection({ start: end, end });
+  };
+
   // Sets the due date of the line the cursor is on (making it a task); null removes it.
   const setDue = (due: string | null) => {
     setShowDueDialog(false);
@@ -489,7 +529,7 @@ const EditorScreen: React.FC = () => {
           onScroll={onScroll}
           scrollEventThrottle={16}
           keyboardShouldPersistTaps="handled"
-          bottomOffset={TOOLBAR_HEIGHT + (suggestions.length ? 48 : 0) + space.lg}
+          bottomOffset={TOOLBAR_HEIGHT + (suggestions.length ? 48 : 0) + (showFormat ? 48 : 0) + space.lg}
         >
           <View style={styles.column}>
             <View style={styles.modeRow}>
@@ -582,6 +622,19 @@ const EditorScreen: React.FC = () => {
                 ))}
               </ScrollView>
             )}
+            {showFormat && (
+              <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.toolbarContent}>
+                <IconButton icon="format-header-1" onPress={() => format(() => setHeading(1))} accessibilityLabel={t('editor.heading1')} />
+                <IconButton icon="format-header-2" onPress={() => format(() => setHeading(2))} accessibilityLabel={t('editor.heading2')} />
+                <IconButton icon="format-bold" onPress={() => format(() => wrapSelection('**'))} accessibilityLabel={t('editor.bold')} />
+                <IconButton icon="format-italic" onPress={() => format(() => wrapSelection('_'))} accessibilityLabel={t('editor.italic')} />
+                <IconButton icon="format-strikethrough" onPress={() => format(() => wrapSelection('~~'))} accessibilityLabel={t('editor.strikethrough')} />
+                <IconButton icon="format-list-bulleted" onPress={() => format(() => prefixLines('- '))} accessibilityLabel={t('editor.bulletedList')} />
+                <IconButton icon="link-variant" onPress={() => format(() => setShowLinkDialog(true))} accessibilityLabel={t('editor.addLink')} />
+                <IconButton icon="format-clear" onPress={() => format(clearFormatting)} accessibilityLabel={t('editor.clearFormatting')} />
+                <IconButton icon="close" onPress={() => setShowFormat(false)} accessibilityLabel={t('editor.closeFormatting')} />
+              </ScrollView>
+            )}
             <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.toolbarContent}>
               {related.length > 0 && (
                 <Chip
@@ -599,26 +652,19 @@ const EditorScreen: React.FC = () => {
               )}
               <IconButton icon="undo" disabled={!canUndo} onPress={handleUndo} accessibilityLabel={t('common.undo')} />
               <IconButton icon="redo" disabled={!canRedo} onPress={handleRedo} accessibilityLabel={t('editor.redo')} />
-              {isMarkdown && (
-                <>
-                  <IconButton icon="format-bold" onPress={() => wrapSelection('**')} accessibilityLabel={t('editor.bold')} />
-                  <IconButton icon="format-italic" onPress={() => wrapSelection('_')} accessibilityLabel={t('editor.italic')} />
-                  <IconButton icon="format-header-pound" onPress={() => prefixLines('## ')} accessibilityLabel={t('editor.heading')} />
-                  <IconButton icon="format-list-bulleted" onPress={() => prefixLines('- ')} accessibilityLabel={t('editor.bulletedList')} />
-                  <IconButton icon="link-variant" onPress={() => setShowLinkDialog(true)} accessibilityLabel={t('editor.addLink')} />
-                </>
-              )}
+              <IconButton
+                icon="format-text"
+                mode={showFormat ? 'contained-tonal' : undefined}
+                selected={showFormat}
+                onPress={() => setShowFormat(v => !v)}
+                accessibilityLabel={t('editor.format')}
+                accessibilityState={{ expanded: showFormat }}
+              />
               <IconButton icon="checkbox-marked-outline" onPress={() => prefixLines('- [ ] ')} accessibilityLabel={t('editor.task')} />
               <IconButton icon="calendar-outline" onPress={() => setShowDueDialog(true)} accessibilityLabel={t('editor.dueDate')} />
               <IconButton icon="note-multiple-outline" onPress={openNotePicker} accessibilityLabel={t('editor.linkANote')} />
               <IconButton icon="image-outline" onPress={handleAddImage} accessibilityLabel={t('editor.addImage')} />
               <IconButton icon="paperclip" onPress={handleAttachFile} accessibilityLabel={t('editor.attachFile')} />
-              <IconButton
-                icon="selection-remove"
-                disabled={!hasSelection}
-                onPress={() => insert('')}
-                accessibilityLabel={t('editor.deleteSelected')}
-              />
             </ScrollView>
           </View>
           </KeyboardStickyView>
