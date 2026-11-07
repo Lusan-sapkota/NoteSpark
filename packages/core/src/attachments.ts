@@ -58,15 +58,18 @@ export const parseAttachmentLinks = (content: string): AttachmentLink[] => {
   return out;
 };
 
-export const referencedHashes = (notes: Iterable<{ content?: string | null } | string>): Set<string> => {
+// A note's picture background is `attachment:<hash>` in its `background` field, so that counts as used too.
+export const referencedHashes = (notes: Iterable<{ content?: string | null; background?: string | null } | string>): Set<string> => {
   const used = new Set<string>();
   for (const item of notes) {
-    const text = typeof item === 'string' ? item : String(item?.content ?? '');
-    if (!text) continue;
-    const re = new RegExp(HASH_RE.source, 'g');
-    let match: RegExpExecArray | null;
-    while ((match = re.exec(text)) !== null) {
-      used.add(match[1].toLowerCase());
+    const texts = typeof item === 'string' ? [item] : [String(item?.content ?? ''), String(item?.background ?? '')];
+    for (const text of texts) {
+      if (!text) continue;
+      const re = new RegExp(HASH_RE.source, 'g');
+      let match: RegExpExecArray | null;
+      while ((match = re.exec(text)) !== null) {
+        used.add(match[1].toLowerCase());
+      }
     }
   }
   return used;

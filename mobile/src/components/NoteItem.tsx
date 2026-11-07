@@ -110,7 +110,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
 
   const body = (
     <View style={{ backgroundColor: background }}>
-      {!selected && <NotePattern pattern={note.background} dark={theme.dark} />}
+      {!selected && <NotePattern pattern={note.background} dark={theme.dark} base={background} ink={onColor} />}
       <TouchableRipple
         onPress={() => (selecting ? onSelect(note.id) : onPress(note.id))}
         onLongPress={() => onSelect(note.id)}

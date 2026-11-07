@@ -221,6 +221,7 @@ const catalog: Record<string, string> = {
   "editor.italic": "ইটালিক",
   "editor.heading": "শিরোনাম", // REVIEW: Heading vs Title, same word in Bengali
   "editor.format": "টেক্সট ফরম্যাটিং",
+  "editor.uploadBackground": "নিজের ছবি ব্যবহার করুন",
   "editor.customColour": "কাস্টম রং",
   "editor.hexCode": "হেক্স কোড",
   "editor.hexInvalid": "#4a90d9 এর মতো হেক্স কোড লিখুন",

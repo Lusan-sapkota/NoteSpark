@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Clipboard, RefreshControl, View, StyleSheet, ScrollView, Linking, NativeScrollEvent, NativeSyntheticEvent } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useNavigation, useRoute, RouteProp, useFocusEffect } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ActivityIndicator, Appbar, Button, Divider, FAB, Icon, IconButton, List, Modal, Portal, ProgressBar, Searchbar, Text, TouchableRipple } from 'react-native-paper';
+import { ActivityIndicator, Appbar, Button, Divider, FAB, Icon, IconButton, List, Modal, Portal, ProgressBar, Searchbar, Text, ThemeProvider, TouchableRipple } from 'react-native-paper';
 import Dialog from '../components/Dialog';
 import { useReducedMotion } from 'react-native-reanimated';
 import Snackbar from '../components/Snackbar';
@@ -27,7 +27,7 @@ import { useAlert } from '../components/DialogProvider';
 import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { NoteText, readingWidth, shape, space } from '../theme/theme';
-import { noteColors } from '../theme/noteStyle';
+import { noteColors, withInk } from '../theme/noteStyle';
 import NotePattern from '../components/NotePattern';
 
 type NoteViewScreenNavigationProp = NativeStackNavigationProp<any>;
@@ -112,7 +112,7 @@ export interface NotePane {
 const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
   const navigation = useNavigation<NoteViewScreenNavigationProp>();
   const route = useRoute<NoteViewScreenRouteProp>();
-  const { theme } = useTheme();
+  const { theme: baseTheme } = useTheme();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const { t } = useI18n();
@@ -126,6 +126,8 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
   };
   const insets = useSafeAreaInsets();
   const [note, setNote] = useState<Note | null>(null);
+  const own = note ? noteColors(baseTheme, note.color) : null;
+  const theme = useMemo(() => withInk(baseTheme, own), [baseTheme, note?.color]); // eslint-disable-line react-hooks/exhaustive-deps
   const [refreshing, setRefreshing] = useState(false);
   const [showRaw, setShowRaw] = useState(false);
   const [snackbar, setSnackbar] = useState('');
@@ -474,10 +476,10 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
     </View>
   );
 
-  const own = noteColors(theme, note.color);
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: own?.fill ?? theme.colors.background }]} edges={['left', 'right']}>
-      <NotePattern pattern={note.background} dark={theme.dark} />
+      <ThemeProvider theme={theme}>
+      <NotePattern pattern={note.background} dark={theme.dark} base={own?.fill ?? theme.colors.background} ink={own?.on ?? theme.colors.onSurface} />
       <Header
         elevated={elevated}
         backgroundColor={own?.fill}
@@ -492,10 +494,11 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
               accessibilityLabel={note.isPinned ? t('note.unpinNote') : t('note.pinNote')}
             />
             <Appbar.Action icon="content-copy" onPress={handleCopyAll} accessibilityLabel={t('note.copyText')} />
+            <ThemeProvider theme={baseTheme}>
             <Menu
               visible={menuVisible}
               onDismiss={() => setMenuVisible(false)}
-              anchor={<Appbar.Action icon="dots-vertical" onPress={() => setMenuVisible(true)} accessibilityLabel={t('note.moreOptions')} />}
+              anchor={<Appbar.Action icon="dots-vertical" iconColor={own?.on} onPress={() => setMenuVisible(true)} accessibilityLabel={t('note.moreOptions')} />}
             >
               {!!note.isMarkdown && (
                 <Menu.Item
@@ -539,6 +542,7 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
                 onPress={() => { setMenuVisible(false); handleDelete(); }}
               />
             </Menu>
+            </ThemeProvider>
           </>
         }
       />
@@ -719,6 +723,8 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
         accessibilityLabel={t('editor.editNote')}
         style={[styles.fab, { bottom: space.lg + insets.bottom }]}
       />
+
+      </ThemeProvider>
 
       <Portal>
         <Modal

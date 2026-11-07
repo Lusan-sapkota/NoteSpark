@@ -1,18 +1,21 @@
-import React, { useState } from 'react';
-import { LayoutChangeEvent, StyleSheet, View, ViewStyle } from 'react-native';
-import { ArtHue, NotePatternKey, artPalette, isPattern } from '../theme/noteStyle';
+import React, { useMemo, useState } from 'react';
+import { Image, LayoutChangeEvent, StyleSheet, View, ViewStyle } from 'react-native';
+import { ArtHue, NotePatternKey, artPalette, isPattern, isPictureBackground, safeAlpha, scrimAlpha } from '../theme/noteStyle';
+import { useCachedImage } from '../utils/imageCache';
 
 // Decorative multi-colour artwork from plain shapes; see-through so the note colour and text stay readable.
-const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean): ViewStyle[] => {
+const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean, base: string, ink: string): ViewStyle[] => {
   const u = Math.min(w, Math.max(h * 1.4, 220));
   const art = artPalette(dark);
   const c = (hue: ArtHue, tone: 0 | 1 | 2 = 1) => art[hue][tone];
-  const fill = (color: string, opacity: number): ViewStyle => ({ position: 'absolute', backgroundColor: color, opacity });
+  // Every opacity is capped so the text colour keeps its contrast over this shape on this note colour.
+  const safe = (color: string, opacity: number) => safeAlpha(base, ink, color, opacity);
+  const fill = (color: string, opacity: number): ViewStyle => ({ position: 'absolute', backgroundColor: color, opacity: safe(color, opacity) });
   const disc = (color: string, size: number, left: number, top: number, opacity: number): ViewStyle => ({
     ...fill(color, opacity), width: size, height: size, borderRadius: size / 2, left, top,
   });
   const ring = (color: string, size: number, left: number, top: number, opacity: number, width = 2): ViewStyle => ({
-    position: 'absolute', width: size, height: size, borderRadius: size / 2, left, top, borderWidth: width, borderColor: color, opacity,
+    position: 'absolute', width: size, height: size, borderRadius: size / 2, left, top, borderWidth: width, borderColor: color, opacity: safe(color, opacity),
   });
   // A bar of `len` by `thick` centred on (cx, cy), turned by `deg`.
   const bar = (color: string, cx: number, cy: number, len: number, thick: number, deg: number, opacity: number): ViewStyle => ({
@@ -92,7 +95,7 @@ const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean): ViewS
     case 'mountains': {
       // Triangles drawn with borders.
       const peak = (color: string, x: number, height: number, half: number, opacity: number): ViewStyle => ({
-        position: 'absolute', width: 0, height: 0, left: x - half, top: h - height, opacity,
+        position: 'absolute', width: 0, height: 0, left: x - half, top: h - height, opacity: safe(color, opacity),
         borderLeftWidth: half, borderRightWidth: half, borderBottomWidth: height,
         borderLeftColor: 'transparent', borderRightColor: 'transparent', borderBottomColor: color,
       });
@@ -202,10 +205,25 @@ const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean): ViewS
   }
 };
 
-const NotePattern: React.FC<{ pattern?: string | null; dark: boolean }> = ({ pattern, dark }) => {
+// `base` and `ink` are the note's fill and text colours, which the artwork's opacity is checked against.
+interface Props { pattern?: string | null; dark: boolean; base: string; ink: string }
+
+// A picture the person added: the note's own colour sits over it, opaque enough for the text to stay readable.
+const PictureBackground: React.FC<{ uri: string; base: string; ink: string }> = ({ uri, base, ink }) => {
+  const image = useCachedImage(uri);
+  if (image.status !== 'ready' || !image.src) return null;
+  return (
+    <View pointerEvents="none" style={styles.fill} importantForAccessibility="no-hide-descendants" accessibilityElementsHidden>
+      <Image source={{ uri: image.src }} resizeMode="cover" resizeMethod="resize" onError={image.onError} style={StyleSheet.absoluteFill} />
+      <View style={[StyleSheet.absoluteFill, { backgroundColor: base, opacity: scrimAlpha(base, ink) }]} />
+    </View>
+  );
+};
+
+const Artwork: React.FC<Props & { pattern: NotePatternKey }> = ({ pattern, dark, base, ink }) => {
   const [size, setSize] = useState({ w: 0, h: 0 });
-  if (!isPattern(pattern)) return null;
   const onLayout = (e: LayoutChangeEvent) => setSize({ w: e.nativeEvent.layout.width, h: e.nativeEvent.layout.height });
+  const items = useMemo(() => (size.w > 0 ? shapes(pattern, size.w, size.h, dark, base, ink) : []), [pattern, size.w, size.h, dark, base, ink]);
   return (
     <View
       pointerEvents="none"
@@ -214,10 +232,13 @@ const NotePattern: React.FC<{ pattern?: string | null; dark: boolean }> = ({ pat
       importantForAccessibility="no-hide-descendants"
       accessibilityElementsHidden
     >
-      {size.w > 0 && shapes(pattern, size.w, size.h, dark).map((style, i) => <View key={i} style={style} />)}
+      {items.map((style, i) => <View key={i} style={style} />)}
     </View>
   );
 };
+
+const NotePattern: React.FC<Props> = props =>
+  isPictureBackground(props.pattern) ? <PictureBackground uri={props.pattern} base={props.base} ink={props.ink} /> : isPattern(props.pattern) ? <Artwork {...props} pattern={props.pattern} /> : null;
 
 const styles = StyleSheet.create({
   fill: { ...StyleSheet.absoluteFill, overflow: 'hidden' },

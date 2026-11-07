@@ -91,3 +91,52 @@ const ART: Record<'light' | 'dark', Record<ArtHue, [string, string, string]>> = 
   },
 };
 export const artPalette = (dark: boolean) => ART[dark ? 'dark' : 'light'];
+
+// The theme as it should read on a note colour: text and icons in the colour's own ink, the page in its fill, and the
+// neutral surfaces (chips, fields) as 8 to 15% of that ink over it, so nothing on the note can clash with a custom colour.
+export const withInk = <T extends Pick<MD3Theme, 'colors'>>(theme: T, own: { fill: string; on: string } | null): T =>
+  own
+    ? {
+        ...theme,
+        colors: {
+          ...theme.colors,
+          onSurface: own.on, onSurfaceVariant: own.on, onBackground: own.on,
+          background: own.fill, surface: own.fill,
+          surfaceContainerLow: `${own.on}14`, surfaceContainer: `${own.on}1a`, surfaceContainerHigh: `${own.on}1f`, surfaceContainerHighest: `${own.on}26`,
+        },
+      }
+    : theme;
+
+export const isPictureBackground = (key?: string | null): key is string => /^attachment:[0-9a-f]{64}$/.test(key ?? '');
+
+// Contrast, so artwork and pictures never make the text on a note hard to read (WCAG: 4.5 for body text).
+const isHex6 = (c: string) => /^#[0-9a-f]{6}$/i.test(c);
+const rgb = (hex: string) => [1, 3, 5].map(i => parseInt(hex.slice(i, i + 2), 16));
+const mix = (under: string, over: string, alpha: number) => {
+  const [u, o] = [rgb(under), rgb(over)];
+  return `#${u.map((v, i) => Math.round(v * (1 - alpha) + o[i] * alpha).toString(16).padStart(2, '0')).join('')}`;
+};
+export const contrast = (a: string, b: string) => {
+  const [la, lb] = [luminance(a), luminance(b)];
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+};
+// A blend may never read worse than 4.5, or than the colour pair itself does if that is lower (a mid-tone custom colour).
+const floorFor = (base: string, ink: string) => Math.min(4.5, contrast(base, ink)) - 0.05;
+
+// The largest opacity up to `desired` at which `art` over `base` still leaves `ink` readable; 0 if none does.
+export const safeAlpha = (base: string, ink: string, art: string, desired: number): number => {
+  if (!isHex6(base) || !isHex6(ink) || !isHex6(art)) return desired * 0.5;
+  const floor = floorFor(base, ink);
+  for (let a = desired; a > 0.001; a -= 0.05) if (contrast(mix(base, art, a), ink) >= floor) return a;
+  return 0;
+};
+
+// How opaque the note's colour must be over a picture so text stays readable on the worst picture (all white or all black).
+export const scrimAlpha = (base: string, ink: string): number => {
+  if (!isHex6(base) || !isHex6(ink)) return 0.92;
+  const floor = floorFor(base, ink);
+  for (let s = 0.5; s < 0.96; s += 0.05) {
+    if (['#ffffff', '#000000'].every(photo => contrast(mix(photo, base, s), ink) >= floor)) return Math.min(s + 0.05, 0.95);
+  }
+  return 0.95;
+};

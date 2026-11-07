@@ -246,7 +246,8 @@ export const setNotePinned = changesNotes(async (id: number, pinned: boolean): P
 
 // Not an edit (updatedAt stays). Keys are validated before storing.
 export const setNoteStyle = changesNotes(async (id: number, style: { color: string | null; background: string | null }): Promise<void> => {
-  for (const key of [style.color, style.background]) if (key !== null && !/^([a-z]{1,16}|#[0-9a-f]{6})$/i.test(key)) throw new Error('Bad note style key');
+  const bad = (key: string | null, pattern: RegExp) => key !== null && !pattern.test(key);
+  if (bad(style.color, /^([a-z]{1,16}|#[0-9a-f]{6})$/i) || bad(style.background, /^([a-z]{1,16}|attachment:[0-9a-f]{64})$/)) throw new Error('Bad note style key');
   await transact(db, async sync => {
     await db.runAsync('UPDATE notes SET color = ?, background = ? WHERE id = ?', [style.color, style.background, id]);
     await sync.capture([id]);

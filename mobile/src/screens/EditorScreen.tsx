@@ -7,7 +7,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
     return result;
   }
 }
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Platform, Pressable, StyleSheet, Text as RNText, View, TextInput, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
@@ -15,7 +15,7 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, usePreventRemove, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Button, Chip, Icon, IconButton, List, Searchbar, Modal, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
+import { Button, Chip, Icon, IconButton, List, Searchbar, ThemeProvider, Modal, Portal, SegmentedButtons, Text, TextInput as PaperTextInput } from 'react-native-paper';
 import Dialog from '../components/Dialog';
 import Menu from '../components/Menu';
 import { Note, RootStackParamList } from '../types';
@@ -46,7 +46,7 @@ import { useAlert } from '../components/DialogProvider';
 import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { controlTheme, readingWidth, shape, space } from '../theme/theme';
-import { NOTE_COLORS, NOTE_PATTERNS, isHexColor, noteColors, parseHex } from '../theme/noteStyle';
+import { NOTE_COLORS, NOTE_PATTERNS, isHexColor, noteColors, isPictureBackground, parseHex, withInk } from '../theme/noteStyle';
 import NotePattern from '../components/NotePattern';
 
 type EditorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Editor'>;
@@ -75,7 +75,7 @@ const SheetBody: React.FC<{ color: string; bottomInset: number; children: React.
 const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
   const route = useRoute<EditorScreenRouteProp>();
-  const { theme } = useTheme();
+  const { theme: baseTheme } = useTheme();
   const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const { t } = useI18n();
@@ -94,6 +94,8 @@ const EditorScreen: React.FC = () => {
   // Colour and pattern keys, applied like pin and archive.
   const [color, setColor] = useState<string | null>(null);
   const [background, setBackground] = useState<string | null>(null);
+  const own = noteColors(baseTheme, color);
+  const theme = useMemo(() => withInk(baseTheme, own), [baseTheme, color]); // eslint-disable-line react-hooks/exhaustive-deps
   const [showStyle, setShowStyle] = useState(false);
   const [customHex, setCustomHex] = useState<string | null>(null); // the hex dialog's text while it is open
   const [showMore, setShowMore] = useState(false);
@@ -414,6 +416,19 @@ const EditorScreen: React.FC = () => {
     }
   };
 
+  // The picture is stored like an attachment (encrypted, synced) and the note's background points at it.
+  const pickBackgroundPicture = async () => {
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+      const asset = result.assets[0];
+      const added = await addAttachment({ uri: asset.uri, name: asset.fileName || 'background.jpg', size: asset.fileSize });
+      await changeStyle({ color, background: `attachment:${added.hash}` });
+    } catch {
+      alert(t('editor.addImageFailedTitle'), t('editor.addImageFailedMessage'));
+    }
+  };
+
   // After an insert re-renders the text, move the cursor to where the insert said.
   useEffect(() => {
     if (!pendingSelection) return;
@@ -613,7 +628,9 @@ const EditorScreen: React.FC = () => {
     ? notePicker.notes.filter(n => n.title.toLowerCase().includes(notePicker.query.trim().toLowerCase())).slice(0, 6)
     : [];
 
-  const own = noteColors(theme, color);
+  // Placeholder and find bar tints come from the note's ink, so they stay readable on a custom colour.
+  const placeholderColor = own ? `${own.on}99` : theme.colors.onSurfaceVariant;
+  const overlayColor = own ? `${own.on}1f` : theme.colors.surfaceContainerHigh;
   // Eases the screen to a newly picked colour; the bar is see-through so it follows.
   const fillColor = own?.fill ?? theme.colors.background;
   const fadeStyle = useAnimatedStyle(() => ({ backgroundColor: withTiming(fillColor, { duration: 240, reduceMotion: ReduceMotion.System }) }), [fillColor]);
@@ -663,8 +680,9 @@ const EditorScreen: React.FC = () => {
   return (
     <View style={styles.flex}>
       <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
+        <ThemeProvider theme={theme}>
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, fadeStyle]} />
-        <NotePattern pattern={background} dark={theme.dark} />
+        <NotePattern pattern={background} dark={theme.dark} base={fillColor} ink={own?.on ?? theme.colors.onSurface} />
         <Header elevated={elevated} backgroundColor={own ? 'transparent' : undefined}
           title={isEditing ? t('editor.editNote') : t('editor.newNote')}
           showBackButton
@@ -689,10 +707,11 @@ const EditorScreen: React.FC = () => {
                 accessibilityLabel={isArchived ? t('home.unarchive') : t('home.archive')}
                 accessibilityState={{ selected: isArchived }}
               />
+              <ThemeProvider theme={baseTheme}>
               <Menu
                 visible={showMore}
                 onDismiss={() => setShowMore(false)}
-                anchor={<IconButton icon="dots-vertical" onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />}
+                anchor={<IconButton icon="dots-vertical" iconColor={own?.on} onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />}
               >
                 <Menu.Item leadingIcon="content-copy" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
                 <Menu.Item leadingIcon="share-variant-outline" title={t('editor.send')} onPress={handleSend} />
@@ -700,6 +719,7 @@ const EditorScreen: React.FC = () => {
                 <Menu.Item leadingIcon="tag-outline" title={t('editor.labels')} onPress={() => { setShowMore(false); setShowLabels(true); }} />
                 <Menu.Item leadingIcon="delete-outline" title={t('note.moveToBin')} titleStyle={{ color: theme.colors.error }} onPress={handleDelete} />
               </Menu>
+              </ThemeProvider>
             </View>
           }
         />
@@ -716,7 +736,7 @@ const EditorScreen: React.FC = () => {
               icon="close"
               onIconPress={() => setFind(null)}
               searchAccessibilityLabel={t('note.closeFind')}
-              style={{ backgroundColor: theme.colors.surfaceContainerHigh, borderRadius: shape.control }}
+              style={{ backgroundColor: overlayColor, borderRadius: shape.control }}
               inputStyle={styles.findInput}
               right={() => (
                 <View style={styles.findActions}>
@@ -767,7 +787,7 @@ const EditorScreen: React.FC = () => {
             <TextInput
               style={[styles.titleInput, theme.fonts.noteTitle, { color: own?.on ?? theme.colors.onSurface }]}
               placeholder={t('editor.titlePlaceholder')}
-              placeholderTextColor={theme.colors.onSurfaceVariant}
+              placeholderTextColor={placeholderColor}
               value={typeof title === 'string' ? title : String(title)}
               onChangeText={setTitle}
               selectionColor={theme.colors.primary}
@@ -797,7 +817,7 @@ const EditorScreen: React.FC = () => {
                   textAlignVertical="top"
                   selectionColor={theme.colors.primary}
                   placeholder={isMarkdown ? t('editor.placeholderMarkdown') : t('editor.placeholderPlain')}
-                  placeholderTextColor={theme.colors.onSurfaceVariant}
+                  placeholderTextColor={placeholderColor}
                   autoCorrect
                   autoCapitalize="sentences"
                   onSelectionChange={e => setSelection(e.nativeEvent.selection)}
@@ -884,6 +904,8 @@ const EditorScreen: React.FC = () => {
           </KeyboardStickyView>
         )}
 
+        </ThemeProvider>
+
         <Portal>
           <Modal
             visible={showStyle}
@@ -937,7 +959,7 @@ const EditorScreen: React.FC = () => {
                     accessibilityState={{ selected: on }}
                     style={[styles.swatch, styles.patternSwatch, { backgroundColor: own?.fill ?? theme.colors.surfaceContainerHighest, borderColor: on ? theme.colors.primary : theme.colors.outlineVariant, borderWidth: on ? 3 : 1 }]}
                   >
-                    {key !== null && <NotePattern pattern={key} dark={theme.dark} />}
+                    {key !== null && <NotePattern pattern={key} dark={theme.dark} base={own?.fill ?? theme.colors.surfaceContainerHighest} ink={own?.on ?? theme.colors.onSurface} />}
                     {(on || key === null) && (
                       <Animated.View key={on ? 'on' : 'off'} entering={ZoomIn.duration(160).easing(Easing.out(Easing.cubic)).reduceMotion(ReduceMotion.System)}>
                         <Icon source={on ? 'check' : 'image-off-outline'} size={20} color={own?.on ?? theme.colors.onSurfaceVariant} />
@@ -946,6 +968,15 @@ const EditorScreen: React.FC = () => {
                   </Pressable>
                 );
               })}
+              <Pressable
+                onPress={pickBackgroundPicture}
+                accessibilityRole="button"
+                accessibilityLabel={t('editor.uploadBackground')}
+                accessibilityState={{ selected: isPictureBackground(background) }}
+                style={[styles.swatch, styles.patternSwatch, { backgroundColor: own?.fill ?? theme.colors.surfaceContainerHighest, borderColor: isPictureBackground(background) ? theme.colors.primary : theme.colors.outlineVariant, borderWidth: isPictureBackground(background) ? 3 : 1 }]}
+              >
+                <Icon source={isPictureBackground(background) ? 'check' : 'image-plus-outline'} size={20} color={own?.on ?? theme.colors.onSurfaceVariant} />
+              </Pressable>
             </ScrollView>
             </SheetBody>
           </Modal>

@@ -205,6 +205,7 @@ const catalog: Record<string, string> = {
   "editor.italic": "斜体",
   "editor.heading": "見出し",
   "editor.format": "文字の書式",
+  "editor.uploadBackground": "自分の画像を使う",
   "editor.customColour": "カスタムカラー",
   "editor.hexCode": "16進コード",
   "editor.hexInvalid": "#4a90d9 のような16進コードを入力してください",

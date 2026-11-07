@@ -29,6 +29,7 @@ export default {
   'editor.italic': 'Italic',
   'editor.heading': 'Heading',
   'editor.format': 'Text formatting',
+  'editor.uploadBackground': 'Use your own picture',
   'editor.customColour': 'Custom colour',
   'editor.hexCode': 'Hex code',
   'editor.hexInvalid': 'Enter a hex code like #4a90d9',

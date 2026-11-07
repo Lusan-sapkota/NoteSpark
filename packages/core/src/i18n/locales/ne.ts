@@ -221,6 +221,7 @@ const catalog: Record<string, string> = {
   "editor.italic": "इटालिक",
   "editor.heading": "शीर्षक",
   "editor.format": "पाठ ढाँचा",
+  "editor.uploadBackground": "आफ्नै तस्बिर प्रयोग गर्नुहोस्",
   "editor.customColour": "आफ्नै रङ",
   "editor.hexCode": "हेक्स कोड",
   "editor.hexInvalid": "#4a90d9 जस्तो हेक्स कोड लेख्नुहोस्",

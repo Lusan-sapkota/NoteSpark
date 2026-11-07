@@ -222,6 +222,7 @@ const catalog: Record<string, string> = {
   "editor.italic": "Kursiv",
   "editor.heading": "Überschrift",
   "editor.format": "Textformatierung",
+  "editor.uploadBackground": "Eigenes Bild verwenden",
   "editor.customColour": "Eigene Farbe",
   "editor.hexCode": "Hex-Code",
   "editor.hexInvalid": "Gib einen Hex-Code wie #4a90d9 ein",

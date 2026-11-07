@@ -339,7 +339,7 @@ export const transferNotesToProfile = changesNotes(
         await db.getAllAsync('SELECT title, content, isMarkdown, savedAt FROM note_versions WHERE noteId = ? ORDER BY id ASC', [note.id])
       );
     }
-    const allTexts: { content: string }[] = [...notes];
+    const allTexts: { content: string; background?: string | null }[] = [...notes];
     for (const versions of versionsByNote.values()) allTexts.push(...versions);
     const attachmentHashes = referencedHashes(allTexts);
     if (attachmentHashes.size > 0) {
@@ -353,8 +353,8 @@ export const transferNotesToProfile = changesNotes(
         await transact(targetDb, async sync => {
           for (const note of notes) {
             const res = await targetDb.runAsync(
-              `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ${UUID_SQL})`,
-              [note.title, note.content, note.isMarkdown ? 1 : 0, note.createdAt, note.updatedAt, note.isPinned ? 1 : 0, note.isArchived ? 1 : 0]
+              `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived, color, background, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ${UUID_SQL})`,
+              [note.title, note.content, note.isMarkdown ? 1 : 0, note.createdAt, note.updatedAt, note.isPinned ? 1 : 0, note.isArchived ? 1 : 0, note.color ?? null, note.background ?? null]
             );
             const newId = res.lastInsertRowId;
             insertedIds.push(newId);

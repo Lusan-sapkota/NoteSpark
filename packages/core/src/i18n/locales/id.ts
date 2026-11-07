@@ -206,6 +206,7 @@ const catalog: Record<string, string> = {
   "editor.italic": "Miring",
   "editor.heading": "Judul",
   "editor.format": "Format teks",
+  "editor.uploadBackground": "Pakai gambar sendiri",
   "editor.customColour": "Warna kustom",
   "editor.hexCode": "Kode hex",
   "editor.hexInvalid": "Masukkan kode hex seperti #4a90d9",

@@ -487,13 +487,20 @@ export const deleteProfileAttachments = async (profileId: string): Promise<void>
   await FileSystem.deleteAsync(profileFilesDir(profileId), { idempotent: true }).catch(() => {});
 };
 
+// `background` (a picture used as a note background) is missing from databases not opened since it was added.
+const noteRowsWithBackground = async (conn: SQLite.SQLiteDatabase) => {
+  const cols = await conn.getAllAsync<{ name: string }>('PRAGMA table_info(notes)');
+  return conn.getAllAsync<{ content: string; background?: string | null }>(
+    cols.some(c => c.name === 'background') ? 'SELECT content, background FROM notes' : 'SELECT content FROM notes'
+  );
+};
+
 const extractHashesFromOpenConn = async (conn: SQLite.SQLiteDatabase, out: Set<string>): Promise<void> => {
   const hasNotes = await conn.getFirstAsync<{ name?: string }>(
     "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'notes'"
   );
   if (hasNotes?.name) {
-    const rows = await conn.getAllAsync<{ content: string }>('SELECT content FROM notes');
-    for (const h of referencedHashes(rows)) out.add(h);
+    for (const h of referencedHashes(await noteRowsWithBackground(conn))) out.add(h);
   }
   const hasVersions = await conn.getFirstAsync<{ name?: string }>(
     "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'note_versions'"
@@ -615,8 +622,7 @@ const collectHashesFromProfileDb = async (profileId: string, out: Set<string>): 
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'notes'"
       );
       if (hasNotes?.name) {
-        const notes = await conn.getAllAsync<{ content: string }>('SELECT content FROM notes');
-        for (const h of referencedHashes(notes)) out.add(h);
+        for (const h of referencedHashes(await noteRowsWithBackground(conn))) out.add(h);
       }
       const hasVersions = await conn.getFirstAsync<{ name?: string }>(
         "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'note_versions'"

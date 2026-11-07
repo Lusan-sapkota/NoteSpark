@@ -205,6 +205,7 @@ const catalog: Record<string, string> = {
   "editor.italic": "斜体",
   "editor.heading": "标题",
   "editor.format": "文字格式",
+  "editor.uploadBackground": "使用自己的图片",
   "editor.customColour": "自定义颜色",
   "editor.hexCode": "十六进制代码",
   "editor.hexInvalid": "请输入十六进制代码，例如 #4a90d9",

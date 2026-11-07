@@ -53,3 +53,8 @@ test('the picture loader reads each stored picture once, accepts bytes in either
   await load('a'.repeat(64));
   assert.equal(reads, before + 1, 'the oldest picture was dropped from memory (2 are kept)');
 });
+
+test('a picture used as a note background counts as a reference', () => {
+  const h = 'c'.repeat(64);
+  assert.deepEqual([...referencedHashes([{ content: 'text', background: `attachment:${h}` }, { content: 'x', background: 'hills' }])], [h]);
+});

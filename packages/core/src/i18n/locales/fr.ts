@@ -238,6 +238,7 @@ const catalog: Record<string, string> = {
   "editor.italic": "Italique",
   "editor.heading": "Titre",
   "editor.format": "Mise en forme du texte",
+  "editor.uploadBackground": "Utiliser votre propre image",
   "editor.customColour": "Couleur personnalisée",
   "editor.hexCode": "Code hexadécimal",
   "editor.hexInvalid": "Saisissez un code hexadécimal comme #4a90d9",

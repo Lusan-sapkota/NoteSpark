@@ -286,6 +286,7 @@ const catalog: Record<string, string> = {
   "editor.italic": "مائل",
   "editor.heading": "عنوان",
   "editor.format": "تنسيق النص",
+  "editor.uploadBackground": "استخدم صورتك الخاصة",
   "editor.customColour": "لون مخصص",
   "editor.hexCode": "رمز Hex",
   "editor.hexInvalid": "أدخل رمز Hex مثل #4a90d9",

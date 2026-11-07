@@ -205,6 +205,7 @@ const catalog: Record<string, string> = {
   "editor.italic": "기울임",
   "editor.heading": "제목",
   "editor.format": "텍스트 서식",
+  "editor.uploadBackground": "내 사진 사용",
   "editor.customColour": "사용자 지정 색상",
   "editor.hexCode": "16진수 코드",
   "editor.hexInvalid": "#4a90d9 같은 16진수 코드를 입력하세요",

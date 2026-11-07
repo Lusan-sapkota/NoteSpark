@@ -62,13 +62,16 @@ export interface SyncStore {
 }
 
 const BLOB_REF_RE = /attachment:([0-9a-fA-F]{64})\b/g;
-export const extractBlobHashes = (notes: Iterable<{ content: string }>): string[] => {
+// Pictures used as a note background (`attachment:<hash>` in `background`) travel with the note like any attachment.
+export const extractBlobHashes = (notes: Iterable<{ content: string; background?: string | null }>): string[] => {
   const out = new Set<string>();
   for (const n of notes) {
-    if (!n?.content) continue;
-    const re = new RegExp(BLOB_REF_RE.source, 'g');
-    let m: RegExpExecArray | null;
-    while ((m = re.exec(n.content)) !== null) out.add(m[1].toLowerCase());
+    for (const text of [n?.content, n?.background]) {
+      if (!text) continue;
+      const re = new RegExp(BLOB_REF_RE.source, 'g');
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(text)) !== null) out.add(m[1].toLowerCase());
+    }
   }
   return [...out].sort();
 };

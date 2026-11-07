@@ -245,6 +245,22 @@ test('pruneAttachments respects active, trashed, versioned, <24h, >24h, and unre
   assert.equal(await attachments.hasAttachment(oldUnrefHash), false, 'unreferenced >24h attachment must be pruned');
 });
 
+// Sync off: with sync on, the stored change history still names a removed picture until it is compacted, so it stays longer.
+test('a picture used as a note background is kept by prune, and pruned once the background is cleared', async () => {
+  await freshProfile();
+  const { hash } = await attachments.addAttachment({ bytes: makeBytes(512, 909), name: 'bg.jpg' });
+  const old = (Date.now() - 48 * 3600 * 1000) / 1000;
+  utimesSync(join(noteFilesDir(), hash), old, old);
+  const id = await notes.saveNote(sample('Pictured'));
+  await notes.setNoteStyle(id, { color: null, background: `attachment:${hash}` });
+  await attachments.pruneAttachments();
+  assert.equal(await attachments.hasAttachment(hash), true, 'a background picture is in use');
+  await notes.setNoteStyle(id, { color: null, background: null });
+  await attachments.pruneAttachments();
+  assert.equal(await attachments.hasAttachment(hash), false, 'unused again, over 24 h old, so pruned');
+  await assert.rejects(notes.setNoteStyle(id, { color: null, background: 'attachment:xyz' }));
+});
+
 test('crash between attachment write and note save leaves valid blob and clean database', async () => {
   const profileId = await freshProfile(true);
   const data = makeBytes(4096, 777);
