@@ -686,7 +686,7 @@ const EditorScreen: React.FC = () => {
         {/* Rides on the keyboard via a transform; the opened offset cancels the bottom inset. */}
         {!showPreview && (
           <KeyboardStickyView offset={{ opened: insets.bottom }}>
-          <View style={[styles.toolbar, { backgroundColor: own?.fill ?? theme.colors.surfaceContainerHigh, borderColor: theme.colors.outlineVariant }]}>
+          <View style={[styles.toolbar, { backgroundColor: own?.fill ?? theme.colors.surfaceContainerHigh, borderColor: theme.colors.outline }]}>
             {suggestions.length > 0 && (
               <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.suggestions}>
                 {suggestions.map(word => (
@@ -967,12 +967,13 @@ const styles = StyleSheet.create({
     marginTop: space.lg,
     padding: 0,
   },
-  // Floats a little in from the screen edges, rounded, instead of running edge to edge.
+  // Floats a little in from the screen edges instead of running edge to edge.
   toolbar: {
     marginHorizontal: space.md,
     marginBottom: space.sm,
     paddingHorizontal: space.xs,
-    borderRadius: shape.extraLarge,
+    // The same border as the Plain text and Markdown buttons: outline colour, 1dp, control corners.
+    borderRadius: shape.control,
     borderWidth: 1,
     overflow: 'hidden',
   },
