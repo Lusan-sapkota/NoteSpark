@@ -58,9 +58,8 @@ const TOOLBAR_HEIGHT = 56;
 const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString(getLanguage(), { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
-// A bottom sheet's surface. It slides up from the bottom after a tap, eased and without a bounce (the OS reduce-motion setting turns that off),
-// while Paper's Modal fades the dim backdrop behind it.
-// The height cap is in pixels: a percentage of a parent with no set height collapsed the rows inside.
+// Bottom sheet surface: slides up after a tap (off with reduce motion); Paper's Modal fades the backdrop.
+// Pixel height cap: a % of an unsized parent collapsed the rows.
 const SheetBody: React.FC<{ color: string; bottomInset: number; children: React.ReactNode }> = ({ color, bottomInset, children }) => {
   const { height } = useWindowDimensions();
   return (
@@ -89,21 +88,20 @@ const EditorScreen: React.FC = () => {
   const [isMarkdown, setIsMarkdown] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  // Pin and archive apply at once for a saved note; a new note gets them when it is first saved.
+  // Pin and archive apply at once for a saved note, at first save for a new one.
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
-  // Colour and background pattern keys; like pin and archive they apply at once for a saved note.
+  // Colour and pattern keys, applied like pin and archive.
   const [color, setColor] = useState<string | null>(null);
   const [background, setBackground] = useState<string | null>(null);
   const [showStyle, setShowStyle] = useState(false);
   const [showMore, setShowMore] = useState(false);
-  // Labels are the note's #tags; Find in note steps through matches by selecting them in the text.
+  // Labels are the note's #tags; find selects matches in the text.
   const [showLabels, setShowLabels] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [find, setFind] = useState<{ query: string; index: number } | null>(null);
   const findRef = useRef<Pick<React.ComponentRef<typeof TextInput>, 'focus' | 'clear' | 'blur' | 'isFocused' | 'setNativeProps' | 'setSelection'>>(null);
-  // The menu hands focus back to the note text when it closes, which would send what is typed to the note instead of
-  // the search field, so the field takes focus a moment after the menu is gone (not with autoFocus).
+  // The menu returns focus to the note text on close, so the search field takes focus after a delay.
   const findOpen = find !== null;
   useEffect(() => {
     if (!findOpen) return;
@@ -325,7 +323,7 @@ const EditorScreen: React.FC = () => {
     }
   };
 
-  // The three-dots sheet works on the text as it is on screen, saved or not.
+  // The menu acts on the text as on screen, saved or not.
   const asNote = (): Note => ({
     id: Number(noteId), title, content, isMarkdown, isPinned, isArchived, color, background,
     createdAt: createdAt ?? '', updatedAt: updatedAt ?? '',
@@ -350,8 +348,7 @@ const EditorScreen: React.FC = () => {
     shareNoteAsMarkdown(asNote()).catch(() => alert(t('note.exportFailedTitle'), t('common.tryAgainRestart')));
   };
 
-  // No question, like on the note screen: the note goes to the bin and Home offers Undo. A note that was never
-  // saved has nothing to bin, so it is just dropped.
+  // No question; Home offers Undo. A never-saved note is just dropped.
   const handleDelete = async () => {
     setShowMore(false);
     if (!isEditing || !noteId) {
@@ -370,7 +367,7 @@ const EditorScreen: React.FC = () => {
     }
   };
 
-  // Labels are #tags in the text: adding appends one on its own line, removing takes it out where it stands alone.
+  // Adds #tag on its own line, or removes that exact #tag.
   const addLabel = (raw: string) => {
     const tag = raw.trim().replace(/^#+/, '').replace(/\s+/g, '-').toLowerCase();
     if (!tag || extractTags(content).includes(tag)) return;
@@ -470,8 +467,7 @@ const EditorScreen: React.FC = () => {
     setPendingSelection({ start: before.length + selStart, end: before.length + selEnd });
   };
 
-  // Wraps the selection in `marker` (bold, italic, strikethrough), or takes the markers off if it already has them.
-  // Spaces at the edges stay outside, because `** word **` isn't bold in Markdown.
+  // Toggles `marker` around the selection; edge spaces stay outside (`** x **` isn't bold).
   const wrapSelection = (marker: string) => {
     let { start, end } = selection;
     while (start < end && /\s/.test(content[start])) start++;
@@ -517,7 +513,7 @@ const EditorScreen: React.FC = () => {
     setPendingSelection({ start: end, end });
   };
 
-  // Removes bold, italic, strikethrough, heading and bullet markers from the selected lines (or the cursor's line).
+  // Strips bold, italic, strike, heading and bullet marks from the selected lines.
   const clearFormatting = () => {
     const lineStart = content.lastIndexOf('\n', selection.start - 1) + 1;
     const found = content.indexOf('\n', selection.end);
@@ -617,11 +613,10 @@ const EditorScreen: React.FC = () => {
     : [];
 
   const own = noteColors(theme, color);
-  // The screen's colour eases to a newly picked one instead of flashing. The bar is see-through so it follows.
+  // Eases the screen to a newly picked colour; the bar is see-through so it follows.
   const fillColor = own?.fill ?? theme.colors.background;
   const fadeStyle = useAnimatedStyle(() => ({ backgroundColor: withTiming(fillColor, { duration: 240, reduceMotion: ReduceMotion.System }) }), [fillColor]);
-  // In the Plain text tab on the phone the field's text is drawn from styled pieces: bold, italic, strikethrough and
-  // headings show as styled text and the marks fade. The desktop's text box can't do that, so it shows the marks.
+  // Phone plain tab: text drawn from styled pieces (marks fade). The desktop's text box can't, so it shows the marks.
   const showStyled = !isMarkdown && Platform.OS !== 'web';
   const styledBody = showStyled
     ? parseFormatted(convertImagesToLinks(content, false)).map((tok, i) => {

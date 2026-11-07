@@ -1,6 +1,4 @@
-// The onnxruntime Android package declares a provider (TelemetryInitializer) that would start Microsoft telemetry
-// (mobile.events.data.microsoft.com) at launch. Today it isn't in our manifest, because onnxruntime-react-native only
-// extracts the native libraries. This removes it at manifest merge in case a future version starts merging it.
+// Removes onnxruntime's telemetry provider at manifest merge. Absent today; guards future upgrades.
 const { withAndroidManifest } = require('expo/config-plugins');
 
 const NAME = 'ai.onnxruntime.TelemetryInitializer';

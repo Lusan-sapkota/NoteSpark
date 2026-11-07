@@ -1,6 +1,4 @@
-// expo-sqlite ships a prebuilt sqlite-vec (vec.so) that is only 4 KB aligned, which Play flags for 16 KB devices.
-// vendor/sqlite-vec/<abi>/vec.so is the same sqlite-vec v0.1.7-alpha.2 rebuilt with -Wl,-z,max-page-size=16384
-// (see vendor/sqlite-vec/README.md). The app's own jniLibs take priority over the library's copy at merge time.
+// Uses our 16 KB aligned vec.so (vendor/sqlite-vec, see its README) over expo-sqlite's 4 KB one.
 // shortcut: remove this plugin and vendor/ once expo-sqlite ships 16 KB aligned vec.so files.
 const { withAppBuildGradle } = require('expo/config-plugins');
 

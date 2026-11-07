@@ -28,7 +28,7 @@ export const readNote = (doc: Y.Doc): NoteState => {
     // Archiving unpins. A pin and an archive made at the same time on two devices both stick, so it's decided here.
     isPinned: !!meta.get('isPinned') && !archived,
     isArchived: archived,
-    // Left out when unset, so a note nobody coloured looks the same as before these fields existed.
+    // Left out when unset, so uncoloured notes read as before.
     ...(meta.get('color') ? { color: meta.get('color') as string } : {}),
     ...(meta.get('background') ? { background: meta.get('background') as string } : {}),
     deletedAt: meta.get('deletedAt') ?? null,
@@ -51,7 +51,7 @@ export const writeNote = (doc: Y.Doc, next: NoteState): Uint8Array | null => {
         changed = true;
       }
     }
-    // A missing value and null are the same, so a device that doesn't know the field doesn't make changes.
+    // Missing equals null, so devices that don't know the field make no change.
     for (const key of STYLE) {
       if ((meta.get(key) ?? null) !== (next[key] ?? null)) {
         meta.set(key, next[key] ?? null);

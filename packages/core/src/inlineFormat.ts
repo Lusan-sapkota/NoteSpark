@@ -1,6 +1,4 @@
-// Bold, italic, strikethrough and headings as Markdown marks, for notes in the Plain text tab: the stored text keeps
-// the marks (so switching to Markdown loses nothing) and the plain editor and note view show them styled.
-// Joining every token's `text` always gives the input back, so the editor can draw the tokens as the field's own text.
+// Bold, italic, strike and # headings as Markdown marks; the token texts always join back to the input.
 export interface FormatToken {
   text: string;
   bold?: boolean;
@@ -12,7 +10,7 @@ export interface FormatToken {
 
 type Style = Pick<FormatToken, 'bold' | 'italic' | 'strike' | 'heading'>;
 
-// `_` only counts at a word edge (snake_case_name stays as it is); a mark must touch non-space text on both sides.
+// `_` needs a word edge; a mark must touch non-space text on both sides.
 const parseInline = (s: string, style: Style = {}): FormatToken[] => {
   const out: FormatToken[] = [];
   let plain = '';

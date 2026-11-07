@@ -1,6 +1,4 @@
-// React Native's Gradle plugin turns on 16 KB page-size support only for the app module. onnxruntime-react-native builds
-// libonnxruntimejsi.so in its own module with NDK 27, which would leave it 4 KB aligned (Play warns about 16 KB devices).
-// This adds the same CMake flag to that module.
+// RN's Gradle plugin sets the 16 KB page-size flag only for the app module; onnxruntime's module needs it too.
 const { withProjectBuildGradle } = require('expo/config-plugins');
 
 const MARKER = '// withFlexiblePageSizes';

@@ -1,7 +1,4 @@
-// Note colours and background patterns. Notes store only the keys, so a palette change never touches stored data.
-// The first five colours are existing Firefly roles. The rest are extended colours made the Material way: a tonal
-// palette per hue (Material Theme Builder custom colours, chroma 10 to 40), container at tone 90 and its text at tone 30
-// in light, swapped in dark, the same pairing every container role uses.
+// Note colours by key: five Firefly roles plus seven extra tonal colours (tone 90, text tone 30, swapped in dark).
 import type { MD3Theme } from 'react-native-paper';
 
 export const NOTE_COLORS = ['lime', 'sage', 'teal', 'sky', 'lavender', 'blush', 'rose', 'amber', 'sun', 'clay', 'khaki', 'slate'] as const;
@@ -45,8 +42,7 @@ export const noteColors = (theme: Pick<MD3Theme, 'colors' | 'dark'>, key?: strin
 
 export const isPattern = (key?: string | null): key is NotePatternKey => NOTE_PATTERNS.includes(key as NotePatternKey);
 
-// Colours for the pattern artwork: eight hues at three tones each (light, mid, deep), from Material tonal palettes
-// (chroma 40 to 64), the lighter set for light notes and the deeper set for dark ones. Used only by NotePattern.
+// Pattern artwork colours: eight hues, three tones each; lighter set for light notes, deeper for dark.
 export type ArtHue = 'green' | 'teal' | 'sky' | 'violet' | 'pink' | 'coral' | 'orange' | 'gold';
 const ART: Record<'light' | 'dark', Record<ArtHue, [string, string, string]>> = {
   light: {

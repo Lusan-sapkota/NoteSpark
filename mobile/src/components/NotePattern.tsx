@@ -2,10 +2,7 @@ import React, { useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, View, ViewStyle } from 'react-native';
 import { ArtHue, NotePatternKey, artPalette, isPattern } from '../theme/noteStyle';
 
-// Background artwork for a note, drawn from plain shapes (no image files, no extra packages) in several colours.
-// Colours come from noteStyle's art palette (three tones per hue, lighter for light notes, deeper for dark ones) and
-// every shape is partly see-through, so the note's own colour shows through and text on top stays readable. Shapes
-// hug the corners and scale with the card or screen. Decorative: hidden from screen readers and never takes touches.
+// Decorative multi-colour artwork from plain shapes; see-through so the note colour and text stay readable.
 const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean): ViewStyle[] => {
   const u = Math.min(w, Math.max(h * 1.4, 220));
   const art = artPalette(dark);
@@ -21,14 +18,14 @@ const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean): ViewS
   const bar = (color: string, cx: number, cy: number, len: number, thick: number, deg: number, opacity: number): ViewStyle => ({
     ...fill(color, opacity), width: len, height: thick, borderRadius: thick / 2, left: cx - len / 2, top: cy - thick / 2, transform: [{ rotate: `${deg}deg` }],
   });
-  // The same numbers every time, so a card doesn't change when it redraws.
+  // Deterministic, so a card doesn't change on redraw.
   let seed = 7;
   const rand = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
   const hues: ArtHue[] = ['green', 'teal', 'sky', 'violet', 'pink', 'coral', 'orange', 'gold'];
 
   switch (key) {
     case 'seaweed': {
-      // Tall fronds along the bottom edge and two birds, like an underwater scene.
+      // Fronds along the bottom and two birds.
       const frond = (color: string, x: number, height: number, deg: number, opacity: number): ViewStyle => ({
         ...fill(color, opacity), width: 0.07 * u, height, borderRadius: 0.035 * u, left: x - 0.035 * u, top: h - height * 0.85, transform: [{ rotate: `${deg}deg` }],
       });
@@ -41,7 +38,7 @@ const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean): ViewS
       return [...fronds, bird(c('violet', 2), 0.12 * u, w * 0.72, h * 0.62), bird(c('sky', 2), 0.08 * u, w * 0.84, h * 0.55)];
     }
     case 'skyline': {
-      // Buildings with lit windows, the lit ones in warm colours.
+      // Buildings with lit windows.
       const out: ViewStyle[] = [];
       const widths = [0.12, 0.09, 0.14, 0.1, 0.13, 0.08];
       let x = w - 0.7 * u;
@@ -93,7 +90,7 @@ const shapes = (key: NotePatternKey, w: number, h: number, dark: boolean): ViewS
         disc(c('green', 2), 0.6 * u, w - 1.1 * u, h - 0.2 * u, 0.5),
       ];
     case 'mountains': {
-      // Triangles from borders: the two side borders are see-through, the bottom one is the colour.
+      // Triangles drawn with borders.
       const peak = (color: string, x: number, height: number, half: number, opacity: number): ViewStyle => ({
         position: 'absolute', width: 0, height: 0, left: x - half, top: h - height, opacity,
         borderLeftWidth: half, borderRightWidth: half, borderBottomWidth: height,

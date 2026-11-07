@@ -353,7 +353,7 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
           </TaskRow>
         );
       }
-      // Bold, italic, strikethrough and # headings written in the Plain text tab show styled, without their marks.
+      // Plain tab: bold, italic, strike and # headings show styled, without the marks.
       const head = headingOf(line);
       const text = head ? line.slice(head.prefix.length) : line;
       const parts: React.ReactNode[] = [];
