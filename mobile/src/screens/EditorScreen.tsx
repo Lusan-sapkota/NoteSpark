@@ -28,7 +28,7 @@ import {
   appendAttachmentLink,
   removeAttachmentLink,
 } from '../storage/attachments';
-import Animated, { ReduceMotion, SlideInDown, ZoomIn, useAnimatedStyle, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, ReduceMotion, SlideInDown, ZoomIn, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { shareNoteAsMarkdown } from '../utils/exportNotes';
 import { addDays, formatAttachmentImage, parseFormatted, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
 import { isMeaningSearchAvailable, relatedToText } from '../storage/semanticSearch';
@@ -58,14 +58,14 @@ const TOOLBAR_HEIGHT = 56;
 const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString(getLanguage(), { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
-// A bottom sheet's surface. It springs up from the bottom after a tap (the OS reduce-motion setting turns that off),
+// A bottom sheet's surface. It slides up from the bottom after a tap, eased and without a bounce (the OS reduce-motion setting turns that off),
 // while Paper's Modal fades the dim backdrop behind it.
 // The height cap is in pixels: a percentage of a parent with no set height collapsed the rows inside.
 const SheetBody: React.FC<{ color: string; bottomInset: number; children: React.ReactNode }> = ({ color, bottomInset, children }) => {
   const { height } = useWindowDimensions();
   return (
     <Animated.View
-      entering={SlideInDown.springify().damping(24).stiffness(260).reduceMotion(ReduceMotion.System)}
+      entering={SlideInDown.duration(240).easing(Easing.out(Easing.cubic)).reduceMotion(ReduceMotion.System)}
       style={[styles.sheet, { backgroundColor: color, paddingBottom: space.lg + bottomInset, maxHeight: height * 0.7 }]}
     >
       {children}
@@ -911,7 +911,7 @@ const EditorScreen: React.FC = () => {
                     style={[styles.swatch, { backgroundColor: swatch?.fill ?? theme.colors.surfaceContainerHighest, borderColor: on ? theme.colors.primary : theme.colors.outlineVariant, borderWidth: on ? 3 : 1 }]}
                   >
                     {(on || key === null) && (
-                      <Animated.View key={on ? 'on' : 'off'} entering={ZoomIn.springify().reduceMotion(ReduceMotion.System)}>
+                      <Animated.View key={on ? 'on' : 'off'} entering={ZoomIn.duration(160).easing(Easing.out(Easing.cubic)).reduceMotion(ReduceMotion.System)}>
                         <Icon source={on ? 'check' : 'format-color-marker-cancel'} size={20} color={swatch?.on ?? theme.colors.onSurfaceVariant} />
                       </Animated.View>
                     )}
@@ -934,7 +934,7 @@ const EditorScreen: React.FC = () => {
                   >
                     {key !== null && <NotePattern pattern={key} dark={theme.dark} />}
                     {(on || key === null) && (
-                      <Animated.View key={on ? 'on' : 'off'} entering={ZoomIn.springify().reduceMotion(ReduceMotion.System)}>
+                      <Animated.View key={on ? 'on' : 'off'} entering={ZoomIn.duration(160).easing(Easing.out(Easing.cubic)).reduceMotion(ReduceMotion.System)}>
                         <Icon source={on ? 'check' : 'image-off-outline'} size={20} color={own?.on ?? theme.colors.onSurfaceVariant} />
                       </Animated.View>
                     )}
