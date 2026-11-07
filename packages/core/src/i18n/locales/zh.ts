@@ -806,6 +806,7 @@ const catalog: Record<string, string> = {
   "privacy.leavesD2": "导出笔记、保存备份或 PDF 时，文件只会保存到你选择的位置。",
   "privacy.leavesD4": "点击笔记中的链接时，它会在你自己的浏览器中打开，由浏览器联系该网站，NoteSpark 不会。",
   "privacy.leavesDMirror": "如果你选择一个用于同步的 Markdown 文件夹（可选），NoteSpark 会在其中为同步档案的每条笔记保存一个 Markdown 文件。受保护的档案不会被镜像。",  // REVIEW (legal)
+  "privacy.leavesRepo": "如果你在 Linux 上安装 .deb 或 .rpm，该软件包会把 NoteSpark 的软件包仓库（packages-notespark.lusansapkota.com.np，通过 Cloudflare 提供）添加到你的系统。之后由系统的包管理器而不是 NoteSpark 向该服务器请求更新，服务器可以看到这些请求，包括你的 IP 地址。NoteSpark 本身仍然不发送任何内容。要停止这一点，请删除 /etc/apt/sources.list.d/notespark.sources 或 /etc/yum.repos.d/notespark.repo，或卸载该软件包。AppImage 和 .tar.gz 从不添加仓库。", // REVIEW
   "privacy.leavesD5": "同步文件（如果你导出了一个）只会保存到你选择的位置，并用 NoteSpark 从不存储的口令锁定。NoteSpark 不会把它发送到任何地方，需要你自己传送。没有口令，其中的笔记无法读取。", // REVIEW (legal)
   "privacy.webHeading": "网页视图（可选）",  // REVIEW (legal)
   "privacy.webIntro": "网页视图默认关闭，需要你手动开启；停止它或退出 NoteSpark 后会再次关闭。开启后，当 NoteSpark 在这台电脑上运行时，另一台设备上的浏览器可以使用你的笔记。",
@@ -1138,7 +1139,7 @@ const catalog: Record<string, string> = {
   "privacy.syncPin": "PIN 永远不会同步。它只保护你设置它的设备：受保护档案的笔记会作为普通笔记到达另一台设备，那里的档案是否设置 PIN 由你决定。",  // REVIEW (legal)
   "privacy.storesDPaired": "如果你为同步配对一台设备（可选），这台电脑还会保存该设备的名称和公钥，以及这台电脑自己的同步密钥，由系统密钥环为 NoteSpark 保管。为此不存储任何笔记文字。",  // REVIEW (legal)
   "privacy.storesDPinCopy": "如果你给某个档案设置了 PIN，该 PIN 的哈希副本，以及用该 PIN 包裹的档案密钥副本，也会保存在同一文件夹中 NoteSpark 的设置文件里，以便恢复后的文件夹能解锁该档案。能读取该文件夹或其备份的人可以尝试所有 4 位 PIN。",  // REVIEW (legal)
-  "privacy.leavesIntroD2": "NoteSpark 从设计上保持离线。它自己不会向互联网发出请求：没有分析、没有崩溃报告、没有更新检查。新版本只以你自己下载的新安装程序形式提供。同步在你打开之前是关闭的，打开后也没有任何内容离开你自己的网络（见设备之间的同步）。",  // REVIEW (legal)
+  "privacy.leavesIntroD2": "NoteSpark 从设计上保持离线。它自己不会向互联网发出请求：没有分析、没有崩溃报告、没有更新检查。新版本只以你自己下载的新安装程序形式提供；如果你在 Linux 上安装了 .deb 或 .rpm，则通过系统的包管理器提供（见下文）。同步在你打开之前是关闭的，打开后也没有任何内容离开你自己的网络（见设备之间的同步）。",  // REVIEW (legal)
   "privacy.syncIntroD": "同步在你于设置的“同步”中打开并配对一台设备之前是关闭的。",  // REVIEW (legal)
   "privacy.syncD1": "打开后，这台电脑只在私有网络地址（你的家庭或办公网络、热点、USB 网络共享或 VPN）上监听你配对的设备，并直接与它们通信。一切都经过加密，网络上的任何人都无法读取，NoteSpark 也从不连接公共互联网地址。没有任何内容离开你自己的网络。",  // REVIEW (legal)
   "privacy.syncD2": "没有账户，也没有我们的服务器。你没有配对的设备得不到任何回应。",  // REVIEW (legal)

@@ -806,6 +806,7 @@ const catalog: Record<string, string> = {
   "privacy.leavesD2": "메모를 내보내거나 백업 또는 PDF로 저장하면 파일은 선택한 곳으로만 전달돼요.",
   "privacy.leavesD4": "메모의 링크를 클릭하면 사용 중인 브라우저에서 열리며, 해당 웹사이트에 연결하는 것은 브라우저예요. NoteSpark는 연결하지 않아요.",
   "privacy.leavesDMirror": "동기화용 Markdown 폴더를 선택하면(선택 사항) 동기화하는 프로필의 모든 노트에 대해 Markdown 파일이 그 폴더에 저장됩니다. 보호된 프로필은 복사되지 않습니다.",  // REVIEW (legal)
+  "privacy.leavesRepo": "Linux에서 .deb 또는 .rpm을 설치하면 패키지가 NoteSpark 패키지 저장소(packages-notespark.lusansapkota.com.np, Cloudflare를 통해 제공)를 시스템에 추가합니다. 이후에는 NoteSpark가 아니라 시스템의 패키지 관리자가 해당 서버에 업데이트를 요청하며, 서버는 IP 주소를 포함한 그 요청을 볼 수 있습니다. NoteSpark 자체는 여전히 아무것도 보내지 않습니다. 이를 멈추려면 /etc/apt/sources.list.d/notespark.sources 또는 /etc/yum.repos.d/notespark.repo를 삭제하거나 패키지를 제거하세요. AppImage와 .tar.gz는 저장소를 추가하지 않습니다.", // REVIEW
   "privacy.leavesD5": "동기화 파일은 내보낸 경우 내가 고른 곳에만 저장되며, NoteSpark가 저장하지 않는 암호문으로 잠겨요. NoteSpark는 어디에도 보내지 않으며, 직접 옮겨야 해요. 암호문이 없으면 안의 메모를 읽을 수 없어요.", // REVIEW (legal)
   "privacy.webHeading": "웹 보기 (선택 사항)",  // REVIEW (legal)
   "privacy.webIntro": "웹 보기는 켜기 전까지 꺼져 있으며, 중지하거나 NoteSpark를 종료하면 다시 꺼져요. 이 컴퓨터에서 NoteSpark가 실행되는 동안 다른 기기의 브라우저로 메모를 사용할 수 있게 해 줘요.",
@@ -1138,7 +1139,7 @@ const catalog: Record<string, string> = {
   "privacy.syncPin": "PIN은 동기화되지 않습니다. PIN은 설정한 기기만 보호합니다. 보호된 프로필의 노트는 다른 기기에 일반 노트로 전달되며, 그쪽 프로필에 PIN을 둘지는 직접 정하면 됩니다.",  // REVIEW (legal)
   "privacy.storesDPaired": "동기화를 위해 기기를 페어링하면(선택 사항), 이 컴퓨터는 그 기기의 이름과 공개 키, 그리고 시스템 키링이 NoteSpark를 위해 보관하는 이 컴퓨터 자체의 동기화 키도 보관합니다. 이를 위해 노트 텍스트는 저장되지 않습니다.",  // REVIEW (legal)
   "privacy.storesDPinCopy": "프로필에 PIN을 설정하면, 그 PIN 해시의 사본과 그 PIN으로 감싼 프로필 키의 사본이 복원한 폴더에서 프로필을 열 수 있도록 같은 폴더의 NoteSpark 설정 파일에도 보관됩니다. 그 폴더나 그 백업을 읽을 수 있는 사람은 4자리 PIN을 모두 시도해 볼 수 있습니다.",  // REVIEW (legal)
-  "privacy.leavesIntroD2": "NoteSpark는 설계상 오프라인입니다. 스스로 인터넷에 요청을 보내지 않습니다. 분석도, 충돌 보고도, 업데이트 확인도 없습니다. 새 버전은 직접 내려받는 새 설치 프로그램으로만 제공됩니다. 동기화는 켜기 전까지 꺼져 있으며, 켜도 아무것도 내 네트워크 밖으로 나가지 않습니다(기기 간 동기화 참고).",  // REVIEW (legal)
+  "privacy.leavesIntroD2": "NoteSpark는 설계상 오프라인입니다. 스스로 인터넷에 요청을 보내지 않습니다. 분석도, 충돌 보고도, 업데이트 확인도 없습니다. 새 버전은 직접 내려받는 새 설치 프로그램으로 제공되며, Linux에서 .deb 또는 .rpm을 설치했다면 시스템의 패키지 관리자를 통해서도 제공됩니다(아래 참고). 동기화는 켜기 전까지 꺼져 있으며, 켜도 아무것도 내 네트워크 밖으로 나가지 않습니다(기기 간 동기화 참고).",  // REVIEW (legal)
   "privacy.syncIntroD": "동기화는 설정의 ‘동기화’에서 켜고 기기를 페어링하기 전까지 꺼져 있습니다.",  // REVIEW (legal)
   "privacy.syncD1": "켜져 있을 때 이 컴퓨터는 페어링한 기기를 위해 비공개 네트워크 주소(집이나 사무실 네트워크, 핫스팟, USB 테더링, VPN)에서만 대기하며 기기와 직접 통신합니다. 모든 것이 암호화되어 네트워크의 누구도 읽을 수 없고, NoteSpark는 공개 인터넷 주소에 연결하지 않습니다. 아무것도 내 네트워크 밖으로 나가지 않습니다.",  // REVIEW (legal)
   "privacy.syncD2": "계정도, 우리 서버도 없습니다. 페어링하지 않은 기기에는 응답하지 않습니다.",  // REVIEW (legal)
