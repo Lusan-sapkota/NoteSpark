@@ -82,6 +82,7 @@
       "./plugins/withWidgetPlaceholder",
       "./plugins/withNoMlKitDownload",
       "./plugins/withFlexiblePageSizes",
+      "./plugins/withVec16kb",
       "./plugins/withSyncService",
       "onnxruntime-react-native",
       [
