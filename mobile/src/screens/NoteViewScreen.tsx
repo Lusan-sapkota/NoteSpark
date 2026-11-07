@@ -9,7 +9,7 @@ import { useReducedMotion } from 'react-native-reanimated';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
-import { findTaskLines, formatDue, getLanguage, splitDue, t as translate, toggleTaskLine } from '@notespark/core';
+import { findTaskLines, formatDue, getLanguage, headingOf, parseFormatted, splitDue, t as translate, toggleTaskLine } from '@notespark/core';
 import { extractTags, suggestTags } from '@notespark/core';
 import { findMention, findNoteByTitle, hasConnections, linkedTitles, linkMention, linksTo, noteLinkPattern, noteMap } from '@notespark/core';
 import MermaidDiagram from '../components/MermaidDiagram';
@@ -316,6 +316,22 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
   };
 
   // Plain notes: URLs become links that ask before opening; task lines become checkboxes.
+  const styledText = (text: string, key: string) =>
+    parseFormatted(text)
+      .filter(tk => !tk.marker)
+      .map((tk, i) => (
+        <Text
+          key={`${key}-${i}`}
+          style={[
+            tk.bold ? { fontFamily: theme.fonts.noteTitle.fontFamily } : tk.italic ? { fontFamily: 'Literata-Italic' } : null,
+            tk.bold && tk.italic ? { fontStyle: 'italic' } : null,
+            tk.strike ? { textDecorationLine: 'line-through' } : null,
+          ]}
+        >
+          {tk.text}
+        </Text>
+      ));
+
   const renderPlainText = (content: string) => {
     const tasks = findTaskLines(content);
     return content
@@ -337,12 +353,15 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
           </TaskRow>
         );
       }
+      // Bold, italic, strikethrough and # headings written in the Plain text tab show styled, without their marks.
+      const head = headingOf(line);
+      const text = head ? line.slice(head.prefix.length) : line;
       const parts: React.ReactNode[] = [];
       let lastIndex = 0;
-      for (const match of line.matchAll(plainLinkRegex)) {
+      for (const match of text.matchAll(plainLinkRegex)) {
         const url = match[0];
         const noteTitle = match[1]?.trim();
-        if (match.index! > lastIndex) parts.push(line.substring(lastIndex, match.index));
+        if (match.index! > lastIndex) parts.push(...styledText(text.substring(lastIndex, match.index), `${lineIdx}-${match.index}`));
         parts.push(
           <Text
             key={`link-${lineIdx}-${match.index}`}
@@ -354,11 +373,11 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
         );
         lastIndex = match.index! + url.length;
       }
-      if (lastIndex < line.length) parts.push(line.substring(lastIndex));
+      if (lastIndex < text.length) parts.push(...styledText(text.substring(lastIndex), `${lineIdx}-end`));
       return (
         <NoteText
           key={`line-${lineIdx}`}
-          variant="noteBody"
+          variant={head ? (`noteH${head.level}` as const) : 'noteBody'}
           style={{ color: theme.colors.onSurface }}
           selectable
           selectionColor={theme.colors.primary}

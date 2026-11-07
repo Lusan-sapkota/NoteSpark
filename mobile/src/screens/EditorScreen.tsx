@@ -8,7 +8,7 @@ function convertImagesToLinks(text: string, isMarkdown: boolean): string {
   }
 }
 import React, { useState, useEffect, useRef } from 'react';
-import { Pressable, StyleSheet, View, TextInput, ScrollView } from 'react-native';
+import { Platform, Pressable, StyleSheet, Text as RNText, View, TextInput, ScrollView } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
 import * as DocumentPicker from 'expo-document-picker';
@@ -27,8 +27,9 @@ import {
   appendAttachmentLink,
   removeAttachmentLink,
 } from '../storage/attachments';
+import Animated, { ReduceMotion, SlideInDown, ZoomIn, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { shareNoteAsMarkdown } from '../utils/exportNotes';
-import { addDays, formatAttachmentImage, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
+import { addDays, formatAttachmentImage, parseFormatted, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
 import { isMeaningSearchAvailable, relatedToText } from '../storage/semanticSearch';
 import { isLiveRelatedOn } from '../utils/liveRelated';
 import { toPreview } from '../components/NoteItem';
@@ -55,6 +56,17 @@ const TOOLBAR_HEIGHT = 56;
 
 const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString(getLanguage(), { dateStyle: 'medium', timeStyle: 'short' }) : '';
+
+// A bottom sheet's surface. It springs up from the bottom after a tap (the OS reduce-motion setting turns that off),
+// while Paper's Modal fades the dim backdrop behind it.
+const SheetBody: React.FC<{ color: string; bottomInset: number; children: React.ReactNode }> = ({ color, bottomInset, children }) => (
+  <Animated.View
+    entering={SlideInDown.springify().damping(24).stiffness(260).reduceMotion(ReduceMotion.System)}
+    style={[styles.sheet, { backgroundColor: color, paddingBottom: space.lg + bottomInset }]}
+  >
+    {children}
+  </Animated.View>
+);
 
 const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
@@ -320,9 +332,16 @@ const EditorScreen: React.FC = () => {
     shareNoteAsMarkdown(asNote()).catch(() => alert(t('note.exportFailedTitle'), t('common.tryAgainRestart')));
   };
 
-  // No question, like on the note screen: the note goes to the bin and Home offers Undo.
+  // No question, like on the note screen: the note goes to the bin and Home offers Undo. A note that was never
+  // saved has nothing to bin, so it is just dropped.
   const handleDelete = async () => {
     setShowMore(false);
+    if (!isEditing || !noteId) {
+      clearDraft();
+      setSaved({ title, content, isMarkdown });
+      setTimeout(() => navigation.goBack(), 0);
+      return;
+    }
     try {
       await moveNoteToBin(Number(noteId));
       clearDraft();
@@ -431,12 +450,6 @@ const EditorScreen: React.FC = () => {
     setContent(content.slice(0, lineStart) + prefixed + content.slice(selection.end));
     const end = lineStart + prefixed.length;
     setPendingSelection({ start: end, end });
-  };
-
-  // Formatting is Markdown, so using it in a plain-text note switches the note to Markdown first.
-  const format = (apply: () => void) => {
-    if (!isMarkdown) setIsMarkdown(true);
-    apply();
   };
 
   // Makes the selected lines a heading of `level`, or plain again if they all are one already.
@@ -551,6 +564,31 @@ const EditorScreen: React.FC = () => {
     : [];
 
   const own = noteColors(theme, color);
+  // The screen's colour eases to a newly picked one instead of flashing. The bar is see-through so it follows.
+  const fillColor = own?.fill ?? theme.colors.background;
+  const fadeStyle = useAnimatedStyle(() => ({ backgroundColor: withTiming(fillColor, { duration: 240, reduceMotion: ReduceMotion.System }) }), [fillColor]);
+  // In the Plain text tab on the phone the field's text is drawn from styled pieces: bold, italic, strikethrough and
+  // headings show as styled text and the marks fade. The desktop's text box can't do that, so it shows the marks.
+  const showStyled = !isMarkdown && Platform.OS !== 'web';
+  const styledBody = showStyled
+    ? parseFormatted(convertImagesToLinks(content, false)).map((tok, i) => {
+        const base = theme.fonts.noteBody;
+        const headFont = tok.heading === 1 ? theme.fonts.noteH1 : tok.heading === 2 ? theme.fonts.noteH2 : tok.heading === 3 ? theme.fonts.noteH3 : null;
+        return (
+          <RNText
+            key={i}
+            style={[
+              headFont ?? (tok.bold ? { fontFamily: theme.fonts.noteTitle.fontFamily } : tok.italic ? { fontFamily: 'Literata-Italic' } : null),
+              tok.bold && tok.italic ? { fontStyle: 'italic' } : null,
+              tok.strike ? { textDecorationLine: 'line-through' } : null,
+              tok.marker ? { color: theme.colors.onSurfaceVariant, opacity: 0.55, fontFamily: base.fontFamily } : null,
+            ]}
+          >
+            {tok.text}
+          </RNText>
+        );
+      })
+    : null;
   const hasSelection = selection.start !== selection.end;
 
   // The #tag or [[link]] being typed at the cursor, and what could complete it.
@@ -575,9 +613,10 @@ const EditorScreen: React.FC = () => {
 
   return (
     <View style={styles.flex}>
-      <SafeAreaView style={[styles.flex, { backgroundColor: own?.fill ?? theme.colors.background }]} edges={['left', 'right', 'bottom']}>
+      <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
+        <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, fadeStyle]} />
         <NotePattern pattern={background} dark={theme.dark} />
-        <Header elevated={elevated} backgroundColor={own?.fill}
+        <Header elevated={elevated} backgroundColor={own ? 'transparent' : undefined}
           title={isEditing ? t('editor.editNote') : t('editor.newNote')}
           showBackButton
           onBackPress={() => navigation.goBack()}
@@ -601,7 +640,7 @@ const EditorScreen: React.FC = () => {
                 accessibilityLabel={isArchived ? t('home.unarchive') : t('home.archive')}
                 accessibilityState={{ selected: isArchived }}
               />
-              {isEditing && <IconButton icon="dots-vertical" onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />}
+              <IconButton icon="dots-vertical" onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />
             </View>
           }
         />
@@ -664,7 +703,7 @@ const EditorScreen: React.FC = () => {
                 <TextInput
                   ref={bodyRef}
                   style={[styles.contentInput, theme.fonts.noteBody, { color: own?.on ?? theme.colors.onSurface }]}
-                  value={convertImagesToLinks(content, isMarkdown)}
+                  value={showStyled ? undefined : convertImagesToLinks(content, isMarkdown)}
                   onChangeText={handleChangeText}
                   multiline
                   textAlignVertical="top"
@@ -676,7 +715,9 @@ const EditorScreen: React.FC = () => {
                   onSelectionChange={e => setSelection(e.nativeEvent.selection)}
                   scrollEnabled={false}
                   accessibilityLabel={t('editor.noteTextLabel')}
-                />
+                >
+                  {showStyled ? styledBody : undefined}
+                </TextInput>
                 <NoteAttachments content={content} onRemove={handleRemoveAttachment} />
               </View>
             )}
@@ -708,14 +749,14 @@ const EditorScreen: React.FC = () => {
             )}
             {showFormat && (
               <ScrollView horizontal keyboardShouldPersistTaps="always" contentContainerStyle={styles.toolbarContent}>
-                <IconButton icon="format-header-1" onPress={() => format(() => setHeading(1))} accessibilityLabel={t('editor.heading1')} />
-                <IconButton icon="format-header-2" onPress={() => format(() => setHeading(2))} accessibilityLabel={t('editor.heading2')} />
-                <IconButton icon="format-bold" onPress={() => format(() => wrapSelection('**'))} accessibilityLabel={t('editor.bold')} />
-                <IconButton icon="format-italic" onPress={() => format(() => wrapSelection('_'))} accessibilityLabel={t('editor.italic')} />
-                <IconButton icon="format-strikethrough" onPress={() => format(() => wrapSelection('~~'))} accessibilityLabel={t('editor.strikethrough')} />
-                <IconButton icon="format-list-bulleted" onPress={() => format(() => prefixLines('- '))} accessibilityLabel={t('editor.bulletedList')} />
-                <IconButton icon="link-variant" onPress={() => format(() => setShowLinkDialog(true))} accessibilityLabel={t('editor.addLink')} />
-                <IconButton icon="format-clear" onPress={() => format(clearFormatting)} accessibilityLabel={t('editor.clearFormatting')} />
+                <IconButton icon="format-header-1" onPress={() => setHeading(1)} accessibilityLabel={t('editor.heading1')} />
+                <IconButton icon="format-header-2" onPress={() => setHeading(2)} accessibilityLabel={t('editor.heading2')} />
+                <IconButton icon="format-bold" onPress={() => wrapSelection('**')} accessibilityLabel={t('editor.bold')} />
+                <IconButton icon="format-italic" onPress={() => wrapSelection('_')} accessibilityLabel={t('editor.italic')} />
+                <IconButton icon="format-strikethrough" onPress={() => wrapSelection('~~')} accessibilityLabel={t('editor.strikethrough')} />
+                <IconButton icon="format-list-bulleted" onPress={() => prefixLines('- ')} accessibilityLabel={t('editor.bulletedList')} />
+                {isMarkdown && <IconButton icon="link-variant" onPress={() => setShowLinkDialog(true)} accessibilityLabel={t('editor.addLink')} />}
+                <IconButton icon="format-clear" onPress={() => clearFormatting} accessibilityLabel={t('editor.clearFormatting')} />
                 <IconButton icon="close" onPress={() => setShowFormat(false)} accessibilityLabel={t('editor.closeFormatting')} />
               </ScrollView>
             )}
@@ -760,9 +801,10 @@ const EditorScreen: React.FC = () => {
             visible={showMore}
             onDismiss={() => setShowMore(false)}
             style={styles.sheetWrap}
-            contentContainerStyle={[styles.sheet, { backgroundColor: theme.colors.surfaceContainerLow, paddingBottom: space.lg + insets.bottom }]}
+            contentContainerStyle={styles.sheetHost}
           >
-            {!!updatedAt && (
+            <SheetBody color={theme.colors.surfaceContainerLow} bottomInset={insets.bottom}>
+            {isEditing && !!updatedAt && (
               <Text variant="titleSmall" style={{ color: theme.colors.onSurfaceVariant }}>
                 {t('home.editedOn', { date: formatDate(updatedAt) })}
               </Text>
@@ -775,13 +817,15 @@ const EditorScreen: React.FC = () => {
               left={props => <List.Icon {...props} icon="delete-outline" color={theme.colors.error} />}
               onPress={handleDelete}
             />
+            </SheetBody>
           </Modal>
           <Modal
             visible={showStyle}
             onDismiss={() => setShowStyle(false)}
             style={styles.sheetWrap}
-            contentContainerStyle={[styles.sheet, { backgroundColor: theme.colors.surfaceContainerLow, paddingBottom: space.lg + insets.bottom }]}
+            contentContainerStyle={styles.sheetHost}
           >
+            <SheetBody color={theme.colors.surfaceContainerLow} bottomInset={insets.bottom}>
             <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('editor.colour')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.swatches}>
               {[null, ...NOTE_COLORS].map((key, i) => {
@@ -796,7 +840,11 @@ const EditorScreen: React.FC = () => {
                     accessibilityState={{ selected: on }}
                     style={[styles.swatch, { backgroundColor: swatch?.fill ?? theme.colors.surfaceContainerHighest, borderColor: on ? theme.colors.primary : theme.colors.outlineVariant, borderWidth: on ? 3 : 1 }]}
                   >
-                    {(on || key === null) && <Icon source={on ? 'check' : 'format-color-marker-cancel'} size={20} color={swatch?.on ?? theme.colors.onSurfaceVariant} />}
+                    {(on || key === null) && (
+                      <Animated.View key={on ? 'on' : 'off'} entering={ZoomIn.springify().reduceMotion(ReduceMotion.System)}>
+                        <Icon source={on ? 'check' : 'format-color-marker-cancel'} size={20} color={swatch?.on ?? theme.colors.onSurfaceVariant} />
+                      </Animated.View>
+                    )}
                   </Pressable>
                 );
               })}
@@ -815,18 +863,24 @@ const EditorScreen: React.FC = () => {
                     style={[styles.swatch, styles.patternSwatch, { backgroundColor: own?.fill ?? theme.colors.surfaceContainerHighest, borderColor: on ? theme.colors.primary : theme.colors.outlineVariant, borderWidth: on ? 3 : 1 }]}
                   >
                     {key !== null && <NotePattern pattern={key} dark={theme.dark} />}
-                    {(on || key === null) && <Icon source={on ? 'check' : 'image-off-outline'} size={20} color={own?.on ?? theme.colors.onSurfaceVariant} />}
+                    {(on || key === null) && (
+                      <Animated.View key={on ? 'on' : 'off'} entering={ZoomIn.springify().reduceMotion(ReduceMotion.System)}>
+                        <Icon source={on ? 'check' : 'image-off-outline'} size={20} color={own?.on ?? theme.colors.onSurfaceVariant} />
+                      </Animated.View>
+                    )}
                   </Pressable>
                 );
               })}
             </ScrollView>
+            </SheetBody>
           </Modal>
           <Modal
             visible={showRelated}
             onDismiss={() => setShowRelated(false)}
             style={styles.sheetWrap}
-            contentContainerStyle={[styles.sheet, { backgroundColor: theme.colors.surfaceContainerLow, paddingBottom: space.lg + insets.bottom }]}
+            contentContainerStyle={styles.sheetHost}
           >
+            <SheetBody color={theme.colors.surfaceContainerLow} bottomInset={insets.bottom}>
             <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('editor.relatedNotes')}</Text>
             <Text variant="bodySmall" style={[styles.sheetHelp, { color: theme.colors.onSurfaceVariant }]}>
               {t('editor.relatedHelp')}
@@ -851,6 +905,7 @@ const EditorScreen: React.FC = () => {
                 />
               ))}
             </ScrollView>
+            </SheetBody>
           </Modal>
         </Portal>
         <KeyboardSafePortal>
@@ -1010,6 +1065,9 @@ const styles = StyleSheet.create({
   },
   sheetWrap: {
     justifyContent: 'flex-end',
+  },
+  sheetHost: {
+    backgroundColor: 'transparent',
   },
   sheet: {
     borderTopLeftRadius: shape.extraLarge,
