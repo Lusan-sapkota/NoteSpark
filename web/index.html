@@ -303,7 +303,7 @@
           <ul class="rows">
             <li>
               <div class="row-text"><div class="row-title">winget</div><div class="row-desc">The easiest way: no extra steps, one command to install and update.</div></div>
-              <div class="row-end"><span class="status status-soon">Planned</span></div>
+              <div class="row-end"><span class="status status-soon">Coming soon</span></div>
             </li>
             <li>
               <div class="row-text"><div class="row-title">Installer (.exe)</div><div class="row-desc">64-bit installer. It is not code-signed, so Windows SmartScreen may warn: choose More info, then Run anyway, and check the file against SHA256SUMS first. It does not update itself: download the next version when you want it.</div></div>
@@ -317,9 +317,11 @@
         </div>
         <div class="dl-panel" role="tabpanel" id="panel-macos" aria-labelledby="tab-macos">
           <ul class="rows">
-            <li>
-              <div class="row-text"><div class="row-title">Homebrew</div><div class="row-desc">The easiest way: no extra steps, one command to install and update.</div></div>
-              <div class="row-end"><span class="status status-soon">Planned</span></div>
+            <li class="has-cmd">
+              <div class="row-text"><div class="row-title">Homebrew</div><div class="row-desc">The easiest way: one command to install, and <code>brew upgrade --cask notespark</code> to update. It installs the same app as the disk images, which is not signed by Apple, so it also clears macOS's quarantine flag after the install. Homebrew, not NoteSpark, fetches new versions from GitHub releases.</div></div>
+              <div class="cmd-line">
+                <div class="cmd"><code>brew install --cask lusan-sapkota/tap/notespark</code><button type="button" class="copy" aria-label="Copy command">Copy</button></div>
+              </div>
             </li>
             <li>
               <div class="row-text"><div class="row-title">Disk image (.dmg), Apple silicon</div><div class="row-desc">For Macs with M-series chips. The app is not signed by Apple, so macOS may block the first start: right-click it, choose Open, or run <code>xattr -dr com.apple.quarantine /Applications/NoteSpark.app</code>. It does not update itself.</div></div>
