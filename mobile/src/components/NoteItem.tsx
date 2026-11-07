@@ -2,6 +2,7 @@ import React, { memo, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Icon, IconButton, Text, TouchableRipple } from 'react-native-paper';
 import Swipeable, { SwipeableMethods, SwipeDirection } from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Animated, { SharedValue, useAnimatedStyle } from 'react-native-reanimated';
 import Menu from './Menu';
 import { getLanguage, markTaskBoxes, t as translate } from '@notespark/core';
 import { Note } from '../types';
@@ -63,6 +64,12 @@ const relativeDate = (dateStr: string, created: boolean) => {
       ...(date.getFullYear() !== today.getFullYear() && { year: 'numeric' }),
     }),
   });
+};
+
+// The library draws both panels across the whole row, the later one on top, so only the panel for the drag direction may show.
+const SwipePanel: React.FC<{ translation: SharedValue<number>; side: 'left' | 'right'; children: React.ReactNode }> = ({ translation, side, children }) => {
+  const style = useAnimatedStyle(() => ({ opacity: (side === 'left' ? translation.value > 0 : translation.value < 0) ? 1 : 0 }));
+  return <Animated.View style={[{ flex: 1 }, style]}>{children}</Animated.View>;
 };
 
 const NoteItem: React.FC<NoteItemProps> = memo(({
@@ -217,12 +224,12 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
       dragOffsetFromLeft={24}
       dragOffsetFromRight={-24}
       onSwipeableOpen={onSwipeOpen}
-      renderLeftActions={() =>
-        swipeAction(note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline', note.isArchived ? t('home.unarchive') : t('home.archive'), theme.colors.secondaryContainer, theme.colors.onSecondaryContainer, 'flex-start')
-      }
-      renderRightActions={() =>
-        swipeAction('delete-outline', t('home.moveToBin'), theme.colors.errorContainer, theme.colors.onErrorContainer, 'flex-end')
-      }
+      renderLeftActions={(_progress, translation) => (
+        <SwipePanel translation={translation} side="left">{swipeAction(note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline', note.isArchived ? t('home.unarchive') : t('home.archive'), theme.colors.secondaryContainer, theme.colors.onSecondaryContainer, 'flex-start')}</SwipePanel>
+      )}
+      renderRightActions={(_progress, translation) => (
+        <SwipePanel translation={translation} side="right">{swipeAction('delete-outline', t('home.moveToBin'), theme.colors.errorContainer, theme.colors.onErrorContainer, 'flex-end')}</SwipePanel>
+      )}
     >
       {body}
     </Swipeable>
