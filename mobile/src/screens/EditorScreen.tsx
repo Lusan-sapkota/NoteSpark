@@ -684,6 +684,29 @@ const EditorScreen: React.FC = () => {
                 accessibilityLabel={isPinned ? t('home.unpinNote', { title: title || t('common.untitledNote') }) : t('home.pinNote', { title: title || t('common.untitledNote') })}
                 accessibilityState={{ selected: isPinned }}
               />
+              <IconButton
+                icon={isArchived ? 'archive-arrow-up' : 'archive-arrow-down-outline'}
+                mode={isArchived ? 'contained-tonal' : undefined}
+                selected={isArchived}
+                onPress={toggleArchived}
+                disabled={saving}
+                accessibilityLabel={isArchived ? t('home.unarchive') : t('home.archive')}
+                accessibilityState={{ selected: isArchived }}
+              />
+              <Menu
+                visible={showMore}
+                onDismiss={() => setShowMore(false)}
+                anchor={<IconButton icon="dots-vertical" onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />}
+              >
+                <Menu.Item leadingIcon="content-copy" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
+                <Menu.Item leadingIcon="share-variant-outline" title={t('editor.send')} onPress={handleSend} />
+                <Menu.Item leadingIcon="magnify" title={t('note.findInNote')} onPress={() => { setShowMore(false); setFind({ query: '', index: 0 }); }} />
+                <Menu.Item leadingIcon="tag-outline" title={t('editor.labels')} onPress={() => { setShowMore(false); setShowLabels(true); }} />
+                <Menu.Item leadingIcon="delete-outline" title={t('note.moveToBin')} titleStyle={{ color: theme.colors.error }} onPress={handleDelete} />
+              </Menu>
+            </View>
+          }
+        />
         {find && (
           <View style={styles.findBar}>
             <Searchbar
@@ -713,29 +736,6 @@ const EditorScreen: React.FC = () => {
             />
           </View>
         )}
-              <IconButton
-                icon={isArchived ? 'archive-arrow-up' : 'archive-arrow-down-outline'}
-                mode={isArchived ? 'contained-tonal' : undefined}
-                selected={isArchived}
-                onPress={toggleArchived}
-                disabled={saving}
-                accessibilityLabel={isArchived ? t('home.unarchive') : t('home.archive')}
-                accessibilityState={{ selected: isArchived }}
-              />
-              <Menu
-                visible={showMore}
-                onDismiss={() => setShowMore(false)}
-                anchor={<IconButton icon="dots-vertical" onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />}
-              >
-                <Menu.Item leadingIcon="content-copy" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
-                <Menu.Item leadingIcon="share-variant-outline" title={t('editor.send')} onPress={handleSend} />
-                <Menu.Item leadingIcon="magnify" title={t('note.findInNote')} onPress={() => { setShowMore(false); setFind({ query: '', index: 0 }); }} />
-                <Menu.Item leadingIcon="tag-outline" title={t('editor.labels')} onPress={() => { setShowMore(false); setShowLabels(true); }} />
-                <Menu.Item leadingIcon="delete-outline" title={t('note.moveToBin')} titleStyle={{ color: theme.colors.error }} onPress={handleDelete} />
-              </Menu>
-            </View>
-          }
-        />
 
         {/* Scrolls the cursor above the keyboard and the toolbar without resizing anything. */}
         <KeyboardAwareScrollView
