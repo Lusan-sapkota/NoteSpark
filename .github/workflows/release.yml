@@ -25,8 +25,8 @@ jobs:
         include:
           - { name: linux, os: ubuntu-22.04, cmd: 'npm run dist:linux' } # older glibc, so the AppImage runs on more systems
           - { name: windows, os: windows-2022, cmd: 'npm run dist:win' }
-          - { name: macos-arm64, os: macos-15, cmd: 'npm run build && npx electron-builder --mac dmg --arm64' }
-          - { name: macos-x64, os: macos-15-intel, cmd: 'npm run build && npx electron-builder --mac dmg --x64' }
+          - { name: macos-arm64, os: macos-15, cmd: 'npm run build && for i in 1 2 3; do npx electron-builder --mac dmg --arm64 && exit 0; echo "dmg attempt $i failed (hdiutil is flaky on runners)"; sleep 20; done; exit 1' }
+          - { name: macos-x64, os: macos-15-intel, cmd: 'npm run build && for i in 1 2 3; do npx electron-builder --mac dmg --x64 && exit 0; echo "dmg attempt $i failed (hdiutil is flaky on runners)"; sleep 20; done; exit 1' }
     defaults:
       run:
         shell: bash
