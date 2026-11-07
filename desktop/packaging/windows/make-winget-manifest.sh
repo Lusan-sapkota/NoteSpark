@@ -5,7 +5,7 @@
 # Submit the files to microsoft/winget-pkgs under manifests/l/LusanSapkota/NoteSpark/<version>/ (see the owner's runbook).
 set -euo pipefail
 TAG=${1:?tag, for example v1.2.0}; OUT=${2:?out dir}
-VERSION=${TAG#v}; ID=LusanSapkota.NoteSpark; SCHEMA=1.10.0
+VERSION=${TAG#v}; ID=LusanSapkota.NoteSpark; SCHEMA=1.28.0
 SUMS=${SUMS:-$(mktemp)}
 [ -s "$SUMS" ] || gh release download "$TAG" -R Lusan-sapkota/NoteSpark -p SHA256SUMS -O "$SUMS" --clobber
 HASH=$(awk '$2 == "NoteSpark-windows-x64.exe" {print toupper($1)}' "$SUMS" | head -1)
