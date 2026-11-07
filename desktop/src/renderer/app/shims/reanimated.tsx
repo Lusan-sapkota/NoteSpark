@@ -55,7 +55,7 @@ export const Easing = { linear: (t: number) => t, cubic: (t: number) => t * t * 
 export const ReduceMotion = { System: 'system', Never: 'never', Always: 'always' } as const;
 // A colour (string) can't be tweened here, so it applies at once.
 export const withTiming = (to: number | string, options: { duration?: number; easing?: (t: number) => number; reduceMotion?: unknown } = {}): any =>
-  typeof to === 'string' ? to : { __animation: true, to, duration: options.duration ?? 300, easing: options.easing ?? ((t: number) => t), repeat: 1 });
+  typeof to === 'string' ? to : { __animation: true, to, duration: options.duration ?? 300, easing: options.easing ?? ((t: number) => t), repeat: 1 };
 export const withRepeat = (animation: any, times = 1, _reverse = false): any => ({ ...animation, repeat: times });
 export const useAnimatedStyle = <T,>(factory: () => T): T => {
   const [, setTick] = React.useState(0);
