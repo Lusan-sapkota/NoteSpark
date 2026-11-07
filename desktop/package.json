@@ -13,7 +13,8 @@
     "dist": "electron-vite build && electron-builder --linux AppImage",
     "dist:linux": "electron-vite build && electron-builder --linux AppImage deb rpm tar.gz",
     "dist:win": "electron-vite build && electron-builder --win nsis zip --x64",
-    "dist:mac": "electron-vite build && electron-builder --mac dmg"
+    "dist:mac": "electron-vite build && electron-builder --mac dmg",
+    "dist:store": "electron-vite build && electron-builder --win appx --x64"
   },
   "devDependencies": {
     "@types/react": "19.3.0",
@@ -89,6 +90,17 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true
+    },
+    "appx": {
+      "identityName": "LusanSapkota.NoteSpark",
+      "publisher": "CN=F17B2DDC-2BAC-46A0-AED9-A3A06293AE37",
+      "publisherDisplayName": "Lusan Sapkota",
+      "applicationId": "NoteSpark",
+      "displayName": "NoteSpark",
+      "artifactName": "NoteSpark-windows-store-x64.${ext}",
+      "languages": [
+        "en-US"
+      ]
     },
     "mac": {
       "artifactName": "NoteSpark-macos-${arch}.${ext}",
