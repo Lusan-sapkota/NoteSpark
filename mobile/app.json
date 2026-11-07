@@ -83,6 +83,7 @@
       "./plugins/withNoMlKitDownload",
       "./plugins/withFlexiblePageSizes",
       "./plugins/withVec16kb",
+      "./plugins/withNoOrtTelemetry",
       "./plugins/withSyncService",
       "onnxruntime-react-native",
       [
