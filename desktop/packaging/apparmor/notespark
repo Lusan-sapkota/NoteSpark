@@ -2,7 +2,7 @@
 # Chromium's sandbox needs (Ubuntu 23.10 and later confine them for programs that have no profile of their own).
 # It is the same kind of profile Ubuntu ships for Slack, Discord and Visual Studio Code.
 #
-# Install (needs root; AppImage users do this once):
+# The .deb and .rpm install this file themselves. Install by hand (needs root; AppImage users do this once):
 #   sudo cp notespark /etc/apparmor.d/notespark
 #   sudo apparmor_parser -r /etc/apparmor.d/notespark
 
@@ -11,7 +11,7 @@ include <tunables/global>
 
 # A deb installs to /opt/NoteSpark; an AppImage runs from /tmp/.mount_NoteSp* (or /tmp/appimage_extracted_* when started
 # with --appimage-extract-and-run).
-profile notespark /{opt/NoteSpark,tmp/.mount_NoteSp*,tmp/appimage_extracted_*}/notespark-desktop flags=(unconfined) {
+profile notespark /{opt/NoteSpark,tmp/.mount_NoteSp*,tmp/appimage_extracted_*}/notespark flags=(unconfined) {
   userns,
   @{exec_path} mr,
 

@@ -10,7 +10,8 @@
     "build": "electron-vite build",
     "check:copy": "node scripts/check-copy.mjs",
     "start": "electron-vite preview",
-    "dist": "electron-vite build && electron-builder --linux AppImage"
+    "dist": "electron-vite build && electron-builder --linux AppImage",
+    "dist:linux": "electron-vite build && electron-builder --linux AppImage deb rpm tar.gz"
   },
   "devDependencies": {
     "@types/react": "19.3.0",
@@ -51,11 +52,18 @@
     "linux": {
       "artifactName": "NoteSpark-linux-x64.${ext}",
       "target": [
-        "AppImage"
+        "AppImage",
+        "deb",
+        "rpm",
+        "tar.gz"
       ],
       "category": "Office",
       "icon": "resources/icon.png",
-      "maintainer": "Lusan Sapkota <lusan@aigeeks.dev>"
+      "maintainer": "Lusan Sapkota <lusan@aigeeks.dev>",
+      "executableName": "notespark",
+      "synopsis": "Fast, offline-first notes",
+      "description": "NoteSpark keeps your notes on your computer, with no account and no update check. The .deb and .rpm packages also add NoteSpark's package repository (https://packages.notespark.lusansapkota.com.np) so that apt or dnf can offer new versions. Remove it by deleting /etc/apt/sources.list.d/notespark.sources or /etc/yum.repos.d/notespark.repo, or by uninstalling the package.",
+      "appArmorProfile": "packaging/apparmor/notespark"
     },
     "asarUnpack": [
       "node_modules/onnxruntime-node/bin/**",
@@ -70,9 +78,21 @@
           "all-MiniLM-L6-v2-int8.onnx",
           "all-MiniLM-L6-v2-vocab.txt"
         ]
+      },
+      {
+        "from": "packaging/linux/notespark-archive-key.asc",
+        "to": "notespark-archive-key.asc"
       }
     ],
-    "compression": "normal"
+    "compression": "normal",
+    "deb": {
+      "afterInstall": "packaging/linux/after-install.sh",
+      "afterRemove": "packaging/linux/after-remove.sh"
+    },
+    "rpm": {
+      "afterInstall": "packaging/linux/after-install.sh",
+      "afterRemove": "packaging/linux/after-remove.sh"
+    }
   },
   "dependencies": {
     "@expo/vector-icons": "15.1.1",
