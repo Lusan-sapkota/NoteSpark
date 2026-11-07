@@ -1,0 +1,86 @@
+# Builds the signed apt and dnf repository from the newest GitHub releases and uploads it to the R2 bucket behind
+# https://packages-notespark.lusansapkota.com.np. Runs after a release (called from release.yml) or by hand
+# (Actions, Publish repository, Run workflow). Uses the "release" environment, so you approve each run.
+name: Publish repository
+
+on:
+  workflow_call:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: repo-publish
+  cancel-in-progress: false
+
+env:
+  KEEP: 3 # versions kept in the repository; the bucket is synced to exactly these
+  BUCKET: notespark-packages
+  BASE_URL: https://packages-notespark.lusansapkota.com.np
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    environment: release
+    timeout-minutes: 45
+    env:
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: Tools
+        run: sudo apt-get update && sudo apt-get install -y apt-utils createrepo-c rpm gnupg
+      - name: Newest releases that have both Linux packages
+        run: |
+          mkdir vers; n=0
+          for tag in $(gh release list --limit 30 --json tagName,isDraft,isPrerelease -q '.[] | select((.isDraft or .isPrerelease) | not) | .tagName'); do
+            names=$(gh release view "$tag" --json assets -q '.assets[].name')
+            grep -qx NoteSpark-linux-x64.deb <<<"$names" && grep -qx NoteSpark-linux-x64.rpm <<<"$names" || continue
+            gh release download "$tag" -p NoteSpark-linux-x64.deb -p NoteSpark-linux-x64.rpm -D "vers/$tag"
+            n=$((n+1)); echo "using $tag"; [ "$n" -ge "$KEEP" ] && break
+          done
+          [ "$n" -ge 1 ] || { echo "no release has both packages"; exit 1; }
+      - name: Import the signing key
+        env:
+          GPG_SIGNING_SUBKEY: ${{ secrets.GPG_SIGNING_SUBKEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          umask 077
+          printf %s "$GPG_PASSPHRASE" > "$RUNNER_TEMP/pass"
+          gpg --batch --pinentry-mode loopback --passphrase-file "$RUNNER_TEMP/pass" --import <<<"$GPG_SIGNING_SUBKEY" 2>/dev/null
+          FP=$(gpg --show-keys --with-colons desktop/packaging/linux/notespark-archive-key.asc | awk -F: '/^fpr/{print $10; exit}')
+          # the secret must belong to the public key that ships in the packages
+          gpg --list-secret-keys --with-colons | grep -q "$FP" || { echo "the signing secret does not match the packaged public key"; exit 1; }
+          echo "SIGN_FP=$FP" >> "$GITHUB_ENV"
+      - name: Build the repository
+        run: SIGN_FP="$SIGN_FP" PASSFILE="$RUNNER_TEMP/pass" bash desktop/packaging/linux/make-repo.sh "$RUNNER_TEMP/out" vers/*
+      - name: Upload to R2 (packages first, then the index files, then remove what is no longer kept)
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_REQUEST_CHECKSUM_CALCULATION: when_required
+          AWS_RESPONSE_CHECKSUM_VALIDATION: when_required
+          R2_ACCOUNT_ID: ${{ secrets.R2_ACCOUNT_ID }}
+        run: |
+          S3="aws s3 sync $RUNNER_TEMP/out s3://$BUCKET --endpoint-url https://$R2_ACCOUNT_ID.r2.cloudflarestorage.com --only-show-errors"
+          META=(--exclude 'apt/dists/*' --exclude 'rpm/repodata/*' --exclude notespark-archive-key.asc)
+          # package file names carry the version, so they never change: cache them hard
+          $S3 "${META[@]}" --cache-control 'public, max-age=31536000, immutable'
+          $S3 --exclude '*' --include 'apt/dists/*' --include 'rpm/repodata/*' --include notespark-archive-key.asc --cache-control 'no-cache' --delete
+          $S3 "${META[@]}" --delete
+      - name: Check the published repository through the public address
+        run: |
+          mkdir "$RUNNER_TEMP/v" && chmod 700 "$RUNNER_TEMP/v"
+          export GNUPGHOME="$RUNNER_TEMP/v"
+          gpg --batch --import desktop/packaging/linux/notespark-archive-key.asc 2>/dev/null
+          curl -fsS "$BASE_URL/apt/dists/stable/InRelease" -o "$RUNNER_TEMP/InRelease"
+          gpg --verify "$RUNNER_TEMP/InRelease"
+          curl -fsS "$BASE_URL/rpm/repodata/repomd.xml" -o "$RUNNER_TEMP/repomd.xml"
+          curl -fsS "$BASE_URL/rpm/repodata/repomd.xml.asc" -o "$RUNNER_TEMP/repomd.xml.asc"
+          gpg --verify "$RUNNER_TEMP/repomd.xml.asc" "$RUNNER_TEMP/repomd.xml"
+          newest=$(ls "$RUNNER_TEMP"/out/apt/pool/main/n/notespark | sort -V | tail -1)
+          [ "$(curl -fsSI "$BASE_URL/apt/pool/main/n/notespark/$newest" | tr -d '\r' | awk 'tolower($1)=="content-length:"{print $2}')" = "$(stat -c%s "$RUNNER_TEMP/out/apt/pool/main/n/notespark/$newest")" ] || { echo "published $newest has the wrong size"; exit 1; }
+      - name: Remove the key and passphrase from the runner
+        if: always()
+        run: shred -u "$RUNNER_TEMP/pass" 2>/dev/null; gpgconf --kill gpg-agent 2>/dev/null; true
