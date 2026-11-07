@@ -7,6 +7,8 @@ import pkg from './package.json';
 // Shared pure code lives in ../packages/core (same alias as Mobile).
 const alias = { '@notespark/core': resolve(__dirname, '../packages/core/src/index.ts') };
 const app = (path: string) => resolve(__dirname, 'src/renderer/app', path);
+// Paths written into generated import statements need forward slashes: on Windows a backslash would be read as an escape.
+const posix = (p: string) => p.replaceAll('\\', '/');
 const mobileSrc = resolve(__dirname, '../mobile/src');
 // Phone modules that can't run in a browser are swapped, by file, for the versions in src/renderer/app/overrides.
 const overrides: Record<string, string> = Object.fromEntries(
@@ -43,7 +45,7 @@ export default defineConfig({
           const start = code.indexOf('const loadEmbedder = async (): Promise<Embed> => {');
           const end = code.indexOf('\n};\n\nconst getEmbedder', start);
           if (start < 0 || end < 0) throw new Error(`embedder-in-helper-process: loadEmbedder not found in ${id}`);
-          return `import { embedInWorker } from '${resolve(__dirname, 'src/main/embedder.ts')}';\n` + code.slice(0, start) + 'const loadEmbedder = async (): Promise<Embed> => embedInWorker;' + code.slice(end + 3);
+          return `import { embedInWorker } from '${posix(resolve(__dirname, 'src/main/embedder.ts'))}';\n` + code.slice(0, start) + 'const loadEmbedder = async (): Promise<Embed> => embedInWorker;' + code.slice(end + 3);
         },
       },
     ],
@@ -116,7 +118,7 @@ export default defineConfig({
             const end = row < 0 ? -1 : code.indexOf('\n          />\n', row);
             if (flag < 0 || end < 0) throw new Error(`desktop-copy: Task reminders row not found in ${id}`);
             const after = end + '\n          />\n'.length;
-            code = `import KeepInTrayRow from '${app('KeepInTrayRow.tsx')}';\n` + code.slice(0, flag) + 'isLast={false}' + code.slice(flag + 'isLast'.length, after) + '          <KeepInTrayRow />\n' + code.slice(after);
+            code = `import KeepInTrayRow from '${posix(app('KeepInTrayRow.tsx'))}';\n` + code.slice(0, flag) + 'isLast={false}' + code.slice(flag + 'isLast'.length, after) + '          <KeepInTrayRow />\n' + code.slice(after);
             return code;
           }
           return null;
@@ -130,7 +132,7 @@ export default defineConfig({
           if (!id.includes('/mobile/src/') || !/\.tsx$/.test(id) || !/<(Appbar\.|IconButton)/.test(code)) return null;
           let count = 0;
           const wrapped = code.replace(/<(?:Appbar\.(?:Action|BackAction)|IconButton)\b((?:(?!\/>)[\s\S])*?)accessibilityLabel=("[^"]*"|\{(?:[^{}]|\{[^{}]*\})*\})((?:(?!\/>)[\s\S])*?)\/>/g, (all, _a, label) => { count++; return `<Tip title=${label}>${all}</Tip>`; });
-          return count ? `import Tip from '${resolve(__dirname, 'src/renderer/app/Tip.tsx')}';\n${wrapped}` : null;
+          return count ? `import Tip from '${posix(resolve(__dirname, 'src/renderer/app/Tip.tsx'))}';\n${wrapped}` : null;
         },
       },
       {
