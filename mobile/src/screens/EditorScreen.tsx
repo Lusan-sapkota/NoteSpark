@@ -634,11 +634,10 @@ const EditorScreen: React.FC = () => {
   // Eases the screen to a newly picked colour; the bar is see-through so it follows.
   const fillColor = own?.fill ?? theme.colors.background;
   const fadeStyle = useAnimatedStyle(() => ({ backgroundColor: withTiming(fillColor, { duration: 240, reduceMotion: ReduceMotion.System }) }));
-  // Phone plain tab: text drawn from styled pieces (marks fade). The desktop's text box can't, so it shows the marks.
+  // Phone plain tab: text drawn from styled pieces (marks hidden). The desktop's text box can't, so it shows the marks.
   const showStyled = !isMarkdown && Platform.OS !== 'web';
   const styledBody = showStyled
     ? parseFormatted(convertImagesToLinks(content, false)).map((tok, i) => {
-        const base = theme.fonts.noteBody;
         const headFont = tok.heading === 1 ? theme.fonts.noteH1 : tok.heading === 2 ? theme.fonts.noteH2 : tok.heading === 3 ? theme.fonts.noteH3 : null;
         return (
           <RNText
@@ -647,7 +646,8 @@ const EditorScreen: React.FC = () => {
               headFont ?? (tok.bold ? { fontFamily: theme.fonts.noteTitle.fontFamily } : tok.italic ? { fontFamily: 'Literata-Italic' } : null),
               tok.bold && tok.italic ? { fontStyle: 'italic' } : null,
               tok.strike ? { textDecorationLine: 'line-through' } : null,
-              tok.marker ? { color: theme.colors.onSurfaceVariant, opacity: 0.55, fontFamily: base.fontFamily } : null,
+              // The marks stay in the text (the cursor needs them) but are drawn invisible and tiny, so only the styling shows.
+              tok.marker ? { color: 'transparent', fontSize: 1, letterSpacing: 0 } : null,
             ]}
           >
             {tok.text}
