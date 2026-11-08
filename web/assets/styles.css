@@ -55,6 +55,9 @@
   --primary: #546524;
   --on-primary: #ffffff;
   --primary-container: #d7eb9b;
+  /* The logo's own pair (docs/design/logo.md); the same in light and dark, unlike the primary container. */
+  --logo-bg: #d7eb9b;
+  --logo-ink: #3d4c0d;
   --on-primary-container: #3d4c0d;
   --inverse-primary: #bbcf82;
   --secondary: #5b6147;
@@ -218,8 +221,8 @@ code {
 @media (max-width: 600px) { .container { padding: 0 16px; } }
 
 /* ---------- Header ---------- */
-/* Announcement bar above the header (text set in app.js): the logo's colours (primary container with its on-colour), quiet, scrolls away; the header stays sticky below it. */
-.announce { background: var(--primary-container); color: var(--on-primary-container); }
+/* Announcement bar above the header (text set in app.js): the logo's colours (--logo-bg, --logo-ink), quiet, scrolls away; the header stays sticky below it. */
+.announce { background: var(--logo-bg); color: var(--logo-ink); }
 .announce-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; min-height: 40px; padding-block: 8px; font-size: 14px; line-height: 20px; font-weight: 500; text-align: center; }
 .announce a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .announce a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 4px; }
@@ -267,7 +270,7 @@ code {
   background: var(--surface-container-high); color: var(--on-surface-variant); font: 500 12px/16px var(--font-ui);
 }
 .chip svg { width: 14px; height: 14px; }
-.chip-tag { background: var(--primary-container); color: var(--on-primary-container); }
+.chip-tag { background: var(--logo-bg); color: var(--logo-ink); }
 .status { display: inline-flex; padding: 4px 10px; border-radius: var(--shape-sm); font: 500 12px/16px var(--font-ui); white-space: nowrap; }
 .status-soon { background: var(--surface-container-highest); color: var(--on-surface-variant); }
 
@@ -443,8 +446,8 @@ code {
 .track i:nth-child(2) { animation-delay: -.4s; } .track i:nth-child(3) { animation-delay: -.8s; }
 @keyframes hop { to { transform: translateX(72px); } }
 .stage-caption { position: relative; height: 32px; margin-top: 16px; text-align: center; }
-/* The logo's colours: primary container with its on-colour, as a pill centred under the demo. */
-.stage-caption span { position: absolute; inset: 0 auto auto 50%; transform: translateX(-50%); width: max-content; max-width: 100%; padding: 4px 16px; border-radius: var(--shape-full); opacity: 0; font: 600 16px/24px var(--font-ui); background: var(--primary-container); color: var(--on-primary-container); }
+/* The logo's colours as a pill centred under the demo. */
+.stage-caption span { position: absolute; inset: 0 auto auto 50%; transform: translateX(-50%); width: max-content; max-width: 100%; padding: 4px 16px; border-radius: var(--shape-full); opacity: 0; font: 600 16px/24px var(--font-ui); background: var(--logo-bg); color: var(--logo-ink); }
 @media (max-width: 480px) { .stage-caption { height: 64px; } }
 .stage-caption span:nth-child(1) { animation: scene-1 24s infinite; }
 .stage-caption span:nth-child(2) { animation: scene-2 24s infinite; }
