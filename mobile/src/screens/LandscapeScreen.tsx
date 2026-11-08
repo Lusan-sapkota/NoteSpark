@@ -145,8 +145,11 @@ const LandscapeScreen: React.FC = () => {
           {rows.map(r => (
             <View key={r.month} style={styles.chartRow} accessible accessibilityLabel={`${monthLabel(r.month)}, ${t('landscape.notesCount', { count: r.total })}`}>
               <Text variant="labelSmall" style={[styles.month, { color: theme.colors.onSurfaceVariant }]} maxFontSizeMultiplier={1.3} numberOfLines={1}>{monthLabel(r.month)}</Text>
-              <View style={[styles.bar, { width: `${(r.total / most) * 100}%` }]}>
-                {r.counts.map((n, i) => n > 0 && <View key={i} style={{ flex: n, backgroundColor: tones[i % tones.length].bg, borderWidth: open === i ? 2 : 0, borderColor: theme.colors.outline }} />)}
+              {/* The track takes what the label and count leave; the bar is a share of it, so no row overflows. */}
+              <View style={styles.track}>
+                <View style={[styles.bar, { width: `${(r.total / most) * 100}%` }]}>
+                  {r.counts.map((n, i) => n > 0 && <View key={i} style={{ flex: n, backgroundColor: tones[i % tones.length].bg, borderWidth: open === i ? 2 : 0, borderColor: theme.colors.outline }} />)}
+                </View>
               </View>
               <Text variant="labelSmall" style={{ color: theme.colors.onSurfaceVariant }} maxFontSizeMultiplier={1.3}>{r.total || ''}</Text>
             </View>
@@ -206,6 +209,7 @@ const styles = StyleSheet.create({
   chart: { gap: space.xs, marginTop: space.sm },
   chartRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, minHeight: 24 },
   month: { width: 68 },
+  track: { flex: 1, minWidth: 0 },
   bar: { flexDirection: 'row', height: 14, borderRadius: shape.extraSmall, overflow: 'hidden', minWidth: 0 },
   message: { padding: space.xl },
   messageBody: { marginTop: space.xs },
