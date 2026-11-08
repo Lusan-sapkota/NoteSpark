@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, useDeferredValue } from 'react';
-import { BackHandler, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent, useWindowDimensions } from 'react-native';
+import { BackHandler, Platform, RefreshControl, ScrollView, StyleSheet, View, NativeScrollEvent, NativeSyntheticEvent, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { AnimatedFAB, Appbar, Badge, Button, Chip, Divider, Icon, IconButton, List, Portal, Searchbar, Text, TextInput, TouchableRipple } from 'react-native-paper';
@@ -86,8 +86,9 @@ const HomeScreen: React.FC = () => {
   const [fabExtended, setFabExtended] = useState(true);
   const insets = useSafeAreaInsets();
   // Wide screens (tablets): controls and FAB line up with the centred list column.
-  const { width: windowWidth } = useWindowDimensions();
-  const twoPane = windowWidth >= twoPaneMinWidth;
+  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  // A phone turned sideways is wider than 840 dp but not a tablet: two panes need a shortest side of 600 dp (desktop windows always qualify).
+  const twoPane = windowWidth >= twoPaneMinWidth && (Platform.OS === 'web' || Math.min(windowWidth, windowHeight) >= 600);
   const sidePad = twoPane ? space.lg : Math.max(space.lg, (windowWidth - readingWidth) / 2 + space.lg);
   // Two panes: the open note shows beside the list instead of replacing it.
   const [paneNoteId, setPaneNoteId] = useState<string | null>(null);
