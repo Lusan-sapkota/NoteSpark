@@ -221,14 +221,14 @@ code {
 @media (max-width: 600px) { .container { padding: 0 16px; } }
 
 /* ---------- Header ---------- */
-/* Announcement bar above the header (text set in app.js): the logo's colours (--logo-bg, --logo-ink), quiet, scrolls away; the header stays sticky below it. */
-.announce { background: var(--logo-bg); color: var(--logo-ink); }
+/* Announcement bar above the header (text set in app.js): the logo's colours (--logo-bg, --logo-ink), quiet, sticky at the top with the header stuck just below it (app.js sets --announce-h to the bar's height). */
+.announce { position: sticky; top: 0; z-index: 6; background: var(--logo-bg); color: var(--logo-ink); }
 .announce-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; min-height: 40px; padding-block: 8px; font-size: 14px; line-height: 20px; font-weight: 500; text-align: center; }
 .announce a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .announce a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 4px; }
 
 .site-header {
-  position: sticky; top: 0; z-index: 5;
+  position: sticky; top: var(--announce-h, 0px); z-index: 5;
   background: var(--background);
   transition: background-color 200ms;
 }
@@ -402,7 +402,7 @@ code {
   .laptop, .hero-devices .phone { transform: none !important; transition: none; }
   .will-reveal { opacity: 1; transform: none; transition: none; }
 }
-.section[id] { scroll-margin-top: 80px; }
+.section[id] { scroll-margin-top: calc(80px + var(--announce-h, 0px)); }
 .hero-actions { margin-top: 28px; } .promises { margin-top: 32px; }
 .laptop-screen .shot-dark { display: none; }
 [data-theme="dark"] .laptop-screen .shot-dark { display: block; }
@@ -484,7 +484,7 @@ code {
 
 /* ---------- A look inside: pinned devices, screens change as you scroll ---------- */
 .show { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr); gap: 48px; align-items: start; }
-.show-stage { position: sticky; top: 88px; }
+.show-stage { position: sticky; top: calc(88px + var(--announce-h, 0px)); }
 .show-devices { margin: 0; max-width: none; justify-self: auto; }
 .layers { display: grid; }
 .layers > .layer { grid-area: 1 / 1; opacity: 0; transition: opacity 450ms ease; }
@@ -516,7 +516,7 @@ code {
 .help-toc a:hover { background: var(--secondary-container); }
 .help-steps { margin: 8px 0; padding-left: 24px; display: grid; gap: 10px; }
 .help-steps li::marker { color: var(--primary); font-weight: 600; }
-.policy-section[id] { scroll-margin-top: 80px; }
+.policy-section[id] { scroll-margin-top: calc(80px + var(--announce-h, 0px)); }
 
 /* ---------- Text pages on wide screens: contents rail + centred reading column ---------- */
 .doc-toc { display: none; }
@@ -527,10 +527,10 @@ code {
 .doc-toc a { display: flex; align-items: center; min-height: 40px; padding: 6px 12px; border-radius: var(--shape-control); color: var(--on-surface-variant); text-decoration: none; font: 500 14px/20px var(--font-ui); }
 .doc-toc ul ul a { min-height: 36px; font-weight: 400; }
 .doc-toc a:hover { background: var(--surface-container-high); color: var(--on-surface); }
-.doc-layout h2[id], .doc-layout h3[id], .doc-layout section[id] { scroll-margin-top: 88px; }
+.doc-layout h2[id], .doc-layout h3[id], .doc-layout section[id] { scroll-margin-top: calc(88px + var(--announce-h, 0px)); }
 @media (min-width: 1100px) {
   .doc-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 680px) minmax(0, 1fr); gap: 0 48px; align-items: start; }
-  .doc-toc { display: block; position: sticky; top: 88px; grid-column: 1; max-width: 260px; max-height: calc(100vh - 112px); overflow-y: auto; }
+  .doc-toc { display: block; position: sticky; top: calc(88px + var(--announce-h, 0px)); grid-column: 1; max-width: 260px; max-height: calc(100vh - 112px - var(--announce-h, 0px)); overflow-y: auto; }
   .doc-layout .reading-column { grid-column: 2; }
   .help-toc { display: none; }
 }

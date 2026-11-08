@@ -25,6 +25,10 @@
     }
     bar.appendChild(inner);
     header.parentNode.insertBefore(bar, header);
+    // The sticky header sits below the bar, and anchors and side panels clear both: they read --announce-h.
+    var size = function () { document.documentElement.style.setProperty('--announce-h', bar.offsetHeight + 'px'); };
+    size();
+    if ('ResizeObserver' in window) new ResizeObserver(size).observe(bar); else window.addEventListener('resize', size);
   });
 })();
 
