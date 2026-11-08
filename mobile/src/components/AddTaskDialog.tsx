@@ -148,10 +148,11 @@ const AddTaskDialog: React.FC<{
           {choosing ? (
             <Button onPress={() => setChoosing(null)}>{t('common.back')}</Button>
           ) : (
-            <>
-              <Button onPress={onDismiss}>{t('common.cancel')}</Button>
-              <Button onPress={submit} disabled={!text.trim()}>{task ? t('tasks.saveTask') : t('tasks.addTask')}</Button>
-            </>
+            // Not a fragment: Dialog.Actions hands every direct child `compact`, which a fragment rejects.
+            [
+              <Button key="cancel" onPress={onDismiss}>{t('common.cancel')}</Button>,
+              <Button key="ok" onPress={submit} disabled={!text.trim()}>{task ? t('tasks.saveTask') : t('tasks.addTask')}</Button>,
+            ]
           )}
         </Dialog.Actions>
       </Dialog>
