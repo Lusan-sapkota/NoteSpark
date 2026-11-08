@@ -1,6 +1,8 @@
 export default {
   'sync.title': 'Sync',
   'sync.settingsRow': 'Sync between your devices',
+  'sync.settingsSync': 'Sync settings',
+  'sync.settingsSyncHelp': 'Keep the theme, language, reminder time and a few other preferences the same on your devices. Lock, PIN and backup settings never sync.',
   'sync.settingsRowHelp': 'Nothing leaves your own network.',
   'sync.intro': 'Offline by design. Sync stays off until you turn it on in NoteSpark for desktop, and nothing leaves your own network.',
   'sync.computerHeading': 'Pair with your computer',

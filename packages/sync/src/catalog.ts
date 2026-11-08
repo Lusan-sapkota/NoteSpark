@@ -30,6 +30,33 @@ export interface ReviewEntry {
   state?: { due: string; interval: number; ease: number; reps: number; lapses: number };
 }
 
+// Settings the person chose to sync ride in the catalog too: one key per setting holding the newest value and its time.
+// Two devices that change the same setting at once end up with the same one (Yjs picks the same winner everywhere).
+const settings = (doc: Y.Doc) => doc.getMap<string>('settings');
+export const MAX_SETTING_BYTES = 300;
+export interface SettingEntry { name: string; value: string; at: number }
+const parseSetting = (text: unknown): { value: string; at: number } | null => {
+  if (typeof text !== 'string' || text.length > MAX_SETTING_BYTES) return null;
+  try {
+    const e = JSON.parse(text);
+    return e && typeof e.value === 'string' && typeof e.at === 'number' && Number.isFinite(e.at) ? { value: e.value, at: e.at } : null;
+  } catch { return null; }
+};
+export const markSetting = (doc: Y.Doc, e: SettingEntry) => {
+  const text = JSON.stringify({ value: e.value, at: e.at });
+  if (!/^[A-Za-z]{1,32}$/.test(e.name) || text.length > MAX_SETTING_BYTES) return;
+  const current = parseSetting(settings(doc).get(e.name));
+  if (!current || current.at < e.at) settings(doc).set(e.name, text);
+};
+export const readSettings = (doc: Y.Doc): SettingEntry[] => {
+  const out: SettingEntry[] = [];
+  for (const [name, text] of settings(doc)) {
+    const e = parseSetting(text);
+    if (e && /^[A-Za-z]{1,32}$/.test(name)) out.push({ name, ...e });
+  }
+  return out;
+};
+
 export const markReview = (doc: Y.Doc, entry: ReviewEntry) => {
   const text = JSON.stringify(entry);
   if (text.length <= MAX_REVIEW_BYTES && !reviews(doc).has(entry.id)) reviews(doc).set(entry.id, text);

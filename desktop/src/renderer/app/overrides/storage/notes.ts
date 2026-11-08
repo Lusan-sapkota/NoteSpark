@@ -19,14 +19,14 @@ const api = storageProxy<typeof Real>('notes', [
   'getNotes', 'getNotesWithLinks', 'getNoteById', 'getDraft', 'saveDraft', 'clearDraft', 'getScratchpad', 'saveScratchpad',
   'getShareTarget', 'setShareTarget', 'getScratchpadNote', 'saveNote', 'getNoteVersions', 'updateNote', 'moveNoteToBin',
   'restoreNote', 'getBinNotes', 'emptyBin', 'deleteNote', 'setNotePinned', 'setNoteArchived', 'setNoteStyle', 'toggleTaskInNote',
-  'restoreTaskLine', 'deleteTaskLine', 'insertTaskLine', 'addTaskToNote', 'moveAllNotesToBin', 'restoreBatch', 'deleteAllNotesForever', 'exportNotesAsJson', 'importNotes', 'getReviewData', 'addReviews',
+  'restoreTaskLine', 'deleteTaskLine', 'insertTaskLine', 'addTaskToNote', 'moveAllNotesToBin', 'restoreBatch', 'deleteAllNotesForever', 'exportNotesAsJson', 'importNotes', 'getReviewData', 'addReviews', 'getSettingsData', 'addSettings',
 ] as const, name => { if (writes.has(name)) notesVersion++; });
 
 export const {
   getNotes, getNotesWithLinks, getNoteById, getDraft, saveDraft, clearDraft, getScratchpad, saveScratchpad, getShareTarget,
   setShareTarget, getScratchpadNote, saveNote, getNoteVersions, updateNote, moveNoteToBin, restoreNote, getBinNotes, emptyBin,
   deleteNote, setNotePinned, setNoteArchived, setNoteStyle, toggleTaskInNote, restoreTaskLine, deleteTaskLine, insertTaskLine, addTaskToNote, moveAllNotesToBin, restoreBatch,
-  deleteAllNotesForever, exportNotesAsJson, importNotes, getReviewData, addReviews,
+  deleteAllNotesForever, exportNotesAsJson, importNotes, getReviewData, addReviews, getSettingsData, addSettings,
 } = api;
 
 export const SCRATCHPAD_ID = 0; // same value as the phone's module

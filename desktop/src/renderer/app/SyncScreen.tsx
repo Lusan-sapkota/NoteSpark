@@ -11,6 +11,7 @@ import M3Switch from '../../../../mobile/src/components/M3Switch';
 import { useAlert } from '../../../../mobile/src/components/DialogProvider';
 import { useTheme } from '../../../../mobile/src/theme/ThemeContext';
 import { groupCorners, readingWidth, space } from '../../../../mobile/src/theme/theme';
+import { isSyncSettingsOn, setSyncSettingsOn, syncSettings } from '../../../../mobile/src/utils/syncedSettings';
 import { invoke } from './bridge';
 import { useNavigation } from './nav';
 import { fill, text } from './syncText';
@@ -155,6 +156,9 @@ const SyncScreen = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [name, setName] = useState('');
   const [tunnel, setTunnel] = useState('');
+  const [settingsOn, setSettingsOn] = useState(false);
+  useEffect(() => { void isSyncSettingsOn().then(setSettingsOn); }, []);
+  const setSettings = async (v: boolean) => { setSettingsOn(v); await setSyncSettingsOn(v); if (v) await syncSettings().catch(() => {}); };
   const [pairing, setPairing] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
@@ -249,6 +253,9 @@ const SyncScreen = () => {
           </View>
           <GroupedRow title={text.acceptNew} description={text.acceptNewHelp} icon="account-plus-outline" isFirst isLast
             right={<M3Switch value={!!st?.acceptNew} onValueChange={v => void run('update', { acceptNew: v })} accessibilityLabel={text.acceptNew} />} onPress={() => void run('update', { acceptNew: !st?.acceptNew })} />
+
+          <GroupedRow title={text.settingsSync} description={text.settingsSyncHelp} icon="cog-sync-outline" isFirst isLast
+            right={<M3Switch value={settingsOn} onValueChange={v => void setSettings(v)} accessibilityLabel={text.settingsSync} />} onPress={() => void setSettings(!settingsOn)} />
 
           <View style={styles.section}>
             <Text variant="titleMedium">{text.mirror}</Text>

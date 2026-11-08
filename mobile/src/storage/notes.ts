@@ -1,8 +1,8 @@
 // All note reads and writes. database.ts only opens the database and runs migrations.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { db } from './database';
-import { UUID_SQL, getRemoteVersion, isSyncOn, loadReviews, recordReviews, transact, uuidsWhere } from './crdt';
-import type { ReviewEntry } from '@notespark/sync';
+import { UUID_SQL, getRemoteVersion, isSyncOn, loadReviews, loadSettings, recordReviews, recordSettings, transact, uuidsWhere } from './crdt';
+import type { ReviewEntry, SettingEntry } from '@notespark/sync';
 import type { Note, NoteVersion } from '../types';
 import { t, TaskLine, toggleTaskLine } from '@notespark/core';
 import { renameLinks } from '@notespark/core';
@@ -411,4 +411,6 @@ export const importNotes = changesNotes(async (notes: any[], mode: ImportMode): 
 
 // Review card records (S1): in the catalog doc while sync is on for this profile, so they sync with the notes.
 export const getReviewData = async (): Promise<{ synced: boolean; reviews: ReviewEntry[] }> => ({ synced: await isSyncOn(db), reviews: await loadReviews(db) });
+export const getSettingsData = async (): Promise<{ synced: boolean; settings: SettingEntry[] }> => ({ synced: await isSyncOn(db), settings: await loadSettings(db) });
+export const addSettings = (entries: SettingEntry[]): Promise<void> => recordSettings(db, entries);
 export const addReviews = (entries: ReviewEntry[]): Promise<void> => recordReviews(db, entries);

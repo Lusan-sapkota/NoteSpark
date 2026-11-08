@@ -1,7 +1,7 @@
 // Sync side of the storage: notes as Yjs updates, written with their rows in one transaction.
 import * as Crypto from 'expo-crypto';
 import * as SQLite from 'expo-sqlite';
-import { type NoteState, type ReviewEntry, catalogUpdate, compact, noteCapture, noteWithStateVector, readCatalog, readReviewEntries, shouldCompact } from '@notespark/sync';
+import { type NoteState, type ReviewEntry, type SettingEntry, catalogUpdate, compact, noteCapture, noteWithStateVector, readCatalog, readReviewEntries, readSettingEntries, shouldCompact } from '@notespark/sync';
 
 type DB = SQLite.SQLiteDatabase;
 
@@ -78,6 +78,7 @@ export interface SyncWrites {
   capture(ids: number[]): Promise<void>;
   erase(uuids: string[]): Promise<void>;
   reviews(entries: ReviewEntry[]): Promise<void>;
+  settings(entries: SettingEntry[]): Promise<void>;
 }
 
 const capture = async (db: DB, ids: number[], out: Delta[]): Promise<void> => {
@@ -112,6 +113,12 @@ const erase = async (db: DB, uuids: string[], out: Delta[]): Promise<void> => {
 // Review records ride in the catalog doc (S1), so every sync path already carries them.
 const addReviews = async (db: DB, entries: ReviewEntry[], out: Delta[]): Promise<void> => {
   const update = catalogUpdate(await loadUpdates(db, CATALOG), clientId(db), { reviews: entries });
+  if (update) await append(db, CATALOG, update, out);
+};
+
+// Settings the person syncs ride in the catalog doc as well.
+const addSettings = async (db: DB, entries: SettingEntry[], out: Delta[]): Promise<void> => {
+  const update = catalogUpdate(await loadUpdates(db, CATALOG), clientId(db), { settings: entries });
   if (update) await append(db, CATALOG, update, out);
 };
 
@@ -159,6 +166,7 @@ export const transact = <T>(db: DB, work: (sync: SyncWrites) => Promise<T>): Pro
       capture: ids => (states.get(db) && ids.length ? capture(db, ids, out) : Promise.resolve()),
       erase: uuids => (states.get(db) ? erase(db, uuids, out) : Promise.resolve()),
       reviews: entries => (states.get(db) && entries.length ? addReviews(db, entries, out) : Promise.resolve()),
+      settings: entries => (states.get(db) && entries.length ? addSettings(db, entries, out) : Promise.resolve()),
     };
     await db.execAsync('BEGIN IMMEDIATE');
     try {
@@ -179,6 +187,8 @@ export const transact = <T>(db: DB, work: (sync: SyncWrites) => Promise<T>): Pro
 
 export const recordReviews = (db: DB, entries: ReviewEntry[]): Promise<void> => transact(db, sync => sync.reviews(entries));
 // Empty while sync is off for this profile (its schedules are then kept locally, see reviewCards.ts).
+export const recordSettings = (db: DB, entries: SettingEntry[]): Promise<void> => transact(db, sync => sync.settings(entries));
+export const loadSettings = async (db: DB): Promise<SettingEntry[]> => ((await syncOn(db)) ? readSettingEntries(await loadUpdates(db, CATALOG)) : []);
 export const loadReviews = async (db: DB): Promise<ReviewEntry[]> => ((await syncOn(db)) ? readReviewEntries(await loadUpdates(db, CATALOG)) : []);
 
 // Seeds a doc for every note.

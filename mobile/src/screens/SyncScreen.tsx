@@ -12,6 +12,7 @@ import M3Switch from '../components/M3Switch';
 import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
+import { isSyncSettingsOn, setSyncSettingsOn, syncSettings } from '../utils/syncedSettings';
 import { useI18n } from '../i18n/I18nContext';
 import { controlTheme, readingWidth, shape, space } from '../theme/theme';
 import { db } from '../storage/database';
@@ -31,6 +32,7 @@ const SyncScreen: React.FC = () => {
   const [hubs, setHubs] = useState<HubRecord[]>([]);
   const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
   const [on, setOn] = useState(false);
+  const [settingsOn, setSettingsOn] = useState(false);
   const [code, setCode] = useState('');
   const [error, setError] = useState('');
   const [here, setHere] = useState(0);
@@ -44,6 +46,7 @@ const SyncScreen: React.FC = () => {
     setProfile({ id: p.id, name: p.name });
     setHubs(await getHubs());
     setOn(!!(await syncedProfiles())[p.id]);
+    setSettingsOn(await isSyncSettingsOn());
   }, []);
   useEffect(() => { void load(); }, [load]);
   useEffect(() => {
@@ -208,6 +211,16 @@ const SyncScreen: React.FC = () => {
                     right={<M3Switch value={on} onValueChange={toggle} accessibilityLabel={t('sync.profileSwitch', { name: profile.name })} />}
                     isFirst isLast={!on}
                   />
+                  {on && (
+                    <GroupedRow
+                      title={t('sync.settingsSync')}
+                      description={t('sync.settingsSyncHelp')}
+                      icon="cog-sync-outline"
+                      right={<M3Switch value={settingsOn} onValueChange={v => { setSettingsOn(v); void setSyncSettingsOn(v).then(() => v && syncSettings()).catch(() => {}); }} accessibilityLabel={t('sync.settingsSync')} />}
+                      onPress={() => { const v = !settingsOn; setSettingsOn(v); void setSyncSettingsOn(v).then(() => v && syncSettings()).catch(() => {}); }}
+                      isFirst={false} isLast={false}
+                    />
+                  )}
                   {on && <GroupedRow title={t('sync.syncNow')} icon="refresh" onPress={syncNow} isFirst={false} isLast={!canRelink} />}
                   {canRelink && <GroupedRow title={t('sync.relink')} icon="link-plus" onPress={() => void relinkOpenProfile()} isFirst={false} isLast />}
                 </View>

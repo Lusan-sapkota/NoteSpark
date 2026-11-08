@@ -1179,6 +1179,8 @@ const catalog: Record<string, string> = {
   "review.failedTitle": "تعذّر تحميل بطاقاتك",
   "sync.title": "المزامنة",
   "sync.settingsRow": "المزامنة بين أجهزتك",
+  "sync.settingsSync": "مزامنة الإعدادات",
+  "sync.settingsSyncHelp": "يُبقي السمة واللغة ووقت التذكير وبعض التفضيلات الأخرى متطابقة على أجهزتك. لا تتم مزامنة إعدادات القفل ورمز PIN والنسخ الاحتياطي أبدًا.",
   "sync.settingsRowHelp": "لا شيء يغادر شبكتك الخاصة.",
   "sync.intro": "يعمل دون اتصال بحكم التصميم. تبقى المزامنة متوقفة حتى تشغّلها في NoteSpark لسطح المكتب، ولا شيء يغادر شبكتك الخاصة.", // REVIEW
   "sync.computerHeading": "إقران مع حاسوبك",
@@ -1306,6 +1308,8 @@ const catalog: Record<string, string> = {
   "dsync.profiles": "الملفات الشخصية",
   "dsync.profilesHelp": "اختر الملفات الشخصية التي تُزامَن. لا يُزامَن أي ملف حتى تشغّله.",
   "dsync.profileLocked": "افتح قفل {name} على حاسوبك لمزامنته.",
+  "dsync.settingsSync": "مزامنة الإعدادات",
+  "dsync.settingsSyncHelp": "يُبقي السمة واللغة ووقت التذكير وبعض التفضيلات الأخرى متطابقة على أجهزتك. لا تتم مزامنة إعدادات القفل ورمز PIN والنسخ الاحتياطي أبدًا.",
   "dsync.acceptNew": "قبول ملفات شخصية جديدة من الأجهزة",
   "dsync.acceptNewHelp": "عندما يزامن جهاز ملفًا شخصيًا ليس لدى هذا الحاسوب، أنشئه هنا.",
   "dsync.mirror": "مجلد Markdown",
