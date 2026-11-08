@@ -54,3 +54,7 @@ credentials.json
 # Generated native projects (Expo prebuild)
 /android
 /ios
+
+# Local native modules: Gradle output
+modules/*/android/build/
+modules/*/android/.cxx/
