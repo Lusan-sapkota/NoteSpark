@@ -8,13 +8,15 @@ import { useI18n } from '../i18n/I18nContext';
 import { space } from '../theme/theme';
 import { Profile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 
-// Opens a profile for one action: no PIN, free; a fingerprint when the profile uses one; otherwise its PIN, asked here until it
-// is right (too many wrong ones lock it for a while, see wrongPinMessage). `ask` resolves { pin } (empty when the fingerprint
-// or no PIN was needed), or null when the person cancels. Render `dialog` somewhere on the screen.
+// The one way a locked profile is opened for an action, on every screen: no PIN, free; a fingerprint when the profile uses one;
+// otherwise its PIN, asked here until it is right (too many wrong ones lock it for a while, see wrongPinMessage).
+// `ask` resolves { pin } (empty when the fingerprint or no PIN was needed), or null when the person cancels or taps Forgot PIN
+// (which calls `forgot` after closing the box). Render `dialog` somewhere on the screen.
+export interface UnlockOptions { title: string; message?: string; action?: string; forgot?: () => void }
 export const useProfileUnlock = () => {
   const { t } = useI18n();
   const alert = useAlert();
-  const [state, setState] = useState<{ profile: Profile; title: string; pin: string } | null>(null);
+  const [state, setState] = useState<{ profile: Profile; opts: UnlockOptions; pin: string } | null>(null);
   const done = useRef<((r: { pin: string } | null) => void) | null>(null);
 
   const finish = useCallback((result: { pin: string } | null) => {
@@ -23,19 +25,19 @@ export const useProfileUnlock = () => {
     done.current = null;
   }, []);
 
-  const ask = useCallback(async (profile: Profile, title: string): Promise<{ pin: string } | null> => {
+  const ask = useCallback(async (profile: Profile, opts: UnlockOptions): Promise<{ pin: string } | null> => {
     if (await verifyProfilePin(profile.id, '')) return { pin: '' };
     if (await unlockWithBiometrics(profile)) return { pin: '' };
     return new Promise(resolve => {
       done.current = resolve;
-      setState({ profile, title, pin: '' });
+      setState({ profile, opts, pin: '' });
     });
   }, []);
 
   const submit = async () => {
     if (!state || state.pin.length !== 4) return;
     if (!(await verifyProfilePin(state.profile.id, state.pin))) {
-      alert(t('home.incorrectPin'), await wrongPinMessage(state.profile.id));
+      alert(t('profiles.incorrectPin'), await wrongPinMessage(state.profile.id));
       return;
     }
     finish({ pin: state.pin });
@@ -44,9 +46,9 @@ export const useProfileUnlock = () => {
   const dialog = (
     <KeyboardSafePortal>
       <Dialog visible={!!state} onDismiss={() => finish(null)}>
-        <Dialog.Title>{state?.title}</Dialog.Title>
+        <Dialog.Title>{state?.opts.title}</Dialog.Title>
         <Dialog.Content>
-          <Text variant="bodyMedium">{t('home.enterPin', { name: state?.profile.name ?? '' })}</Text>
+          <Text variant="bodyMedium">{state?.opts.message ?? t('home.enterPin', { name: state?.profile.name ?? '' })}</Text>
           <TextInput
             mode="outlined"
             label={t('home.pin')}
@@ -58,10 +60,13 @@ export const useProfileUnlock = () => {
             onSubmitEditing={submit}
             style={styles.input}
           />
+          {!!state?.opts.forgot && (
+            <Button onPress={() => { const forgot = state.opts.forgot!; finish(null); forgot(); }} style={styles.input}>{t('profiles.forgotPin')}</Button>
+          )}
         </Dialog.Content>
         <Dialog.Actions>
           <Button onPress={() => finish(null)}>{t('common.cancel')}</Button>
-          <Button onPress={submit} disabled={state?.pin.length !== 4}>{t('home.unlock')}</Button>
+          <Button onPress={submit} disabled={state?.pin.length !== 4}>{state?.opts.action ?? t('home.unlock')}</Button>
         </Dialog.Actions>
       </Dialog>
     </KeyboardSafePortal>

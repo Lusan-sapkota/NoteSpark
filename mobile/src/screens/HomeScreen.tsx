@@ -11,7 +11,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../types';
 import { clearDraft, getDraft, getNoteById, getNotes, getNotesVersion, getScratchpadNote, onRemoteApplied, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
-import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
+import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, verifyProfilePin } from '../storage/profiles';
+import { useProfileUnlock } from '../components/ProfileUnlock';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
 import { countDueTasks, extractTags, mergeSearch, TemplateKind, templateNote, today } from '@notespark/core';
@@ -98,7 +99,7 @@ const HomeScreen: React.FC = () => {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [activeProfile, setActiveProfile] = useState<Profile | null>(null);
   const [profileDialogVisible, setProfileDialogVisible] = useState(false);
-  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; notesToMove?: Note[]; open: boolean } | null>(null);
+  const unlock = useProfileUnlock();
   const [transferDialog, setTransferDialog] = useState<{ notes: Note[]; open: boolean } | null>(null);
   const lastOffset = useRef(0);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
@@ -182,23 +183,13 @@ const HomeScreen: React.FC = () => {
     return () => { unsubscribe(); stopRemote(); };
   }, [navigation]);
 
-  const handleSwitchProfile = async (profile: Profile, pin?: string) => {
+  const handleSwitchProfile = async (profile: Profile) => {
     setProfileDialogVisible(false);
     if (profile.id === activeProfile?.id) return;
+    const auth = await unlock.ask(profile, { title: t('home.enterPinTitle'), forgot: () => handleForgotPin(profile) });
+    if (!auth) return;
     try {
-      const enteredPin = pin ?? '';
-      if (pin === undefined && !(await verifyProfilePin(profile.id, ''))) {
-        // Fingerprint first if it's on; otherwise, or on "Use PIN", the PIN dialog.
-        if (!(await unlockWithBiometrics(profile))) {
-          setPinDialog({ profile, pin: '', open: true });
-          return;
-        }
-      } else if (!(await verifyProfilePin(profile.id, enteredPin))) {
-        alert(t('home.incorrectPin'), await wrongPinMessage(profile.id));
-        return;
-      }
-      setPinDialog(d => d && { ...d, open: false });
-      await switchProfile(profile.id, enteredPin);
+      await switchProfile(profile.id, auth.pin);
       setSearchText('');
       setUndo(null);
       await loadNotes();
@@ -218,7 +209,6 @@ const HomeScreen: React.FC = () => {
 
   // A PIN can't be recovered, so a forgotten one means erasing that profile.
   const handleForgotPin = (profile: Profile) => {
-    setPinDialog(d => d && { ...d, open: false });
     alert(
       t('home.eraseProfileTitle'),
       t('home.eraseProfileMessage', { name: profile.name }),
@@ -463,12 +453,8 @@ const HomeScreen: React.FC = () => {
       );
       return;
     }
-    // Locked profile: fingerprint first if enabled; otherwise, or on "Use PIN", the PIN dialog.
-    if (await unlockWithBiometrics(profile)) {
-      await executeTransfer(profile, targets);
-      return;
-    }
-    setPinDialog({ profile, pin: '', notesToMove: targets, open: true });
+    const auth = await unlock.ask(profile, { title: t('home.moveToProfile', { name: profile.name }), message: t('home.enterPinMove', { name: profile.name, count: targets.length }), action: t('home.move') });
+    if (auth) await executeTransfer(profile, targets, auth.pin);
   };
 
   const startTransfer = (targets: Note[]) => {
@@ -496,21 +482,6 @@ const HomeScreen: React.FC = () => {
       return;
     }
     setTransferDialog({ notes: targets, open: true });
-  };
-
-  const handlePinDialogSubmit = async () => {
-    if (!pinDialog || pinDialog.pin.length !== 4) return;
-    const { profile, pin, notesToMove } = pinDialog;
-    if (!notesToMove) {
-      await handleSwitchProfile(profile, pin);
-      return;
-    }
-    if (!(await verifyProfilePin(profile.id, pin))) {
-      alert(t('home.incorrectPin'), await wrongPinMessage(profile.id));
-      return;
-    }
-    setPinDialog(d => d && { ...d, open: false });
-    await executeTransfer(profile, notesToMove, pin);
   };
 
   // A text search carries over: the note opens finding it.
@@ -1071,38 +1042,8 @@ const HomeScreen: React.FC = () => {
             <Button onPress={() => setTransferDialog(d => d && { ...d, open: false })}>{t('common.cancel')}</Button>
           </Dialog.Actions>
         </Dialog>
-        <Dialog visible={!!pinDialog?.open} onDismiss={() => setPinDialog(d => d && { ...d, open: false })}>
-          <Dialog.Title>
-            {pinDialog?.notesToMove ? t('home.moveToProfile', { name: pinDialog.profile.name }) : t('home.enterPinTitle')}
-          </Dialog.Title>
-          <Dialog.Content>
-            <Text variant="bodyMedium">
-              {pinDialog?.notesToMove
-                ? t('home.enterPinMove', { name: pinDialog.profile.name, count: pinDialog.notesToMove.length })
-                : t('home.enterPin', { name: pinDialog?.profile.name ?? '' })}
-            </Text>
-            <TextInput
-              mode="outlined"
-              label={t('home.pin')}
-              value={pinDialog?.pin ?? ''}
-              onChangeText={pin => setPinDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
-              keyboardType="number-pad"
-              secureTextEntry
-              autoFocus
-              onSubmitEditing={handlePinDialogSubmit}
-              style={styles.pinInput}
-            />
-            <Button onPress={() => pinDialog && handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>{t('home.forgotPin')}</Button>
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={() => setPinDialog(d => d && { ...d, open: false })}>{t('common.cancel')}</Button>
-            <Button onPress={handlePinDialogSubmit} disabled={pinDialog?.pin.length !== 4}>
-              {pinDialog?.notesToMove ? t('home.move') : t('home.unlock')}
-            </Button>
-          </Dialog.Actions>
-        </Dialog>
       </Portal>
-
+      {unlock.dialog}
     </SafeAreaView>
   );
 };

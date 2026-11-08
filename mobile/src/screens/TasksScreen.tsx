@@ -260,7 +260,7 @@ const TasksScreen: React.FC = () => {
   const moveTasks = async (profile: Profile, targets: Task[]) => {
     setMoving(null);
     // A locked profile opens with the fingerprint, or its PIN asked here.
-    const auth = await unlock.ask(profile, t('home.moveToProfile', { name: profile.name }));
+    const auth = await unlock.ask(profile, { title: t('home.moveToProfile', { name: profile.name }) });
     if (!auth) return;
     clearSelection();
     try {

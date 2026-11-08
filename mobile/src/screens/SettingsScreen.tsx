@@ -13,6 +13,7 @@ import { isWebImagesOn, setWebImagesOn } from '../utils/webImages';
 import { isLiveRelatedOn, setLiveRelatedOn } from '../utils/liveRelated';
 import { isMeaningSearchAvailable } from '../storage/semanticSearch';
 import { getStartScreen, setStartScreen, START_SCREENS, startScreenLabel, StartScreen } from '../utils/startScreen';
+import { useProfileUnlock } from '../components/ProfileUnlock';
 import { TimePickerModal } from 'react-native-paper-dates';
 import { formatTime, getReminderTime, setReminderTime } from '../utils/taskReminders';
 import { deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
@@ -70,10 +71,8 @@ const SettingsScreen: React.FC = () => {
   const { height: windowHeight } = useWindowDimensions();
   // Kept after closing so the text doesn't change while the dialog fades out.
   const [nameDialog, setNameDialog] = useState<{ profile: Profile; name: string; open: boolean } | null>(null);
-  const [pinDialog, setPinDialog] = useState<{ profile: Profile; pin: string; mode: 'unlock' | 'makeDefault' | 'delete'; open: boolean } | null>(null);
-  const openPinDialog = (profile: Profile, mode: 'unlock' | 'makeDefault' | 'delete') => setPinDialog({ profile, pin: '', mode, open: true });
+  const unlock = useProfileUnlock();
   const closeNameDialog = () => setNameDialog(d => d && { ...d, open: false });
-  const closePinDialog = () => setPinDialog(d => d && { ...d, open: false });
 
   const loadProfiles = useCallback(async () => {
     const [list, active, binned] = await Promise.all([getProfiles(), getActiveProfile(), getBinnedProfiles()]);
@@ -175,20 +174,12 @@ const SettingsScreen: React.FC = () => {
     );
   };
 
-  const handleMakeDefault = async (profile: Profile, pin?: string) => {
+  const handleMakeDefault = async (profile: Profile) => {
+    const auth = await unlock.ask(profile, { title: t('settings.pinDefaultTitle'), message: t('settings.pinDefaultBody', { name: profile.name }), action: t('settings.openAtStart'), forgot: forgotFor(profile) });
+    if (!auth) return;
     try {
-      // Protected: fingerprint first if it's on for this profile, otherwise the PIN dialog.
-      if (pin === undefined && !(await verifyProfilePin(profile.id, '')) && !(await unlockWithBiometrics(profile))) {
-        openPinDialog(profile, 'makeDefault');
-        return;
-      }
-      if (pin !== undefined && !(await verifyProfilePin(profile.id, pin))) {
-        alert(t('profiles.incorrectPin'), await wrongPinMessage(profile.id));
-        return;
-      }
-      await setDefaultProfile(profile.id, pin ?? '');
+      await setDefaultProfile(profile.id, auth.pin);
       await loadProfiles();
-      closePinDialog();
       setSnackbar(t('settings.nowDefault', { name: profile.name }));
     } catch (error) {
       alert(
@@ -205,8 +196,9 @@ const SettingsScreen: React.FC = () => {
   const isProtected = (profile: Profile) => protectedProfileIds.includes(profile.id);
 
   // A PIN can't be recovered, so a forgotten one means erasing the profile.
+  // Forgot PIN is offered for a profile that is not the open one (its box is closed first).
+  const forgotFor = (profile: Profile) => (profile.id !== activeId ? () => handleForgotPin(profile) : undefined);
   const handleForgotPin = (profile: Profile) => {
-    closePinDialog();
     alert(
       t('profiles.eraseTitle'),
       t('profiles.eraseBody', { name: profile.name }),
@@ -229,20 +221,12 @@ const SettingsScreen: React.FC = () => {
     );
   };
 
-  const handleSwitch = async (profile: Profile, pin?: string) => {
+  const handleSwitch = async (profile: Profile) => {
     if (profile.id === activeId) return;
+    const auth = await unlock.ask(profile, { title: t('settings.pinUnlockTitle'), message: t('settings.pinUnlockBody', { name: profile.name }), action: t('profiles.unlock'), forgot: forgotFor(profile) });
+    if (!auth) return;
     try {
-      if (pin === undefined && !(await verifyProfilePin(profile.id, '')) && !(await unlockWithBiometrics(profile))) {
-        openPinDialog(profile, 'unlock');
-        return;
-      }
-      const enteredPin = pin ?? '';
-      if (pin !== undefined && !(await verifyProfilePin(profile.id, enteredPin))) {
-        alert(t('profiles.incorrectPin'), await wrongPinMessage(profile.id));
-        return;
-      }
-      closePinDialog();
-      await switchProfile(profile.id, enteredPin);
+      await switchProfile(profile.id, auth.pin);
       void reconcileSync();
       await loadProfiles();
     } catch (error) {
@@ -257,16 +241,10 @@ const SettingsScreen: React.FC = () => {
     }
   };
 
-  const handleDeleteProfile = async (profile: Profile, pin?: string) => {
-    if (pin === undefined && isProtected(profile) && !(await unlockWithBiometrics(profile))) {
-      openPinDialog(profile, 'delete');
-      return;
-    }
-    if (pin !== undefined && !(await verifyProfilePin(profile.id, pin))) {
-      alert(t('profiles.incorrectPin'), await wrongPinMessage(profile.id));
-      return;
-    }
-    closePinDialog();
+  const handleDeleteProfile = async (profile: Profile) => {
+    const auth = await unlock.ask(profile, { title: t('settings.pinDeleteTitle'), message: t('settings.pinDeleteBody', { name: profile.name }), action: t('settings.deleteProfile'), forgot: forgotFor(profile) });
+    if (!auth) return;
+    const pin = auth.pin || undefined;
     const linkedDevs = await syncedProfileWarning(profile.id);
     alert(
       t('settings.deleteProfileTitle'),
@@ -386,20 +364,6 @@ const SettingsScreen: React.FC = () => {
     } catch (error) {
       alert(t('settings.restoreNotesFailed'), t('settings.restoreNotesFailedBody'));
     }
-  };
-
-  const pinName = pinDialog?.profile.name ?? '';
-  const { pinTitle, pinMessage, pinAction } = {
-    unlock: { pinTitle: t('settings.pinUnlockTitle'), pinMessage: t('settings.pinUnlockBody', { name: pinName }), pinAction: t('profiles.unlock') },
-    makeDefault: { pinTitle: t('settings.pinDefaultTitle'), pinMessage: t('settings.pinDefaultBody', { name: pinName }), pinAction: t('settings.openAtStart') },
-    delete: { pinTitle: t('settings.pinDeleteTitle'), pinMessage: t('settings.pinDeleteBody', { name: pinName }), pinAction: t('settings.deleteProfile') },
-  }[pinDialog?.mode ?? 'unlock'];
-  const submitPin = () => {
-    if (!pinDialog) return;
-    const { profile, pin, mode } = pinDialog;
-    if (mode === 'makeDefault') handleMakeDefault(profile, pin);
-    else if (mode === 'delete') handleDeleteProfile(profile, pin);
-    else handleSwitch(profile, pin);
   };
 
   const chevron = <List.Icon icon="chevron-right" color={theme.colors.onSurfaceVariant} />;
@@ -792,31 +756,8 @@ const SettingsScreen: React.FC = () => {
             <Button onPress={() => setChoice(c => c && { ...c, open: false })}>{t('common.cancel')}</Button>
           </Dialog.Actions>
         </Dialog>
-        <Dialog visible={!!pinDialog?.open} onDismiss={closePinDialog}>
-          <Dialog.Title>{pinTitle}</Dialog.Title>
-          <Dialog.Content>
-            <Text variant="bodyMedium">{pinMessage}</Text>
-            <TextInput
-              mode="outlined"
-              label={t('profiles.pin')}
-              value={pinDialog?.pin ?? ''}
-              onChangeText={pin => setPinDialog(d => d && { ...d, pin: pin.replace(/\D/g, '').slice(0, 4) })}
-              keyboardType="number-pad"
-              secureTextEntry
-              autoFocus
-              onSubmitEditing={submitPin}
-              style={styles.dialogInput}
-            />
-            {pinDialog && pinDialog.profile.id !== activeId && (
-              <Button onPress={() => handleForgotPin(pinDialog.profile)} style={styles.forgotPin}>{t('profiles.forgotPin')}</Button>
-            )}
-          </Dialog.Content>
-          <Dialog.Actions>
-            <Button onPress={closePinDialog}>{t('common.cancel')}</Button>
-            <Button onPress={submitPin} disabled={pinDialog?.pin.length !== 4}>{pinAction}</Button>
-          </Dialog.Actions>
-        </Dialog>
       </KeyboardSafePortal>
+      {unlock.dialog}
     </SafeAreaView>
   );
 };
