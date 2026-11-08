@@ -10,7 +10,7 @@ import GroupedRow from '../../../../mobile/src/components/GroupedRow';
 import M3Switch from '../../../../mobile/src/components/M3Switch';
 import { useAlert } from '../../../../mobile/src/components/DialogProvider';
 import { useTheme } from '../../../../mobile/src/theme/ThemeContext';
-import { readingWidth, space } from '../../../../mobile/src/theme/theme';
+import { groupCorners, readingWidth, space } from '../../../../mobile/src/theme/theme';
 import { invoke } from './bridge';
 import { useNavigation } from './nav';
 import { fill, text } from './syncText';
@@ -250,27 +250,36 @@ const SyncScreen = () => {
           <GroupedRow title={text.acceptNew} description={text.acceptNewHelp} icon="account-plus-outline" isFirst isLast
             right={<M3Switch value={!!st?.acceptNew} onValueChange={v => void run('update', { acceptNew: v })} accessibilityLabel={text.acceptNew} />} onPress={() => void run('update', { acceptNew: !st?.acceptNew })} />
 
-          <Text variant="titleMedium">{text.mirror}</Text>
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: -space.sm }}>{text.mirrorHelp}</Text>
-          <Text variant="bodyMedium" selectable>{st?.mirrorFolder ?? text.mirrorNone}</Text>
-          <View style={styles.row}>
-            <Button mode="outlined" icon="folder-outline" onPress={() => void run('chooseFolder')}>{text.chooseFolder}</Button>
-            {!!st?.mirrorFolder && <Button onPress={() => void run('clearFolder')}>{text.clearFolder}</Button>}
+          <View style={styles.section}>
+            <Text variant="titleMedium">{text.mirror}</Text>
+            <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{text.mirrorHelp}</Text>
+            <GroupedRow title={st?.mirrorFolder ?? text.mirrorNone} icon="folder-outline" isFirst isLast
+              right={
+                <View style={styles.row}>
+                  {!!st?.mirrorFolder && <Button compact onPress={() => void run('clearFolder')}>{text.clearFolder}</Button>}
+                  <Button mode="outlined" compact onPress={() => void run('chooseFolder')}>{text.chooseFolder}</Button>
+                </View>
+              } />
           </View>
 
-          <Text variant="titleMedium">{text.network}</Text>
-          <GroupedRow title={text.webLan} description={text.webLanHelp} icon="wifi-alert" isFirst isLast
-            right={<M3Switch value={!!st?.webLan} onValueChange={v => webLan(v)} accessibilityLabel={text.webLan} />} onPress={() => webLan(!st?.webLan)} />
-          <View style={styles.row}>
-            <TextInput mode="outlined" label={text.tunnelName} value={tunnel} onChangeText={setTunnel} autoCapitalize="none" style={{ flex: 1 }} />
-            <Button mode="contained-tonal" disabled={tunnel === st?.tunnelName} onPress={() => void run('update', { tunnelName: tunnel })}>{text.save}</Button>
+          <View style={styles.section}>
+            <Text variant="titleMedium">{text.network}</Text>
+            <View>
+              <GroupedRow title={text.webLan} description={text.webLanHelp} icon="wifi-alert" isFirst isLast={false}
+                right={<M3Switch value={!!st?.webLan} onValueChange={v => webLan(v)} accessibilityLabel={text.webLan} />} onPress={() => webLan(!st?.webLan)} />
+              <View style={[styles.card, groupCorners(false, true), { backgroundColor: theme.colors.surfaceContainerLow }]}>
+                <View style={styles.row}>
+                  <TextInput mode="outlined" label={text.tunnelName} value={tunnel} onChangeText={setTunnel} autoCapitalize="none" style={styles.grow} />
+                  <Button mode="contained-tonal" disabled={tunnel === st?.tunnelName} onPress={() => void run('update', { tunnelName: tunnel })}>{text.save}</Button>
+                </View>
+                <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{text.tunnelHelp}</Text>
+              </View>
+            </View>
           </View>
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: -space.sm }}>{text.tunnelHelp}</Text>
 
-          <View style={styles.row}>
-            <Button mode="outlined" icon="content-copy" disabled={!st?.on || st.state !== 'running'} onPress={async () => { await invoke('sync', { op: 'copy', args: 'diagnostics' }).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }, e => setError((e as Error).message)); }}>{copied ? text.copied : text.diagnostics}</Button>
-          </View>
-          <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant, marginTop: -space.sm }}>{text.diagnosticsHelp}</Text>
+          <GroupedRow title={copied ? text.copied : text.diagnostics} description={text.diagnosticsHelp} icon="content-copy" isFirst isLast
+            disabled={!st?.on || st.state !== 'running'}
+            onPress={async () => { await invoke('sync', { op: 'copy', args: 'diagnostics' }).then(() => { setCopied(true); setTimeout(() => setCopied(false), 2000); }, e => setError((e as Error).message)); }} />
         </View>
       </ScrollView>
       {pairing && <PairDialog onClose={() => setPairing(false)} onDone={() => void load()} />}
@@ -282,6 +291,9 @@ const styles = StyleSheet.create({
   safe: { flex: 1 },
   scroll: { padding: space.lg, paddingBottom: space.xl },
   column: { width: '100%', maxWidth: readingWidth, alignSelf: 'center', gap: space.lg },
+  section: { gap: space.sm },
+  card: { padding: space.lg, gap: space.sm },
+  grow: { flex: 1, minWidth: 200 },
   row: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
   editRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, padding: space.sm, borderRadius: 16 },
   banner: { flexDirection: 'row', alignItems: 'center', padding: space.md, borderRadius: 16, gap: space.sm },
