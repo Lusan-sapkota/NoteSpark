@@ -961,7 +961,7 @@ const HomeScreen: React.FC = () => {
         />
       )}
 
-      {!selecting && (
+      {!selecting && !snackbar && ( // hidden while the snackbar sits in its place, so nothing peeks out
         <AnimatedFAB
           icon="star-four-points"
           label={t('home.newNote')}
