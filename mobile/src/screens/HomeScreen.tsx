@@ -234,7 +234,8 @@ const HomeScreen: React.FC = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await loadNotes(true);
+      // The spinner never waits for the whole reload: it goes after at most a moment, the list updates when ready.
+      await Promise.race([loadNotes(true), new Promise(resolve => setTimeout(resolve, 700))]);
     } finally {
       setRefreshing(false);
     }
