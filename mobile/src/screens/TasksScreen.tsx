@@ -1,13 +1,15 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
-import { NativeScrollEvent, NativeSyntheticEvent, RefreshControl, StyleSheet, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { BackHandler, NativeScrollEvent, NativeSyntheticEvent, RefreshControl, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { LinearTransition } from 'react-native-reanimated';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { AnimatedFAB, Appbar, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
+import { AnimatedFAB, Appbar, Button, IconButton, List, SegmentedButtons, Text } from 'react-native-paper';
+import Dialog from '../components/Dialog';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import AddTaskDialog, { TaskTarget } from '../components/AddTaskDialog';
+import { getActiveProfile, getProfiles, Profile, TaskMove, transferTasksToProfile, undoTaskMove, unlockWithBiometrics, verifyProfilePin } from '../storage/profiles';
 import { updateWidgets } from '../widget/widgets';
 import { RootStackParamList } from '../types';
 import { addTaskToNote, deleteTaskLine, getNotes, getScratchpadNote, insertTaskLine, restoreTaskLine, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
@@ -56,7 +58,7 @@ const buildRows = (all: Task[], sortBy: 'due' | 'note', today: string, t: typeof
 };
 
 // The row's "more" menu; each row keeps its own open state.
-const TaskMenu: React.FC<{ title: string; onEdit: () => void; onOpen: () => void; onDelete: () => void }> = ({ title, onEdit, onOpen, onDelete }) => {
+const TaskMenu: React.FC<{ title: string; onEdit: () => void; onOpen: () => void; onMove?: () => void; onDelete: () => void }> = ({ title, onEdit, onOpen, onMove, onDelete }) => {
   const { theme } = useTheme();
   const { t } = useI18n();
   const [visible, setVisible] = useState(false);
@@ -69,6 +71,7 @@ const TaskMenu: React.FC<{ title: string; onEdit: () => void; onOpen: () => void
     >
       <Menu.Item leadingIcon="pencil-outline" title={t('tasks.editTask')} onPress={pick(onEdit)} />
       <Menu.Item leadingIcon="open-in-new" title={t('tasks.openNote')} onPress={pick(onOpen)} />
+      {onMove && <Menu.Item leadingIcon="account-arrow-right-outline" title={t('tasks.moveTask')} onPress={pick(onMove)} />}
       <Menu.Item leadingIcon="delete-outline" title={t('tasks.deleteTask')} titleStyle={{ color: theme.colors.error }} onPress={pick(onDelete)} />
     </Menu>
   );
@@ -101,10 +104,24 @@ const TasksScreen: React.FC = () => {
   const [editing, setEditing] = useState<Task | null>(null);
   const [deleted, setDeleted] = useState<Task | null>(null);
   const [added, setAdded] = useState('');
+  // Long press selects tasks; then tap adds or removes one. Keys are `${noteId}:${line}`, as in the list.
+  const [selected, setSelected] = useState<string[]>([]);
+  const [others, setOthers] = useState<Profile[]>([]);
+  const [moving, setMoving] = useState<Task[] | null>(null); // the tasks waiting for a profile to be picked
+  const [batch, setBatch] = useState<{ message: string; undo: () => Promise<void> } | null>(null);
+  const selecting = selected.length > 0;
+  const clearSelection = () => setSelected([]);
+  const toggleSelected = (key: string) => setSelected(s => (s.includes(key) ? s.filter(k => k !== key) : [...s, key]));
+  useEffect(() => {
+    if (!selecting) return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => { clearSelection(); return true; });
+    return () => sub.remove();
+  }, [selecting]);
 
   const load = useCallback(async () => {
     try {
       const [notes, pad] = await Promise.all([getNotes(), getScratchpadNote().catch(() => null)]);
+      Promise.all([getProfiles(), getActiveProfile()]).then(([all, active]) => setOthers(all.filter(p => p.id !== active.id))).catch(() => {});
       setTasks([...notes.filter(n => !n.isArchived), ...(pad ? [pad] : [])].flatMap(n => extractTasks(n, { done: showDone })));
     } catch {
       alert(t('tasks.loadFailedTitle'), t('tasks.loadFailedMessage'));
@@ -209,6 +226,58 @@ const TasksScreen: React.FC = () => {
     load();
   };
 
+  const selectedTasks = () => tasks.filter(x => selected.includes(`${x.noteId}:${x.line}`));
+
+  const markSelectedDone = async () => {
+    const targets = selectedTasks().filter(x => !x.done);
+    clearSelection();
+    const ticked: { task: Task; raw: string }[] = [];
+    try {
+      for (const task of targets) {
+        const result = await toggleTaskInNote(task.noteId, task);
+        if (result) ticked.push({ task, raw: result.raw });
+      }
+      if (ticked.length) {
+        setLastDone(null);
+        setBatch({
+          message: t('tasks.tasksDone'),
+          undo: async () => {
+            for (const { task, raw } of ticked) await restoreTaskLine(task.noteId, task.line, raw, task.raw);
+            updateWidgets().catch(() => {});
+            load();
+          },
+        });
+      }
+    } catch {
+      alert(t('tasks.updateFailedTitle'), t('common.tryAgainRestart'));
+    }
+    updateWidgets().catch(() => {});
+    load();
+  };
+
+  const moveTasks = async (profile: Profile, targets: Task[]) => {
+    setMoving(null);
+    // A locked profile opens with the fingerprint here; otherwise Home is where its PIN is asked.
+    if (!(await verifyProfilePin(profile.id, '')) && !(await unlockWithBiometrics(profile))) {
+      alert(profile.name, t('tasks.moveNeedsUnlock', { name: profile.name }));
+      return;
+    }
+    clearSelection();
+    try {
+      const move: TaskMove = await transferTasksToProfile(targets, profile.id);
+      if (move.gone.length) {
+        setLastDone(null);
+        setBatch({ message: t('tasks.tasksMoved', { name: profile.name }), undo: async () => { await undoTaskMove(move); updateWidgets().catch(() => {}); load(); } });
+      } else {
+        alert(t('tasks.changedTitle'), t('tasks.changedMessage'));
+      }
+    } catch {
+      alert(t('tasks.updateFailedTitle'), t('common.tryAgainRestart'));
+    }
+    updateWidgets().catch(() => {});
+    load();
+  };
+
   const openNote = (noteId: number) =>
     noteId === SCRATCHPAD_ID ? navigation.navigate('Scratchpad') : navigation.navigate('NoteView', { noteId: String(noteId) });
 
@@ -230,6 +299,7 @@ const TasksScreen: React.FC = () => {
       );
     }
     const { task } = item;
+    const isSelected = selected.includes(item.key);
     const overdue = !task.done && !!task.due && task.due < today;
     const dueText = [task.due && (overdue || !task.done ? dueLabel(task.due, today) : t('tasks.dueOn', { date: formatDue(task.due) })), task.every && repeatLabel(task.every)]
       .filter(Boolean)
@@ -238,7 +308,7 @@ const TasksScreen: React.FC = () => {
       <View
         style={[
           groupCorners(item.isFirst, item.isLast),
-          { backgroundColor: theme.colors.surfaceContainerLow },
+          { backgroundColor: isSelected ? theme.colors.secondaryContainer : theme.colors.surfaceContainerLow },
           !item.isLast && styles.gap,
         ]}
       >
@@ -264,13 +334,14 @@ const TasksScreen: React.FC = () => {
                 )
           }
           titleStyle={task.done && styles.doneTitle}
-          left={props => <List.Icon {...props} icon={task.done ? 'checkbox-marked' : 'checkbox-blank-outline'} color={theme.colors.onSurfaceVariant} />}
-          right={() => (
-            <TaskMenu title={task.text} onEdit={() => setEditing(task)} onOpen={() => openNote(task.noteId)} onDelete={() => removeTask(task)} />
-          )}
-          onPress={() => toggle(task)}
+          left={props => <List.Icon {...props} icon={isSelected ? 'check-circle' : task.done ? 'checkbox-marked' : 'checkbox-blank-outline'} color={isSelected ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant} />}
+          right={() => (selecting ? null : (
+            <TaskMenu title={task.text} onEdit={() => setEditing(task)} onOpen={() => openNote(task.noteId)} onMove={others.length ? () => setMoving([task]) : undefined} onDelete={() => removeTask(task)} />
+          ))}
+          onPress={() => (selecting ? toggleSelected(item.key) : toggle(task))}
+          onLongPress={() => toggleSelected(item.key)}
           accessibilityRole="checkbox"
-          accessibilityState={{ checked: task.done }}
+          accessibilityState={{ checked: selecting ? isSelected : task.done, selected: isSelected }}
           accessibilityHint={task.done ? t('tasks.markNotDoneHint') : t('tasks.markDoneHint')}
         />
       </View>
@@ -281,16 +352,23 @@ const TasksScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header
         elevated={elevated}
-        title={t('common.tasks')}
+        title={selecting ? t('home.selectedCount', { count: selected.length }) : t('common.tasks')}
         showBackButton
-        onBackPress={() => navigation.goBack()}
+        onBackPress={() => (selecting ? clearSelection() : navigation.goBack())}
         rightActions={
-          <Appbar.Action
-            icon={showDone ? 'checkbox-marked-outline' : 'checkbox-blank-off-outline'}
-            selected={showDone}
-            onPress={() => setShowDone(v => !v)}
-            accessibilityLabel={showDone ? t('tasks.hideDone') : t('tasks.showDone')}
-          />
+          selecting ? (
+            <>
+              <Appbar.Action icon="check-all" onPress={markSelectedDone} accessibilityLabel={t('tasks.markDone')} />
+              {others.length > 0 && <Appbar.Action icon="account-arrow-right-outline" onPress={() => setMoving(selectedTasks())} accessibilityLabel={t('tasks.moveTask')} />}
+            </>
+          ) : (
+            <Appbar.Action
+              icon={showDone ? 'checkbox-marked-outline' : 'checkbox-blank-off-outline'}
+              selected={showDone}
+              onPress={() => setShowDone(v => !v)}
+              accessibilityLabel={showDone ? t('tasks.hideDone') : t('tasks.showDone')}
+            />
+          )
         }
       />
       <Animated.FlatList
@@ -330,7 +408,7 @@ const TasksScreen: React.FC = () => {
           </View>
         }
       />
-      {!deleted && !added && !lastDone && (
+      {!deleted && !added && !lastDone && !batch && !selecting && (
       <AnimatedFAB
         icon="star-four-points"
         label={t('tasks.addTask')}
@@ -342,8 +420,22 @@ const TasksScreen: React.FC = () => {
         style={[styles.fab, { bottom: space.lg + insets.bottom }, isDarkMode && { shadowColor: theme.colors.primary }]}
       />
       )}
+      <Dialog visible={!!moving} onDismiss={() => setMoving(null)}>
+        <Dialog.Title>{t('tasks.moveTasksTo')}</Dialog.Title>
+        <Dialog.ScrollArea style={styles.profileList}>
+          <ScrollView>
+            {others.map(p => (
+              <List.Item key={p.id} title={p.name} left={props => <List.Icon {...props} icon="account-outline" />} onPress={() => moving && moveTasks(p, moving)} />
+            ))}
+          </ScrollView>
+        </Dialog.ScrollArea>
+        <Dialog.Actions>
+          <Button onPress={() => setMoving(null)}>{t('common.cancel')}</Button>
+        </Dialog.Actions>
+      </Dialog>
       <AddTaskDialog visible={adding} onDismiss={() => setAdding(false)} onAdd={addTask} />
       <AddTaskDialog visible={!!editing} task={editing ?? undefined} onDismiss={() => setEditing(null)} onAdd={saveEdit} />
+      <Snackbar visible={!!batch} onDismiss={() => setBatch(null)} duration={2500} wrapperStyle={styles.snackbar} action={batch ? { label: t('common.undo'), onPress: () => { const b = batch; setBatch(null); b.undo().catch(() => alert(t('tasks.undoFailedTitle'), t('common.tryAgainRestart'))); } } : undefined}>{batch?.message}</Snackbar>
       <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={2500} wrapperStyle={styles.snackbar} action={{ label: t('common.undo'), onPress: undoDelete }}>{t('tasks.deleted')}</Snackbar>
       <Snackbar visible={!!added} onDismiss={() => setAdded('')} duration={2500} wrapperStyle={styles.snackbar}>{t('tasks.addedTo', { name: added })}</Snackbar>
       <Snackbar
@@ -372,6 +464,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: space.lg,
   },
+  profileList: { maxHeight: 360, paddingHorizontal: 0 },
   snackbar: {
     bottom: space.md,
     zIndex: 10,

@@ -108,7 +108,7 @@ export interface NotePane {
   open: (noteId: string) => void;
   binned: (noteId: number) => void;
   tag: (tag: string) => void;
-  transfer: (noteId: number, profileId: string) => void;
+  transfer: (noteId: number) => void;
 }
 
 const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
@@ -161,10 +161,10 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
     setTitleInBar(e.nativeEvent.contentOffset.y > titleBottom);
   };
 
-  // The other profiles, for the Move to menu items (Home asks and unlocks).
-  const [otherProfiles, setOtherProfiles] = useState<{ id: string; name: string }[]>([]);
+  // Whether there is another profile to move to (Home shows the list, asks and unlocks).
+  const [hasOtherProfiles, setHasOtherProfiles] = useState(false);
   useEffect(() => {
-    Promise.all([getProfiles(), getActiveProfile()]).then(([all, active]) => setOtherProfiles(all.filter(p => p.id !== active.id).map(p => ({ id: p.id, name: p.name })))).catch(() => {});
+    Promise.all([getProfiles(), getActiveProfile()]).then(([all, active]) => setHasOtherProfiles(all.some(p => p.id !== active.id))).catch(() => {});
   }, []);
 
   const handleMakeCopy = async () => {
@@ -523,14 +523,13 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
               anchor={<Appbar.Action icon="dots-vertical" iconColor={own?.on} onPress={() => setMenuVisible(true)} accessibilityLabel={t('note.moreOptions')} />}
             >
               <Menu.Item leadingIcon="content-duplicate" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
-              {otherProfiles.map(p => (
+              {hasOtherProfiles && (
                 <Menu.Item
-                  key={p.id}
                   leadingIcon="account-arrow-right-outline"
-                  title={t('home.moveToProfile', { name: p.name })}
-                  onPress={() => { setMenuVisible(false); if (pane) pane.transfer(note.id, p.id); else navigation.popTo('Home', { transfer: { noteId: note.id, profileId: p.id } }); }}
+                  title={t('home.moveNote')}
+                  onPress={() => { setMenuVisible(false); if (pane) pane.transfer(note.id); else navigation.popTo('Home', { transfer: { noteId: note.id } }); }}
                 />
-              ))}
+              )}
               <Menu.Item
                 leadingIcon="share-variant-outline"
                 title={t('editor.send')}

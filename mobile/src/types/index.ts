@@ -2,8 +2,8 @@ export type { Note, NoteVersion } from '@notespark/core';
 
 export type RootStackParamList = {
   // binnedNoteId: set by the note page after moving a note to the bin; tag: a tag tapped on the note page.
-  // transfer: set by the note page to move that note to another profile (Home asks, unlocks and moves it).
-  Home: { binnedNoteId?: number; tag?: string; transfer?: { noteId: number; profileId: string } } | undefined;
+  // transfer: set by the note page to move that note to another profile (Home shows the profile list, unlocks and moves it).
+  Home: { binnedNoteId?: number; tag?: string; transfer?: { noteId: number } } | undefined;
   // title / text: prefill for a new note (from a [[link]], or text shared from another app).
   // draft: reopen the unsaved text kept by the editor (see getDraft).
   // template: the text is a template, so it counts as the starting point (an untouched one leaves no note); markdown: its format.

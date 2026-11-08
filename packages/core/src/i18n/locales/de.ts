@@ -359,6 +359,13 @@ const catalog: Record<string, string> = {
   "note.diagramViewerFailed": "die Diagrammanzeige wurde nicht gestartet ({reason})", // REVIEW: fragment placed after a colon
   "note.showDiagram": "Diagramm anzeigen",
   "note.showSource": "Quelltext anzeigen",
+  "home.moveNote": "Notiz verschieben",
+  "tasks.moveTask": "Aufgabe verschieben",
+  "tasks.moveTasksTo": "Aufgaben verschieben nach",
+  "tasks.markDone": "Als erledigt markieren",
+  "tasks.tasksDone": "Aufgaben als erledigt markiert",
+  "tasks.tasksMoved": "Aufgaben nach {name} verschoben",
+  "tasks.moveNeedsUnlock": "{name} ist gesperrt. Öffne es von der Startseite, gib die PIN ein und versuche es erneut.",
   "tasks.overdue": "Überfällig",
   "tasks.upcoming": "Anstehend",
   "tasks.noDueDate": "Kein Fälligkeitsdatum",

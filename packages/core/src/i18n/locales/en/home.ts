@@ -178,4 +178,5 @@ export default {
   'home.draftMessageTitled': 'NoteSpark closed before your changes to "{name}" were saved.',
   'home.draftMessageNew': 'NoteSpark closed before your changes to a new note were saved.',
   'home.discard': 'Discard',
+  'home.moveNote': 'Move note',
 } as const;

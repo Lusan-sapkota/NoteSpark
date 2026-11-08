@@ -7,13 +7,13 @@ export const {
   getPinLockout, wrongPinMessage, verifyProfilePin, usesBiometrics, setUsesBiometrics, canUseBiometrics, unlockWithBiometrics,
   hasProfilePin, switchProfile, addProfile, syncProfileEncryption, setProfilePin, renameProfile, moveProfileToBin,
   restoreProfile, deleteProfileForever, purgeProfileBin, eraseForgottenProfile, readProfileNotes, transferNotesToProfile,
-  getAllProfilesNoteContents,
+  getAllProfilesNoteContents, transferTasksToProfile, undoTaskMove,
 } = storageProxy<typeof Real>('profiles', [
   'getProfiles', 'getBinnedProfiles', 'getActiveProfile', 'getDefaultProfile', 'setDefaultProfile', 'getAutoLockMinutes',
   'setAutoLockMinutes', 'getPinLockout', 'wrongPinMessage', 'verifyProfilePin', 'usesBiometrics', 'setUsesBiometrics',
   'canUseBiometrics', 'unlockWithBiometrics', 'hasProfilePin', 'switchProfile', 'addProfile', 'syncProfileEncryption',
   'setProfilePin', 'renameProfile', 'moveProfileToBin', 'restoreProfile', 'deleteProfileForever', 'purgeProfileBin',
-  'eraseForgottenProfile', 'readProfileNotes', 'transferNotesToProfile', 'getAllProfilesNoteContents',
+  'eraseForgottenProfile', 'readProfileNotes', 'transferNotesToProfile', 'getAllProfilesNoteContents', 'transferTasksToProfile', 'undoTaskMove',
 ] as const);
 
 export const AUTO_LOCK_MINUTES = [0, 1, 5, 15]; // same values as the phone's module

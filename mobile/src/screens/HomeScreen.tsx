@@ -621,16 +621,9 @@ const HomeScreen: React.FC = () => {
     }
   });
 
-  // The profiles a note can go to, one menu item each (none when there is only this one).
-  const otherProfiles = useMemo(() => {
-    const others = profiles.filter(p => p.id !== activeProfile?.id).map(p => ({ id: p.id, name: p.name }));
-    return others.length ? others : undefined;
-  }, [profiles, activeProfile?.id]);
-
-  const handleTransferNote = useStable((noteId: number, profileId: string) => {
+  const handleTransferNote = useStable((noteId: number) => {
     const note = notes.find(n => n.id === noteId);
-    const profile = profiles.find(p => p.id === profileId);
-    if (note && profile) promptTransferToProfile(profile, [note]);
+    if (note) startTransfer([note]);
   });
 
   // The note page asks for a move the same way it asks for Undo after the bin: through a parameter.
@@ -638,10 +631,7 @@ const HomeScreen: React.FC = () => {
   useEffect(() => {
     if (!transferParam) return;
     navigation.setParams({ transfer: undefined });
-    getNoteById(transferParam.noteId).then(note => {
-      const profile = profiles.find(p => p.id === transferParam.profileId);
-      if (note && profile) promptTransferToProfile(profile, [note]);
-    }, () => {});
+    getNoteById(transferParam.noteId).then(note => { if (note) startTransfer([note]); }, () => {});
   }, [transferParam]);
 
   const renderNoteItem = useCallback(
@@ -658,8 +648,7 @@ const HomeScreen: React.FC = () => {
           isPinned={isPinned}
           onPinToggle={handlePinToggle}
           onArchiveToggle={handleArchiveToggle}
-          transferTo={otherProfiles}
-          onTransfer={handleTransferNote}
+          onTransfer={profiles.length > 1 ? handleTransferNote : undefined}
           onSelect={handleSelect}
           selecting={selecting}
           selected={selectedIds.includes(item.id) || (twoPane && String(item.id) === paneNoteId)}
@@ -678,7 +667,7 @@ const HomeScreen: React.FC = () => {
         </>
       );
     },
-    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, otherProfiles, handleSelect, selecting, selectedIds, twoPane, paneNoteId, filteredNotes, sortType, relatedFrom, theme, t]
+    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, twoPane, paneNoteId, filteredNotes, sortType, relatedFrom, theme, t]
   );
 
   useEffect(() => {
@@ -1017,7 +1006,7 @@ const HomeScreen: React.FC = () => {
                   noteId: paneNoteId,
                   open: setPaneNoteId,
                   binned: (id: number) => { setPaneNoteId(null); loadNotes(); showBinned(id); },
-                  transfer: (id: number, profileId: string) => handleTransferNote(id, profileId),
+                  transfer: (id: number) => handleTransferNote(id),
                   tag: (tag: string) => { setFilter(`tag:${tag}`); setSearchText(''); },
                 }}
               />

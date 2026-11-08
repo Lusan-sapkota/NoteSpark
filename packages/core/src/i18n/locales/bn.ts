@@ -359,6 +359,13 @@ const catalog: Record<string, string> = {
   "note.showDiagram": "ডায়াগ্রাম দেখান",
   "note.showSource": "সোর্স দেখান",
   "tasks.overdue": "মেয়াদ পেরিয়েছে", // REVIEW: literal 'term passed'
+  "home.moveNote": "নোট সরান",
+  "tasks.moveTask": "কাজ সরান",
+  "tasks.moveTasksTo": "কাজগুলো সরান",
+  "tasks.markDone": "সম্পন্ন চিহ্নিত করুন",
+  "tasks.tasksDone": "কাজগুলো সম্পন্ন চিহ্নিত হয়েছে",
+  "tasks.tasksMoved": "কাজগুলো {name}-এ সরানো হয়েছে",
+  "tasks.moveNeedsUnlock": "{name} লক করা আছে। হোম থেকে খুলে এর PIN দিন, তারপর আবার চেষ্টা করুন।",
   "tasks.upcoming": "আসন্ন",
   "tasks.noDueDate": "শেষ তারিখ নেই",
   "tasks.moreOptionsFor": "{title} এর আরও বিকল্প",

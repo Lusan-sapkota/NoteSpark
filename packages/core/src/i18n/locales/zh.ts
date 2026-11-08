@@ -341,6 +341,13 @@ const catalog: Record<string, string> = {
   "note.diagramViewerFailed": "图表查看器未能启动（{reason}）",
   "note.showDiagram": "显示图表",
   "note.showSource": "显示源码",
+  "home.moveNote": "移动笔记",
+  "tasks.moveTask": "移动任务",
+  "tasks.moveTasksTo": "将任务移至",
+  "tasks.markDone": "标记为完成",
+  "tasks.tasksDone": "任务已标记为完成",
+  "tasks.tasksMoved": "任务已移至 {name}",
+  "tasks.moveNeedsUnlock": "{name} 已锁定。请从主页打开它并输入 PIN，然后重试。",
   "tasks.overdue": "已逾期",
   "tasks.upcoming": "即将到期", // REVIEW: label meaning
   "tasks.noDueDate": "无截止日期",

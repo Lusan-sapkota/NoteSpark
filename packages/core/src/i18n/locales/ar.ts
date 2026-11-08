@@ -427,6 +427,13 @@ const catalog: Record<string, string> = {
   "note.diagramViewerFailed": "لم يبدأ عارض المخططات ({reason})", // REVIEW: short label or fragment, check wording
   "note.showDiagram": "إظهار المخطط",
   "note.showSource": "إظهار المصدر",
+  "home.moveNote": "نقل الملاحظة",
+  "tasks.moveTask": "نقل المهمة",
+  "tasks.moveTasksTo": "نقل المهام إلى",
+  "tasks.markDone": "وضع علامة منجز",
+  "tasks.tasksDone": "تم وضع علامة منجز على المهام",
+  "tasks.tasksMoved": "تم نقل المهام إلى {name}",
+  "tasks.moveNeedsUnlock": "{name} مقفل. افتحه من الرئيسية وأدخل رمز PIN ثم حاول مرة أخرى.",
   "tasks.overdue": "متأخرة",
   "tasks.upcoming": "القادمة",
   "tasks.noDueDate": "بلا تاريخ استحقاق",

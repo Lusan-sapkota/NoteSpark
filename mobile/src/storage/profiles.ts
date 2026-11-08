@@ -4,7 +4,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import * as SecureStore from 'expo-secure-store';
 import * as SQLite from 'expo-sqlite';
 import { UUID_SQL, transact, uuidsWhere } from './crdt';
-import { changesNotes, scratchpadAsNote, toNote } from './notes';
+import { changesNotes, deleteTaskLine, insertTaskLine, scratchpadAsNote, tasksStillListed, toNote } from './notes';
 import type { Note } from '../types';
 import { t } from '@notespark/core';
 import { copyAttachmentsForTransfer, deleteProfileAttachments, referencedHashes } from './attachments';
@@ -326,6 +326,49 @@ export const readProfileNotes = (id: string, { withScratchpad = false } = {}): P
       await db.closeAsync();
     }
   });
+
+// Adds task lines to the end of another profile's scratchpad (what Add task does by default), or takes the same block off again.
+const editTargetScratchpad = (targetProfileId: string, change: (content: string) => string) =>
+  withDatabaseLock(async () => {
+    const targetDb = await openProfileConnection(targetProfileId, { useNewConnection: true });
+    try {
+      await initDatabase(targetDb);
+      await transact(targetDb, async sync => {
+        const row = await targetDb.getFirstAsync<{ content: string }>('SELECT content FROM scratchpad WHERE id = 1');
+        await targetDb.runAsync(
+          'INSERT INTO scratchpad (id, content, updatedAt) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET content = excluded.content, updatedAt = excluded.updatedAt',
+          [change(row?.content ?? ''), new Date().toISOString()]
+        );
+        await sync.scratchpad();
+      });
+    } finally {
+      await targetDb.closeAsync();
+    }
+  });
+
+// What a task move did, plain data so it can cross the desktop's bridge for Undo.
+export interface TaskMove { target: string; block: string; gone: { noteId: number; line: number; raw: string }[] }
+
+// Moves tasks (their lines) from the open profile to the end of another profile's scratchpad. Writes there first, so a failure
+// leaves the source untouched. `gone` is what left the source, for undoTaskMove.
+export const transferTasksToProfile = changesNotes(
+  async (tasks: { noteId: number; line: number; raw: string }[], targetProfileId: string, pin?: string): Promise<TaskMove> => {
+    if (!(await isAuthorized(targetProfileId, pin))) throw new Error('Invalid profile PIN');
+    if (isProfileDatabaseOpen(targetProfileId)) throw new Error('Tasks are already in this profile');
+    const todo = (await tasksStillListed(tasks)).sort((a, b) => a.noteId - b.noteId || a.line - b.line);
+    const move: TaskMove = { target: targetProfileId, block: todo.map(x => x.raw).join('\n'), gone: [] };
+    if (!todo.length) return move;
+    await editTargetScratchpad(targetProfileId, c => `${c.trimEnd()}${c.trim() ? '\n' : ''}${move.block}\n`);
+    // Bottom lines first, so the numbers of the ones still to go do not shift.
+    for (const x of [...todo].reverse()) if (await deleteTaskLine(x.noteId, x.line, x.raw)) move.gone.push(x);
+    return move;
+  }
+);
+
+export const undoTaskMove = changesNotes(async (move: TaskMove): Promise<void> => {
+  for (const x of [...move.gone].reverse()) await insertTaskLine(x.noteId, x.line, x.raw);
+  await editTargetScratchpad(move.target, c => (c.endsWith(`${move.block}\n`) ? c.slice(0, c.length - move.block.length - 1).trimEnd() : c));
+});
 
 // Moves notes (and their version history) from the open profile to another profile.
 // Writes to the target profile first, so a failure leaves the source notes untouched. Returns an undo callback.

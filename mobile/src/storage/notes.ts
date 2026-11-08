@@ -323,6 +323,13 @@ export const insertTaskLine = async (noteId: number, line: number, raw: string):
   return true;
 };
 
+// The tasks whose line is still as it was listed (a note edited since would make a move or tick unsafe).
+export const tasksStillListed = async (tasks: Pick<TaskLine & { noteId: number }, 'noteId' | 'line' | 'raw'>[]) => {
+  const out: typeof tasks = [];
+  for (const t of tasks) if ((await readTaskSource(t.noteId))?.content.split('\n')[t.line] === t.raw) out.push(t);
+  return out;
+};
+
 const idsWhere = async (where: string, params: unknown[] = []) =>
   (await db.getAllAsync<{ id: number }>(`SELECT id FROM notes WHERE ${where}`, params as any)).map(r => r.id);
 
