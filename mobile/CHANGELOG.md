@@ -17,9 +17,18 @@ All notable changes to NoteSpark will be documented in this file.
 
 - A phone turned sideways keeps the full-width list; two panes need a 600 dp shortest side
 - The scratchpad asks before clearing
+- The note page menu matches the editor's: make a copy, send or export; Make a copy and Tidy up's Duplicates use the duplicate icon
+- Move note and Move task open the profile list instead of one menu item per profile
+- Home: the undo message sits inside the list pane, lasts 2.5 seconds and hides the New note button while it shows; the note page shows its message instead of a button
+- Home swipe needs a longer sideways drag, and the Archive and Move to bin panels stay hidden until the row has moved
+- Desktop: the wheel scrolls horizontal rows, scrollbars sit at the window edge, the reading width is 960, and the window refreshes when a paired device's notes arrive
 
 ### Fixed
 
+- Home list is lighter: rows only redraw when they change, rows light up after a short press, the refresh spinner always stops, the tooltip clears after a press, and the search index, reminders and widgets load after the list appears
+- Notebook landscape: month labels fit and the last month row is never pushed out of the chart
+- The Add task dialog no longer logs a warning
+- Desktop editor: typing, Enter and paste no longer make the text jump, the cursor stays in view, and a line break always counts as a newline
 - The keyboard no longer opens and closes after several lines in the editor and scratchpad, and Enter no longer flickers
 - No full-screen typing box in landscape
 - The scratchpad's first sync keeps text written on this device
