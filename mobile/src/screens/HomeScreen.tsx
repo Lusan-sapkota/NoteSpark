@@ -33,6 +33,13 @@ type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'H
 type TypeFilter = 'all' | 'pinned' | 'markdown' | 'text' | 'archived';
 type Filter = TypeFilter | `tag:${string}`;
 
+// A function with a stable identity that always runs the latest version, so memoised rows are not re-rendered when its inputs change.
+const useStable = <F extends (...args: any[]) => any>(fn: F): F => {
+  const latest = useRef(fn);
+  latest.current = fn;
+  return useCallback(((...args: any[]) => latest.current(...args)) as F, []);
+};
+
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { theme, isDarkMode } = useTheme();
@@ -502,14 +509,14 @@ const HomeScreen: React.FC = () => {
   };
 
   // A text search carries over: the note opens finding it.
-  const handleNotePress = useCallback((noteId: number) => {
+  const handleNotePress = useStable((noteId: number) => {
     if (twoPane) {
       setPaneNoteId(noteId.toString());
       return;
     }
     const find = deferredSearch.trim() || undefined;
     navigation.navigate('NoteView', { noteId: noteId.toString(), find });
-  }, [navigation, deferredSearch, twoPane]);
+  });
 
   const showBinned = (noteId: number) => {
     setUndo(() => async () => {
@@ -540,7 +547,7 @@ const HomeScreen: React.FC = () => {
     navigation.setParams({ tag: undefined });
   }, [tagParam]);
 
-  const handleDeleteNote = useCallback((noteId: number) => {
+  const handleDeleteNote = useStable((noteId: number) => {
     const title = notes.find(n => n.id === noteId)?.title || t('home.thisNote');
     alert(
       t('home.moveToBinQuestion'),
@@ -564,14 +571,14 @@ const HomeScreen: React.FC = () => {
         },
       ]
     );
-  }, [notes, alert, t]);
+  });
 
   const handleEditNote = useCallback((noteId: number) => {
     navigation.navigate('Editor', { noteId: noteId.toString() });
   }, [navigation]);
 
   // Updates the list at once, then saves; puts it back if saving fails.
-  const handlePinToggle = useCallback(async (noteId: number) => {
+  const handlePinToggle = useStable(async (noteId: number) => {
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
     const setPin = (isPinned: boolean) =>
@@ -583,9 +590,9 @@ const HomeScreen: React.FC = () => {
       setPin(note.isPinned);
       alert(t('home.pinNoteFailed'), t('common.tryAgainRestart'));
     }
-  }, [notes, alert, t]);
+  });
 
-  const handleArchiveToggle = useCallback(async (noteId: number) => {
+  const handleArchiveToggle = useStable(async (noteId: number) => {
     const note = notes.find(n => n.id === noteId);
     if (!note) return;
     const archive = async (archived: boolean) => {
@@ -607,12 +614,12 @@ const HomeScreen: React.FC = () => {
     } catch (error) {
       alert(note.isArchived ? t('home.unarchiveNoteFailed') : t('home.archiveNoteFailed'), t('common.tryAgainRestart'));
     }
-  }, [notes, alert, t]);
+  });
 
-  const handleTransferNote = useCallback((noteId: number) => {
+  const handleTransferNote = useStable((noteId: number) => {
     const note = notes.find(n => n.id === noteId);
     if (note) startTransfer([note]);
-  }, [notes, profiles, activeProfile]);
+  });
 
   const renderNoteItem = useCallback(
     ({ item, index }: { item: Note; index: number }) => {
