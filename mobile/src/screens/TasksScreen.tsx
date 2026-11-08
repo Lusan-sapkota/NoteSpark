@@ -330,6 +330,7 @@ const TasksScreen: React.FC = () => {
           </View>
         }
       />
+      {!deleted && !added && !lastDone && (
       <AnimatedFAB
         icon="star-four-points"
         label={t('tasks.addTask')}
@@ -340,14 +341,15 @@ const TasksScreen: React.FC = () => {
         // The firefly glow in dark mode, as on Home's New note button.
         style={[styles.fab, { bottom: space.lg + insets.bottom }, isDarkMode && { shadowColor: theme.colors.primary }]}
       />
+      )}
       <AddTaskDialog visible={adding} onDismiss={() => setAdding(false)} onAdd={addTask} />
       <AddTaskDialog visible={!!editing} task={editing ?? undefined} onDismiss={() => setEditing(null)} onAdd={saveEdit} />
-      <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={4000} wrapperStyle={styles.snackbar} action={{ label: t('common.undo'), onPress: undoDelete }}>{t('tasks.deleted')}</Snackbar>
-      <Snackbar visible={!!added} onDismiss={() => setAdded('')} duration={3000} wrapperStyle={styles.snackbar}>{t('tasks.addedTo', { name: added })}</Snackbar>
+      <Snackbar visible={!!deleted} onDismiss={() => setDeleted(null)} duration={2500} wrapperStyle={styles.snackbar} action={{ label: t('common.undo'), onPress: undoDelete }}>{t('tasks.deleted')}</Snackbar>
+      <Snackbar visible={!!added} onDismiss={() => setAdded('')} duration={2500} wrapperStyle={styles.snackbar}>{t('tasks.addedTo', { name: added })}</Snackbar>
       <Snackbar
         visible={!!lastDone}
         onDismiss={() => setLastDone(null)}
-        duration={4000}
+        duration={2500}
         wrapperStyle={styles.snackbar}
         action={{ label: t('common.undo'), onPress: undoLastDone }}
       >
@@ -371,7 +373,9 @@ const styles = StyleSheet.create({
     right: space.lg,
   },
   snackbar: {
-    bottom: 80,
+    bottom: space.md,
+    zIndex: 10,
+    elevation: 10,
   },
   listContent: {
     flexGrow: 1,

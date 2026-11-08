@@ -731,6 +731,7 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
         </View>
       </ScrollView>
 
+      {!snackbar && (
       <FAB
         icon="pencil-outline"
         label={t('common.edit')}
@@ -738,6 +739,7 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
         accessibilityLabel={t('editor.editNote')}
         style={[styles.fab, { bottom: space.lg + insets.bottom }]}
       />
+      )}
 
       </ThemeProvider>
 
@@ -832,7 +834,7 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
         </Dialog>
       </Portal>
 
-      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={2000} wrapperStyle={{ bottom: 80 }}>
+      <Snackbar visible={!!snackbar} onDismiss={() => setSnackbar('')} duration={2000} wrapperStyle={{ bottom: space.md, zIndex: 10, elevation: 10 }}>
         {snackbar}
       </Snackbar>
     </SafeAreaView>
