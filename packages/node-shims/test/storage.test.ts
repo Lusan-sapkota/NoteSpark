@@ -83,7 +83,13 @@ test('remote apply: edit, new note, erase; the notes table follows', async () =>
   const uuid = (await database.db.getFirstAsync('SELECT uuid FROM notes WHERE id = ?', [id])).uuid;
   const remote = new sync.Replica(4242);
   remote.receive(await allDeltas());
+  let told = 0;
+  const stop = notes.onRemoteApplied(() => told++);
+  const before = notes.getNotesVersion();
   await crdt.applyRemote(database.db, remote.save(uuid, { ...sync.readNote(remote.docs.get(uuid)!), content: 'from the hub' }));
+  stop();
+  assert.equal(told, 1);
+  assert.ok(notes.getNotesVersion() > before);
   assert.equal((await notes.getNotes())[0].content, 'from the hub');
   const fresh = crypto.randomUUID();
   await crdt.applyRemote(database.db, remote.save(fresh, { title: 'Remote', content: 'r', isMarkdown: true, isPinned: false, isArchived: false, deletedAt: null, createdAt: '2026-01-01T00:00:00.000Z', updatedAt: '2026-01-01T00:00:00.000Z' }));
