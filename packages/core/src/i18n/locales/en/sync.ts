@@ -49,6 +49,7 @@ export default {
   'sync.noWifiTitle': 'No Wi-Fi?',
   'sync.noWifiBody': "Turn on your phone's hotspot and connect your computer to it, or plug your phone into your computer and turn on USB tethering. Then pair as usual. It works like any other private network.",
   'sync.serviceBody': 'Keeping your notes in step with your computer.',
+  'sync.backgroundNote': 'In the background, sync pauses after about 5 hours. Open NoteSpark and it catches up.',
   'sync.noNetworkTitle': 'No network at all?',
   'sync.noNetworkBody': 'Move a sync file between your devices by hand, with a cable, a USB stick or Nearby Share.',
   'sync.noNetworkAction': 'Go to Import and export',

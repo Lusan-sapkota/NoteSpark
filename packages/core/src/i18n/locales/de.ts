@@ -1066,6 +1066,7 @@ const catalog: Record<string, string> = {
   "sync.noWifiTitle": "Kein Wi-Fi?",
   "sync.noWifiBody": "Schalte den Hotspot deines Handys ein und verbinde deinen Computer damit, oder schließe dein Handy per Kabel an deinen Computer an und schalte USB-Tethering ein. Dann koppelst du wie gewohnt. Es funktioniert wie jedes andere private Netzwerk.",
   "sync.serviceBody": "Hält deine Notizen mit deinem Computer auf dem gleichen Stand.",
+  "sync.backgroundNote": "Im Hintergrund pausiert die Synchronisierung nach etwa 5 Stunden. Öffne NoteSpark, dann holt sie alles nach.", // REVIEW
   "sync.linkTitle": "Notizen zusammenführen?",
   "sync.linkBody": "{here} Notizen auf diesem Handy, {there} auf dem Computer. {same} sind identisch und werden zusammengeführt.",
   "sync.linkConfirm": "Zusammenführen und synchronisieren",

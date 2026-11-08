@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState, useSyncExternalStore } from 'react';
-import { Clipboard, ScrollView, StyleSheet, View } from 'react-native';
+import { Clipboard, Platform, ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { Button, HelperText, Icon, Portal, Text, TextInput } from 'react-native-paper';
@@ -201,6 +201,7 @@ const SyncScreen: React.FC = () => {
                   <Text variant="bodyMedium" style={[styles.statusText, { color: card.fg }]}>{on ? statusText() : t('sync.stateOff')}</Text>
                 </View>
                 {slow && <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{t('sync.hintRepair')}</Text>}
+                {on && Platform.OS === 'android' && <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{t('sync.backgroundNote')}</Text>}
               </View>
 
               {profile && (

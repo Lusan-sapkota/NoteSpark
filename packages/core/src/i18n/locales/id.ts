@@ -1026,6 +1026,7 @@ const catalog: Record<string, string> = {
   "sync.noWifiTitle": "Tidak ada Wi-Fi?",
   "sync.noWifiBody": "Aktifkan hotspot ponsel Anda dan sambungkan komputer ke sana, atau colokkan ponsel ke komputer dan aktifkan tethering USB. Lalu pasangkan seperti biasa. Cara ini bekerja seperti jaringan pribadi lainnya.",
   "sync.serviceBody": "Menjaga catatan Anda tetap sama dengan komputer Anda.",
+  "sync.backgroundNote": "Di latar belakang, sinkronisasi berhenti sementara setelah sekitar 5 jam. Buka NoteSpark dan sinkronisasi akan menyusul.", // REVIEW
   "sync.linkTitle": "Gabungkan catatan Anda?",
   "sync.linkBody": "{here} catatan di ponsel ini, {there} di komputer. {same} sama dan akan digabungkan.",
   "sync.linkConfirm": "Gabungkan dan sinkronkan",

@@ -1025,6 +1025,7 @@ const catalog: Record<string, string> = {
   "sync.noWifiTitle": "没有 Wi-Fi？",
   "sync.noWifiBody": "打开手机的热点并让电脑连接到它，或者用数据线把手机连到电脑并打开 USB 网络共享。然后照常配对。它的工作方式与其他任何私人网络相同。",
   "sync.serviceBody": "正在让笔记与电脑保持一致。",
+  "sync.backgroundNote": "在后台，同步约 5 小时后会暂停。打开 NoteSpark 后会自动补上。", // REVIEW
   "sync.linkTitle": "合并你的笔记？",
   "sync.linkBody": "这部手机上有 {here} 条笔记，电脑上有 {there} 条。其中 {same} 条相同，将被合并。",
   "sync.linkConfirm": "合并并同步",

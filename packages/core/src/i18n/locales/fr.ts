@@ -1106,6 +1106,7 @@ const catalog: Record<string, string> = {
   "sync.noWifiTitle": "Pas de Wi-Fi ?",
   "sync.noWifiBody": "Activez le point d'accès de votre téléphone et connectez-y votre ordinateur, ou branchez votre téléphone à votre ordinateur et activez le partage de connexion USB. Ensuite, associez-les comme d'habitude. Cela fonctionne comme n'importe quel autre réseau privé.",
   "sync.serviceBody": "Garde vos notes à jour avec votre ordinateur.",
+  "sync.backgroundNote": "En arrière-plan, la synchronisation se met en pause après environ 5 heures. Ouvrez NoteSpark et elle rattrape son retard.", // REVIEW
   "sync.linkTitle": "Fusionner vos notes ?",
   "sync.linkBody": "{here} notes sur ce téléphone, {there} sur l'ordinateur. {same} sont identiques et seront fusionnées.",
   "sync.linkConfirm": "Fusionner et synchroniser",

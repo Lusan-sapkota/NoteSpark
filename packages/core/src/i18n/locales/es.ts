@@ -1106,6 +1106,7 @@ const catalog: Record<string, string> = {
   "sync.noWifiTitle": "¿No hay Wi-Fi?",
   "sync.noWifiBody": "Activa la zona Wi-Fi de tu teléfono y conecta tu computadora a ella, o conecta tu teléfono a tu computadora con un cable y activa la conexión USB compartida (USB tethering). Luego vincula como siempre. Funciona como cualquier otra red privada.", // REVIEW
   "sync.serviceBody": "Mantiene tus notas al día con tu computadora.",
+  "sync.backgroundNote": "En segundo plano, la sincronización se pausa tras unas 5 horas. Abre NoteSpark y se pondrá al día.", // REVIEW
   "sync.linkTitle": "¿Unir tus notas?",
   "sync.linkBody": "{here} notas en este teléfono, {there} en la computadora. {same} son iguales y se unirán.",
   "sync.linkConfirm": "Unir y sincronizar",
