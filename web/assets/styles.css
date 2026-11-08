@@ -218,8 +218,8 @@ code {
 @media (max-width: 600px) { .container { padding: 0 16px; } }
 
 /* ---------- Header ---------- */
-/* Announcement bar above the header (text set in app.js): tonal, quiet, scrolls away; the header stays sticky below it. */
-.announce { background: var(--tertiary-container); color: var(--on-tertiary-container); }
+/* Announcement bar above the header (text set in app.js): the logo's colours (primary container with its on-colour), quiet, scrolls away; the header stays sticky below it. */
+.announce { background: var(--primary-container); color: var(--on-primary-container); }
 .announce-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; min-height: 40px; padding-block: 8px; font-size: 14px; line-height: 20px; font-weight: 500; text-align: center; }
 .announce a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .announce a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 4px; }
