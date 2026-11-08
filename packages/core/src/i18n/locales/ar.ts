@@ -496,6 +496,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "حفظ النص المحدد كملاحظة",
   "scratchpad.fileAll": "حفظ كملاحظة",
   "scratchpad.clear": "مسح المسودة السريعة",
+  "scratchpad.clearQuestion": "سيتم حذف كل النص في المسودة. احفظه أولًا كملاحظة للاحتفاظ به.",
   "scratchpad.helper": "يُحفظ أثناء الكتابة. حدّد نصًا لحفظ ذلك الجزء فقط كملاحظة.",
   "scratchpad.placeholder": "دوّن ما تريد. احفظه كملاحظة لاحقًا أو امسحه.",
   "scratchpad.textLabel": "نص المسودة السريعة",

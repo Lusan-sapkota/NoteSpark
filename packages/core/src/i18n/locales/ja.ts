@@ -410,6 +410,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "選択したテキストをノートとして保存",
   "scratchpad.fileAll": "ノートとして保存",
   "scratchpad.clear": "スクラッチパッドをクリア",
+  "scratchpad.clearQuestion": "スクラッチパッドのテキストはすべて削除されます。残すには、先にノートとして保存してください。",
   "scratchpad.helper": "入力すると自動で保存されます。テキストを選択すると、その部分だけをノートとして保存できます。",
   "scratchpad.placeholder": "ここにメモしましょう。あとでノートとして保存することも、クリアすることもできます。",
   "scratchpad.textLabel": "スクラッチパッドのテキスト",

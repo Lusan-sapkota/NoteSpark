@@ -427,6 +427,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "বাছাই করা লেখা নোট হিসেবে রাখুন",
   "scratchpad.fileAll": "নোট হিসেবে রাখুন",
   "scratchpad.clear": "স্ক্র্যাচপ্যাড খালি করুন",
+  "scratchpad.clearQuestion": "স্ক্র্যাচপ্যাডের সব লেখা মুছে যাবে। রাখতে চাইলে আগে নোট হিসেবে সংরক্ষণ করুন।",
   "scratchpad.helper": "লেখার সঙ্গে সঙ্গে সংরক্ষিত হয়। শুধু একটি অংশ নোট হিসেবে রাখতে সেটি বাছাই করুন।",
   "scratchpad.placeholder": "টুকে রাখুন। পরে নোট হিসেবে রাখুন, নয়তো খালি করে দিন।",
   "scratchpad.textLabel": "স্ক্র্যাচপ্যাডের লেখা",

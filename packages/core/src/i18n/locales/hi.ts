@@ -428,6 +428,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "चुना हुआ टेक्स्ट नोट के रूप में सहेजें",
   "scratchpad.fileAll": "नोट के रूप में सहेजें",
   "scratchpad.clear": "स्क्रैचपैड खाली करें",
+  "scratchpad.clearQuestion": "स्क्रैचपैड का सारा टेक्स्ट हटा दिया जाएगा। रखने के लिए पहले इसे नोट के रूप में सहेजें।",
   "scratchpad.helper": "टाइप करते ही सेव हो जाता है। सिर्फ़ कोई हिस्सा नोट बनाने के लिए टेक्स्ट चुनें।",
   "scratchpad.placeholder": "यहाँ लिख लें। बाद में इसे नोट के रूप में सहेजें, या खाली कर दें।",
   "scratchpad.textLabel": "स्क्रैचपैड का टेक्स्ट",

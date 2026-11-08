@@ -411,6 +411,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "Simpan teks terpilih sebagai catatan",
   "scratchpad.fileAll": "Simpan sebagai catatan",
   "scratchpad.clear": "Kosongkan coretan",
+  "scratchpad.clearQuestion": "Semua teks di papan coretan akan dihapus. Simpan dulu sebagai catatan jika ingin menyimpannya.",
   "scratchpad.helper": "Tersimpan otomatis saat mengetik. Pilih teks untuk menyimpan bagian itu saja sebagai catatan.",
   "scratchpad.placeholder": "Tulis cepat di sini. Simpan sebagai catatan nanti, atau kosongkan.",
   "scratchpad.textLabel": "Teks coretan",

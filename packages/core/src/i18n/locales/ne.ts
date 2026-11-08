@@ -427,6 +427,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "चयन गरिएको पाठ नोटको रूपमा राख्नुहोस्",
   "scratchpad.fileAll": "नोटको रूपमा राख्नुहोस्",
   "scratchpad.clear": "स्क्र्याचप्याड खाली गर्नुहोस्",
+  "scratchpad.clearQuestion": "स्क्र्याचप्याडको सबै पाठ हटाइनेछ। राख्न पहिले यसलाई नोटको रूपमा सुरक्षित गर्नुहोस्।",
   "scratchpad.helper": "टाइप गर्दै जाँदा सुरक्षित हुन्छ। केही भाग मात्र नोट बनाउन त्यो पाठ चयन गर्नुहोस्।",
   "scratchpad.placeholder": "यहाँ टिप्नुहोस्। पछि नोटको रूपमा राख्नुहोस्, वा खाली गर्नुहोस्।",
   "scratchpad.textLabel": "स्क्र्याचप्याडको पाठ",

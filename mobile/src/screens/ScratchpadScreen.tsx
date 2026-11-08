@@ -119,8 +119,11 @@ const ScratchpadScreen: React.FC = () => {
 
   const clear = () => {
     if (!text) return;
-    setSnackbar({ message: t('scratchpad.cleared'), cleared: text });
-    setText('');
+    // Unlike a note, the scratchpad has no bin, so ask first (Undo after is only a few seconds).
+    alert(t('scratchpad.clear'), t('scratchpad.clearQuestion'), [
+      { text: t('common.cancel'), style: 'cancel' },
+      { text: t('scratchpad.clear'), style: 'destructive', onPress: () => { setSnackbar({ message: t('scratchpad.cleared'), cleared: text }); setText(''); } },
+    ]);
   };
 
   return (

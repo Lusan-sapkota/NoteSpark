@@ -410,6 +410,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "将所选文字存为笔记",
   "scratchpad.fileAll": "存为笔记",
   "scratchpad.clear": "清空草稿本",
+  "scratchpad.clearQuestion": "草稿本中的所有文字都将被清除。如需保留，请先将其归档为笔记。",
   "scratchpad.helper": "输入时自动保存。选中文字即可只将该部分存为笔记。",
   "scratchpad.placeholder": "随手记下。之后可存为笔记，或直接清空。",
   "scratchpad.textLabel": "草稿本文字",

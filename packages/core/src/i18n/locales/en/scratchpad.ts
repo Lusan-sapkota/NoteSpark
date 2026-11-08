@@ -10,6 +10,7 @@ export default {
   'scratchpad.fileSelection': 'File selected text as a note',
   'scratchpad.fileAll': 'File as a note',
   'scratchpad.clear': 'Clear scratchpad',
+  'scratchpad.clearQuestion': 'All the text in the scratchpad will be removed. File it as a note first to keep it.',
   'scratchpad.helper': 'Saved as you type. Select text to file just that part as a note.',
   'scratchpad.placeholder': 'Jot it down. File it as a note later, or clear it.',
   'scratchpad.textLabel': 'Scratchpad text',

@@ -445,6 +445,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "Guardar el texto seleccionado como nota",
   "scratchpad.fileAll": "Guardar como nota",
   "scratchpad.clear": "Vaciar bloc de notas",
+  "scratchpad.clearQuestion": "Se borrará todo el texto del bloc de notas. Archívalo primero como nota para conservarlo.",
   "scratchpad.helper": "Se guarda mientras escribes. Selecciona texto para guardar solo esa parte como nota.",
   "scratchpad.placeholder": "Apúntalo aquí. Luego guárdalo como nota o vacíalo.",
   "scratchpad.textLabel": "Texto del bloc de notas",

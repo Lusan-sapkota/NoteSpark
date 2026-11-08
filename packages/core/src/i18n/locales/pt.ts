@@ -445,6 +445,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "Arquivar texto selecionado como nota",
   "scratchpad.fileAll": "Arquivar como nota",
   "scratchpad.clear": "Limpar rascunho",
+  "scratchpad.clearQuestion": "Todo o texto do rascunho será removido. Arquive-o antes como nota para mantê-lo.",
   "scratchpad.helper": "Salvo enquanto você digita. Selecione um texto para arquivar só essa parte como nota.",
   "scratchpad.placeholder": "Anote aqui. Arquive como nota depois, ou limpe.",
   "scratchpad.textLabel": "Texto do rascunho",

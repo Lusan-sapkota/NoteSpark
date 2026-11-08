@@ -410,6 +410,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "선택한 텍스트를 메모로 저장",
   "scratchpad.fileAll": "메모로 저장",
   "scratchpad.clear": "스크래치패드 비우기",
+  "scratchpad.clearQuestion": "스크래치패드의 모든 텍스트가 삭제됩니다. 보관하려면 먼저 메모로 저장하세요.",
   "scratchpad.helper": "입력하는 대로 저장돼요. 텍스트를 선택하면 그 부분만 메모로 저장할 수 있어요.",
   "scratchpad.placeholder": "간단히 적어 두세요. 나중에 메모로 저장하거나 비울 수 있어요.",
   "scratchpad.textLabel": "스크래치패드 텍스트",

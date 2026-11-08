@@ -428,6 +428,7 @@ const catalog: Record<string, string> = {
   "scratchpad.fileSelection": "Ausgewählten Text als Notiz ablegen",
   "scratchpad.fileAll": "Als Notiz ablegen",
   "scratchpad.clear": "Notizblock leeren",
+  "scratchpad.clearQuestion": "Der gesamte Text im Notizblock wird entfernt. Lege ihn zuerst als Notiz ab, um ihn zu behalten.",
   "scratchpad.helper": "Wird beim Schreiben gespeichert. Wähle Text aus, um nur diesen Teil als Notiz abzulegen.",
   "scratchpad.placeholder": "Schreib es auf. Lege es später als Notiz ab oder leere den Block.",
   "scratchpad.textLabel": "Notizblock-Text",
