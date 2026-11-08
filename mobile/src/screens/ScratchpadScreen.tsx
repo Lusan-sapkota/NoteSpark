@@ -1,14 +1,15 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, Platform, StyleSheet, TextInput, View } from 'react-native';
+import { AppState, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
+import { KeyboardAwareScrollView, useKeyboardState } from 'react-native-keyboard-controller';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Appbar, Text } from 'react-native-paper';
 import { RootStackParamList } from '../types';
 import { getScratchpad, saveNote, saveScratchpad } from '../storage/notes';
 import { continueList, getLanguage, titleFromText } from '@notespark/core';
-import Header, { useHeaderElevation } from '../components/Header';
+import Header from '../components/Header';
+import { useFollowCursor } from '../components/useFollowCursor';
 import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -23,13 +24,14 @@ const ScratchpadScreen: React.FC = () => {
   const route = useRoute<RouteProp<RootStackParamList, 'Scratchpad'>>();
   const { theme } = useTheme();
   const { t } = useI18n();
-  const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const [text, setText] = useState('');
   const [loaded, setLoaded] = useState(false);
   const [selection, setSelection] = useState({ start: 0, end: 0 });
   const [pendingSelection, setPendingSelection] = useState<{ start: number; end: number } | null>(null);
   const inputRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof KeyboardAwareScrollView>>(null);
+  const keyboardHeight = useKeyboardState(k => k.height);
   // Snackbar after filing (Open the new note) or clearing (Undo puts the text back).
   const [snackbar, setSnackbar] = useState<{ message: string; noteId?: number; cleared?: string } | null>(null);
   const saved = useRef('');
@@ -126,10 +128,11 @@ const ScratchpadScreen: React.FC = () => {
     ]);
   };
 
+  const follow = useFollowCursor({ input: inputRef, scroll: scrollRef, text, cursor: selection.start, keyboardHeight, reserve: space.lg, charWidth: 9 });
+
   return (
     <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header
-        elevated={elevated}
         title={t('common.scratchpad')}
         showBackButton
         onBackPress={() => navigation.goBack()}
@@ -145,15 +148,18 @@ const ScratchpadScreen: React.FC = () => {
           </>
         }
       />
+      {/* The library's auto-scroll is off: next to a growing text box it made the keyboard open and close in a loop. Room is added by hand. */}
       <KeyboardAwareScrollView
+        ref={scrollRef}
+        onScroll={follow.onScroll}
+        scrollEventThrottle={32}
+        enabled={false}
         style={styles.flex}
-        contentContainerStyle={styles.scrollContent}
-        onScroll={onScroll}
-        scrollEventThrottle={16}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: keyboardHeight }]}
         keyboardShouldPersistTaps="handled"
-        bottomOffset={space.lg}
       >
-        <View style={styles.column}>
+        <Pressable accessible={false} focusable={false} style={styles.tapArea} onPress={e => follow.tapAt(e.nativeEvent.pageX, e.nativeEvent.pageY)}>
+<View style={styles.column}>
           <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>
             {t('scratchpad.helper')}
           </Text>
@@ -163,8 +169,10 @@ const ScratchpadScreen: React.FC = () => {
             value={text}
             onChangeText={handleChangeText}
             onSelectionChange={e => setSelection(e.nativeEvent.selection)}
+            onContentSizeChange={follow.onContentSizeChange}
             editable={loaded}
             multiline
+            disableFullscreenUI
             textAlignVertical="top"
             scrollEnabled={false}
             selectionColor={theme.colors.primary}
@@ -175,6 +183,7 @@ const ScratchpadScreen: React.FC = () => {
             {...(Platform.OS === 'web' ? { styledText: text, styledPieces: [{ text, css: {} }], hideMarkers: false } : {})}
           />
         </View>
+        </Pressable>
       </KeyboardAwareScrollView>
       <Snackbar
         visible={!!snackbar}
@@ -200,8 +209,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: space.lg,
   },
+  // The padding sits inside the tap area, so a tap in the gap beside the text reaches it. Web cursor: the I-beam (the types only list auto and pointer).
+  tapArea: { flexGrow: 1, padding: space.lg, cursor: 'text' as 'auto' },
   column: {
     flexGrow: 1,
     width: '100%',

@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Platform, Pressable, StyleSheet, View, TextInput, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { KeyboardAwareScrollView, KeyboardStickyView } from 'react-native-keyboard-controller';
+import { KeyboardAwareScrollView, KeyboardStickyView, useKeyboardState } from 'react-native-keyboard-controller';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 import { useNavigation, usePreventRemove, useRoute, RouteProp } from '@react-navigation/native';
@@ -29,7 +29,8 @@ import { extractTags } from '@notespark/core';
 import { continueList, titleFromText } from '@notespark/core';
 import { sendAppNotification } from '../utils/notifications';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
-import Header, { useHeaderElevation } from '../components/Header';
+import Header from '../components/Header';
+import { useFollowCursor } from '../components/useFollowCursor';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteAttachments from '../components/NoteAttachments';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
@@ -67,7 +68,6 @@ const EditorScreen: React.FC = () => {
   const navigation = useNavigation<EditorScreenNavigationProp>();
   const route = useRoute<EditorScreenRouteProp>();
   const { theme: baseTheme } = useTheme();
-  const { elevated, onScroll } = useHeaderElevation();
   const alert = useAlert();
   const { t } = useI18n();
   const [saving, setSaving] = useState(false);
@@ -108,6 +108,8 @@ const EditorScreen: React.FC = () => {
   const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
   const [pendingSelection, setPendingSelection] = useState<{ start: number; end: number } | null>(null);
   const bodyRef = useRef<React.ComponentRef<typeof TextInput>>(null);
+  const scrollRef = useRef<React.ComponentRef<typeof KeyboardAwareScrollView>>(null);
+  const keyboardHeight = useKeyboardState(k => k.height);
   const insets = useSafeAreaInsets();
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkText, setLinkText] = useState('');
@@ -675,13 +677,15 @@ const EditorScreen: React.FC = () => {
   };
   const showPreview = isMarkdown && isPreview;
 
+  const follow = useFollowCursor({ input: bodyRef, scroll: scrollRef, text: content, cursor: selection.start, keyboardHeight, reserve: TOOLBAR_HEIGHT + space.sm + (suggestions.length ? 48 : 0) + (showFormat ? 48 : 0), charWidth: 9 });
+
   return (
     <View style={styles.flex}>
       <SafeAreaView style={[styles.flex, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
         <ThemeProvider theme={theme}>
         <Animated.View pointerEvents="none" style={[StyleSheet.absoluteFill, fadeStyle]} />
         <NotePattern pattern={background} dark={theme.dark} base={fillColor} ink={own?.on ?? theme.colors.onSurface} />
-        <Header elevated={elevated} backgroundColor={own ? 'transparent' : undefined}
+        <Header backgroundColor={own ? 'transparent' : undefined}
           title={isEditing ? t('editor.editNote') : t('editor.newNote')}
           showBackButton
           onBackPress={() => navigation.goBack()}
@@ -752,15 +756,19 @@ const EditorScreen: React.FC = () => {
         )}
 
         {/* Scrolls the cursor above the keyboard and the toolbar without resizing anything. */}
+        {/* The library's auto-scroll is off: next to a growing text box it made the keyboard open and close in a loop. Room is added by hand below. */}
         <KeyboardAwareScrollView
+          ref={scrollRef}
+          onScroll={follow.onScroll}
+          scrollEventThrottle={32}
+          enabled={false}
           style={styles.flex}
-          contentContainerStyle={styles.scrollContent}
-          onScroll={onScroll}
-          scrollEventThrottle={16}
+          contentContainerStyle={[styles.scrollContent, { paddingBottom: keyboardHeight + (keyboardHeight ? TOOLBAR_HEIGHT + space.sm + (suggestions.length ? 48 : 0) + (showFormat ? 48 : 0) : 0) }]}
           keyboardShouldPersistTaps="handled"
           bottomOffset={TOOLBAR_HEIGHT + space.sm + (suggestions.length ? 48 : 0) + (showFormat ? 48 : 0) + space.lg}
         >
-          <View style={styles.column}>
+          <Pressable accessible={false} focusable={false} style={styles.tapArea} onPress={e => follow.tapAt(e.nativeEvent.pageX, e.nativeEvent.pageY)}>
+<View style={styles.column}>
             <View style={styles.modeRow}>
               <SegmentedButtons theme={controlTheme}
                 value={isMarkdown ? 'markdown' : 'text'}
@@ -788,6 +796,7 @@ const EditorScreen: React.FC = () => {
               placeholderTextColor={placeholderColor}
               value={typeof title === 'string' ? title : String(title)}
               onChangeText={setTitle}
+              disableFullscreenUI
               selectionColor={theme.colors.primary}
               accessibilityLabel={t('editor.noteTitleLabel')}
             />
@@ -813,6 +822,7 @@ const EditorScreen: React.FC = () => {
                   value={Platform.OS === 'web' && !rawWebBox ? undefined : displayText}
                   onChangeText={handleChangeText}
                   multiline
+                  disableFullscreenUI
                   textAlignVertical="top"
                   selectionColor={theme.colors.primary}
                   placeholder={isMarkdown ? t('editor.placeholderMarkdown') : t('editor.placeholderPlain')}
@@ -820,6 +830,7 @@ const EditorScreen: React.FC = () => {
                   autoCorrect
                   autoCapitalize="sentences"
                   onSelectionChange={e => setSelection(e.nativeEvent.selection)}
+                  onContentSizeChange={follow.onContentSizeChange}
                   scrollEnabled={false}
                   accessibilityLabel={t('editor.noteTextLabel')}
                   {...webEditor}
@@ -829,6 +840,7 @@ const EditorScreen: React.FC = () => {
               </View>
             )}
           </View>
+        </Pressable>
         </KeyboardAwareScrollView>
 
         {/* Rides on the keyboard via a transform; the opened offset cancels the bottom inset. */}
@@ -1158,8 +1170,9 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    padding: space.lg,
   },
+  // The padding sits inside the tap area, so a tap in the gap beside the text reaches it. Web cursor: the I-beam (the types only list auto and pointer).
+  tapArea: { flexGrow: 1, padding: space.lg, cursor: 'text' as 'auto' },
   column: {
     flexGrow: 1,
     width: '100%',
