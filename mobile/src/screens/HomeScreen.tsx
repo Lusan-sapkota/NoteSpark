@@ -10,6 +10,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../types';
+import { onRemoteApplied } from '../storage/crdt';
 import { clearDraft, getDraft, getNotes, getNotesVersion, getScratchpadNote, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
 import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
@@ -162,7 +163,8 @@ const HomeScreen: React.FC = () => {
       loadNotes();
       checkRediscover();
     });
-    return unsubscribe;
+    const stopRemote = onRemoteApplied(() => { if (navigation.isFocused()) loadNotes(); });
+    return () => { unsubscribe(); stopRemote(); };
   }, [navigation]);
 
   const handleSwitchProfile = async (profile: Profile, pin?: string) => {

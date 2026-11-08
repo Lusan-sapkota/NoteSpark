@@ -124,6 +124,15 @@ const notifyChanged = (db: DB, docs: string[]) => {
   if (notes.length) for (const l of changeListeners.get(db) ?? []) l(notes);
 };
 
+// Notes written by another device. getNotesVersion counts these too, and Home listens, so the list refreshes.
+let remoteVersion = 0;
+export const getRemoteVersion = () => remoteVersion;
+const remoteListeners = new Set<() => void>();
+export const onRemoteApplied = (listener: () => void): (() => void) => {
+  remoteListeners.add(listener);
+  return () => void remoteListeners.delete(listener);
+};
+
 // Called after every commit, local or applied, with the notes whose docs changed or were erased.
 export const onDocsChanged = (db: DB, listener: (docs: string[]) => void): (() => void) => {
   const set = changeListeners.get(db) ?? new Set();
@@ -296,6 +305,8 @@ export const applyRemote = async (db: DB, deltas: Delta[]): Promise<void> => {
     }
   });
   notifyChanged(db, changed);
+  remoteVersion++;
+  remoteListeners.forEach(l => l());
 };
 
 // First link: adopted notes take the hub's uuids, the rest get docs, sync turns on.
