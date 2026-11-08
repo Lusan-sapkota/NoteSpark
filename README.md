@@ -48,7 +48,7 @@ Download from [GitHub releases](https://github.com/Lusan-sapkota/NoteSpark/relea
 | Platform | How |
 |---|---|
 | Android | The APK from releases. Google Play is coming |
-| Windows | The `.exe` or `.zip` from releases. winget and the Microsoft Store are coming |
+| Windows | [Microsoft Store](https://apps.microsoft.com/detail/9NJJH4TB03K8) (updates itself), or the `.exe` or `.zip` from releases. winget is submitted and waiting for approval |
 | macOS | The `.dmg` (Apple silicon and Intel), or `brew install --cask lusan-sapkota/tap/notespark` (the app is not signed by Apple, so the cask clears the quarantine flag) |
 | Linux | The AppImage, `.deb`, `.rpm` or `.tar.gz`. The `.deb` and `.rpm` add NoteSpark's package repository once, so `apt upgrade` or `dnf upgrade` can update it. Remove it by uninstalling the package or deleting `/etc/apt/sources.list.d/notespark.sources` or `/etc/yum.repos.d/notespark.repo` |
 
