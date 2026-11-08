@@ -117,6 +117,7 @@ const HomeScreen: React.FC = () => {
 
   // Profile and note version of the list on screen: coming back to Home reloads only when one of them changed.
   const loadedKey = useRef('');
+  const derivedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Only the first load shows the skeleton; reloads keep the current list until the new one arrives.
   const loadNotes = async (force = false) => {
@@ -131,9 +132,13 @@ const HomeScreen: React.FC = () => {
       const fetchedNotes = await getNotes();
       setNotes(fetchedNotes);
       setLoading(false);
-      syncSearchIndex().catch(error => console.warn('Search index update failed:', error));
-      syncTaskReminders().catch(error => console.warn('Task reminders update failed:', error));
-      updateWidgets().catch(error => console.warn('Widget update failed:', error));
+      // Heavy and not urgent: run once after a pause, for a burst of changes (a sync).
+      if (derivedTimer.current) clearTimeout(derivedTimer.current);
+      derivedTimer.current = setTimeout(() => {
+        syncSearchIndex().catch(error => console.warn('Search index update failed:', error));
+        syncTaskReminders().catch(error => console.warn('Task reminders update failed:', error));
+        updateWidgets().catch(error => console.warn('Widget update failed:', error));
+      }, 1500);
     } catch (error) {
       setLoading(false);
       loadedKey.current = '';
@@ -941,7 +946,8 @@ const HomeScreen: React.FC = () => {
             />
           }
           onScroll={handleScroll}
-          scrollEventThrottle={64}
+          scrollEventThrottle={32}
+          removeClippedSubviews
           initialNumToRender={10}
           maxToRenderPerBatch={10}
           windowSize={5}
