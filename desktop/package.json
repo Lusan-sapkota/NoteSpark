@@ -2,7 +2,7 @@
   "name": "notespark-desktop",
   "version": "1.2.0",
   "private": true,
-  "description": "NoteSpark for desktop",
+  "description": "Fast, offline-first notes",
   "author": "Lusan Sapkota",
   "main": "out/main/index.js",
   "scripts": {
@@ -60,6 +60,11 @@
       "maintainer": "Lusan Sapkota <lusan@aigeeks.dev>",
       "executableName": "notespark",
       "synopsis": "Fast, offline-first notes",
+      "desktop": {
+        "entry": {
+          "Comment": "Fast, offline-first notes"
+        }
+      },
       "description": "NoteSpark keeps your notes on your computer, with no account and no update check. The .deb and .rpm packages also add NoteSpark's package repository (https://packages-notespark.lusansapkota.com.np) so that apt or dnf can offer new versions. Remove it by deleting /etc/apt/sources.list.d/notespark.sources or /etc/yum.repos.d/notespark.repo, or by uninstalling the package.",
       "files": [
         "!node_modules/onnxruntime-node/bin/napi-v6/darwin/**",
