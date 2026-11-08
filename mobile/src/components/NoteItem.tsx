@@ -122,6 +122,8 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
       <TouchableRipple
         onPress={() => (selecting ? onSelect(note.id) : onPress(note.id))}
         onLongPress={() => onSelect(note.id)}
+        // The highlight waits a moment, so a scroll or swipe that starts on the card does not light it up (as in Messages).
+        unstable_pressDelay={60}
         accessibilityRole={selecting ? 'checkbox' : 'button'}
         accessibilityState={selecting ? { checked: selected } : undefined}
         accessibilityLabel={isPinned ? t('home.pinnedTitle', { title }) : title}

@@ -40,6 +40,7 @@ const GroupedRow: React.FC<GroupedRowProps> = ({ title, description, icon, left,
         right={right ? () => <View style={styles.right}>{right}</View> : undefined}
         onPress={onPress}
         disabled={disabled}
+        rippleColor="transparent" // no highlight while scrolling past; the row still opens on tap
         accessibilityRole={onPress ? 'button' : undefined}
       />
     </View>
