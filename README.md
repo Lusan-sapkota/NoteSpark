@@ -30,7 +30,7 @@ Write in plain text or Markdown, keep tasks inside your notes, and find a note b
   </picture>
 </p>
 
-There is an 80-second [demo video](./web/assets/notespark-demo.mp4) as well.
+[Watch the 80-second demo](./web/assets/notespark-demo.mp4).
 
 ## What it does
 
@@ -43,15 +43,18 @@ There is an 80-second [demo video](./web/assets/notespark-demo.mp4) as well.
 
 ## Get it
 
-Download from [GitHub releases](https://github.com/Lusan-sapkota/NoteSpark/releases) (each release has a `SHA256SUMS` file): the Android APK; for the desktop, the Linux AppImage, `.deb`, `.rpm` and `.tar.gz`, the Windows `.exe` and `.zip`, and the macOS `.dmg` (Apple silicon and Intel). The desktop files are on the 1.2.0 release. The APK, AppImage, `.tar.gz`, `.exe`, `.zip` and `.dmg` do not update themselves. On Linux, the `.deb` and `.rpm` add NoteSpark's package repository (packages-notespark.lusansapkota.com.np, served through Cloudflare) once, so `apt upgrade` or `dnf upgrade` can offer new versions. The app itself makes no update check and sends nothing; your system's package manager contacts the repository. Remove it by deleting `/etc/apt/sources.list.d/notespark.sources` or `/etc/yum.repos.d/notespark.repo`, or by uninstalling the package. On a Mac, Homebrew also works: `brew install --cask lusan-sapkota/tap/notespark` (it clears macOS's quarantine flag because the app is not signed by Apple). winget for Windows is coming. Google Play is coming.
+Download from [GitHub releases](https://github.com/Lusan-sapkota/NoteSpark/releases). Each release has a `SHA256SUMS` file.
 
-| | Status |
+| Platform | How |
 |---|---|
-| Android app (`mobile/`) | APK on GitHub releases now, Google Play coming |
-| Desktop app (`desktop/`) | Linux AppImage on GitHub releases now. `.deb`, `.rpm`, `.tar.gz`, Windows `.exe` and `.zip` and macOS `.dmg` (both chips) on GitHub releases since 1.2.0 |
-| Self-hosted hub (`docker/`) | Planned |
+| Android | The APK from releases. Google Play is coming |
+| Windows | The `.exe` or `.zip` from releases. winget and the Microsoft Store are coming |
+| macOS | The `.dmg` (Apple silicon and Intel), or `brew install --cask lusan-sapkota/tap/notespark` (the app is not signed by Apple, so the cask clears the quarantine flag) |
+| Linux | The AppImage, `.deb`, `.rpm` or `.tar.gz`. The `.deb` and `.rpm` add NoteSpark's package repository once, so `apt upgrade` or `dnf upgrade` can update it. Remove it by uninstalling the package or deleting `/etc/apt/sources.list.d/notespark.sources` or `/etc/yum.repos.d/notespark.repo` |
 
-More on the [website](https://notespark.lusansapkota.com.np): [help](https://notespark.lusansapkota.com.np/help.html), [privacy policy](https://notespark.lusansapkota.com.np/privacy.html) and the [changelog](https://notespark.lusansapkota.com.np/changelog.html).
+The app never checks for updates itself. Files you download by hand do not update; Homebrew, apt and dnf do, through your package manager. The self-hosted hub (`docker/`) is planned.
+
+More on the [website](https://notespark.lusansapkota.com.np): [help](https://notespark.lusansapkota.com.np/help.html), [privacy policy](https://notespark.lusansapkota.com.np/privacy.html), [changelog](https://notespark.lusansapkota.com.np/changelog.html).
 
 ## Repository
 
@@ -65,7 +68,7 @@ More on the [website](https://notespark.lusansapkota.com.np): [help](https://not
 
 ## Build from source
 
-The Android app uses native modules, so it needs a development or release build, not Expo Go.
+The Android app uses native modules, so use a development or release build.
 
 ```bash
 cd mobile
