@@ -66,9 +66,10 @@ const relativeDate = (dateStr: string, created: boolean) => {
   });
 };
 
-// Both panels are drawn full width; show only the one for the drag direction.
+// Both panels are drawn full width behind the row; show only the one for the drag direction, and only once the row has really moved
+// (the coloured panel would otherwise bleed through the row's rounded, anti-aliased edges).
 const SwipePanel: React.FC<{ translation: SharedValue<number>; side: 'left' | 'right'; children: React.ReactNode }> = ({ translation, side, children }) => {
-  const style = useAnimatedStyle(() => ({ opacity: (side === 'left' ? translation.value > 0 : translation.value < 0) ? 1 : 0 }));
+  const style = useAnimatedStyle(() => ({ opacity: (side === 'left' ? translation.value > 6 : translation.value < -6) ? 1 : 0 }));
   return <Animated.View style={[{ flex: 1 }, style]}>{children}</Animated.View>;
 };
 
