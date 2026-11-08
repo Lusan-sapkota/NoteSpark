@@ -1,3 +1,33 @@
+// Announcement bar: the one place to say what release is coming, out or in review. Edit `text` (and `link`) after each release or
+// big step; set `text` to '' to hide the bar. It is added to every page before the header.
+(function () {
+  var announcement = {
+    text: 'NoteSpark 1.3.0 is coming soon.',
+    link: { label: 'Release notes', href: './changelog.html' }
+  };
+  document.addEventListener('DOMContentLoaded', function () {
+    var header = document.querySelector('.site-header');
+    if (!announcement.text || !header) return;
+    var bar = document.createElement('div');
+    bar.className = 'announce';
+    bar.setAttribute('role', 'region');
+    bar.setAttribute('aria-label', 'Announcement');
+    var inner = document.createElement('div');
+    inner.className = 'container announce-inner';
+    var text = document.createElement('span');
+    text.textContent = announcement.text;
+    inner.appendChild(text);
+    if (announcement.link) {
+      var a = document.createElement('a');
+      a.href = announcement.link.href;
+      a.textContent = announcement.link.label;
+      inner.appendChild(a);
+    }
+    bar.appendChild(inner);
+    header.parentNode.insertBefore(bar, header);
+  });
+})();
+
 // Theme (light, dark or the device's), remembered in localStorage, and the header's tonal fill once scrolled.
 (function () {
   var root = document.documentElement;
