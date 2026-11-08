@@ -165,7 +165,7 @@ const TidyScreen: React.FC = () => {
             style={styles.mode}
             buttons={[
               { value: 'links', label: pairs ? t('ask.tidyLinksCount', { count: links.length }) : t('ask.tidyLinks'), icon: 'link-variant' },
-              { value: 'duplicates', label: pairs ? t('ask.tidyDuplicatesCount', { count: duplicates.length }) : t('ask.tidyDuplicates'), icon: 'content-copy' },
+              { value: 'duplicates', label: pairs ? t('ask.tidyDuplicatesCount', { count: duplicates.length }) : t('ask.tidyDuplicates'), icon: 'content-duplicate' },
             ]}
           />
         }
