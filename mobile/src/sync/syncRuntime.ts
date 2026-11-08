@@ -76,6 +76,18 @@ const stopService = async () => {
   if (BackgroundService.isRunning()) await BackgroundService.stop().catch(() => {});
 };
 
+// The notification's second line: what sync is doing now, in the words of the Sync screen.
+const serviceText = () => {
+  if (status.problem) return t('sync.stateProblem');
+  switch (status.state) {
+    case 'live': return t('sync.stateLive', { time: new Date(status.lastSynced ?? Date.now()).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }) });
+    case 'syncing': return t('sync.stateSyncing');
+    case 'connecting': return status.attempts > 0 ? t('sync.stateWaiting') : t('sync.stateSearching');
+    default: return t('sync.serviceBody');
+  }
+};
+const refreshServiceText = () => { if (serviceRunning()) void BackgroundService.updateNotification({ taskDesc: serviceText() }).catch(() => {}); };
+
 // The task only keeps the service alive; the client itself runs in the app's own JS. Only started while the app is in front (Android 12+).
 const startService = async () => {
   if (Platform.OS !== 'android' || !Notifications) return;
@@ -90,7 +102,7 @@ const startService = async () => {
       await stopService();
       if (AppState.currentState !== 'active') stop(); // back to "sync while open"
     }, {
-      taskName: 'notespark-sync', taskTitle: t('sync.title'), taskDesc: t('sync.serviceBody'),
+      taskName: 'notespark-sync', taskTitle: t('sync.title'), taskDesc: serviceText(),
       taskIcon: { name: 'notification_icon', type: 'drawable' }, color: firefly.light.primary, foregroundServiceType: ['dataSync'],
     });
     serviceOn = true;
@@ -148,7 +160,7 @@ export const reconcileSync = async () => {
     onLockedMatch: name => { log('locked match: creating new profile'); set({ lockedMatch: name }); },
     confirmLink: plan => new Promise<boolean>(resolve => { pendingLink = { plan, answer: ok => { pendingLink = null; emit(); resolve(ok); } }; emit(); }),
     onClose: (code, reason) => { log(`close code=${code} reason=${reason}`); set({ closeCode: code, closeReason: reason, attempts: c.attempts }); },
-    onProblem: p => { log(`problem code=${p.code}`); set({ problem: true, problemCode: p.code }); },
+    onProblem: p => { log(`problem code=${p.code}`); set({ problem: true, problemCode: p.code }); refreshServiceText(); },
     onState: s => {
       log(`state ${s}`);
       if (s === 'live' && token) { setPairingToken(undefined); runningKey = `${profileId}:${hub?.id}:`; }
@@ -161,6 +173,7 @@ export const reconcileSync = async () => {
         closeReason: s === 'live' ? '' : status.closeReason,
         lastSynced: s === 'live' ? Date.now() : status.lastSynced,
       });
+      refreshServiceText();
     },
   });
   client = c;
