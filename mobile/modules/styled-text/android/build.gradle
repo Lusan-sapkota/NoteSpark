@@ -13,3 +13,8 @@ android {
     versionName "1.0.0"
   }
 }
+
+dependencies {
+  // For React Native 0.71 and later the React Native Gradle plugin swaps this for com.facebook.react:react-android.
+  implementation "com.facebook.react:react-native:+"
+}
