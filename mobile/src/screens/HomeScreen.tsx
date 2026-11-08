@@ -976,7 +976,7 @@ const HomeScreen: React.FC = () => {
       <Snackbar
         visible={!!snackbar}
         onDismiss={() => { setSnackbar(''); setUndo(null); }}
-        duration={4000}
+        duration={2500}
         wrapperStyle={styles.snackbar}
         action={undo ? { label: t('common.undo'), onPress: undo } : undefined}
       >
