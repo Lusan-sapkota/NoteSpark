@@ -2,7 +2,7 @@
 
 All notable changes to NoteSpark will be documented in this file.
 
-## [Unreleased]
+## [1.3.0] - 2026-11-08
 
 ### Added
 
