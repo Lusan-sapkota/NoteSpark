@@ -122,7 +122,8 @@ export const AUTO_LOCK_MINUTES = [0, 1, 5, 15];
 
 export const getAutoLockMinutes = async (): Promise<number> => {
   const stored = await AsyncStorage.getItem(autoLockKey).catch(() => null);
-  return stored !== null && AUTO_LOCK_MINUTES.includes(Number(stored)) ? Number(stored) : 1;
+  const minutes = Number(stored);
+  return stored !== null && Number.isInteger(minutes) && minutes >= 0 && minutes <= 1439 ? minutes : 1; // any time up to a day, from the time picker
 };
 
 export const setAutoLockMinutes = (minutes: number) => AsyncStorage.setItem(autoLockKey, String(minutes));

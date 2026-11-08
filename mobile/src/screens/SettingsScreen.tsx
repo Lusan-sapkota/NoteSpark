@@ -15,7 +15,7 @@ import { isMeaningSearchAvailable } from '../storage/semanticSearch';
 import { getStartScreen, setStartScreen, START_SCREENS, startScreenLabel, StartScreen } from '../utils/startScreen';
 import { TimePickerModal } from 'react-native-paper-dates';
 import { formatTime, getReminderTime, setReminderTime } from '../utils/taskReminders';
-import { AUTO_LOCK_MINUTES, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
+import { deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { BIN_DAYS } from '../storage/database';
 import { LANGUAGES } from '@notespark/core';
 import { useI18n } from '../i18n/I18nContext';
@@ -56,6 +56,7 @@ const SettingsScreen: React.FC = () => {
   const [menuFor, setMenuFor] = useState<string | null>(null);
   const [reminderTime, setReminderTimeState] = useState(540);
   const [pickingTime, setPickingTime] = useState(false);
+  const [pickingLock, setPickingLock] = useState(false);
   const [autoLock, setAutoLock] = useState(1);
   const [rediscover, setRediscover] = useState(true);
   const [webImages, setWebImages] = useState(false);
@@ -136,17 +137,7 @@ const SettingsScreen: React.FC = () => {
       open: true,
     });
   };
-  const pickAutoLock = () =>
-    setChoice({
-      title: t('settings.lockAgain'),
-      options: AUTO_LOCK_MINUTES.map(m => ({ label: lockLabel(m), value: m })),
-      value: autoLock,
-      onPick: minutes => {
-        setAutoLock(minutes);
-        setAutoLockMinutes(minutes).catch(() => {});
-      },
-      open: true,
-    });
+  const pickAutoLock = () => setPickingLock(true);
 
   useFocusEffect(useCallback(() => { loadProfiles().catch(() => {}); }, [loadProfiles]));
 
@@ -697,6 +688,24 @@ const SettingsScreen: React.FC = () => {
         </View>
       </ScrollView>
 
+      {/* The same clock, read as a length of time: hours and minutes away before the PIN is asked again (0:00 is right away). */}
+      <TimePickerModal
+        visible={pickingLock}
+        onDismiss={() => setPickingLock(false)}
+        onConfirm={({ hours, minutes }) => {
+          setPickingLock(false);
+          const total = hours * 60 + minutes;
+          setAutoLock(total);
+          setAutoLockMinutes(total).catch(() => {});
+        }}
+        hours={Math.floor(autoLock / 60)}
+        minutes={autoLock % 60}
+        use24HourClock
+        label={t('settings.lockAgain')}
+        cancelLabel={t('common.cancel')}
+        confirmLabel={t('common.ok')}
+        locale={language}
+      />
       <TimePickerModal
         visible={pickingTime}
         onDismiss={() => setPickingTime(false)}
