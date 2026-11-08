@@ -141,7 +141,12 @@ else {
       await syncLanguage();
       refreshMenuFn?.();
       const web = webViewStatus();
+      const sync = (await import('./sync')).syncHub().brief();
+      const syncLine = !sync.on ? t('dsync.off') : sync.state === 'running' ? t('dsync.ready') : sync.state === 'problem' ? t('sync.stateProblem') : sync.state === 'restarting' ? t('dsync.restarting') : t('dsync.starting');
+      tray?.setToolTip(`NoteSpark\n${syncLine}`);
       tray?.setContextMenu(Menu.buildFromTemplate([
+        { label: syncLine, enabled: false },
+        { type: 'separator' },
         { label: t('desktop.openNoteSpark'), click: showWindow },
         { label: t('desktop.newNote'), click: () => deliver({ type: 'go', routes: ['Home', 'Editor'] }) },
         { label: t('desktop.saveClipboard'), click: () => void saveClipboard((fn, ...args) => invoke('storage', { module: 'notes', fn, args }, 'ipc')) },
@@ -200,6 +205,7 @@ else {
     tray = new Tray(icon.resize({ width: 22, height: 22 }));
     tray.setToolTip('NoteSpark');
     void refreshTray();
+    void import('./sync').then(m => m.onSyncChanged(() => void refreshTray())).catch(() => {});
     tray.on('click', showWindow);
     app.on('before-quit', () => {
       void stopWebView();

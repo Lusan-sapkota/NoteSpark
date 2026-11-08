@@ -260,6 +260,9 @@ export class SyncHub {
     try { return DeviceList.open(join(this.dir, 'devices.json'), realClock).list(); } catch { return []; }
   }
 
+  // The state alone, for the tray: no database reads.
+  brief() { return { on: this.settings.on, state: this.controller.status.state as string }; }
+
   // Everything the Sync screen shows. Never contains the pairing token or any key.
   async status() {
     const s = this.settings, c = this.controller.status;

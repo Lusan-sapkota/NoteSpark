@@ -10,10 +10,14 @@ let hub: SyncHub | null = null;
 // Next to this code, or one folder up when the bundler put it in chunks/ (also inside app.asar once packaged).
 const workerFile = () => [join(__dirname, 'hub-worker.js'), join(__dirname, '..', 'hub-worker.js')].find(existsSync) ?? join(__dirname, 'hub-worker.js');
 
+// The tray shows the sync state; it asks to be redrawn whenever the state changes.
+let changed: (() => void) | null = null;
+export const onSyncChanged = (fn: () => void) => { changed = fn; };
+
 export const syncHub = () =>
   (hub ??= new SyncHub({
     isReady,
-    announce: () => BrowserWindow.getAllWindows().forEach(w => w.webContents.send('sync:changed')),
+    announce: () => { BrowserWindow.getAllWindows().forEach(w => w.webContents.send('sync:changed')); changed?.(); },
     chooseFolder: async () => {
       const r = await dialog.showOpenDialog({ properties: ['openDirectory', 'createDirectory'] });
       return r.canceled ? null : r.filePaths[0] ?? null;
