@@ -1,12 +1,3 @@
-function convertImagesToLinks(text: string, isMarkdown: boolean): string {
-  if (isMarkdown) {
-    return text;
-  } else {
-    let result = text.replace(/!\[[^\]]*\]\(([^)]+)\)/g, '$1');
-    result = result.replace(/\[[^\]]*\]\((?!attachment:[0-9a-fA-F]{64}\))([^)]+)\)/g, '$1');
-    return result;
-  }
-}
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { Keyboard, Platform, Pressable, StyleSheet, Text as RNText, View, TextInput, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -560,7 +551,7 @@ const EditorScreen: React.FC = () => {
   };
 
   const handleChangeText = (text: string) => {
-    const list = continueList(convertImagesToLinks(content, isMarkdown), text, selection.start);
+    const list = continueList(content, text, selection.start);
     setContent(list ? list.text : text);
     if (list) setPendingSelection({ start: list.cursor, end: list.cursor });
   };
@@ -637,7 +628,9 @@ const EditorScreen: React.FC = () => {
   // Both tabs draw the text from styled pieces (headings, bold, italic, strike). Markdown tab: the # and ** marks show, faded.
   // Plain tab: the marks stay in the text (the cursor needs them) but are invisible: tiny on the phone; on the desktop they hide
   // except on the caret's line (see StyledEditable).
-  const displayText = convertImagesToLinks(content, isMarkdown);
+  // The box shows the note's text as it is stored, in both tabs: switching tabs never changes the text, so the cursor stays valid
+  // and nothing (link and image syntax included) is rewritten by switching or by typing in Plain text.
+  const displayText = content;
   const runs = parseFormatted(displayText).map(tok => {
     const headFont = tok.heading === 1 ? theme.fonts.noteH1 : tok.heading === 2 ? theme.fonts.noteH2 : tok.heading === 3 ? theme.fonts.noteH3 : null;
     const look = [
