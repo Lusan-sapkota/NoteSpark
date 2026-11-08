@@ -30,6 +30,47 @@ const ensureStyle = () => {
   document.head.appendChild(el);
 };
 
+// The text a node holds. Chromium may draw a line break it was asked to insert as a <br> rather than as "\n", so a <br> counts as
+// one newline; the one this component puts after a final newline (data-end) is only there to give that empty line a height.
+const lengthOf = (node: Node): number => {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent?.length ?? 0;
+  if (node.nodeName === 'BR') return (node as HTMLElement).dataset.end === '1' ? 0 : 1;
+  let n = 0;
+  node.childNodes.forEach(c => { n += lengthOf(c); });
+  return n;
+};
+const readText = (node: Node): string => {
+  if (node.nodeType === Node.TEXT_NODE) return node.textContent ?? '';
+  if (node.nodeName === 'BR') return (node as HTMLElement).dataset.end === '1' ? '' : '\n';
+  let out = '';
+  node.childNodes.forEach(c => { out += readText(c); });
+  return out;
+};
+// How much text comes before a DOM position (node, offset) inside root.
+const textBefore = (root: Node, node: Node, offset: number): number => {
+  let total = 0;
+  let found = false;
+  const visit = (cur: Node) => {
+    if (found) return;
+    if (cur === node) {
+      if (cur.nodeType === Node.TEXT_NODE) total += offset;
+      else for (let i = 0; i < offset; i++) total += lengthOf(cur.childNodes[i]);
+      found = true;
+      return;
+    }
+    if (cur.nodeType === Node.TEXT_NODE || cur.nodeName === 'BR') { total += lengthOf(cur); return; }
+    cur.childNodes.forEach(visit);
+  };
+  visit(root);
+  return total;
+};
+// Scroll positions of the element's scrolling ancestors, to put back after the text is redrawn (a redraw must not move the page).
+const scrollState = (el: HTMLElement) => {
+  const saved: [HTMLElement, number][] = [];
+  for (let p = el.parentElement; p; p = p.parentElement) if (p.scrollTop > 0) saved.push([p, p.scrollTop]);
+  return () => saved.forEach(([p, top]) => { p.scrollTop = top; });
+};
+
 const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, ref) => {
   const root = React.useRef<HTMLDivElement>(null);
   const latest = React.useRef(props);
@@ -46,12 +87,7 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
     if (!el || !sel || sel.rangeCount === 0) return null;
     const r = sel.getRangeAt(0);
     if (!el.contains(r.startContainer) || !el.contains(r.endContainer)) return null;
-    const at = (node: Node, offset: number) => {
-      const range = document.createRange();
-      range.selectNodeContents(el);
-      range.setEnd(node, offset);
-      return range.toString().length;
-    };
+    const at = (node: Node, offset: number) => textBefore(el, node, offset);
     return { start: at(r.startContainer, r.startOffset), end: at(r.endContainer, r.endOffset) };
   };
 
@@ -88,13 +124,14 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
     if (!el) return;
     const { text, pieces, hideMarkers } = latest.current;
     const focused = document.activeElement === el;
+    const restoreScroll = scrollState(el);
     const moved = pendingCaret.current;
     pendingCaret.current = null;
     const before = moved !== null ? { start: moved, end: moved } : focused ? offsets() : null;
     const runs = pieces.map(p => p.text).join('') === text ? pieces : [{ text, css: {} }];
     const spans = layoutSpans(runs, { hideMarkers });
     const signature = JSON.stringify([spans, needsFinalBreak(text)]);
-    if (signature === drawn.current && el.textContent === text && moved === null) return;
+    if (signature === drawn.current && readText(el) === text && moved === null) return;
     drawn.current = signature;
     const frag = document.createDocumentFragment();
     for (const s of spans) {
@@ -104,9 +141,14 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
       if (s.hidden) { span.style.display = 'none'; span.dataset.h = '1'; }
       frag.appendChild(span);
     }
-    if (needsFinalBreak(text)) frag.appendChild(document.createElement('br'));
+    if (needsFinalBreak(text)) {
+      const end = document.createElement('br');
+      end.dataset.end = '1';
+      frag.appendChild(end);
+    }
     el.replaceChildren(frag);
     if (before) place(before.start, before.end);
+    restoreScroll();
   };
 
   React.useLayoutEffect(() => { ensureStyle(); }, []);
@@ -135,7 +177,7 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
     },
   }));
 
-  const read = () => root.current?.textContent ?? '';
+  const read = () => (root.current ? readText(root.current) : '');
   const css = toCss(props.style ?? {}) as React.CSSProperties;
 
   return (
