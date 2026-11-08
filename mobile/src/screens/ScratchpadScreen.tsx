@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { AppState, StyleSheet, TextInput, View } from 'react-native';
+import { AppState, Platform, StyleSheet, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-controller';
 import { RouteProp, useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
@@ -171,6 +171,8 @@ const ScratchpadScreen: React.FC = () => {
             placeholder={t('scratchpad.placeholder')}
             placeholderTextColor={theme.colors.onSurfaceVariant}
             accessibilityLabel={t('scratchpad.textLabel')}
+            // The desktop's box grows with the text, so the page scrolls (scrollbar at the window's edge), not the box.
+            {...(Platform.OS === 'web' ? { styledText: text, styledPieces: [{ text, css: {} }], hideMarkers: false } : {})}
           />
         </View>
       </KeyboardAwareScrollView>

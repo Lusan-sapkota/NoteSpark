@@ -386,8 +386,7 @@ const TasksScreen: React.FC = () => {
             progressBackgroundColor={theme.colors.surfaceContainerHigh}
           />
         }
-        contentContainerStyle={styles.listContent}
-        style={styles.column}
+        contentContainerStyle={[styles.listContent, styles.column]}
         ListHeaderComponent={
           <SegmentedButtons theme={controlTheme}
             value={sortBy}

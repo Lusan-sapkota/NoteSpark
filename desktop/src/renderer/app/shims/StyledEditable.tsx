@@ -19,6 +19,7 @@ export interface StyledEditableProps {
   placeholderTextColor?: string;
   selectionColor?: string;
   accessibilityLabel?: string;
+  editable?: boolean;
 }
 
 const STYLE_ID = 'ns-editable-style';
@@ -248,7 +249,7 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
     <div
       ref={root}
       className="ns-editable"
-      contentEditable="plaintext-only"
+      contentEditable={props.editable === false ? false : 'plaintext-only'}
       suppressContentEditableWarning
       role="textbox"
       aria-multiline="true"

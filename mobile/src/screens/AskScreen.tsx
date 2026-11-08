@@ -105,8 +105,7 @@ const AskScreen: React.FC = () => {
         onScroll={onScroll}
         scrollEventThrottle={16}
         keyboardShouldPersistTaps="handled"
-        style={styles.column}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, styles.column]}
         ListHeaderComponent={
           <View>
             <Searchbar

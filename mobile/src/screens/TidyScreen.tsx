@@ -156,8 +156,7 @@ const TidyScreen: React.FC = () => {
         renderItem={renderItem}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        style={styles.column}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, styles.column]}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         ListHeaderComponent={
           <SegmentedButtons

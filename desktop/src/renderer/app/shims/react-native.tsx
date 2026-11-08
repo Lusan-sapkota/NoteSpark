@@ -27,6 +27,7 @@ export const TextInput = React.forwardRef<any, any>((props, ref) =>
       placeholderTextColor={props.placeholderTextColor}
       selectionColor={props.selectionColor}
       accessibilityLabel={props.accessibilityLabel}
+      editable={props.editable}
     />
   ) : (
     <WebTextInput

@@ -631,23 +631,27 @@ const EditorScreen: React.FC = () => {
   // The box shows the note's text as it is stored, in both tabs: switching tabs never changes the text, so the cursor stays valid
   // and nothing (link and image syntax included) is rewritten by switching or by typing in Plain text.
   const displayText = content;
-  const runs = parseFormatted(displayText).map(tok => {
-    const headFont = tok.heading === 1 ? theme.fonts.noteH1 : tok.heading === 2 ? theme.fonts.noteH2 : tok.heading === 3 ? theme.fonts.noteH3 : null;
+  // Rebuilt only when the text, the tab or the fonts change, not on every cursor move: a new set of styled children makes the
+  // native text box set its text again, which is what moves the cursor and the scroll.
+  const fonts = theme.fonts;
+  const markColor = theme.colors.onSurfaceVariant;
+  const runs = useMemo(() => parseFormatted(displayText).map(tok => {
+    const headFont = tok.heading === 1 ? fonts.noteH1 : tok.heading === 2 ? fonts.noteH2 : tok.heading === 3 ? fonts.noteH3 : null;
     const look = [
-      headFont ?? (tok.bold ? { fontFamily: theme.fonts.noteTitle.fontFamily } : tok.italic ? { fontFamily: 'Literata-Italic' } : null),
+      headFont ?? (tok.bold ? { fontFamily: fonts.noteTitle.fontFamily } : tok.italic ? { fontFamily: 'Literata-Italic' } : null),
       tok.bold && tok.italic ? { fontStyle: 'italic' as const } : null,
       tok.strike ? { textDecorationLine: 'line-through' as const } : null,
     ];
     return { tok, look };
-  });
-  const styledBody = Platform.OS === 'web' ? null : runs.map(({ tok, look }, i) => (
+  }), [displayText, fonts]);
+  const styledBody = useMemo(() => (Platform.OS === 'web' ? null : runs.map(({ tok, look }, i) => (
     <RNText
       key={i}
-      style={[look, tok.marker ? (isMarkdown ? { color: theme.colors.onSurfaceVariant, opacity: 0.55, fontFamily: theme.fonts.noteBody.fontFamily } : { color: 'transparent', fontSize: 1, letterSpacing: 0 }) : null]}
+      style={[look, tok.marker ? (isMarkdown ? { color: markColor, opacity: 0.55, fontFamily: fonts.noteBody.fontFamily } : { color: 'transparent', fontSize: 1, letterSpacing: 0 }) : null]}
     >
       {tok.text}
     </RNText>
-  ));
+  ))), [runs, isMarkdown, markColor, fonts]);
   // Props only the desktop's text box reads (shims/react-native.tsx); the phone's TextInput never sees them.
   // Desktop escape hatch while this is new: localStorage.rawEditor = '1' (then reload) brings back the plain text box.
   const rawWebBox = Platform.OS === 'web' && (() => { try { return localStorage.getItem('rawEditor') === '1'; } catch { return false; } })();

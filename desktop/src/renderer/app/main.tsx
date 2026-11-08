@@ -309,6 +309,8 @@ const Shell = () => {
     const root = document.documentElement.style;
     root.setProperty('--scroll-thumb', theme.colors.outlineVariant);
     root.setProperty('--scroll-track', theme.colors.background);
+    // The page's own light or dark, so any scrollbar the browser still draws itself follows the app, not the system.
+    root.colorScheme = theme.dark ? 'dark' : 'light';
   }, [theme]);
   if (lock?.phase === 'ready') opened.current = true;
 

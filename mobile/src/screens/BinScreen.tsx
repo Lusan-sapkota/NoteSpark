@@ -125,8 +125,7 @@ const BinScreen: React.FC = () => {
             progressBackgroundColor={theme.colors.surfaceContainerHigh}
           />
         }
-        style={styles.column}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, styles.column]}
         ListHeaderComponent={
           notes.length > 0 ? (
             <Text variant="bodyMedium" style={[styles.intro, { color: theme.colors.onSurfaceVariant }]}>
