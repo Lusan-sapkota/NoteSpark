@@ -1,6 +1,7 @@
 // react-native-web plus the native API bits the phone's screens call that it lacks.
 import React from 'react';
-import { FlatList as WebFlatList, ScrollView as WebScrollView, TextInput as WebTextInput } from 'react-native-web';
+import { FlatList as WebFlatList, ScrollView as WebScrollView, StyleSheet as WebStyleSheet, TextInput as WebTextInput } from 'react-native-web';
+import StyledEditable from './StyledEditable';
 
 export * from 'react-native-web';
 
@@ -9,16 +10,35 @@ import * as self from './react-native';
 export default self;
 
 // The editor moves the cursor with ref.setSelection(start, end), which only native TextInput has.
-export const TextInput = React.forwardRef<any, any>((props, ref) => (
-  <WebTextInput
-    {...props}
-    ref={(node: any) => {
-      if (node && !node.setSelection) node.setSelection = (start: number, end: number) => node.setSelectionRange?.(start, end);
-      if (typeof ref === 'function') ref(node);
-      else if (ref) ref.current = node;
-    }}
-  />
-));
+export const TextInput = React.forwardRef<any, any>((props, ref) =>
+  // The note body passes `styledPieces` to get the formatter's styling drawn (see StyledEditable); every other field is a plain input.
+  props.styledPieces ? (
+    <StyledEditable
+      ref={ref}
+      text={props.styledText}
+      pieces={props.styledPieces}
+      hideMarkers={!!props.hideMarkers}
+      onChangeText={props.onChangeText}
+      onSelectionChange={props.onSelectionChange}
+      onUndo={props.onUndo}
+      onRedo={props.onRedo}
+      style={WebStyleSheet.flatten(props.style) as Record<string, unknown>}
+      placeholder={props.placeholder}
+      placeholderTextColor={props.placeholderTextColor}
+      selectionColor={props.selectionColor}
+      accessibilityLabel={props.accessibilityLabel}
+    />
+  ) : (
+    <WebTextInput
+      {...props}
+      ref={(node: any) => {
+        if (node && !node.setSelection) node.setSelection = (start: number, end: number) => node.setSelectionRange?.(start, end);
+        if (typeof ref === 'function') ref(node);
+        else if (ref) ref.current = node;
+      }}
+    />
+  )
+);
 
 // The hardware back button is an Android thing; the phone's Menu listens for it.
 export const BackHandler = {

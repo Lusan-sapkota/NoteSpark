@@ -634,27 +634,39 @@ const EditorScreen: React.FC = () => {
   // Eases the screen to a newly picked colour; the bar is see-through so it follows.
   const fillColor = own?.fill ?? theme.colors.background;
   const fadeStyle = useAnimatedStyle(() => ({ backgroundColor: withTiming(fillColor, { duration: 240, reduceMotion: ReduceMotion.System }) }));
-  // Phone: text drawn from styled pieces in both tabs. The desktop's text box can't, so it shows the marks.
-  const showStyled = Platform.OS !== 'web';
-  const styledBody = showStyled
-    ? parseFormatted(convertImagesToLinks(content, isMarkdown)).map((tok, i) => {
-        const headFont = tok.heading === 1 ? theme.fonts.noteH1 : tok.heading === 2 ? theme.fonts.noteH2 : tok.heading === 3 ? theme.fonts.noteH3 : null;
-        return (
-          <RNText
-            key={i}
-            style={[
-              headFont ?? (tok.bold ? { fontFamily: theme.fonts.noteTitle.fontFamily } : tok.italic ? { fontFamily: 'Literata-Italic' } : null),
-              tok.bold && tok.italic ? { fontStyle: 'italic' } : null,
-              tok.strike ? { textDecorationLine: 'line-through' } : null,
-              // Markdown tab: marks shown, faded. Plain tab: the marks stay in the text (the cursor needs them) but are drawn invisible and tiny.
-              tok.marker ? (isMarkdown ? { color: theme.colors.onSurfaceVariant, opacity: 0.55, fontFamily: theme.fonts.noteBody.fontFamily } : { color: 'transparent', fontSize: 1, letterSpacing: 0 }) : null,
-            ]}
-          >
-            {tok.text}
-          </RNText>
-        );
-      })
-    : null;
+  // Both tabs draw the text from styled pieces (headings, bold, italic, strike). Markdown tab: the # and ** marks show, faded.
+  // Plain tab: the marks stay in the text (the cursor needs them) but are invisible: tiny on the phone; on the desktop they hide
+  // except on the caret's line (see StyledEditable).
+  const displayText = convertImagesToLinks(content, isMarkdown);
+  const runs = parseFormatted(displayText).map(tok => {
+    const headFont = tok.heading === 1 ? theme.fonts.noteH1 : tok.heading === 2 ? theme.fonts.noteH2 : tok.heading === 3 ? theme.fonts.noteH3 : null;
+    const look = [
+      headFont ?? (tok.bold ? { fontFamily: theme.fonts.noteTitle.fontFamily } : tok.italic ? { fontFamily: 'Literata-Italic' } : null),
+      tok.bold && tok.italic ? { fontStyle: 'italic' as const } : null,
+      tok.strike ? { textDecorationLine: 'line-through' as const } : null,
+    ];
+    return { tok, look };
+  });
+  const styledBody = Platform.OS === 'web' ? null : runs.map(({ tok, look }, i) => (
+    <RNText
+      key={i}
+      style={[look, tok.marker ? (isMarkdown ? { color: theme.colors.onSurfaceVariant, opacity: 0.55, fontFamily: theme.fonts.noteBody.fontFamily } : { color: 'transparent', fontSize: 1, letterSpacing: 0 }) : null]}
+    >
+      {tok.text}
+    </RNText>
+  ));
+  // Props only the desktop's text box reads (shims/react-native.tsx); the phone's TextInput never sees them.
+  // Desktop escape hatch while this is new: localStorage.rawEditor = '1' (then reload) brings back the plain text box.
+  const rawWebBox = Platform.OS === 'web' && (() => { try { return localStorage.getItem('rawEditor') === '1'; } catch { return false; } })();
+  const webEditor = Platform.OS === 'web' && !rawWebBox
+    ? {
+        styledText: displayText,
+        styledPieces: runs.map(({ tok, look }) => ({ text: tok.text, css: StyleSheet.flatten([look, tok.marker ? { color: theme.colors.onSurfaceVariant } : null]) as Record<string, string | number>, marker: !!tok.marker })),
+        hideMarkers: !isMarkdown,
+        onUndo: handleUndo,
+        onRedo: handleRedo,
+      }
+    : {};
   const hasSelection = selection.start !== selection.end;
 
   // The #tag or [[link]] being typed at the cursor, and what could complete it.
@@ -811,7 +823,7 @@ const EditorScreen: React.FC = () => {
                 <TextInput
                   ref={bodyRef}
                   style={[styles.contentInput, theme.fonts.noteBody, { color: own?.on ?? theme.colors.onSurface }]}
-                  value={showStyled ? undefined : convertImagesToLinks(content, isMarkdown)}
+                  value={rawWebBox ? displayText : undefined}
                   onChangeText={handleChangeText}
                   multiline
                   textAlignVertical="top"
@@ -823,8 +835,9 @@ const EditorScreen: React.FC = () => {
                   onSelectionChange={e => setSelection(e.nativeEvent.selection)}
                   scrollEnabled={false}
                   accessibilityLabel={t('editor.noteTextLabel')}
+                  {...webEditor}
                 >
-                  {showStyled ? styledBody : undefined}
+                  {styledBody}
                 </TextInput>
                 <NoteAttachments content={content} onRemove={handleRemoveAttachment} />
               </View>
