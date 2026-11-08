@@ -514,7 +514,7 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
               onDismiss={() => setMenuVisible(false)}
               anchor={<Appbar.Action icon="dots-vertical" iconColor={own?.on} onPress={() => setMenuVisible(true)} accessibilityLabel={t('note.moreOptions')} />}
             >
-              <Menu.Item leadingIcon="content-copy" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
+              <Menu.Item leadingIcon="content-duplicate" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
               <Menu.Item
                 leadingIcon="share-variant-outline"
                 title={t('editor.send')}

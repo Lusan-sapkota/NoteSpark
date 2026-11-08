@@ -713,7 +713,7 @@ const EditorScreen: React.FC = () => {
                 onDismiss={() => setShowMore(false)}
                 anchor={<IconButton icon="dots-vertical" iconColor={own?.on} onPress={() => setShowMore(true)} disabled={saving} accessibilityLabel={t('note.moreOptions')} />}
               >
-                <Menu.Item leadingIcon="content-copy" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
+                <Menu.Item leadingIcon="content-duplicate" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
                 <Menu.Item leadingIcon="share-variant-outline" title={t('editor.send')} onPress={handleSend} />
                 <Menu.Item leadingIcon="magnify" title={t('note.findInNote')} onPress={() => { setShowMore(false); setFind({ query: '', index: 0 }); }} />
                 <Menu.Item leadingIcon="tag-outline" title={t('editor.labels')} onPress={() => { setShowMore(false); setShowLabels(true); }} />
