@@ -21,7 +21,7 @@ import {
 } from '../storage/attachments';
 import Animated, { Easing, ReduceMotion, SlideInDown, ZoomIn, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { shareNoteAsMarkdown } from '../utils/exportNotes';
-import { addDays, formatAttachmentImage, parseFormatted, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
+import { addDays, formatAttachmentImage, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
 import { isMeaningSearchAvailable, relatedToText } from '../storage/semanticSearch';
 import { isLiveRelatedOn } from '../utils/liveRelated';
 import { toPreview } from '../components/NoteItem';
@@ -31,6 +31,7 @@ import { sendAppNotification } from '../utils/notifications';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header from '../components/Header';
 import { useFollowCursor } from '../components/useFollowCursor';
+import { useStyledText } from '../components/useStyledText';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteAttachments from '../components/NoteAttachments';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
@@ -631,30 +632,12 @@ const EditorScreen: React.FC = () => {
   // and nothing (link and image syntax included) is rewritten by switching or by typing in Plain text.
   const displayText = content;
   // Desktop: both tabs draw styled pieces (StyledEditable); the # and ** marks hide in Plain text and fade in Markdown.
-  // Phone: an ordinary text box in both tabs. Styled children inside a box that is being typed in made Android redraw the lines
-  // above, move the cursor and close the keyboard, so the phone shows headings and bold in the note view, not while typing.
-  const fonts = theme.fonts;
-  const runs = useMemo(() => parseFormatted(displayText).map(tok => {
-    const headFont = tok.heading === 1 ? fonts.noteH1 : tok.heading === 2 ? fonts.noteH2 : tok.heading === 3 ? fonts.noteH3 : null;
-    const look = [
-      headFont ?? (tok.bold ? { fontFamily: fonts.noteTitle.fontFamily } : tok.italic ? { fontFamily: 'Literata-Italic' } : null),
-      tok.bold && tok.italic ? { fontStyle: 'italic' as const } : null,
-      tok.strike ? { textDecorationLine: 'line-through' as const } : null,
-    ];
-    return { tok, look };
-  }), [displayText, fonts]);
+  // Headings, bold, italic and strike in the text box on every platform (see useStyledText); marks hidden in Plain text, faded in Markdown.
+  const styled = useStyledText({ text: displayText, hideMarks: !isMarkdown, input: bodyRef, fonts: theme.fonts, markColor: theme.colors.onSurfaceVariant });
   // Props only the desktop's text box reads (shims/react-native.tsx); the phone's TextInput never sees them.
   // Desktop escape hatch while this is new: localStorage.rawEditor = '1' (then reload) brings back the plain text box.
   const rawWebBox = Platform.OS === 'web' && (() => { try { return localStorage.getItem('rawEditor') === '1'; } catch { return false; } })();
-  const webEditor = Platform.OS === 'web' && !rawWebBox
-    ? {
-        styledText: displayText,
-        styledPieces: runs.map(({ tok, look }) => ({ text: tok.text, css: StyleSheet.flatten([look, tok.marker ? { color: theme.colors.onSurfaceVariant } : null]) as Record<string, string | number>, marker: !!tok.marker })),
-        hideMarkers: !isMarkdown,
-        onUndo: handleUndo,
-        onRedo: handleRedo,
-      }
-    : {};
+  const webEditor = Platform.OS === 'web' && !rawWebBox ? { ...styled.webProps, onUndo: handleUndo, onRedo: handleRedo } : {};
   const hasSelection = selection.start !== selection.end;
 
   // The #tag or [[link]] being typed at the cursor, and what could complete it.

@@ -10,6 +10,7 @@ import { getScratchpad, saveNote, saveScratchpad } from '../storage/notes';
 import { continueList, getLanguage, titleFromText } from '@notespark/core';
 import Header from '../components/Header';
 import { useFollowCursor } from '../components/useFollowCursor';
+import { useStyledText } from '../components/useStyledText';
 import Snackbar from '../components/Snackbar';
 import { useAlert } from '../components/DialogProvider';
 import { useTheme } from '../theme/ThemeContext';
@@ -128,6 +129,8 @@ const ScratchpadScreen: React.FC = () => {
     ]);
   };
 
+  // The same styling as a note (headings, bold, italic, strike); the scratchpad has no Plain text tab, so the marks stay, faded.
+  const styled = useStyledText({ text, hideMarks: false, input: inputRef, fonts: theme.fonts, markColor: theme.colors.onSurfaceVariant });
   const follow = useFollowCursor({ input: inputRef, scroll: scrollRef, text, cursor: selection.start, keyboardHeight, reserve: space.lg, charWidth: 9 });
 
   return (
@@ -180,7 +183,7 @@ const ScratchpadScreen: React.FC = () => {
             placeholderTextColor={theme.colors.onSurfaceVariant}
             accessibilityLabel={t('scratchpad.textLabel')}
             // The desktop's box grows with the text, so the page scrolls (scrollbar at the window's edge), not the box.
-            {...(Platform.OS === 'web' ? { styledText: text, styledPieces: [{ text, css: {} }], hideMarkers: false } : {})}
+            {...styled.webProps}
           />
         </View>
         </Pressable>

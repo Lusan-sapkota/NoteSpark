@@ -10,7 +10,7 @@ All notable changes to NoteSpark will be documented in this file.
 - Live sync status in the Android notification and the desktop tray; the Sync screen notes that background sync pauses after about 5 hours
 - Tasks: long press to select several, mark done, move to another profile; note menus move a note to a profile by name; locked profiles ask for their PIN or fingerprint
 - A Material time picker for task reminders and Lock again when away
-- Desktop editor draws headings, bold, italic and strikethrough, hiding the marks in Plain text
+- Headings, bold, italic and strikethrough are drawn in a note and in the scratchpad on the phone, tablets and the desktop: the marks hide in Plain text and fade in Markdown (on Android, styled in place by a small native module)
 - Tap beside the text in the editor and scratchpad to put the cursor at the end of that line
 
 ### Changed
@@ -29,7 +29,7 @@ All notable changes to NoteSpark will be documented in this file.
 - Notebook landscape: month labels fit and the last month row is never pushed out of the chart
 - The Add task dialog no longer logs a warning
 - Desktop editor: typing, Enter and paste no longer make the text jump, the cursor stays in view, and a line break always counts as a newline
-- The keyboard no longer opens and closes after several lines in the editor and scratchpad, and Enter no longer flickers
+- The keyboard no longer opens and closes after several lines in the editor and scratchpad, Enter no longer flickers, and the page follows the cursor while you type
 - No full-screen typing box in landscape
 - The scratchpad's first sync keeps text written on this device
 
