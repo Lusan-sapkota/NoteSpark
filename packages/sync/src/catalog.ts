@@ -34,6 +34,8 @@ export interface ReviewEntry {
 // Two devices that change the same setting at once end up with the same one (Yjs picks the same winner everywhere).
 const settings = (doc: Y.Doc) => doc.getMap<string>('settings');
 export const MAX_SETTING_BYTES = 300;
+// Letters, digits and : _ - so a record can be named for a note (hide:<uuid>) or an import (import:<id>).
+const SETTING_NAME = /^[A-Za-z][A-Za-z0-9:_-]{0,79}$/;
 export interface SettingEntry { name: string; value: string; at: number }
 const parseSetting = (text: unknown): { value: string; at: number } | null => {
   if (typeof text !== 'string' || text.length > MAX_SETTING_BYTES) return null;
@@ -44,7 +46,7 @@ const parseSetting = (text: unknown): { value: string; at: number } | null => {
 };
 export const markSetting = (doc: Y.Doc, e: SettingEntry) => {
   const text = JSON.stringify({ value: e.value, at: e.at });
-  if (!/^[A-Za-z]{1,32}$/.test(e.name) || text.length > MAX_SETTING_BYTES) return;
+  if (!SETTING_NAME.test(e.name) || text.length > MAX_SETTING_BYTES) return;
   const current = parseSetting(settings(doc).get(e.name));
   if (!current || current.at < e.at) settings(doc).set(e.name, text);
 };
@@ -52,7 +54,7 @@ export const readSettings = (doc: Y.Doc): SettingEntry[] => {
   const out: SettingEntry[] = [];
   for (const [name, text] of settings(doc)) {
     const e = parseSetting(text);
-    if (e && /^[A-Za-z]{1,32}$/.test(name)) out.push({ name, ...e });
+    if (e && SETTING_NAME.test(name)) out.push({ name, ...e });
   }
   return out;
 };

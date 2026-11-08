@@ -280,8 +280,8 @@ export const searchPassages = async (query: string, limit = 20): Promise<Passage
 };
 
 export interface NotePair {
-  a: { id: number; title: string; words: number };
-  b: { id: number; title: string; words: number };
+  a: { id: number; uuid?: string; title: string; words: number };
+  b: { id: number; uuid?: string; title: string; words: number };
   distance: number;
   linked: boolean; // one already links to the other with [[Title]]
 }
@@ -292,8 +292,8 @@ const PAIR_SOURCES = 120; // the most recently edited notes are each checked aga
 export const notePairs = async (limit = 60): Promise<NotePair[] | null> => {
   if (!isMeaningSearchAvailable()) return null;
   try {
-    const notes = await db.getAllAsync<{ id: number; title: string; content: string }>(
-      'SELECT id, title, content FROM notes WHERE deletedAt IS NULL AND isArchived = 0 ORDER BY updatedAt DESC'
+    const notes = await db.getAllAsync<{ id: number; uuid: string | null; title: string; content: string }>(
+      'SELECT id, uuid, title, content FROM notes WHERE deletedAt IS NULL AND isArchived = 0 ORDER BY updatedAt DESC'
     );
     const byId = new Map(notes.map(n => [n.id, n]));
     const pairs = new Map<string, NotePair>();
@@ -304,7 +304,7 @@ export const notePairs = async (limit = 60): Promise<NotePair[] | null> => {
         const [a, b] = source.id < id ? [source, other] : [other, source];
         const key = `${a.id}-${b.id}`;
         if (distance >= (pairs.get(key)?.distance ?? Infinity)) continue;
-        const ref = (n: typeof a) => ({ id: n.id, title: n.title, words: n.content.split(/\s+/).filter(Boolean).length });
+        const ref = (n: typeof a) => ({ id: n.id, uuid: n.uuid ?? undefined, title: n.title, words: n.content.split(/\s+/).filter(Boolean).length });
         pairs.set(key, { a: ref(a), b: ref(b), distance, linked: linksTo(a.content, b.title) || linksTo(b.content, a.title) });
       }
     }

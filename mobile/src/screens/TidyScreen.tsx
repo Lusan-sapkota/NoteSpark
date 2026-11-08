@@ -20,7 +20,9 @@ import { controlTheme, readingWidth, shape, space } from '../theme/theme';
 const DUPLICATE_DISTANCE = 0.15;
 const isDuplicate = (p: NotePair) => p.distance <= DUPLICATE_DISTANCE && Math.max(p.a.words, p.b.words) <= 2 * Math.min(p.a.words, p.b.words);
 
-const pairKey = (p: NotePair) => `${p.a.id}-${p.b.id}`;
+// By note uuid (the same on every device, so a hide can sync); older hides by note number still count here.
+const pairKey = (p: NotePair) => `${p.a.uuid ?? p.a.id}-${p.b.uuid ?? p.b.id}`;
+const legacyKey = (p: NotePair) => `${p.a.id}-${p.b.id}`;
 const hiddenKey = (profileId: string) => `tidyHidden:${profileId}`;
 
 const TidyScreen: React.FC = () => {
@@ -102,7 +104,7 @@ const TidyScreen: React.FC = () => {
     try { await last?.undo(); } catch { alert(t('ask.tidyUndoFailedTitle'), t('ask.tidyUndoFailedMessage')); }
   };
 
-  const visible = (pairs ?? []).filter(p => !hidden.includes(pairKey(p)) && p.a.title.trim() && p.b.title.trim());
+  const visible = (pairs ?? []).filter(p => !hidden.includes(pairKey(p)) && !hidden.includes(legacyKey(p)) && p.a.title.trim() && p.b.title.trim());
   const duplicates = visible.filter(isDuplicate);
   const links = visible.filter(p => !p.linked && !isDuplicate(p));
   const list = mode === 'links' ? links : duplicates;

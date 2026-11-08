@@ -93,10 +93,13 @@ export const getScratchpad = async (): Promise<string> =>
 
 // Counts as a notes change, so Home's next load resyncs reminders for the scratchpad's tasks.
 export const saveScratchpad = changesNotes(async (content: string): Promise<void> => {
-  await db.runAsync(
-    'INSERT INTO scratchpad (id, content, updatedAt) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET content = excluded.content, updatedAt = excluded.updatedAt',
-    [content, new Date().toISOString()]
-  );
+  await transact(db, async sync => {
+    await db.runAsync(
+      'INSERT INTO scratchpad (id, content, updatedAt) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET content = excluded.content, updatedAt = excluded.updatedAt',
+      [content, new Date().toISOString()]
+    );
+    await sync.scratchpad();
+  });
 });
 
 // Where text shared to NoteSpark goes: the scratchpad (default) or a new note.
@@ -137,13 +140,14 @@ export const saveNote = changesNotes(async (note: Omit<Note, 'id' | 'isPinned' |
 });
 
 const VERSIONS_KEPT = 20;
+type NoteVersionRecord = { at: string; title: string; content: string; isMarkdown: boolean };
 
 // Keeps the stored text as a version before it's overwritten; only the newest VERSIONS_KEPT stay.
-const saveVersion = async (note: Pick<Note, 'id' | 'title' | 'content' | 'isMarkdown'>, now: string) => {
+const saveVersion = async (note: Pick<Note, 'id' | 'title' | 'content' | 'isMarkdown'>, now: string): Promise<NoteVersionRecord | null> => {
   const old = await db.getFirstAsync<{ title: string; content: string; isMarkdown: number }>(
     'SELECT title, content, isMarkdown FROM notes WHERE id = ?', [note.id]
   );
-  if (!old || (old.title === note.title && old.content === note.content && !!old.isMarkdown === note.isMarkdown)) return;
+  if (!old || (old.title === note.title && old.content === note.content && !!old.isMarkdown === note.isMarkdown)) return null;
   await db.runAsync(
     'INSERT INTO note_versions (noteId, title, content, isMarkdown, savedAt) VALUES (?, ?, ?, ?, ?)',
     [note.id, old.title, old.content, old.isMarkdown, now]
@@ -153,6 +157,7 @@ const saveVersion = async (note: Pick<Note, 'id' | 'title' | 'content' | 'isMark
       (SELECT id FROM note_versions WHERE noteId = ? ORDER BY savedAt DESC, id DESC LIMIT ?)`,
     [note.id, note.id, VERSIONS_KEPT]
   );
+  return { at: now, title: old.title, content: old.content, isMarkdown: !!old.isMarkdown };
 };
 
 export const getNoteVersions = async (noteId: number): Promise<NoteVersion[]> => {
@@ -168,13 +173,14 @@ export const updateNote = changesNotes(async (
   const now = new Date().toISOString();
   await transact(db, async sync => {
     const old = await db.getFirstAsync<{ title: string }>('SELECT title FROM notes WHERE id = ?', [note.id]);
-    if (keepVersion) await saveVersion(note, now);
+    const version = keepVersion ? await saveVersion(note, now) : null;
     const result = await db.runAsync(
       `UPDATE notes SET title = ?, content = ?, isMarkdown = ?, updatedAt = ? WHERE id = ?`,
       [note.title, note.content, note.isMarkdown ? 1 : 0, now, note.id]
     );
     if (result.changes === 0) throw new Error('Note not found or no changes made');
     await sync.capture([note.id]);
+    if (version) await sync.versions(note.id, [version]);
     if (old) await sync.capture(await updateLinksAfterRename(note.id, old.title, note.title));
   });
 });

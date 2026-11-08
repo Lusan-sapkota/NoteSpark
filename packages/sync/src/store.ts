@@ -1,12 +1,23 @@
 import * as Y from 'yjs';
 import { type ReviewEntry, type SettingEntry, catalogUuids, isErased, markErased, markLive, markReview, markSetting, readReviews, readSettings } from './catalog.ts';
-import { type NoteState, docFromUpdates, readNote, writeNote } from './note.ts';
+import { type NoteState, type NoteVersion, addVersions, docFromUpdates, readNote, readVersions, writeNote } from './note.ts';
 
 // Functions on bytes for the phone's crdt_updates rows, so no Yjs types leave this package. `clientID` must stay the
 // same for a device and profile: docs are rebuilt from rows each time.
 
 export const noteUpdate = (updates: Uint8Array[], clientID: number, next: NoteState): Uint8Array | null =>
   writeNote(docFromUpdates(updates, clientID), next);
+
+// Adds versions to a note's doc; returns the update and the doc's new state vector (so the phone's marker stays current).
+export const noteVersionsUpdate = (updates: Uint8Array[], clientID: number, versions: NoteVersion[]): { update: Uint8Array | null; stateVector: Uint8Array } => {
+  const doc = docFromUpdates(updates, clientID);
+  const before = Y.encodeStateVector(doc);
+  addVersions(doc, versions);
+  const update = Y.encodeStateAsUpdate(doc, before);
+  return { update: update.length > 2 ? update : null, stateVector: Y.encodeStateVector(doc) };
+};
+
+export const versionsFromUpdates = (updates: Uint8Array[]): NoteVersion[] => readVersions(docFromUpdates(updates));
 
 export const noteFromUpdates = (updates: Uint8Array[]): NoteState => readNote(docFromUpdates(updates));
 

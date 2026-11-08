@@ -19,6 +19,7 @@ import { DailyNoteDialog, TemplateDialog } from '../components/NoteTemplates';
 import { dueCardCount } from '../utils/reviewCards';
 import { shareNotesAsJson, shareNotesAsZip } from '../utils/exportNotes';
 import { syncTaskReminders } from '../utils/taskReminders';
+import { syncRecords } from '../utils/syncedRecords';
 import { syncSettings } from '../utils/syncedSettings';
 import { updateWidgets } from '../widget/widgets';
 import Header, { useHeaderElevation } from '../components/Header';
@@ -147,6 +148,7 @@ const HomeScreen: React.FC = () => {
         syncTaskReminders().catch(error => console.warn('Task reminders update failed:', error));
         updateWidgets().catch(error => console.warn('Widget update failed:', error));
         syncSettings().catch(error => console.warn('Settings sync failed:', error));
+        syncRecords().catch(error => console.warn('Records sync failed:', error));
       }, 1500);
     } catch (error) {
       setLoading(false);

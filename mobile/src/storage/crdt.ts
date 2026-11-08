@@ -1,7 +1,7 @@
 // Sync side of the storage: notes as Yjs updates, written with their rows in one transaction.
 import * as Crypto from 'expo-crypto';
 import * as SQLite from 'expo-sqlite';
-import { type NoteState, type ReviewEntry, type SettingEntry, catalogUpdate, compact, noteCapture, noteWithStateVector, readCatalog, readReviewEntries, readSettingEntries, shouldCompact } from '@notespark/sync';
+import { type NoteState, type NoteVersion, type ReviewEntry, type SettingEntry, catalogUpdate, compact, noteCapture, noteVersionsUpdate, noteWithStateVector, readCatalog, readReviewEntries, readSettingEntries, shouldCompact, versionsFromUpdates } from '@notespark/sync';
 
 type DB = SQLite.SQLiteDatabase;
 
@@ -79,6 +79,8 @@ export interface SyncWrites {
   erase(uuids: string[]): Promise<void>;
   reviews(entries: ReviewEntry[]): Promise<void>;
   settings(entries: SettingEntry[]): Promise<void>;
+  versions(noteId: number, versions: NoteVersion[]): Promise<void>;
+  scratchpad(): Promise<void>;
 }
 
 const capture = async (db: DB, ids: number[], out: Delta[]): Promise<void> => {
@@ -114,6 +116,33 @@ const erase = async (db: DB, uuids: string[], out: Delta[]): Promise<void> => {
 const addReviews = async (db: DB, entries: ReviewEntry[], out: Delta[]): Promise<void> => {
   const update = catalogUpdate(await loadUpdates(db, CATALOG), clientId(db), { reviews: entries });
   if (update) await append(db, CATALOG, update, out);
+};
+
+// The note's earlier texts, added to its own doc after the note itself was captured.
+const addNoteVersions = async (db: DB, noteId: number, versions: NoteVersion[], out: Delta[]): Promise<void> => {
+  const row = await db.getFirstAsync<{ uuid: string | null }>('SELECT uuid FROM notes WHERE id = ?', [noteId]);
+  if (!row?.uuid || !versions.length) return;
+  if (await db.getFirstAsync('SELECT docId FROM crdt_adopted WHERE docId = ?', [row.uuid])) return;
+  const { update, stateVector } = noteVersionsUpdate(await loadUpdates(db, row.uuid), clientId(db), versions);
+  if (update) await append(db, row.uuid, update, out);
+  await setMarker(db, row.uuid, stateVector);
+};
+
+// The scratchpad's text into its doc (created, and listed in the catalog, the first time).
+const captureScratchpad = async (db: DB, out: Delta[]): Promise<void> => {
+  const row = await db.getFirstAsync<{ content: string; updatedAt: string }>('SELECT content, updatedAt FROM scratchpad WHERE id = 1');
+  const catalog = await loadUpdates(db, CATALOG);
+  const { erased, known } = readCatalog(catalog);
+  if (erased.has(SCRATCH_UUID) || (!row && !known.has(SCRATCH_UUID))) return;
+  const at = row?.updatedAt ?? new Date().toISOString();
+  const state: NoteState = { title: '', content: row?.content ?? '', isMarkdown: true, isPinned: false, isArchived: false, color: null, background: null, deletedAt: null, createdAt: at, updatedAt: at };
+  const { update, stateVector } = noteCapture(await loadUpdates(db, SCRATCH_UUID), clientId(db), state);
+  if (update) await append(db, SCRATCH_UUID, update, out);
+  await setMarker(db, SCRATCH_UUID, stateVector);
+  if (!known.has(SCRATCH_UUID)) {
+    const cat = catalogUpdate(catalog, clientId(db), { live: [SCRATCH_UUID] });
+    if (cat) await append(db, CATALOG, cat, out);
+  }
 };
 
 // Settings the person syncs ride in the catalog doc as well.
@@ -167,6 +196,8 @@ export const transact = <T>(db: DB, work: (sync: SyncWrites) => Promise<T>): Pro
       erase: uuids => (states.get(db) ? erase(db, uuids, out) : Promise.resolve()),
       reviews: entries => (states.get(db) && entries.length ? addReviews(db, entries, out) : Promise.resolve()),
       settings: entries => (states.get(db) && entries.length ? addSettings(db, entries, out) : Promise.resolve()),
+      versions: (noteId, versions) => (states.get(db) ? addNoteVersions(db, noteId, versions, out) : Promise.resolve()),
+      scratchpad: () => (states.get(db) ? captureScratchpad(db, out) : Promise.resolve()),
     };
     await db.execAsync('BEGIN IMMEDIATE');
     try {
@@ -252,9 +283,20 @@ export const reconcile = async (db: DB): Promise<void> => {
     });
   }
   const orphans = await db.getAllAsync<{ docId: string }>(
-    `SELECT DISTINCT docId FROM crdt_updates WHERE docId != ? AND docId NOT IN (SELECT uuid FROM notes WHERE uuid IS NOT NULL)`, [CATALOG]
+    `SELECT DISTINCT docId FROM crdt_updates WHERE docId != ? AND docId != ? AND docId NOT IN (SELECT uuid FROM notes WHERE uuid IS NOT NULL)`, [CATALOG, SCRATCH_UUID]
   );
   if (orphans.length > 0) await eraseNotes(db, orphans.map(o => o.docId));
+  // The scratchpad: a doc ahead of the table fills it, a table with text not in the doc goes into it.
+  await transact(db, async sync => {
+    const marker = await db.getFirstAsync<{ stateVector: Uint8Array }>('SELECT stateVector FROM crdt_materialized WHERE docId = ?', [SCRATCH_UUID]);
+    const docs = await loadUpdates(db, SCRATCH_UUID);
+    if (marker && docs.length) {
+      const current = noteWithStateVector(docs);
+      if (!sameBytes(marker.stateVector, current.stateVector)) { await materialize(db, SCRATCH_UUID, current); return; }
+    }
+    const row = await db.getFirstAsync<{ content: string }>('SELECT content FROM scratchpad WHERE id = 1');
+    if (row?.content && (!marker || noteWithStateVector(docs).note.content !== row.content)) await sync.scratchpad();
+  });
 };
 
 const reconciled = new WeakSet<DB>();
@@ -264,8 +306,35 @@ export const reconcileOnce = async (db: DB) => {
   await reconcile(db);
 };
 
+// The profile's scratchpad is a synced doc of its own under this fixed id; it fills the scratchpad table, never the notes table.
+export const SCRATCH_UUID = '00000000-0000-4000-8000-000000000001';
+
+// A note's synced earlier texts become rows of its history here (the ones this device has not got), newest 20 kept.
+const importVersions = async (db: DB, uuid: string): Promise<void> => {
+  const versions = versionsFromUpdates(await loadUpdates(db, uuid));
+  if (!versions.length) return;
+  const row = await db.getFirstAsync<{ id: number }>('SELECT id FROM notes WHERE uuid = ?', [uuid]);
+  if (!row) return;
+  for (const v of versions) {
+    if (await db.getFirstAsync('SELECT 1 FROM note_versions WHERE noteId = ? AND savedAt = ? AND content = ?', [row.id, v.at, v.content])) continue;
+    await db.runAsync('INSERT INTO note_versions (noteId, title, content, isMarkdown, savedAt) VALUES (?, ?, ?, ?, ?)', [row.id, v.title, v.content, v.isMarkdown ? 1 : 0, v.at]);
+  }
+  await db.runAsync(
+    'DELETE FROM note_versions WHERE noteId = ? AND id NOT IN (SELECT id FROM note_versions WHERE noteId = ? ORDER BY savedAt DESC, id DESC LIMIT 20)',
+    [row.id, row.id]
+  );
+};
+
 const materialize = async (db: DB, uuid: string, preloaded?: { note: NoteState; stateVector: Uint8Array }): Promise<void> => {
   const { note: n, stateVector } = preloaded ?? noteWithStateVector(await loadUpdates(db, uuid));
+  if (uuid === SCRATCH_UUID) {
+    await db.runAsync(
+      'INSERT INTO scratchpad (id, content, updatedAt) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET content = excluded.content, updatedAt = excluded.updatedAt',
+      [n.content, n.updatedAt || new Date().toISOString()]
+    );
+    await setMarker(db, uuid, stateVector);
+    return;
+  }
   await db.runAsync(
     `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, isPinned, isArchived, deletedAt, color, background, uuid)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -275,6 +344,7 @@ const materialize = async (db: DB, uuid: string, preloaded?: { note: NoteState; 
     [n.title, n.content, n.isMarkdown ? 1 : 0, n.createdAt, n.updatedAt, n.isPinned ? 1 : 0, n.isArchived ? 1 : 0, n.deletedAt, n.color ?? null, n.background ?? null, uuid]
   );
   await setMarker(db, uuid, stateVector);
+  await importVersions(db, uuid);
 };
 
 export interface Delta {

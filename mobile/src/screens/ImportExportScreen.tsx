@@ -9,6 +9,7 @@ import Dialog from '../components/Dialog';
 import Menu from '../components/Menu';
 import { RootStackParamList } from '../types';
 import { sendAppNotification } from '../utils/notifications';
+import { markHistoryCleared } from '../utils/syncedRecords';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
@@ -184,6 +185,7 @@ const ImportExportScreen: React.FC = () => {
           onPress: async () => {
             try {
               await AsyncStorage.removeItem('notesHistory');
+              await markHistoryCleared();
               setHistory([]);
               console.log('Cleared notesHistory');
             } catch (e) {

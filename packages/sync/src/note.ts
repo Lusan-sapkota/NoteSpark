@@ -74,3 +74,42 @@ export const docFromUpdates = (updates: Uint8Array[], clientID?: number): Y.Doc 
   if (clientID !== undefined) doc.clientID = clientID;
   return doc;
 };
+
+
+// Earlier texts of a note (its version history) ride in the note's own doc, so they travel with it. Newest few only, and
+// small ones only: a doc must stay well inside the protocol's frame size.
+export interface NoteVersion { at: string; title: string; content: string; isMarkdown: boolean }
+export const VERSIONS_SYNCED = 10;
+export const MAX_VERSION_BYTES = 20_000;
+const versionList = (doc: Y.Doc) => doc.getArray<string>('versions');
+const parseVersion = (text: unknown): NoteVersion | null => {
+  if (typeof text !== 'string' || text.length > MAX_VERSION_BYTES + 400) return null;
+  try {
+    const v = JSON.parse(text);
+    return v && typeof v.at === 'string' && typeof v.title === 'string' && typeof v.content === 'string' ? { at: v.at, title: v.title, content: v.content, isMarkdown: !!v.isMarkdown } : null;
+  } catch { return null; }
+};
+export const readVersions = (doc: Y.Doc): NoteVersion[] => versionList(doc).toArray().map(parseVersion).filter((v): v is NoteVersion => !!v);
+// Adds the ones not there yet and drops the oldest past VERSIONS_SYNCED; returns whether anything changed.
+export const addVersions = (doc: Y.Doc, versions: NoteVersion[]): boolean => {
+  const list = versionList(doc);
+  const have = new Set(list.toArray());
+  let changed = false;
+  doc.transact(() => {
+    for (const v of versions) {
+      if (v.content.length + v.title.length > MAX_VERSION_BYTES) continue;
+      const text = JSON.stringify({ at: v.at, title: v.title, content: v.content, isMarkdown: v.isMarkdown });
+      if (have.has(text)) continue;
+      list.push([text]);
+      have.add(text);
+      changed = true;
+    }
+    const extra = list.length - VERSIONS_SYNCED;
+    if (extra > 0) {
+      const order = list.toArray().map((t, i) => ({ i, at: parseVersion(t)?.at ?? '' })).sort((a, b) => (a.at < b.at ? -1 : a.at > b.at ? 1 : a.i - b.i));
+      order.slice(0, extra).map(o => o.i).sort((a, b) => b - a).forEach(i => list.delete(i, 1));
+      changed = true;
+    }
+  });
+  return changed;
+};
