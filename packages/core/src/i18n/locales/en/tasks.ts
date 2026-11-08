@@ -60,7 +60,6 @@ export default {
   'tasks.markDone': 'Mark done',
   'tasks.tasksDone': 'Tasks marked done',
   'tasks.tasksMoved': 'Tasks moved to {name}',
-  'tasks.moveNeedsUnlock': '{name} is locked. Open it from Home, enter its PIN, then try again.',
   'tasks.moveTask': 'Move task',
   'tasks.moveTasksTo': 'Move tasks to',
 } as const;

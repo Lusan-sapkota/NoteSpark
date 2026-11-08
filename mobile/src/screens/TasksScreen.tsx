@@ -9,7 +9,8 @@ import Dialog from '../components/Dialog';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
 import AddTaskDialog, { TaskTarget } from '../components/AddTaskDialog';
-import { getActiveProfile, getProfiles, Profile, TaskMove, transferTasksToProfile, undoTaskMove, unlockWithBiometrics, verifyProfilePin } from '../storage/profiles';
+import { getActiveProfile, getProfiles, Profile, TaskMove, transferTasksToProfile, undoTaskMove } from '../storage/profiles';
+import { useProfileUnlock } from '../components/ProfileUnlock';
 import { updateWidgets } from '../widget/widgets';
 import { RootStackParamList } from '../types';
 import { addTaskToNote, deleteTaskLine, getNotes, getScratchpadNote, insertTaskLine, restoreTaskLine, SCRATCHPAD_ID, toggleTaskInNote } from '../storage/notes';
@@ -109,6 +110,7 @@ const TasksScreen: React.FC = () => {
   const [others, setOthers] = useState<Profile[]>([]);
   const [moving, setMoving] = useState<Task[] | null>(null); // the tasks waiting for a profile to be picked
   const [batch, setBatch] = useState<{ message: string; undo: () => Promise<void> } | null>(null);
+  const unlock = useProfileUnlock();
   const selecting = selected.length > 0;
   const clearSelection = () => setSelected([]);
   const toggleSelected = (key: string) => setSelected(s => (s.includes(key) ? s.filter(k => k !== key) : [...s, key]));
@@ -257,14 +259,12 @@ const TasksScreen: React.FC = () => {
 
   const moveTasks = async (profile: Profile, targets: Task[]) => {
     setMoving(null);
-    // A locked profile opens with the fingerprint here; otherwise Home is where its PIN is asked.
-    if (!(await verifyProfilePin(profile.id, '')) && !(await unlockWithBiometrics(profile))) {
-      alert(profile.name, t('tasks.moveNeedsUnlock', { name: profile.name }));
-      return;
-    }
+    // A locked profile opens with the fingerprint, or its PIN asked here.
+    const auth = await unlock.ask(profile, t('home.moveToProfile', { name: profile.name }));
+    if (!auth) return;
     clearSelection();
     try {
-      const move: TaskMove = await transferTasksToProfile(targets, profile.id);
+      const move: TaskMove = await transferTasksToProfile(targets, profile.id, auth.pin);
       if (move.gone.length) {
         setLastDone(null);
         setBatch({ message: t('tasks.tasksMoved', { name: profile.name }), undo: async () => { await undoTaskMove(move); updateWidgets().catch(() => {}); load(); } });
@@ -433,6 +433,7 @@ const TasksScreen: React.FC = () => {
           <Button onPress={() => setMoving(null)}>{t('common.cancel')}</Button>
         </Dialog.Actions>
       </Dialog>
+      {unlock.dialog}
       <AddTaskDialog visible={adding} onDismiss={() => setAdding(false)} onAdd={addTask} />
       <AddTaskDialog visible={!!editing} task={editing ?? undefined} onDismiss={() => setEditing(null)} onAdd={saveEdit} />
       <Snackbar visible={!!batch} onDismiss={() => setBatch(null)} duration={2500} wrapperStyle={styles.snackbar} action={batch ? { label: t('common.undo'), onPress: () => { const b = batch; setBatch(null); b.undo().catch(() => alert(t('tasks.undoFailedTitle'), t('common.tryAgainRestart'))); } } : undefined}>{batch?.message}</Snackbar>

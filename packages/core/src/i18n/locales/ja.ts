@@ -347,7 +347,6 @@ const catalog: Record<string, string> = {
   "tasks.markDone": "完了にする",
   "tasks.tasksDone": "タスクを完了にしました",
   "tasks.tasksMoved": "タスクを {name} に移動しました",
-  "tasks.moveNeedsUnlock": "{name} はロックされています。ホームから開いて PIN を入力し、もう一度お試しください。",
   "tasks.overdue": "期限切れ",
   "tasks.upcoming": "今後の予定",
   "tasks.noDueDate": "期限なし",

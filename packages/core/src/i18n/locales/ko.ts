@@ -347,7 +347,6 @@ const catalog: Record<string, string> = {
   "tasks.markDone": "완료로 표시",
   "tasks.tasksDone": "작업을 완료로 표시했습니다",
   "tasks.tasksMoved": "작업을 {name}(으)로 이동했습니다",
-  "tasks.moveNeedsUnlock": "{name}이(가) 잠겨 있습니다. 홈에서 열어 PIN을 입력한 뒤 다시 시도하세요.",
   "tasks.overdue": "기한 지남",
   "tasks.upcoming": "예정",
   "tasks.noDueDate": "기한 없음",

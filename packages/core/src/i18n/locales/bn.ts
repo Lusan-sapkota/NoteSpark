@@ -365,7 +365,6 @@ const catalog: Record<string, string> = {
   "tasks.markDone": "সম্পন্ন চিহ্নিত করুন",
   "tasks.tasksDone": "কাজগুলো সম্পন্ন চিহ্নিত হয়েছে",
   "tasks.tasksMoved": "কাজগুলো {name}-এ সরানো হয়েছে",
-  "tasks.moveNeedsUnlock": "{name} লক করা আছে। হোম থেকে খুলে এর PIN দিন, তারপর আবার চেষ্টা করুন।",
   "tasks.upcoming": "আসন্ন",
   "tasks.noDueDate": "শেষ তারিখ নেই",
   "tasks.moreOptionsFor": "{title} এর আরও বিকল্প",

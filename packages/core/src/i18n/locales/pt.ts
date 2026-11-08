@@ -382,7 +382,6 @@ const catalog: Record<string, string> = {
   "tasks.markDone": "Marcar como concluída",
   "tasks.tasksDone": "Tarefas marcadas como concluídas",
   "tasks.tasksMoved": "Tarefas movidas para {name}",
-  "tasks.moveNeedsUnlock": "{name} está bloqueado. Abra-o no Início, digite o PIN e tente de novo.",
   "tasks.overdue": "Atrasadas",
   "tasks.upcoming": "Próximas",
   "tasks.noDueDate": "Sem data de vencimento",

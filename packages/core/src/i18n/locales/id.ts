@@ -348,7 +348,6 @@ const catalog: Record<string, string> = {
   "tasks.markDone": "Tandai selesai",
   "tasks.tasksDone": "Tugas ditandai selesai",
   "tasks.tasksMoved": "Tugas dipindahkan ke {name}",
-  "tasks.moveNeedsUnlock": "{name} terkunci. Buka dari Beranda, masukkan PIN-nya, lalu coba lagi.",
   "tasks.overdue": "Terlambat",
   "tasks.upcoming": "Mendatang",
   "tasks.noDueDate": "Tanpa tenggat",

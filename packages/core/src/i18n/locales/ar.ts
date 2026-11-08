@@ -433,7 +433,6 @@ const catalog: Record<string, string> = {
   "tasks.markDone": "وضع علامة منجز",
   "tasks.tasksDone": "تم وضع علامة منجز على المهام",
   "tasks.tasksMoved": "تم نقل المهام إلى {name}",
-  "tasks.moveNeedsUnlock": "{name} مقفل. افتحه من الرئيسية وأدخل رمز PIN ثم حاول مرة أخرى.",
   "tasks.overdue": "متأخرة",
   "tasks.upcoming": "القادمة",
   "tasks.noDueDate": "بلا تاريخ استحقاق",
