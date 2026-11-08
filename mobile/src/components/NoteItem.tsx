@@ -122,8 +122,6 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
       <TouchableRipple
         onPress={() => (selecting ? onSelect(note.id) : onPress(note.id))}
         onLongPress={() => onSelect(note.id)}
-        // The highlight waits a moment, so a scroll or swipe that starts on the row never lights it up (as in Messages).
-        unstable_pressDelay={120}
         accessibilityRole={selecting ? 'checkbox' : 'button'}
         accessibilityState={selecting ? { checked: selected } : undefined}
         accessibilityLabel={isPinned ? t('home.pinnedTitle', { title }) : title}
@@ -224,8 +222,8 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
       overshootLeft={false}
       overshootRight={false}
       // The default 10 dp let a drifting scroll start a swipe and stall the list.
-      dragOffsetFromLeft={36}
-      dragOffsetFromRight={-36}
+      dragOffsetFromLeft={28}
+      dragOffsetFromRight={-28}
       onSwipeableOpen={onSwipeOpen}
       renderLeftActions={(_progress, translation) => (
         <SwipePanel translation={translation} side="left">{swipeAction(note.isArchived ? 'archive-arrow-up-outline' : 'archive-arrow-down-outline', note.isArchived ? t('home.unarchive') : t('home.archive'), theme.colors.secondaryContainer, theme.colors.onSecondaryContainer, 'flex-start')}</SwipePanel>
