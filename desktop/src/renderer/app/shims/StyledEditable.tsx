@@ -220,6 +220,10 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
     focus: () => root.current?.focus(),
     blur: () => root.current?.blur(),
     isFocused: () => document.activeElement === root.current,
+    measureInWindow: (done: (x: number, y: number, width: number, height: number) => void) => {
+      const r = root.current?.getBoundingClientRect();
+      if (r) done(r.left, r.top, r.width, r.height);
+    },
     setSelection: (start: number, end: number) => {
       if (document.activeElement !== root.current) root.current?.focus();
       place(start, end);
