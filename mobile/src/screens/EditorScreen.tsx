@@ -819,7 +819,8 @@ const EditorScreen: React.FC = () => {
               <View style={styles.body}>
                 <TextInput
                   ref={bodyRef}
-                  style={[styles.contentInput, theme.fonts.noteBody, { color: own?.on ?? theme.colors.onSurface }]}
+                  // Fills the free height on the desktop only; on the phone a growing box made Enter flicker and closed the keyboard.
+                  style={[styles.contentInput, Platform.OS === 'web' && styles.fill, theme.fonts.noteBody, { color: own?.on ?? theme.colors.onSurface }]}
                   value={rawWebBox ? displayText : undefined}
                   onChangeText={handleChangeText}
                   multiline
@@ -1196,10 +1197,10 @@ const styles = StyleSheet.create({
   // Grows with the text and lets the screen scroll; nothing resizes it while it gains focus.
   contentInput: {
     minHeight: 300,
-    flexGrow: 1,
     marginTop: space.lg,
     padding: 0,
   },
+  fill: { flexGrow: 1 },
   // Floats a little in from the screen edges instead of running edge to edge.
   toolbar: {
     marginHorizontal: space.md,

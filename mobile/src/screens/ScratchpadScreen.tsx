@@ -159,7 +159,7 @@ const ScratchpadScreen: React.FC = () => {
           </Text>
           <TextInput
             ref={inputRef}
-            style={[styles.input, theme.fonts.noteBody, { color: theme.colors.onSurface }]}
+            style={[styles.input, Platform.OS === 'web' && styles.fill, theme.fonts.noteBody, { color: theme.colors.onSurface }]}
             value={text}
             onChangeText={handleChangeText}
             onSelectionChange={e => setSelection(e.nativeEvent.selection)}
@@ -208,9 +208,9 @@ const styles = StyleSheet.create({
     maxWidth: readingWidth,
     alignSelf: 'center',
   },
+  fill: { flexGrow: 1 },
   input: {
     minHeight: 300,
-    flexGrow: 1,
     marginTop: space.md,
     padding: 0,
   },
