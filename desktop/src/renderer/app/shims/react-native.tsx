@@ -1,6 +1,6 @@
 // react-native-web plus the native API bits the phone's screens call that it lacks.
 import React from 'react';
-import { FlatList as WebFlatList, TextInput as WebTextInput } from 'react-native-web';
+import { FlatList as WebFlatList, ScrollView as WebScrollView, TextInput as WebTextInput } from 'react-native-web';
 
 export * from 'react-native-web';
 
@@ -31,3 +31,29 @@ export const BackHandler = {
 export const FlatList = React.forwardRef<any, any>((props, ref) => (
   <WebFlatList windowSize={5} initialNumToRender={10} maxToRenderPerBatch={10} updateCellsBatchingPeriod={40} {...props} ref={ref} />
 ));
+
+// Horizontal rows (chips, swatches) have no bar to drag; let the mouse wheel scroll them sideways.
+export const ScrollView = React.forwardRef<any, any>((props, ref) => {
+  const inner = React.useRef<any>(null);
+  React.useEffect(() => {
+    const node = props.horizontal ? inner.current?.getScrollableNode?.() : null;
+    if (!node) return;
+    const onWheel = (e: WheelEvent) => {
+      if (e.deltaX || !e.deltaY || node.scrollWidth <= node.clientWidth) return;
+      node.scrollLeft += e.deltaY;
+      e.preventDefault();
+    };
+    node.addEventListener('wheel', onWheel, { passive: false });
+    return () => node.removeEventListener('wheel', onWheel);
+  }, [props.horizontal]);
+  return (
+    <WebScrollView
+      {...props}
+      ref={(node: any) => {
+        inner.current = node;
+        if (typeof ref === 'function') ref(node);
+        else if (ref) ref.current = node;
+      }}
+    />
+  );
+});

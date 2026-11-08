@@ -229,8 +229,11 @@ const HomeScreen: React.FC = () => {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await loadNotes(true);
-    setRefreshing(false);
+    try {
+      await loadNotes(true);
+    } finally {
+      setRefreshing(false);
+    }
   };
 
   useEffect(() => {

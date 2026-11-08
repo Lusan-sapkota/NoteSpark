@@ -100,7 +100,7 @@ export const shape = {
 export const space = { xs: 4, sm: 8, md: 12, lg: 16, xl: 24, xxl: 32, xxxl: 48 };
 
 // Max width of the reading column (about 80 characters at noteBody; raised from 680 on 2026-11-01 so wide screens have smaller side gaps).
-export const readingWidth = 800;
+export const readingWidth = 960;
 
 
 // Type scale (dp): UI is Figtree, note content is Literata, noteCode uses the platform monospace.
