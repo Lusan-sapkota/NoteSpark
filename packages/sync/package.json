@@ -1,6 +1,6 @@
 {
   "name": "@notespark/sync",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "private": true,
   "type": "module",
   "description": "NoteSpark's merge core (Yjs): note docs, diff on save, update exchange, compaction. No sockets, no Expo, no Node-only imports.",
