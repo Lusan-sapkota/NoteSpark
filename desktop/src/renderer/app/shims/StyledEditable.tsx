@@ -71,9 +71,30 @@ const scrollState = (el: HTMLElement) => {
   return () => saved.forEach(([p, top]) => { p.scrollTop = top; });
 };
 
+// Scrolls the nearest scrolling ancestor just enough to keep the caret on screen (typing and Enter are made here, not by the
+// browser, so the browser does not do this for us).
+const revealCaret = (el: HTMLElement, atEnd: boolean) => {
+  const sel = window.getSelection();
+  if (!sel || sel.rangeCount === 0) return;
+  const range = sel.getRangeAt(0).cloneRange();
+  range.collapse(true);
+  const brk = el.querySelector('br[data-end="1"]');
+  const node = range.startContainer;
+  const box = (range.getClientRects()[0] ?? (atEnd && brk ? brk.getBoundingClientRect() : (node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement)?.getBoundingClientRect())) as DOMRect | undefined;
+  if (!box) return;
+  let parent = el.parentElement;
+  while (parent && !/(auto|scroll)/.test(getComputedStyle(parent).overflowY)) parent = parent.parentElement;
+  if (!parent) return;
+  const view = parent.getBoundingClientRect();
+  const pad = 24;
+  if (box.bottom > view.bottom - pad) parent.scrollTop += box.bottom - view.bottom + pad;
+  else if (box.top < view.top + pad) parent.scrollTop -= view.top + pad - box.top;
+};
+
 const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, ref) => {
   const root = React.useRef<HTMLDivElement>(null);
   const latest = React.useRef(props);
+  const editRef = React.useRef<(insert: string) => void>(() => {});
   latest.current = props;
   const caret = React.useRef<Selection>({ start: 0, end: 0 });
   const composing = React.useRef(false);
@@ -102,7 +123,13 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
       let last: Text | null = null;
       for (let n = walker.nextNode(); n; n = walker.nextNode()) {
         const len = n.textContent?.length ?? 0;
-        if ((n.parentElement as HTMLElement | null)?.dataset.h === '1') { seen += len; continue; }
+        const span = n.parentElement as HTMLElement | null;
+        if (span?.dataset.h === '1') {
+          // At the end of a hidden mark (or inside it) the caret goes just after it, so the next letter lands outside the mark.
+          if (target > seen && target <= seen + len && span.parentNode) return [span.parentNode, Array.prototype.indexOf.call(span.parentNode.childNodes, span) + 1];
+          seen += len;
+          continue;
+        }
         last = n as Text;
         if (target <= seen + len) return [n, Math.max(0, target - seen)];
         seen += len;
@@ -149,10 +176,32 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
     el.replaceChildren(frag);
     if (before) place(before.start, before.end);
     restoreScroll();
+    if (before && focused) revealCaret(el, before.end >= text.length);
   };
 
   React.useLayoutEffect(() => { ensureStyle(); }, []);
   React.useLayoutEffect(() => { if (!composing.current) draw(); });
+
+  // Typing, line breaks and pastes are handled here, before the browser makes <div> or <br> out of them (React's onBeforeInput is not this event).
+  React.useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const onBefore = (e: Event) => {
+      const ev = e as InputEvent;
+      if (ev.inputType === 'insertParagraph' || ev.inputType === 'insertLineBreak') { ev.preventDefault(); editRef.current('\n'); }
+      else if (ev.inputType === 'insertText' && !ev.isComposing && typeof ev.data === 'string') {
+        // Typed letters too: the browser would put them in the nearest visible text, which is inside a mark's styled word
+        // when the caret sits after a hidden mark.
+        ev.preventDefault();
+        editRef.current(ev.data);
+      } else if (ev.inputType === 'insertFromPaste' || ev.inputType === 'insertFromDrop') {
+        ev.preventDefault();
+        editRef.current((ev.data ?? ev.dataTransfer?.getData('text/plain') ?? '').replace(/\r\n?/g, '\n'));
+      }
+    };
+    el.addEventListener('beforeinput', onBefore);
+    return () => el.removeEventListener('beforeinput', onBefore);
+  }, []);
 
   // The caret moved: tell the screen.
   React.useEffect(() => {
@@ -176,6 +225,21 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
       caret.current = { start, end };
     },
   }));
+
+  // A change made here rather than by the browser: replaces [start, end) of the text and puts the caret after the new text. Line
+  // breaks and pastes go through this, because the browser draws them as <div> or <br> and not as characters in the text.
+  const edit = (insert: string) => {
+    const el = root.current;
+    const o = offsets();
+    if (!el || !o) return;
+    const text = readText(el);
+    const next = text.slice(0, o.start) + insert + text.slice(o.end);
+    if (next === text) return;
+    pendingCaret.current = o.start + insert.length;
+    props.onChangeText(next);
+  };
+
+  editRef.current = edit;
 
   const read = () => (root.current ? readText(root.current) : '');
   const css = toCss(props.style ?? {}) as React.CSSProperties;
@@ -203,9 +267,6 @@ const StyledEditable = React.forwardRef<unknown, StyledEditableProps>((props, re
           e.preventDefault();
           pendingCaret.current = mark[0];
           props.onChangeText(props.text.slice(0, mark[0]) + props.text.slice(mark[1]));
-        } else if (e.key === 'Enter' && !e.nativeEvent.isComposing) {
-          e.preventDefault();
-          document.execCommand('insertText', false, '\n');
         } else if (mod && e.key.toLowerCase() === 'z') {
           e.preventDefault();
           (e.shiftKey ? props.onRedo : props.onUndo)?.();
