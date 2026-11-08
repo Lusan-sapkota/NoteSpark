@@ -442,7 +442,7 @@ code {
 }
 .sync-badge .i { width: 20px; height: 20px; }
 .track { position: relative; width: 56px; height: 4px; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, currentColor 25%, transparent); }
-.track i { position: absolute; top: 0; left: -8px; width: 8px; height: 4px; border-radius: 2px; background: var(--on-tertiary-container); animation: hop 1.2s linear infinite; }
+.track i { position: absolute; top: 0; left: -8px; width: 8px; height: 4px; border-radius: 2px; background: currentColor; animation: hop 1.2s linear infinite; }
 .track i:nth-child(2) { animation-delay: -.4s; } .track i:nth-child(3) { animation-delay: -.8s; }
 @keyframes hop { to { transform: translateX(72px); } }
 .stage-caption { position: relative; height: 32px; margin-top: 16px; text-align: center; }
