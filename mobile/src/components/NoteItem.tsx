@@ -20,7 +20,8 @@ interface NoteItemProps {
   isPinned: boolean;
   onPinToggle: (noteId: number) => void;
   onArchiveToggle: (noteId: number) => void;
-  onTransfer?: (noteId: number) => void;
+  transferTo?: { id: string; name: string }[]; // the other profiles, one menu item each
+  onTransfer?: (noteId: number, profileId: string) => void;
   // Selecting: long-press starts it; while it's on, a tap selects instead of opening.
   onSelect: (noteId: number) => void;
   selecting?: boolean;
@@ -81,6 +82,7 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
   isPinned,
   onPinToggle,
   onArchiveToggle,
+  transferTo,
   onTransfer,
   onSelect,
   selecting = false,
@@ -193,13 +195,14 @@ const NoteItem: React.FC<NoteItemProps> = memo(({
                     title={note.isArchived ? t('home.unarchive') : t('home.archive')}
                     onPress={() => { setMenuVisible(false); onArchiveToggle(note.id); }}
                   />
-                  {onTransfer && (
+                  {onTransfer && transferTo?.map(p => (
                     <Menu.Item
+                      key={p.id}
                       leadingIcon="account-arrow-right-outline"
-                      title={t('home.moveToProfile')}
-                      onPress={() => { setMenuVisible(false); onTransfer(note.id); }}
+                      title={t('home.moveToProfile', { name: p.name })}
+                      onPress={() => { setMenuVisible(false); onTransfer(note.id, p.id); }}
                     />
-                  )}
+                  ))}
                   <Menu.Item
                     leadingIcon="delete-outline"
                     title={t('home.moveToBin')}

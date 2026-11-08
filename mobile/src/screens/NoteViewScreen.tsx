@@ -8,6 +8,7 @@ import Dialog from '../components/Dialog';
 import { useReducedMotion } from 'react-native-reanimated';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
+import { getActiveProfile, getProfiles } from '../storage/profiles';
 import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, saveNote, setNoteArchived, setNoteStyle, setNotePinned, updateNote } from '../storage/notes';
 import { findTaskLines, formatDue, getLanguage, headingOf, titleFromText, parseFormatted, splitDue, t as translate, toggleTaskLine } from '@notespark/core';
 import { extractTags, suggestTags } from '@notespark/core';
@@ -107,6 +108,7 @@ export interface NotePane {
   open: (noteId: string) => void;
   binned: (noteId: number) => void;
   tag: (tag: string) => void;
+  transfer: (noteId: number, profileId: string) => void;
 }
 
 const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
@@ -158,6 +160,12 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
     onScroll(e);
     setTitleInBar(e.nativeEvent.contentOffset.y > titleBottom);
   };
+
+  // The other profiles, for the Move to menu items (Home asks and unlocks).
+  const [otherProfiles, setOtherProfiles] = useState<{ id: string; name: string }[]>([]);
+  useEffect(() => {
+    Promise.all([getProfiles(), getActiveProfile()]).then(([all, active]) => setOtherProfiles(all.filter(p => p.id !== active.id).map(p => ({ id: p.id, name: p.name })))).catch(() => {});
+  }, []);
 
   const handleMakeCopy = async () => {
     setMenuVisible(false);
@@ -515,6 +523,14 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
               anchor={<Appbar.Action icon="dots-vertical" iconColor={own?.on} onPress={() => setMenuVisible(true)} accessibilityLabel={t('note.moreOptions')} />}
             >
               <Menu.Item leadingIcon="content-duplicate" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
+              {otherProfiles.map(p => (
+                <Menu.Item
+                  key={p.id}
+                  leadingIcon="account-arrow-right-outline"
+                  title={t('home.moveToProfile', { name: p.name })}
+                  onPress={() => { setMenuVisible(false); if (pane) pane.transfer(note.id, p.id); else navigation.popTo('Home', { transfer: { noteId: note.id, profileId: p.id } }); }}
+                />
+              ))}
               <Menu.Item
                 leadingIcon="share-variant-outline"
                 title={t('editor.send')}

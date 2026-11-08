@@ -10,7 +10,7 @@ import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../types';
-import { clearDraft, getDraft, getNotes, getNotesVersion, getScratchpadNote, onRemoteApplied, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
+import { clearDraft, getDraft, getNoteById, getNotes, getNotesVersion, getScratchpadNote, onRemoteApplied, moveNoteToBin, restoreNote, setNoteArchived, setNotePinned } from '../storage/notes';
 import { eraseForgottenProfile, getActiveProfile, getProfiles, Profile, switchProfile, transferNotesToProfile, unlockWithBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { isMeaningSearchAvailable, searchByMeaning, syncSearchIndex } from '../storage/semanticSearch';
 import { Note } from '../types';
@@ -435,6 +435,7 @@ const HomeScreen: React.FC = () => {
         await loadNotes();
       });
       await loadNotes();
+      if (paneNoteId && targets.some(n => String(n.id) === paneNoteId)) setPaneNoteId(null);
       setSnackbar(t('home.notesMovedTo', { count: targets.length, name: profile.name }));
     } catch (error) {
       console.error('Failed to transfer notes:', error);
@@ -620,10 +621,28 @@ const HomeScreen: React.FC = () => {
     }
   });
 
-  const handleTransferNote = useStable((noteId: number) => {
+  // The profiles a note can go to, one menu item each (none when there is only this one).
+  const otherProfiles = useMemo(() => {
+    const others = profiles.filter(p => p.id !== activeProfile?.id).map(p => ({ id: p.id, name: p.name }));
+    return others.length ? others : undefined;
+  }, [profiles, activeProfile?.id]);
+
+  const handleTransferNote = useStable((noteId: number, profileId: string) => {
     const note = notes.find(n => n.id === noteId);
-    if (note) startTransfer([note]);
+    const profile = profiles.find(p => p.id === profileId);
+    if (note && profile) promptTransferToProfile(profile, [note]);
   });
+
+  // The note page asks for a move the same way it asks for Undo after the bin: through a parameter.
+  const transferParam = route.params?.transfer;
+  useEffect(() => {
+    if (!transferParam) return;
+    navigation.setParams({ transfer: undefined });
+    getNoteById(transferParam.noteId).then(note => {
+      const profile = profiles.find(p => p.id === transferParam.profileId);
+      if (note && profile) promptTransferToProfile(profile, [note]);
+    }, () => {});
+  }, [transferParam]);
 
   const renderNoteItem = useCallback(
     ({ item, index }: { item: Note; index: number }) => {
@@ -639,7 +658,8 @@ const HomeScreen: React.FC = () => {
           isPinned={isPinned}
           onPinToggle={handlePinToggle}
           onArchiveToggle={handleArchiveToggle}
-          onTransfer={profiles.length > 1 ? handleTransferNote : undefined}
+          transferTo={otherProfiles}
+          onTransfer={handleTransferNote}
           onSelect={handleSelect}
           selecting={selecting}
           selected={selectedIds.includes(item.id) || (twoPane && String(item.id) === paneNoteId)}
@@ -658,7 +678,7 @@ const HomeScreen: React.FC = () => {
         </>
       );
     },
-    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, profiles.length, handleSelect, selecting, selectedIds, twoPane, paneNoteId, filteredNotes, sortType, relatedFrom, theme, t]
+    [handleNotePress, handleDeleteNote, handleEditNote, handlePinToggle, handleArchiveToggle, handleTransferNote, otherProfiles, handleSelect, selecting, selectedIds, twoPane, paneNoteId, filteredNotes, sortType, relatedFrom, theme, t]
   );
 
   useEffect(() => {
@@ -997,6 +1017,7 @@ const HomeScreen: React.FC = () => {
                   noteId: paneNoteId,
                   open: setPaneNoteId,
                   binned: (id: number) => { setPaneNoteId(null); loadNotes(); showBinned(id); },
+                  transfer: (id: number, profileId: string) => handleTransferNote(id, profileId),
                   tag: (tag: string) => { setFilter(`tag:${tag}`); setSearchText(''); },
                 }}
               />
