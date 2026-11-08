@@ -49,6 +49,7 @@
     "react-native-keyboard-controller": "1.22.7",
     "react-native-markdown-display": "^7.0.2",
     "react-native-paper": "^5.15.3",
+    "react-native-paper-dates": "0.24.1",
     "react-native-reanimated": "^4.7.1",
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0",

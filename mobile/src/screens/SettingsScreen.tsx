@@ -13,7 +13,8 @@ import { isWebImagesOn, setWebImagesOn } from '../utils/webImages';
 import { isLiveRelatedOn, setLiveRelatedOn } from '../utils/liveRelated';
 import { isMeaningSearchAvailable } from '../storage/semanticSearch';
 import { getStartScreen, setStartScreen, START_SCREENS, startScreenLabel, StartScreen } from '../utils/startScreen';
-import { formatHour, getReminderHour, REMINDER_HOURS, setReminderHour } from '../utils/taskReminders';
+import { TimePickerModal } from 'react-native-paper-dates';
+import { formatTime, getReminderTime, setReminderTime } from '../utils/taskReminders';
 import { AUTO_LOCK_MINUTES, deleteProfileForever, eraseForgottenProfile, getActiveProfile, getAutoLockMinutes, setAutoLockMinutes, getBinnedProfiles, getDefaultProfile, getProfiles, hasProfilePin, moveProfileToBin, Profile, renameProfile, restoreProfile, setDefaultProfile, switchProfile, unlockWithBiometrics, usesBiometrics, verifyProfilePin, wrongPinMessage } from '../storage/profiles';
 import { BIN_DAYS } from '../storage/database';
 import { LANGUAGES } from '@notespark/core';
@@ -53,7 +54,8 @@ const SettingsScreen: React.FC = () => {
   const [protectedProfileIds, setProtectedProfileIds] = useState<string[]>([]);
   const [fingerprintProfileIds, setFingerprintProfileIds] = useState<string[]>([]);
   const [menuFor, setMenuFor] = useState<string | null>(null);
-  const [reminderHour, setReminderHourState] = useState(9);
+  const [reminderTime, setReminderTimeState] = useState(540);
+  const [pickingTime, setPickingTime] = useState(false);
   const [autoLock, setAutoLock] = useState(1);
   const [rediscover, setRediscover] = useState(true);
   const [webImages, setWebImages] = useState(false);
@@ -83,7 +85,7 @@ const SettingsScreen: React.FC = () => {
       (await Promise.all(list.map(async profile => ((await test(profile.id)) ? profile.id : null)))).filter((id): id is string => id !== null);
     setProtectedProfileIds(await idsWhere(hasProfilePin));
     setFingerprintProfileIds(await idsWhere(usesBiometrics));
-    setReminderHourState(await getReminderHour());
+    setReminderTimeState(await getReminderTime());
     setAutoLock(await getAutoLockMinutes());
     setRediscover(await isRediscoverOn());
     setWebImages(await isWebImagesOn());
@@ -93,17 +95,7 @@ const SettingsScreen: React.FC = () => {
   }, []);
 
   const lockLabel = (minutes: number) => (minutes === 0 ? t('settings.lockRightAway') : t('settings.lockAfterMinutes', { count: minutes }));
-  const pickReminderHour = () =>
-    setChoice({
-      title: t('settings.taskReminders'),
-      options: REMINDER_HOURS.map(h => ({ label: formatHour(h), value: h })),
-      value: reminderHour,
-      onPick: hour => {
-        setReminderHourState(hour);
-        setReminderHour(hour).catch(() => alert(t('settings.remindersFailed'), t('common.tryAgainRestart')));
-      },
-      open: true,
-    });
+  const pickReminderTime = () => setPickingTime(true);
   const shareTargets: ShareTarget[] = ['scratchpad', 'note'];
   const shareLabel = (target: ShareTarget) => (target === 'scratchpad' ? t('settings.shareScratchpad') : t('settings.shareNote'));
   const pickShareTarget = () =>
@@ -524,10 +516,10 @@ const SettingsScreen: React.FC = () => {
           />
           <GroupedRow
             title={t('settings.taskReminders')}
-            description={t('settings.taskRemindersDescription', { time: formatHour(reminderHour) })}
+            description={t('settings.taskRemindersDescription', { time: formatTime(reminderTime) })}
             icon="bell-outline"
             right={chevron}
-            onPress={pickReminderHour}
+            onPress={pickReminderTime}
             isFirst={false}
             isLast
           />
@@ -705,6 +697,22 @@ const SettingsScreen: React.FC = () => {
         </View>
       </ScrollView>
 
+      <TimePickerModal
+        visible={pickingTime}
+        onDismiss={() => setPickingTime(false)}
+        onConfirm={({ hours, minutes }) => {
+          setPickingTime(false);
+          const total = hours * 60 + minutes;
+          setReminderTimeState(total);
+          setReminderTime(total).catch(() => alert(t('settings.remindersFailed'), t('common.tryAgainRestart')));
+        }}
+        hours={Math.floor(reminderTime / 60)}
+        minutes={reminderTime % 60}
+        label={t('settings.taskReminders')}
+        cancelLabel={t('common.cancel')}
+        confirmLabel={t('common.ok')}
+        locale={language}
+      />
       <Snackbar
         visible={!!snackbar}
         onDismiss={() => { setSnackbar(''); setUndoBatch(null); }}

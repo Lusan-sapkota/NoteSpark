@@ -1,7 +1,7 @@
 // Desktop notifications: task reminders (work with the window closed) and "Save clipboard text".
 import { execFile } from 'node:child_process';
 import { clipboard, Notification } from 'electron';
-import { buildReminders, getLanguage, REMINDER_ID_PREFIX, t, type ProfileTasks } from '@notespark/core';
+import { buildReminders, getLanguage, REMINDER_ID_PREFIX, reminderMinutes, t, type ProfileTasks } from '@notespark/core';
 import AsyncStorage from '@notespark/node-shims/async-storage';
 import { syncLanguage } from './language';
 
@@ -15,7 +15,6 @@ const say = (title: string, body: string, onClick?: () => void) => {
 };
 
 const FIRED_KEY = 'remindersFired';
-const HOURS = [7, 8, 9, 12, 17, 20];
 const RECHECK_MS = 30 * 60_000;
 
 // Checks every minute, reading notes only on change, a new hour or after 30 minutes; missed reminders fire once that day.
@@ -32,8 +31,7 @@ export const startReminders = (open: () => void) => {
       import('../../../mobile/src/storage/notes'),
       import('../../../mobile/src/storage/profiles'),
     ]);
-    const stored = Number(await AsyncStorage.getItem('reminderHour'));
-    const chosen = HOURS.includes(stored) ? stored : 9;
+    const chosen = reminderMinutes(await AsyncStorage.getItem('reminderTime'), await AsyncStorage.getItem('reminderHour'));
     if (notes.getNotesVersion() !== version || chosen !== hour || getLanguage() !== language || Date.now() - readAt > RECHECK_MS) {
       version = notes.getNotesVersion();
       hour = chosen;
