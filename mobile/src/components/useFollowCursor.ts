@@ -21,16 +21,14 @@ export function useFollowCursor(opts: {
   const windowHeight = useWindowDimensions().height;
   const onScroll = useCallback((e: NativeSyntheticEvent<NativeScrollEvent>) => { offset.current = e.nativeEvent.contentOffset.y; }, []);
 
-  const length = useRef(text.length);
-  // Typing is not followed here (scrolling on every Enter made the text flicker): at the end the box's size change scrolls, elsewhere only taps and the keyboard opening do.
+  // At the end of the text the box's size change scrolls to the end; elsewhere (a tap, the keyboard opening, typing in the middle) the cursor's
+  // row is scrolled into view only when it would be hidden by the keyboard or the toolbar.
   const onContentSizeChange = useCallback(() => {
     if (input.current?.isFocused() && cursor >= text.length) scroll.current?.scrollToEnd();
   }, [cursor, text.length]);
 
   useEffect(() => {
-    const typed = length.current !== text.length;
-    length.current = text.length;
-    if (typed || !keyboardHeight || !input.current?.isFocused()) return;
+    if (!keyboardHeight || !input.current?.isFocused()) return;
     const timer = setTimeout(() => {
       input.current?.measureInWindow((_x, top, width, height) => {
         const perRow = Math.max(1, Math.floor(width / charWidth));
