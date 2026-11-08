@@ -26,6 +26,7 @@ let phase: Phase = 'starting';
 let phaseProfile: profiles.Profile | null = null;
 let starting: Promise<void> | undefined;
 
+notes.onRemoteApplied(() => BrowserWindow.getAllWindows().forEach(w => w.webContents.send('notes:remote')));
 const announce = () => { BrowserWindow.getAllWindows().forEach(w => w.webContents.send('lock:changed')); profilesChanged?.(); };
 // Sync reads the lock state: it is told after every change (a lock, an unlock, a profile call).
 let profilesChanged: (() => void) | null = null;

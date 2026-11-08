@@ -5,6 +5,14 @@ import { storageProxy } from '../../bridge';
 // Same idea as changesNotes on the phone: bumped after every write, so screens can skip a reload.
 let notesVersion = 0;
 export const getNotesVersion = () => notesVersion;
+
+// Notes written by a paired device arrive in the main process; it tells the window.
+const remoteListeners = new Set<() => void>();
+window.notespark?.onNotesRemote(() => { notesVersion++; remoteListeners.forEach(l => l()); });
+export const onRemoteApplied = (listener: () => void) => {
+  remoteListeners.add(listener);
+  return () => void remoteListeners.delete(listener);
+};
 const writes = new Set(['saveNote', 'updateNote', 'moveNoteToBin', 'restoreNote', 'emptyBin', 'deleteNote', 'setNotePinned', 'setNoteArchived', 'setNoteStyle', 'moveAllNotesToBin', 'restoreBatch', 'deleteAllNotesForever', 'importNotes', 'saveScratchpad', 'toggleTaskInNote', 'restoreTaskLine', 'deleteTaskLine', 'insertTaskLine', 'addTaskToNote']);
 
 const api = storageProxy<typeof Real>('notes', [

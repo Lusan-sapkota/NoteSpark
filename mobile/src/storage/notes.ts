@@ -10,6 +10,7 @@ import { renameLinks } from '@notespark/core';
 // Bumped after every write finishes, so screens can skip reloading when nothing changed. After, not before:
 // a reload in between would read the old rows and then believe it was up to date.
 let notesVersion = 0;
+export { onRemoteApplied } from './crdt';
 export const getNotesVersion = () => notesVersion + getRemoteVersion();
 
 export const changesNotes = <A extends unknown[], R>(write: (...args: A) => Promise<R>) => async (...args: A): Promise<R> => {

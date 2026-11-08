@@ -6,6 +6,7 @@ contextBridge.exposeInMainWorld('notespark', {
   // Menu actions (open a place, change the appearance) arrive here once the screens are ready.
   onMenu: (callback: (action: unknown) => void) => { ipcRenderer.on('menu:action', (_e, action) => callback(action)); void ipcRenderer.invoke('menu:ready'); },
   onLockChanged: (callback: () => void) => { ipcRenderer.on('lock:changed', () => callback()); },
+  onNotesRemote: (callback: () => void) => { ipcRenderer.on('notes:remote', () => callback()); },
   onSyncChanged: (callback: () => void) => { ipcRenderer.on('sync:changed', () => callback()); },
   refreshTray: (): Promise<void> => ipcRenderer.invoke('tray:refresh'),
   // The header's own minimise, maximise and close buttons.
