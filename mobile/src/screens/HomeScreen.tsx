@@ -973,6 +973,15 @@ const HomeScreen: React.FC = () => {
           style={[styles.fab, { right: sidePad, bottom: space.lg + insets.bottom }, isDarkMode && { shadowColor: theme.colors.primary }]}
         />
       )}
+      <Snackbar
+        visible={!!snackbar}
+        onDismiss={() => { setSnackbar(''); setUndo(null); }}
+        duration={4000}
+        wrapperStyle={styles.snackbar}
+        action={undo ? { label: t('common.undo'), onPress: undo } : undefined}
+      >
+        {snackbar}
+      </Snackbar>
       </View>
       {twoPane && (
         <View style={[styles.notePane, { borderLeftColor: theme.colors.outlineVariant }]}>
@@ -1080,15 +1089,6 @@ const HomeScreen: React.FC = () => {
         </Dialog>
       </Portal>
 
-      <Snackbar
-        visible={!!snackbar}
-        onDismiss={() => { setSnackbar(''); setUndo(null); }}
-        duration={4000}
-        wrapperStyle={styles.snackbar}
-        action={undo ? { label: t('common.undo'), onPress: undo } : undefined}
-      >
-        {snackbar}
-      </Snackbar>
     </SafeAreaView>
   );
 };
@@ -1213,8 +1213,11 @@ const styles = StyleSheet.create({
     maxHeight: 320,
     paddingHorizontal: 0,
   },
+  // Over the FAB and inside the list pane (it is mounted in that pane, after the FAB).
   snackbar: {
-    bottom: 80,
+    bottom: space.md,
+    zIndex: 10,
+    elevation: 10,
   },
   pinInput: {
     marginTop: space.md,
