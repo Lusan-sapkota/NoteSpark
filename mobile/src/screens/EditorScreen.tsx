@@ -625,16 +625,13 @@ const EditorScreen: React.FC = () => {
   // Eases the screen to a newly picked colour; the bar is see-through so it follows.
   const fillColor = own?.fill ?? theme.colors.background;
   const fadeStyle = useAnimatedStyle(() => ({ backgroundColor: withTiming(fillColor, { duration: 240, reduceMotion: ReduceMotion.System }) }));
-  // Both tabs draw the text from styled pieces (headings, bold, italic, strike). Markdown tab: the # and ** marks show, faded.
-  // Plain tab: the marks stay in the text (the cursor needs them) but are invisible: tiny on the phone; on the desktop they hide
-  // except on the caret's line (see StyledEditable).
   // The box shows the note's text as it is stored, in both tabs: switching tabs never changes the text, so the cursor stays valid
   // and nothing (link and image syntax included) is rewritten by switching or by typing in Plain text.
   const displayText = content;
-  // Rebuilt only when the text, the tab or the fonts change, not on every cursor move: a new set of styled children makes the
-  // native text box set its text again, which is what moves the cursor and the scroll.
+  // Desktop: both tabs draw styled pieces (StyledEditable); the # and ** marks hide in Plain text and fade in Markdown.
+  // Phone: as it was first built and tested: the Plain tab draws styled children with the marks faded; the Markdown tab is an
+  // ordinary text box holding the raw text (children on a box that is being typed in are what can make Android jump).
   const fonts = theme.fonts;
-  const markColor = theme.colors.onSurfaceVariant;
   const runs = useMemo(() => parseFormatted(displayText).map(tok => {
     const headFont = tok.heading === 1 ? fonts.noteH1 : tok.heading === 2 ? fonts.noteH2 : tok.heading === 3 ? fonts.noteH3 : null;
     const look = [
@@ -644,14 +641,14 @@ const EditorScreen: React.FC = () => {
     ];
     return { tok, look };
   }), [displayText, fonts]);
-  const styledBody = useMemo(() => (Platform.OS === 'web' ? null : runs.map(({ tok, look }, i) => (
-    <RNText
-      key={i}
-      style={[look, tok.marker ? (isMarkdown ? { color: markColor, opacity: 0.55, fontFamily: fonts.noteBody.fontFamily } : { color: 'transparent', fontSize: 1, letterSpacing: 0 }) : null]}
-    >
-      {tok.text}
-    </RNText>
-  ))), [runs, isMarkdown, markColor, fonts]);
+  const phoneStyled = Platform.OS !== 'web' && !isMarkdown;
+  const styledBody = phoneStyled
+    ? runs.map(({ tok, look }, i) => (
+        <RNText key={i} style={[look, tok.marker ? { color: theme.colors.onSurfaceVariant, opacity: 0.55, fontFamily: fonts.noteBody.fontFamily } : null]}>
+          {tok.text}
+        </RNText>
+      ))
+    : null;
   // Props only the desktop's text box reads (shims/react-native.tsx); the phone's TextInput never sees them.
   // Desktop escape hatch while this is new: localStorage.rawEditor = '1' (then reload) brings back the plain text box.
   const rawWebBox = Platform.OS === 'web' && (() => { try { return localStorage.getItem('rawEditor') === '1'; } catch { return false; } })();
@@ -821,7 +818,7 @@ const EditorScreen: React.FC = () => {
                   ref={bodyRef}
                   // Fills the free height on the desktop only; on the phone a growing box made Enter flicker and closed the keyboard.
                   style={[styles.contentInput, Platform.OS === 'web' && styles.fill, theme.fonts.noteBody, { color: own?.on ?? theme.colors.onSurface }]}
-                  value={rawWebBox ? displayText : undefined}
+                  value={(Platform.OS === 'web' ? rawWebBox : isMarkdown) ? displayText : undefined}
                   onChangeText={handleChangeText}
                   multiline
                   textAlignVertical="top"
