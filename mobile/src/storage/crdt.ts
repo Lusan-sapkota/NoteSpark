@@ -328,9 +328,16 @@ const importVersions = async (db: DB, uuid: string): Promise<void> => {
 const materialize = async (db: DB, uuid: string, preloaded?: { note: NoteState; stateVector: Uint8Array }): Promise<void> => {
   const { note: n, stateVector } = preloaded ?? noteWithStateVector(await loadUpdates(db, uuid));
   if (uuid === SCRATCH_UUID) {
+    // First time this device sees the synced scratchpad: text written here before must not be lost. If the synced text does not
+    // already hold it, it goes after it (captured into the doc right after, see applyRemote).
+    let content = n.content;
+    if (!(await db.getFirstAsync('SELECT docId FROM crdt_materialized WHERE docId = ?', [uuid]))) {
+      const mine = (await db.getFirstAsync<{ content: string }>('SELECT content FROM scratchpad WHERE id = 1'))?.content ?? '';
+      if (mine.trim() && !content.includes(mine.trim())) content = `${content.trimEnd()}${content.trim() ? '\n\n' : ''}${mine}`;
+    }
     await db.runAsync(
       'INSERT INTO scratchpad (id, content, updatedAt) VALUES (1, ?, ?) ON CONFLICT(id) DO UPDATE SET content = excluded.content, updatedAt = excluded.updatedAt',
-      [n.content, n.updatedAt || new Date().toISOString()]
+      [content, content === n.content ? n.updatedAt || new Date().toISOString() : new Date().toISOString()]
     );
     await setMarker(db, uuid, stateVector);
     return;
@@ -385,6 +392,13 @@ export const applyRemote = async (db: DB, deltas: Delta[]): Promise<void> => {
     }
   });
   notifyChanged(db, changed);
+  // A scratchpad that took in text from this device is not what the doc says yet: put it in, so the other devices get it too.
+  if (changed.includes(SCRATCH_UUID)) {
+    await transact(db, async sync => {
+      const row = await db.getFirstAsync<{ content: string }>('SELECT content FROM scratchpad WHERE id = 1');
+      if (row && row.content !== noteWithStateVector(await loadUpdates(db, SCRATCH_UUID)).note.content) await sync.scratchpad();
+    });
+  }
   remoteVersion++;
   remoteListeners.forEach(l => l());
 };
