@@ -215,7 +215,7 @@ const catalog: Record<string, string> = {
   "editor.makeCopy": "コピーを作成",
   "editor.copyOf": "{title} のコピー",
   "editor.copyMade": "コピーを作成しました",
-  "editor.send": "送信",
+  "editor.send": "共有またはエクスポート",
   "editor.noteStyle": "色と背景",
   "editor.colour": "色",
   "editor.background": "背景",

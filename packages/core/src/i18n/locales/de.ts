@@ -232,7 +232,7 @@ const catalog: Record<string, string> = {
   "editor.makeCopy": "Kopie erstellen",
   "editor.copyOf": "Kopie von {title}",
   "editor.copyMade": "Kopie erstellt",
-  "editor.send": "Senden",
+  "editor.send": "Teilen oder exportieren",
   "editor.noteStyle": "Farbe und Hintergrund",
   "editor.colour": "Farbe",
   "editor.background": "Hintergrund",

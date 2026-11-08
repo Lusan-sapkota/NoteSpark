@@ -205,6 +205,7 @@ const styles = StyleSheet.create({
   },
   input: {
     minHeight: 300,
+    flexGrow: 1,
     marginTop: space.md,
     padding: 0,
   },

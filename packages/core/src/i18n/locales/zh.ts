@@ -215,7 +215,7 @@ const catalog: Record<string, string> = {
   "editor.makeCopy": "创建副本",
   "editor.copyOf": "{title} 的副本",
   "editor.copyMade": "已创建副本",
-  "editor.send": "发送",
+  "editor.send": "分享或导出",
   "editor.noteStyle": "颜色和背景",
   "editor.colour": "颜色",
   "editor.background": "背景",

@@ -913,7 +913,7 @@ const EditorScreen: React.FC = () => {
             style={styles.sheetWrap}
             contentContainerStyle={styles.sheetHost}
           >
-            <SheetBody color={theme.colors.surfaceContainerLow} bottomInset={insets.bottom}>
+            <SheetBody color={own?.fill ?? theme.colors.surfaceContainerLow} bottomInset={insets.bottom}>
             <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('editor.colour')}</Text>
             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.swatchRow} contentContainerStyle={styles.swatches}>
               {[null, ...NOTE_COLORS].map((key, i) => {
@@ -986,7 +986,7 @@ const EditorScreen: React.FC = () => {
             style={styles.sheetWrap}
             contentContainerStyle={styles.sheetHost}
           >
-            <SheetBody color={theme.colors.surfaceContainerLow} bottomInset={insets.bottom}>
+            <SheetBody color={own?.fill ?? theme.colors.surfaceContainerLow} bottomInset={insets.bottom}>
             <Text variant="titleMedium" accessibilityRole="header" style={{ color: theme.colors.onSurface }}>{t('editor.relatedNotes')}</Text>
             <Text variant="bodySmall" style={[styles.sheetHelp, { color: theme.colors.onSurfaceVariant }]}>
               {t('editor.relatedHelp')}
@@ -1186,6 +1186,7 @@ const styles = StyleSheet.create({
   // Grows with the text and lets the screen scroll; nothing resizes it while it gains focus.
   contentInput: {
     minHeight: 300,
+    flexGrow: 1,
     marginTop: space.lg,
     padding: 0,
   },

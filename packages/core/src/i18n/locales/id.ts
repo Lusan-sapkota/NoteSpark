@@ -216,7 +216,7 @@ const catalog: Record<string, string> = {
   "editor.makeCopy": "Buat salinan",
   "editor.copyOf": "Salinan {title}",
   "editor.copyMade": "Salinan dibuat",
-  "editor.send": "Kirim",
+  "editor.send": "Bagikan atau ekspor",
   "editor.noteStyle": "Warna dan latar",
   "editor.colour": "Warna",
   "editor.background": "Latar",

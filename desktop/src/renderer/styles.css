@@ -8,7 +8,7 @@
 html, body, #root { height: 100%; margin: 0; }
 :root { color-scheme: light dark; } /* native scrollbars follow nativeTheme.themeSource */
 /* Thumb and track come from the theme (set in main.tsx), so they match in light and dark. */
-* { scrollbar-color: var(--scroll-thumb, auto) var(--scroll-track, auto); }
+* { scrollbar-width: thin; scrollbar-color: var(--scroll-thumb, auto) var(--scroll-track, auto); }
 #root { display: flex; }
 /* No page-level scrolling (the extended FAB's hidden label would add a horizontal scrollbar). */
 body { overflow: hidden; }

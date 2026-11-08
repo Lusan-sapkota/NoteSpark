@@ -296,7 +296,7 @@ const catalog: Record<string, string> = {
   "editor.makeCopy": "إنشاء نسخة",
   "editor.copyOf": "نسخة من {title}",
   "editor.copyMade": "تم إنشاء النسخة",
-  "editor.send": "إرسال",
+  "editor.send": "مشاركة أو تصدير",
   "editor.noteStyle": "اللون والخلفية",
   "editor.colour": "اللون",
   "editor.background": "الخلفية",

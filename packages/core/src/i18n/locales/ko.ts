@@ -215,7 +215,7 @@ const catalog: Record<string, string> = {
   "editor.makeCopy": "사본 만들기",
   "editor.copyOf": "{title} 사본",
   "editor.copyMade": "사본을 만들었습니다",
-  "editor.send": "보내기",
+  "editor.send": "공유 또는 내보내기",
   "editor.noteStyle": "색상 및 배경",
   "editor.colour": "색상",
   "editor.background": "배경",

@@ -39,7 +39,7 @@ export default {
   'editor.makeCopy': 'Make a copy',
   'editor.copyOf': 'Copy of {title}',
   'editor.copyMade': 'Copy made',
-  'editor.send': 'Send',
+  'editor.send': 'Share or export',
   'editor.noteStyle': 'Colour and background',
   'editor.colour': 'Colour',
   'editor.background': 'Background',

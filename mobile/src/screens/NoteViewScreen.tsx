@@ -8,8 +8,8 @@ import Dialog from '../components/Dialog';
 import { useReducedMotion } from 'react-native-reanimated';
 import Snackbar from '../components/Snackbar';
 import Menu from '../components/Menu';
-import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, setNoteArchived, setNotePinned, updateNote } from '../storage/notes';
-import { findTaskLines, formatDue, getLanguage, headingOf, parseFormatted, splitDue, t as translate, toggleTaskLine } from '@notespark/core';
+import { getNoteById, getNotes, getNotesWithLinks, getNoteVersions, moveNoteToBin, saveNote, setNoteArchived, setNoteStyle, setNotePinned, updateNote } from '../storage/notes';
+import { findTaskLines, formatDue, getLanguage, headingOf, titleFromText, parseFormatted, splitDue, t as translate, toggleTaskLine } from '@notespark/core';
 import { extractTags, suggestTags } from '@notespark/core';
 import { findMention, findNoteByTitle, hasConnections, linkedTitles, linkMention, linksTo, noteLinkPattern, noteMap } from '@notespark/core';
 import MermaidDiagram from '../components/MermaidDiagram';
@@ -157,6 +157,20 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     onScroll(e);
     setTitleInBar(e.nativeEvent.contentOffset.y > titleBottom);
+  };
+
+  const handleMakeCopy = async () => {
+    setMenuVisible(false);
+    if (!note) return;
+    try {
+      const now = new Date().toISOString();
+      const name = note.title.trim() || titleFromText(note.content) || t('common.untitledNote');
+      const newId = await saveNote({ title: t('editor.copyOf', { title: name }), content: note.content, isMarkdown: note.isMarkdown, createdAt: now, updatedAt: now });
+      if (note.color || note.background) await setNoteStyle(newId, { color: note.color ?? null, background: note.background ?? null });
+      setSnackbar(t('editor.copyMade'));
+    } catch {
+      alert(t('editor.saveFailedTitle'), t('editor.saveFailedMessage'));
+    }
   };
 
   const handleCopyAll = () => {
@@ -500,16 +514,10 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
               onDismiss={() => setMenuVisible(false)}
               anchor={<Appbar.Action icon="dots-vertical" iconColor={own?.on} onPress={() => setMenuVisible(true)} accessibilityLabel={t('note.moreOptions')} />}
             >
-              {!!note.isMarkdown && (
-                <Menu.Item
-                  leadingIcon={showRaw ? 'language-markdown' : 'format-text'}
-                  title={showRaw ? t('note.showFormatted') : t('note.showPlain')}
-                  onPress={() => { setMenuVisible(false); setShowRaw(v => !v); }}
-                />
-              )}
+              <Menu.Item leadingIcon="content-copy" title={t('editor.makeCopy')} onPress={handleMakeCopy} />
               <Menu.Item
-                leadingIcon="export-variant"
-                title={note.isMarkdown ? t('note.exportMarkdown') : t('note.exportText')}
+                leadingIcon="share-variant-outline"
+                title={t('editor.send')}
                 onPress={() => {
                   setMenuVisible(false);
                   shareNoteAsMarkdown(note).catch(() => alert(t('note.exportFailedTitle'), t('common.tryAgainRestart')));
@@ -520,6 +528,13 @@ const NoteViewScreen: React.FC<{ pane?: NotePane }> = ({ pane }) => {
                 title={t('note.findInNote')}
                 onPress={() => { setMenuVisible(false); setFind({ query: '', index: 0 }); }}
               />
+              {!!note.isMarkdown && (
+                <Menu.Item
+                  leadingIcon={showRaw ? 'language-markdown' : 'format-text'}
+                  title={showRaw ? t('note.showFormatted') : t('note.showPlain')}
+                  onPress={() => { setMenuVisible(false); setShowRaw(v => !v); }}
+                />
+              )}
               <Menu.Item
                 leadingIcon="graph-outline"
                 title={t('note.showMap')}

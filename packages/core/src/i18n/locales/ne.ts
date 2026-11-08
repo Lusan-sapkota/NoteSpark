@@ -231,7 +231,7 @@ const catalog: Record<string, string> = {
   "editor.makeCopy": "प्रतिलिपि बनाउनुहोस्",
   "editor.copyOf": "{title} को प्रतिलिपि",
   "editor.copyMade": "प्रतिलिपि बनाइयो",
-  "editor.send": "पठाउनुहोस्",
+  "editor.send": "साझा वा निर्यात गर्नुहोस्",
   "editor.noteStyle": "रङ र पृष्ठभूमि",
   "editor.colour": "रङ",
   "editor.background": "पृष्ठभूमि",
