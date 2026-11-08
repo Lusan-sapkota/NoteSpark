@@ -2,6 +2,28 @@
 
 All notable changes to NoteSpark will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Sync covers the scratchpad, version history, tidy-up choices, profile name and imported-history marks; an optional setting syncs preferences too
+- Live sync status in the Android notification and the desktop tray; the Sync screen notes that background sync pauses after about 5 hours
+- Tasks: long press to select several, mark done, move to another profile; note menus move a note to a profile by name; locked profiles ask for their PIN or fingerprint
+- A Material time picker for task reminders and Lock again when away
+- Desktop editor draws headings, bold, italic and strikethrough, hiding the marks in Plain text
+- Tap beside the text in the editor and scratchpad to put the cursor at the end of that line
+
+### Changed
+
+- A phone turned sideways keeps the full-width list; two panes need a 600 dp shortest side
+- The scratchpad asks before clearing
+
+### Fixed
+
+- The keyboard no longer opens and closes after several lines in the editor and scratchpad, and Enter no longer flickers
+- No full-screen typing box in landscape
+- The scratchpad's first sync keeps text written on this device
+
 ## [1.2.0] - 2026-11-07
 
 ### Added
