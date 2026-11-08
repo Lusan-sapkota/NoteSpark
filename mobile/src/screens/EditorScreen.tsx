@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Keyboard, Platform, Pressable, StyleSheet, View, TextInput, ScrollView, useWindowDimensions } from 'react-native';
+import { findNodeHandle, Keyboard, Platform, Pressable, StyleSheet, View, TextInput, processColor, ScrollView, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { KeyboardAwareScrollView, KeyboardStickyView, useKeyboardState } from 'react-native-keyboard-controller';
 import * as DocumentPicker from 'expo-document-picker';
@@ -31,6 +31,7 @@ import { sendAppNotification } from '../utils/notifications';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header from '../components/Header';
 import { useFollowCursor } from '../components/useFollowCursor';
+import { applyStyledRuns } from '../../modules/styled-text';
 import MarkdownRenderer from '../components/MarkdownRenderer';
 import NoteAttachments from '../components/NoteAttachments';
 import NoteImages, { extractImageUris } from '../components/NoteImages';
@@ -643,6 +644,32 @@ const EditorScreen: React.FC = () => {
     ];
     return { tok, look };
   }), [displayText, fonts]);
+  // Android: the same pieces styled in place with spans on the box's own text (modules/styled-text): headings, bold, italic, strike;
+  // the marks hide in Plain text and fade in Markdown, as on the desktop. No children, so the text is never set again (that flickered).
+  // A no-op where the module is missing (older development builds, Expo Go) and off Android.
+  const markColor = theme.colors.onSurfaceVariant;
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const tag = findNodeHandle(bodyRef.current);
+    if (!tag) return;
+    let at = 0;
+    const spans = runs.map(({ tok }) => {
+      const start = at;
+      at += tok.text.length;
+      return { start, end: at, bold: !!tok.bold, italic: !!tok.italic, strike: !!tok.strike, heading: tok.heading ?? 0, marker: !!tok.marker };
+    });
+    const faded = /^#[0-9a-fA-F]{6}$/.test(markColor) ? `${markColor}8c` : markColor;
+    applyStyledRuns(tag, displayText.length, spans, {
+      hideMarks: !isMarkdown,
+      markColor: Number(processColor(faded) ?? 0),
+      boldFamily: fonts.noteTitle.fontFamily ?? '',
+      italicFamily: 'Literata-Italic',
+      headingFamily: fonts.noteH1.fontFamily ?? '',
+      h1: Number(fonts.noteH1.fontSize ?? 0),
+      h2: Number(fonts.noteH2.fontSize ?? 0),
+      h3: Number(fonts.noteH3.fontSize ?? 0),
+    });
+  }, [runs, displayText, isMarkdown, markColor, fonts]);
   // Props only the desktop's text box reads (shims/react-native.tsx); the phone's TextInput never sees them.
   // Desktop escape hatch while this is new: localStorage.rawEditor = '1' (then reload) brings back the plain text box.
   const rawWebBox = Platform.OS === 'web' && (() => { try { return localStorage.getItem('rawEditor') === '1'; } catch { return false; } })();
