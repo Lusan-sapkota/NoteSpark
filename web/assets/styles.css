@@ -437,18 +437,16 @@ code {
 .hero-stage .hero-devices { justify-self: auto; margin-top: 8px; }
 .sync-badge {
   display: flex; align-items: center; justify-content: center; gap: 12px; min-height: 48px; padding: 0 16px;
-  border-radius: var(--shape-full); background: var(--tertiary-container); color: var(--on-tertiary-container);
+  border-radius: var(--shape-full); color: var(--on-surface);
   font: 500 14px/20px var(--font-ui); width: fit-content; margin: 0 auto; opacity: 0; animation: scene-1 24s infinite;
 }
 .sync-badge .i { width: 20px; height: 20px; }
-.track { position: relative; width: 56px; height: 4px; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, var(--on-tertiary-container) 25%, transparent); }
+.track { position: relative; width: 56px; height: 4px; overflow: hidden; border-radius: 2px; background: color-mix(in srgb, currentColor 25%, transparent); }
 .track i { position: absolute; top: 0; left: -8px; width: 8px; height: 4px; border-radius: 2px; background: var(--on-tertiary-container); animation: hop 1.2s linear infinite; }
 .track i:nth-child(2) { animation-delay: -.4s; } .track i:nth-child(3) { animation-delay: -.8s; }
 @keyframes hop { to { transform: translateX(72px); } }
 .stage-caption { position: relative; height: 32px; margin-top: 16px; text-align: center; }
-/* The logo's colours as a pill centred under the demo. */
-.stage-caption span { position: absolute; inset: 0 auto auto 50%; transform: translateX(-50%); width: max-content; max-width: 100%; padding: 4px 16px; border-radius: var(--shape-full); opacity: 0; font: 600 16px/24px var(--font-ui); background: var(--logo-bg); color: var(--logo-ink); }
-@media (max-width: 480px) { .stage-caption { height: 64px; } }
+.stage-caption span { position: absolute; inset: 0; opacity: 0; font: 600 16px/24px var(--font-ui); color: var(--on-surface); }
 .stage-caption span:nth-child(1) { animation: scene-1 24s infinite; }
 .stage-caption span:nth-child(2) { animation: scene-2 24s infinite; }
 .stage-caption span:nth-child(3) { animation: scene-3 24s infinite; }
