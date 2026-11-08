@@ -1174,13 +1174,6 @@ const styles = StyleSheet.create({
     zIndex: 10,
     elevation: 10,
   },
-  pinInput: {
-    marginTop: space.md,
-  },
-  forgotPin: {
-    alignSelf: 'flex-start',
-    marginTop: space.sm,
-  },
 });
 
 export default HomeScreen;

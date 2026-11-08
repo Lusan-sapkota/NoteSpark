@@ -801,13 +801,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  dialogInput: {
-    marginTop: space.md,
-  },
-  forgotPin: {
-    alignSelf: 'flex-start',
-    marginTop: space.sm,
-  },
   sectionTitle: {
     marginTop: space.xl,
     marginBottom: space.sm,
