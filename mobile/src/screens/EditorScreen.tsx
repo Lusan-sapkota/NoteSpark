@@ -214,13 +214,14 @@ const EditorScreen: React.FC = () => {
       if (ownsDraft.current) clearDraft();
       return;
     }
+    let live = true; // false once the text was saved or changed again, so a late write can't bring back an old draft
     const timer = setTimeout(async () => {
       const profile = await getActiveProfile().catch(() => null);
-      if (!profile) return;
+      if (!profile || !live) return;
       ownsDraft.current = true;
       saveDraft({ profileId: profile.id, noteId, title, content, isMarkdown });
     }, 1000);
-    return () => clearTimeout(timer);
+    return () => { live = false; clearTimeout(timer); };
   }, [loaded, isDirty, title, content, isMarkdown]);
 
   // Leaving with unsaved changes saves them; if saving fails the editor stays open.
@@ -248,16 +249,17 @@ const EditorScreen: React.FC = () => {
         });
       } else {
         const now = new Date().toISOString();
-        const newId = await saveNote({
+        await saveNote({
           title: noteTitle,
           content,
           isMarkdown,
+          isPinned,
+          isArchived,
+          color,
+          background,
           createdAt: now,
           updatedAt: now
         });
-        if (isArchived) await setNoteArchived(newId, true);
-        else if (isPinned) await setNotePinned(newId, true);
-        if (color || background) await setNoteStyle(newId, { color, background });
         try {
           const notes = await getNotes();
           if (notes.length === 1) {

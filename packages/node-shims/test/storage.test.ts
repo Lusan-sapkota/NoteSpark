@@ -141,3 +141,14 @@ test('note colour and background are stored, stay in step with sync docs, and ba
   const cleared = await notes.getNoteById(id);
   assert.deepEqual([cleared.color, cleared.background], [null, 'dots']);
 });
+
+test('a new note is saved with its pin, archive and style in one write', async () => {
+  await freshProfile();
+  await crdt.enableSync(database.db);
+  const pinned = await notes.getNoteById(await notes.saveNote(sample('P', { isPinned: true, color: 'sage', background: 'hills' })));
+  assert.deepEqual([pinned.isPinned, pinned.isArchived, pinned.color, pinned.background], [true, false, 'sage', 'hills']);
+  const archived = await notes.getNoteById(await notes.saveNote(sample('A', { isPinned: true, isArchived: true })));
+  assert.deepEqual([archived.isPinned, archived.isArchived, archived.color], [false, true, null]);
+  await assert.rejects(notes.saveNote(sample('B', { color: 'bad key!' })));
+  await assertInStep();
+});

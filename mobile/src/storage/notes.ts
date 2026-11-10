@@ -126,12 +126,20 @@ export const getScratchpadNote = async (): Promise<Note> => {
   return scratchpadAsNote(row?.content ?? '', row?.updatedAt ?? '');
 };
 
-export const saveNote = changesNotes(async (note: Omit<Note, 'id' | 'isPinned' | 'isArchived'>): Promise<number> => {
+const checkStyle = (style: { color: string | null; background: string | null }) => {
+  const bad = (key: string | null, pattern: RegExp) => key !== null && !pattern.test(key);
+  if (bad(style.color, /^([a-z]{1,16}|#[0-9a-f]{6})$/i) || bad(style.background, /^([a-z]{1,16}|attachment:[0-9a-f]{64})$/)) throw new Error('Bad note style key');
+};
+
+// Pin, archive and style go in with the note, so a new note is one write (archiving unpins, as in setNoteArchived).
+export const saveNote = changesNotes(async (note: Omit<Note, 'id' | 'isPinned' | 'isArchived'> & Partial<Pick<Note, 'isPinned' | 'isArchived'>>): Promise<number> => {
   const now = new Date().toISOString();
+  const style = { color: note.color ?? null, background: note.background ?? null };
+  checkStyle(style);
   return transact(db, async sync => {
     const result = await db.runAsync(
-      `INSERT INTO notes (title, content, isMarkdown, createdAt, updatedAt, uuid) VALUES (?, ?, ?, ?, ?, ${UUID_SQL})`,
-      [note.title, note.content, note.isMarkdown ? 1 : 0, now, now]
+      `INSERT INTO notes (title, content, isMarkdown, isPinned, isArchived, color, background, createdAt, updatedAt, uuid) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ${UUID_SQL})`,
+      [note.title, note.content, note.isMarkdown ? 1 : 0, note.isPinned && !note.isArchived ? 1 : 0, note.isArchived ? 1 : 0, style.color, style.background, now, now]
     );
     if (!result.lastInsertRowId) throw new Error('Failed to insert note');
     await sync.capture([result.lastInsertRowId]);
@@ -253,8 +261,7 @@ export const setNotePinned = changesNotes(async (id: number, pinned: boolean): P
 
 // Not an edit (updatedAt stays). Keys are validated before storing.
 export const setNoteStyle = changesNotes(async (id: number, style: { color: string | null; background: string | null }): Promise<void> => {
-  const bad = (key: string | null, pattern: RegExp) => key !== null && !pattern.test(key);
-  if (bad(style.color, /^([a-z]{1,16}|#[0-9a-f]{6})$/i) || bad(style.background, /^([a-z]{1,16}|attachment:[0-9a-f]{64})$/)) throw new Error('Bad note style key');
+  checkStyle(style);
   await transact(db, async sync => {
     await db.runAsync('UPDATE notes SET color = ?, background = ? WHERE id = ?', [style.color, style.background, id]);
     await sync.capture([id]);
