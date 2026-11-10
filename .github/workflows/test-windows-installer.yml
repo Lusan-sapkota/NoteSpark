@@ -13,7 +13,7 @@ jobs:
     runs-on: windows-2022
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
       - name: Download the installer from the latest release and check it against SHA256SUMS
         shell: pwsh
         run: |
