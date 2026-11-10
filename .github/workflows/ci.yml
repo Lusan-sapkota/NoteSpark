@@ -4,7 +4,14 @@ name: CI
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - 'web/**'
+      - '.github/workflows/pages.yml'
+      - '**.md'
   pull_request:
+    paths-ignore:
+      - 'web/**'
+      - '**.md'
 
 permissions:
   contents: read
