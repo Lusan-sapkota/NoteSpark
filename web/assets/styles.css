@@ -200,6 +200,7 @@ code {
   background: var(--surface-container-high);
   border-radius: var(--shape-xs);
   padding: 1px 5px;
+  overflow-wrap: anywhere;
 }
 .skip-link { position: absolute; left: -999px; top: 8px; background: var(--primary-container); color: var(--on-primary-container); padding: 8px 12px; border-radius: var(--shape-control); z-index: 10; }
 .skip-link:focus { left: 16px; }
@@ -224,8 +225,13 @@ code {
 /* Announcement bar above the header (text set in app.js): the logo's colours (--logo-bg, --logo-ink), quiet, sticky at the top with the header stuck just below it (app.js sets --announce-h to the bar's height). */
 .announce { position: sticky; top: 0; z-index: 6; background: var(--logo-bg); color: var(--logo-ink); }
 .announce-inner { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 4px 16px; min-height: 40px; padding-block: 8px; font-size: 14px; line-height: 20px; font-weight: 500; text-align: center; }
-.announce a { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
+.announce-links { display: inline-flex; align-items: center; flex-wrap: nowrap; gap: 4px 12px; }
+.announce a { color: inherit; text-decoration: underline; text-underline-offset: 3px; padding-block: 2px; }
 .announce a:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; border-radius: 4px; }
+@media (max-width: 600px) {
+  .announce-inner { flex-direction: column; gap: 0; padding-block: 10px; }
+  .announce-links { gap: 8px; }
+}
 
 .site-header {
   position: sticky; top: var(--announce-h, 0px); z-index: 5;
@@ -297,6 +303,17 @@ code {
 .progress { display: flex; align-items: center; gap: 12px; margin-top: 12px; color: var(--on-surface-variant); font-size: 12px; }
 .progress span { display: block; width: 96px; height: 4px; border-radius: var(--shape-full); background: var(--secondary); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 32px; }
+@media (max-width: 600px) {
+  .note-meta { gap: 6px; }
+  .chip { max-width: 100%; }
+  .hero-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .hero-actions .btn { width: 100%; padding-inline: 14px; }
+  .hero-actions .btn-filled { grid-column: 1 / -1; }
+}
+@media (max-width: 340px) {
+  .hero-actions { grid-template-columns: 1fr; }
+  .hero-actions .btn-filled { grid-column: auto; }
+}
 /* One laptop with a phone in front of its corner: the same notes on every device. */
 .hero-devices { position: relative; width: 100%; max-width: 640px; aspect-ratio: 1 / 0.87; justify-self: end; }
 .laptop { position: absolute; left: 0; top: 0; width: 93.6%; }
