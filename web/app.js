@@ -1,9 +1,8 @@
-// Announcement bar: the one place to say what release is coming, out or in review. Edit `text` (and `link`) after each release or
-// big step; set `text` to '' to hide the bar. It is added to every page before the header.
+// Announcement bar: the one place to say what release is coming, out or in review
 (function () {
   var announcement = {
-    text: 'NoteSpark 1.3.0 is out on GitHub and Homebrew. The Microsoft Store and Google Play updates are coming.',
-    link: { label: 'Release notes', href: './changelog.html' }
+    text: 'NoteSpark 1.3.0 is released. Take a look at the Downloads section.',
+    link: { label: 'Downloads', href: './index.html#get' }
   };
   document.addEventListener('DOMContentLoaded', function () {
     var header = document.querySelector('.site-header');
