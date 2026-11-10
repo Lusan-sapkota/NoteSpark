@@ -2,8 +2,8 @@
 // big step; set `text` to '' to hide the bar. It is added to every page before the header.
 (function () {
   var announcement = {
-    text: 'NoteSpark 1.3.0 is released. Get it from GitHub and Homebrew; the Microsoft Store and Google Play updates follow.',
-    link: { label: 'Release notes', href: './changelog.html' }
+    text: 'NoteSpark 1.3.0 is released. Take a look at the Downloads section.',
+    link: { label: 'Downloads', href: './index.html#get' }
   };
   document.addEventListener('DOMContentLoaded', function () {
     var header = document.querySelector('.site-header');
