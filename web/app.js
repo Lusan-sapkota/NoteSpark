@@ -1,8 +1,11 @@
-// Announcement bar: the one place to say what release is coming, out or in review
+// Announcement bar shown above the header on every page; set `text` to '' to hide it.
 (function () {
   var announcement = {
-    text: 'NoteSpark 1.3.0 is released. Take a look at the Downloads section.',
-    link: { label: 'Downloads', href: './index.html#get' }
+    text: 'NoteSpark 1.3.0 is released.',
+    links: [
+      { label: 'Go to Download', href: './index.html#get' },
+      { label: 'View release', href: './changelog.html' }
+    ]
   };
   document.addEventListener('DOMContentLoaded', function () {
     var header = document.querySelector('.site-header');
@@ -16,22 +19,28 @@
     var text = document.createElement('span');
     text.textContent = announcement.text;
     inner.appendChild(text);
-    if (announcement.link) {
+    (announcement.links || []).forEach(function (item, i) {
+      if (i) {
+        var sep = document.createElement('span');
+        sep.setAttribute('aria-hidden', 'true');
+        sep.textContent = '|';
+        inner.appendChild(sep);
+      }
       var a = document.createElement('a');
-      a.href = announcement.link.href;
-      a.textContent = announcement.link.label;
+      a.href = item.href;
+      a.textContent = item.label;
       inner.appendChild(a);
-    }
+    });
     bar.appendChild(inner);
     header.parentNode.insertBefore(bar, header);
-    // The sticky header sits below the bar, and anchors and side panels clear both: they read --announce-h.
+    // Keep --announce-h in sync so the sticky header and anchors clear the bar.
     var size = function () { document.documentElement.style.setProperty('--announce-h', bar.offsetHeight + 'px'); };
     size();
     if ('ResizeObserver' in window) new ResizeObserver(size).observe(bar); else window.addEventListener('resize', size);
   });
 })();
 
-// Theme (light, dark or the device's), remembered in localStorage, and the header's tonal fill once scrolled.
+// Theme (light, dark or system), remembered in localStorage; header fill on scroll.
 (function () {
   var root = document.documentElement;
   var darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
@@ -71,7 +80,7 @@
       });
     });
 
-    // Small-screen menu: close after choosing a link, on Escape and on a tap outside.
+    // Small-screen menu: close after a link, on Escape, and on an outside tap.
     var menu = document.querySelector('.nav-menu');
     if (menu) {
       menu.addEventListener('click', function (e) { if (e.target.closest('a')) menu.removeAttribute('open'); });
@@ -88,21 +97,21 @@
 
     var calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    // Point the main download button at the person's device and mark the matching card.
+    // Point the main download button at the visitor's device and mark its card.
     var ua = navigator.userAgent;
     var platform = /Android/i.test(ua) ? 'and' : /Windows/i.test(ua) ? 'win' : /Macintosh|Mac OS X/i.test(ua) ? 'mac' : /Linux|X11/i.test(ua) ? 'lin' : '';
     var label = document.getElementById('dl-main-label');
     var dlMain = document.getElementById('dl-main');
     var direct = 'https://github.com/Lusan-sapkota/NoteSpark/releases/latest/download/';
-    // Android and Windows have one file each. A Mac can't be told apart (Apple silicon or Intel) and Linux has several packages,
-    // so those two buttons open the download section with their tab, where the visitor picks.
+    // Android and Windows have one file each; Mac (two architectures) and Linux (several packages)
+    // can't be picked automatically, so those open the download section with their tab.
     if (dlMain && platform === 'and') dlMain.href = direct + 'NoteSpark-android.apk';
     if (dlMain && platform === 'win') dlMain.href = direct + 'NoteSpark-windows-x64.exe';
     if (dlMain && (platform === 'mac' || platform === 'lin')) { dlMain.href = '#get'; dlMain.removeAttribute('target'); dlMain.removeAttribute('rel'); }
     var names = { and: 'Android', win: 'Windows', mac: 'Mac', lin: 'Linux' };
     if (label && names[platform]) label.textContent = 'Download for ' + names[platform];
 
-    // Download tabs: with JavaScript one panel shows at a time, starting with the visitor's device.
+    // Download tabs: one panel at a time, starting with the visitor's platform.
     var tabs = [].slice.call(document.querySelectorAll('[data-tab]'));
     function showTab(id, focus) {
       tabs.forEach(function (t) {
@@ -134,7 +143,7 @@
       });
     });
 
-    // A look inside: the step nearest the middle of the screen decides which screens show.
+    // A look inside: the step nearest mid-screen decides which screens show.
     var steps = [].slice.call(document.querySelectorAll('.step'));
     if (steps.length && 'IntersectionObserver' in window) {
       var layers = [].slice.call(document.querySelectorAll('.show .layers'));
