@@ -27,6 +27,12 @@ jobs:
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.0.0
+      # Cloudflare caches .js and .css for 4 hours; a commit-stamped query makes
+      # each deploy a fresh URL, so a release notice never stays stale at the edge.
+      - name: Version the assets
+        run: |
+          sed -i "s|src=\"\./app\.js\"|src=\"./app.js?v=${GITHUB_SHA}\"|g" web/*.html
+          sed -i "s|href=\"\./assets/styles\.css\"|href=\"./assets/styles.css?v=${GITHUB_SHA}\"|g" web/*.html
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

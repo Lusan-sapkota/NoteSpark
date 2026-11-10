@@ -19,18 +19,21 @@
     var text = document.createElement('span');
     text.textContent = announcement.text;
     inner.appendChild(text);
+    var links = document.createElement('span');
+    links.className = 'announce-links';
     (announcement.links || []).forEach(function (item, i) {
       if (i) {
         var sep = document.createElement('span');
         sep.setAttribute('aria-hidden', 'true');
         sep.textContent = '|';
-        inner.appendChild(sep);
+        links.appendChild(sep);
       }
       var a = document.createElement('a');
       a.href = item.href;
       a.textContent = item.label;
-      inner.appendChild(a);
+      links.appendChild(a);
     });
+    inner.appendChild(links);
     bar.appendChild(inner);
     header.parentNode.insertBefore(bar, header);
     // Keep --announce-h in sync so the sticky header and anchors clear the bar.
