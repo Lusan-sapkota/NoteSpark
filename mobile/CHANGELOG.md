@@ -2,7 +2,7 @@
 
 All notable changes to NoteSpark will be documented in this file.
 
-## [1.3.0] - 2026-11-08
+## [1.3.0] - 2026-11-10
 
 ### Added
 
@@ -32,6 +32,7 @@ All notable changes to NoteSpark will be documented in this file.
 - The keyboard no longer opens and closes after several lines in the editor and scratchpad, Enter no longer flickers, and the page follows the cursor while you type
 - No full-screen typing box in landscape
 - The scratchpad's first sync keeps text written on this device
+- The editor's Clear formatting, Find, note picker and back gesture work first time; a new note keeps its pin, archive and style in one write, and a late draft never comes back
 
 ## [1.2.0] - 2026-11-07
 
