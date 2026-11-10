@@ -305,9 +305,11 @@
               <div class="row-text"><div class="row-title">Microsoft Store</div><div class="row-desc">Installs and updates itself through the Store, with no SmartScreen warning.</div></div>
               <div class="row-end"><a class="btn btn-tonal" href="https://apps.microsoft.com/detail/9NJJH4TB03K8" target="_blank" rel="noopener noreferrer"><svg class="i" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg>Get it</a></div>
             </li>
-            <li>
-              <div class="row-text"><div class="row-title">winget</div><div class="row-desc">The easiest way: no extra steps, one command to install and update. Submitted to Microsoft's winget repository; it goes live once they approve it.</div></div>
-              <div class="row-end"><span class="status status-soon">Submitted</span></div>
+            <li class="has-cmd">
+              <div class="row-text"><div class="row-title">winget</div><div class="row-desc">One command to install, and <code>winget upgrade</code> to update. It installs the Microsoft Store version through winget's <code>msstore</code> source.</div></div>
+              <div class="cmd-line">
+                <div class="cmd"><code>winget install --id 9NJJH4TB03K8 --source msstore</code><button type="button" class="copy" aria-label="Copy command">Copy</button></div>
+              </div>
             </li>
             <li>
               <div class="row-text"><div class="row-title">Installer (.exe)</div><div class="row-desc">64-bit installer. It is not code-signed, so Windows SmartScreen may warn: choose More info, then Run anyway, and check the file against SHA256SUMS first. It does not update itself: download the next version when you want it.</div></div>
