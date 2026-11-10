@@ -21,12 +21,10 @@ import {
 } from '../storage/attachments';
 import Animated, { Easing, ReduceMotion, SlideInDown, ZoomIn, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { shareNoteAsMarkdown } from '../utils/exportNotes';
-import { addDays, formatAttachmentImage, getLanguage, paragraphToMatch, setLineDue } from '@notespark/core';
+import { addDays, continueList, extractTags, formatAttachmentImage, getLanguage, paragraphToMatch, setLineDue, titleFromText } from '@notespark/core';
 import { isMeaningSearchAvailable, relatedToText } from '../storage/semanticSearch';
 import { isLiveRelatedOn } from '../utils/liveRelated';
 import { toPreview } from '../components/NoteItem';
-import { extractTags } from '@notespark/core';
-import { continueList, titleFromText } from '@notespark/core';
 import { sendAppNotification } from '../utils/notifications';
 import KeyboardSafePortal from '../components/KeyboardSafePortal';
 import Header from '../components/Header';
@@ -45,13 +43,12 @@ import NotePattern from '../components/NotePattern';
 type EditorScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Editor'>;
 type EditorScreenRouteProp = RouteProp<RootStackParamList, 'Editor'>;
 
-// IconButton (48) plus toolbar padding; used to keep the cursor clear of the toolbar.
+// IconButton (48) plus toolbar padding.
 const TOOLBAR_HEIGHT = 56;
 
 const formatDate = (iso: string | null) =>
   iso ? new Date(iso).toLocaleString(getLanguage(), { dateStyle: 'medium', timeStyle: 'short' }) : '';
 
-// Bottom sheet surface: slides up after a tap (off with reduce motion); Paper's Modal fades the backdrop.
 // Pixel height cap: a % of an unsized parent collapsed the rows.
 const SheetBody: React.FC<{ color: string; bottomInset: number; children: React.ReactNode }> = ({ color, bottomInset, children }) => {
   const { height } = useWindowDimensions();
@@ -80,10 +77,8 @@ const EditorScreen: React.FC = () => {
   const [isMarkdown, setIsMarkdown] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  // Pin and archive apply at once for a saved note, at first save for a new one.
   const [isPinned, setIsPinned] = useState(false);
   const [isArchived, setIsArchived] = useState(false);
-  // Colour and pattern keys, applied like pin and archive.
   const [color, setColor] = useState<string | null>(null);
   const [background, setBackground] = useState<string | null>(null);
   const own = noteColors(baseTheme, color);
@@ -91,7 +86,6 @@ const EditorScreen: React.FC = () => {
   const [showStyle, setShowStyle] = useState(false);
   const [customHex, setCustomHex] = useState<string | null>(null); // the hex dialog's text while it is open
   const [showMore, setShowMore] = useState(false);
-  // Labels are the note's #tags; find selects matches in the text.
   const [showLabels, setShowLabels] = useState(false);
   const [newLabel, setNewLabel] = useState('');
   const [find, setFind] = useState<{ query: string; index: number } | null>(null);
@@ -115,28 +109,23 @@ const EditorScreen: React.FC = () => {
   const [showLinkDialog, setShowLinkDialog] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
-  // Undo/redo: a step is recorded after a 600 ms typing pause; `committed` is the last recorded text.
+  // `committed` is the last text recorded as an undo step.
   const [undoStack, setUndoStack] = useState<{ past: string[]; future: string[] }>({ past: [], future: [] });
   const committed = useRef('');
-  // "Link a note" picker: inserts [[Title]] at the cursor.
   const [notePicker, setNotePicker] = useState<{ query: string; notes: Note[] } | null>(null);
   const [showDueDialog, setShowDueDialog] = useState(false);
-  // The text formatting bar (opened with the A button) sits above the toolbar.
   const [showFormat, setShowFormat] = useState(false);
-  // Related notes while writing (opt-in in Settings): notes close to the paragraph at the cursor, found 1.5 s after typing stops.
   const [liveRelated, setLiveRelated] = useState(false);
   const [related, setRelated] = useState<Note[]>([]);
   const [showRelated, setShowRelated] = useState(false);
-  // For suggestions while typing #tags and [[links]]: the profile's tags and other notes' titles.
   const [known, setKnown] = useState<{ tags: string[]; titles: string[] }>({ tags: [], titles: [] });
   // The note as last loaded or saved; anything different is unsaved and kept as a draft.
   const [saved, setSaved] = useState({ title: '', content: '', isMarkdown: false });
   const [loaded, setLoaded] = useState(false);
-  // Only the editor that wrote (or reopened) the draft clears it; another editor opening mustn't erase it.
+  // Only the editor that wrote (or reopened) the draft clears it.
   const ownsDraft = useRef(!!fromDraft);
   const isDirty = loaded && (title !== saved.title || content !== saved.content || isMarkdown !== saved.isMarkdown);
 
-  // Shows `text` as the starting point; a reopened draft goes on top of it, still unsaved.
   const showLoaded = async (start: { title: string; content: string; isMarkdown: boolean }) => {
     setSaved(start);
     const draft = fromDraft ? await getDraft() : null;
@@ -219,7 +208,6 @@ const EditorScreen: React.FC = () => {
     return () => { current = false; clearTimeout(timer); };
   }, [paragraph, noteId]);
 
-  // Keeps unsaved text as a draft a second after typing stops; Home offers it back after a restart.
   useEffect(() => {
     if (!loaded) return;
     if (!isDirty) {
@@ -228,27 +216,26 @@ const EditorScreen: React.FC = () => {
     }
     const timer = setTimeout(async () => {
       const profile = await getActiveProfile().catch(() => null);
+      if (!profile) return;
       ownsDraft.current = true;
-      if (profile) saveDraft({ profileId: profile.id, noteId, title, content, isMarkdown });
+      saveDraft({ profileId: profile.id, noteId, title, content, isMarkdown });
     }, 1000);
     return () => clearTimeout(timer);
   }, [loaded, isDirty, title, content, isMarkdown]);
 
   // Leaving with unsaved changes saves them; if saving fails the editor stays open.
-  usePreventRemove(isDirty && !saving, ({ data }) => {
+  usePreventRemove(isDirty, ({ data }) => {
     handleSave(() => navigation.dispatch(data.action));
   });
 
   // `then` replaces going back (used when leaving was asked for another way).
   const handleSave = async (then?: () => void) => {
     if (saving) return;
-    // An empty new note has nothing to save.
     if (!isEditing && !title.trim() && !content.trim()) {
       setSaved({ title, content, isMarkdown });
       setTimeout(() => (then ? then() : navigation.goBack()), 0);
       return;
     }
-    // No title: the first line of text, or else the date and time.
     const noteTitle = title.trim() ? title : titleFromText(content) || formatDate(new Date().toISOString());
     setSaving(true);
     try {
@@ -320,7 +307,6 @@ const EditorScreen: React.FC = () => {
     }
   };
 
-  // The menu acts on the text as on screen, saved or not.
   const asNote = (): Note => ({
     id: Number(noteId), title, content, isMarkdown, isPinned, isArchived, color, background,
     createdAt: createdAt ?? '', updatedAt: updatedAt ?? '',
@@ -364,7 +350,6 @@ const EditorScreen: React.FC = () => {
     }
   };
 
-  // Adds #tag on its own line, or removes that exact #tag.
   const addLabel = (raw: string) => {
     const tag = raw.trim().replace(/^#+/, '').replace(/\s+/g, '-').toLowerCase();
     if (!tag || extractTags(content).includes(tag)) return;
@@ -394,7 +379,8 @@ const EditorScreen: React.FC = () => {
 
   const stepFind = (step: number) => {
     if (!find || !findMatches.length) return;
-    const index = (find.index + step + findMatches.length) % findMatches.length;
+    // index -1: nothing selected yet, so the first step lands on the first (or last) match.
+    const index = ((find.index < 0 && step < 0 ? 0 : find.index) + step + findMatches.length) % findMatches.length;
     setFind({ ...find, index });
     selectMatch(index, find.query);
   };
@@ -410,7 +396,6 @@ const EditorScreen: React.FC = () => {
     }
   };
 
-  // Stored as an attachment (encrypted, synced); the note's background points at it.
   const pickBackgroundPicture = async () => {
     try {
       const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
@@ -423,7 +408,6 @@ const EditorScreen: React.FC = () => {
     }
   };
 
-  // After an insert re-renders the text, move the cursor to where the insert said.
   useEffect(() => {
     if (!pendingSelection) return;
     bodyRef.current?.setSelection(pendingSelection.start, pendingSelection.end);
@@ -441,7 +425,6 @@ const EditorScreen: React.FC = () => {
     return () => clearTimeout(timer);
   }, [content]);
 
-  // Swaps in an undone or redone text and puts the cursor at the end of what changed.
   const showText = (text: string) => {
     let same = 0;
     while (same < content.length && same < text.length && content[content.length - 1 - same] === text[text.length - 1 - same]) same++;
@@ -511,7 +494,6 @@ const EditorScreen: React.FC = () => {
     setPendingSelection({ start: end, end });
   };
 
-  // Makes the selected lines a heading of `level`, or plain again if they all are one already.
   const setHeading = (level: number) => {
     const lineStart = content.lastIndexOf('\n', selection.start - 1) + 1;
     const lines = content.slice(lineStart, selection.end).split('\n');
@@ -523,7 +505,6 @@ const EditorScreen: React.FC = () => {
     setPendingSelection({ start: end, end });
   };
 
-  // Strips bold, italic, strike, heading and bullet marks from the selected lines.
   const clearFormatting = () => {
     const lineStart = content.lastIndexOf('\n', selection.start - 1) + 1;
     const found = content.indexOf('\n', selection.end);
@@ -543,7 +524,6 @@ const EditorScreen: React.FC = () => {
     setPendingSelection({ start: end, end });
   };
 
-  // Sets the due date of the line the cursor is on (making it a task); null removes it.
   const setDue = (due: string | null) => {
     setShowDueDialog(false);
     const lineStart = content.lastIndexOf('\n', selection.start - 1) + 1;
@@ -560,31 +540,26 @@ const EditorScreen: React.FC = () => {
   };
 
   const handleAddImage = async () => {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      quality: 0.7,
-    });
-    if (!result.canceled && result.assets?.[0]?.uri) {
-      try {
-        // Stored like a document (encrypted, in the profile's attachments), so it syncs with the note.
-        const asset = result.assets[0];
-        const added = await addAttachment({ uri: asset.uri, name: asset.fileName || 'image.jpg', size: asset.fileSize });
-        insert(isMarkdown ? formatAttachmentImage(added.hash) : `[Image: attachment:${added.hash}]`);
-      } catch {
-        alert(t('editor.addImageFailedTitle'), t('editor.addImageFailedMessage'));
-      }
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
+      if (result.canceled || !result.assets?.[0]?.uri) return;
+      const asset = result.assets[0];
+      const added = await addAttachment({ uri: asset.uri, name: asset.fileName || 'image.jpg', size: asset.fileSize });
+      insert(isMarkdown ? formatAttachmentImage(added.hash) : `[Image: attachment:${added.hash}]`);
+    } catch {
+      alert(t('editor.addImageFailedTitle'), t('editor.addImageFailedMessage'));
     }
   };
 
   const handleAttachFile = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
-    if (result.canceled || !result.assets?.[0]) return;
-    const asset = result.assets[0];
-    if (typeof asset.size === 'number' && asset.size > MAX_ATTACHMENT_BYTES) {
-      alert(t('editor.attachFailedTitle'), t('core.attachmentTooLarge'));
-      return;
-    }
     try {
+      const result = await DocumentPicker.getDocumentAsync({ copyToCacheDirectory: true });
+      if (result.canceled || !result.assets?.[0]) return;
+      const asset = result.assets[0];
+      if (typeof asset.size === 'number' && asset.size > MAX_ATTACHMENT_BYTES) {
+        alert(t('editor.attachFailedTitle'), t('core.attachmentTooLarge'));
+        return;
+      }
       const added = await addAttachment({ uri: asset.uri, name: asset.name, size: asset.size });
       setContent(prev => appendAttachmentLink(prev, added.name, added.hash));
     } catch (error: any) {
@@ -622,25 +597,16 @@ const EditorScreen: React.FC = () => {
     ? notePicker.notes.filter(n => n.title.toLowerCase().includes(notePicker.query.trim().toLowerCase())).slice(0, 6)
     : [];
 
-  // Tints from the note's ink, readable on a custom colour.
   const placeholderColor = own ? `${own.on}99` : theme.colors.onSurfaceVariant;
   const overlayColor = own ? `${own.on}1f` : theme.colors.surfaceContainerHigh;
-  // Eases the screen to a newly picked colour; the bar is see-through so it follows.
   const fillColor = own?.fill ?? theme.colors.background;
   const fadeStyle = useAnimatedStyle(() => ({ backgroundColor: withTiming(fillColor, { duration: 240, reduceMotion: ReduceMotion.System }) }));
-  // The box shows the note's text as it is stored, in both tabs: switching tabs never changes the text, so the cursor stays valid
-  // and nothing (link and image syntax included) is rewritten by switching or by typing in Plain text.
-  const displayText = content;
-  // Desktop: both tabs draw styled pieces (StyledEditable); the # and ** marks hide in Plain text and fade in Markdown.
-  // Headings, bold, italic and strike in the text box on every platform (see useStyledText); marks hidden in Plain text, faded in Markdown.
-  const styled = useStyledText({ text: displayText, hideMarks: !isMarkdown, input: bodyRef, fonts: theme.fonts, markColor: theme.colors.onSurfaceVariant });
-  // Props only the desktop's text box reads (shims/react-native.tsx); the phone's TextInput never sees them.
-  // Desktop escape hatch while this is new: localStorage.rawEditor = '1' (then reload) brings back the plain text box.
+  const styled = useStyledText({ text: content, hideMarks: !isMarkdown, input: bodyRef, fonts: theme.fonts, markColor: theme.colors.onSurfaceVariant });
+  // Desktop escape hatch: localStorage.rawEditor = '1' brings back the plain text box.
   const rawWebBox = Platform.OS === 'web' && (() => { try { return localStorage.getItem('rawEditor') === '1'; } catch { return false; } })();
   const webEditor = Platform.OS === 'web' && !rawWebBox ? { ...styled.webProps, onUndo: handleUndo, onRedo: handleRedo } : {};
   const hasSelection = selection.start !== selection.end;
 
-  // The #tag or [[link]] being typed at the cursor, and what could complete it.
   const typed = content.slice(0, selection.start);
   const typingLink = !hasSelection ? /\[\[([^[\]\n]*)$/.exec(typed) : null;
   const typingTag = !hasSelection && !typingLink ? /(?:^|\s)#([\p{L}\p{N}_][\p{L}\p{N}_/-]*)$/u.exec(typed) : null;
@@ -714,9 +680,7 @@ const EditorScreen: React.FC = () => {
               ref={findRef}
               placeholder={t('note.findInNote')}
               value={find.query}
-              onChangeText={text => {
-                setFind({ query: text, index: 0 });
-              }}
+              onChangeText={text => setFind({ query: text, index: -1 })}
               onSubmitEditing={() => stepFind(1)}
               icon="close"
               onIconPress={() => setFind(null)}
@@ -727,7 +691,7 @@ const EditorScreen: React.FC = () => {
                 <View style={styles.findActions}>
                   {!!find.query.trim() && (
                     <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }} accessibilityLiveRegion="polite">
-                      {findMatches.length ? t('note.matchOf', { current: (find.index % findMatches.length) + 1, total: findMatches.length }) : t('note.noMatches')}
+                      {findMatches.length ? t('note.matchOf', { current: (Math.max(find.index, 0) % findMatches.length) + 1, total: findMatches.length }) : t('note.noMatches')}
                     </Text>
                   )}
                   <IconButton icon="chevron-up" disabled={!findMatches.length} onPress={() => stepFind(-1)} accessibilityLabel={t('note.previousMatch')} />
@@ -738,8 +702,7 @@ const EditorScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Scrolls the cursor above the keyboard and the toolbar without resizing anything. */}
-        {/* The library's auto-scroll is off: next to a growing text box it made the keyboard open and close in a loop. Room is added by hand below. */}
+        {/* Auto-scroll is off: next to a growing text box it made the keyboard open and close in a loop. */}
         <KeyboardAwareScrollView
           ref={scrollRef}
           onScroll={follow.onScroll}
@@ -751,7 +714,7 @@ const EditorScreen: React.FC = () => {
           bottomOffset={TOOLBAR_HEIGHT + space.sm + (suggestions.length ? 48 : 0) + (showFormat ? 48 : 0) + space.lg}
         >
           <Pressable accessible={false} focusable={false} style={styles.tapArea} onPress={e => follow.tapAt(e.nativeEvent.pageX, e.nativeEvent.pageY)}>
-<View style={styles.column}>
+          <View style={styles.column}>
             <View style={styles.modeRow}>
               <SegmentedButtons theme={controlTheme}
                 value={isMarkdown ? 'markdown' : 'text'}
@@ -800,9 +763,9 @@ const EditorScreen: React.FC = () => {
               <View style={styles.body}>
                 <TextInput
                   ref={bodyRef}
-                  // Fills the free height on the desktop only; on the phone a growing box made Enter flicker and closed the keyboard.
+                  // Desktop only: on the phone a growing box made Enter flicker and closed the keyboard.
                   style={[styles.contentInput, Platform.OS === 'web' && styles.fill, theme.fonts.noteBody, { color: own?.on ?? theme.colors.onSurface }]}
-                  value={Platform.OS === 'web' && !rawWebBox ? undefined : displayText}
+                  value={Platform.OS === 'web' && !rawWebBox ? undefined : content}
                   onChangeText={handleChangeText}
                   multiline
                   disableFullscreenUI
@@ -817,8 +780,7 @@ const EditorScreen: React.FC = () => {
                   scrollEnabled={false}
                   accessibilityLabel={t('editor.noteTextLabel')}
                   {...webEditor}
-                >
-                </TextInput>
+                />
                 <NoteAttachments content={content} onRemove={handleRemoveAttachment} />
               </View>
             )}
@@ -858,7 +820,7 @@ const EditorScreen: React.FC = () => {
                 <IconButton icon="format-strikethrough" onPress={() => wrapSelection('~~')} accessibilityLabel={t('editor.strikethrough')} />
                 <IconButton icon="format-list-bulleted" onPress={() => prefixLines('- ')} accessibilityLabel={t('editor.bulletedList')} />
                 {isMarkdown && <IconButton icon="link-variant" onPress={() => setShowLinkDialog(true)} accessibilityLabel={t('editor.addLink')} />}
-                <IconButton icon="format-clear" onPress={() => clearFormatting} accessibilityLabel={t('editor.clearFormatting')} />
+                <IconButton icon="format-clear" onPress={clearFormatting}accessibilityLabel={t('editor.clearFormatting')} />
                 <IconButton icon="close" onPress={() => setShowFormat(false)} accessibilityLabel={t('editor.closeFormatting')} />
               </ScrollView>
             )}
@@ -1140,7 +1102,6 @@ const EditorScreen: React.FC = () => {
       </SafeAreaView>
     </View>
   );
-
 };
 
 const styles = StyleSheet.create({
@@ -1154,7 +1115,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
   },
-  // The padding sits inside the tap area, so a tap in the gap beside the text reaches it. Web cursor: the I-beam (the types only list auto and pointer).
+  // Padding sits inside so taps beside the text reach it; the cast is because the types lack 'text'.
   tapArea: { flexGrow: 1, padding: space.lg, cursor: 'text' as 'auto' },
   column: {
     flexGrow: 1,
@@ -1178,19 +1139,16 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     marginTop: space.lg,
   },
-  // Grows with the text and lets the screen scroll; nothing resizes it while it gains focus.
   contentInput: {
     minHeight: 300,
     marginTop: space.lg,
     padding: 0,
   },
   fill: { flexGrow: 1 },
-  // Floats a little in from the screen edges instead of running edge to edge.
   toolbar: {
     marginHorizontal: space.md,
     marginBottom: space.sm,
     paddingHorizontal: space.xs,
-    // The same border as the Plain text and Markdown buttons: outline colour, 1dp, control corners.
     borderRadius: shape.control,
     borderWidth: 1,
     overflow: 'hidden',
