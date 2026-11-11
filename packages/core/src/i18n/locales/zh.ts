@@ -724,6 +724,8 @@ const catalog: Record<string, string> = {
   "importExport.everyDay": "每天",
   "importExport.everyWeek": "每周",
   "importExport.pickDays": "选择日期",
+  "importExport.backupDone": "备份已保存",
+  "importExport.backupDoneBody": "已保存到 {folder}。",
   "importExport.backupHelp": "打开 NoteSpark 且备份到期时会自动备份。可用上方的“恢复”来恢复备份。",
   "importExport.history": "历史记录",
   "importExport.historyOptions": "历史记录选项",
@@ -824,7 +826,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "带PIN码的档案只能在这台电脑上打开和锁定。网页视图使用此处当前打开的档案。",
   "privacy.controlD3": "删除 NoteSpark 的文件夹会清除所有内容。开发者没有任何副本，因此已删除的笔记无法找回，除非你已导出。",
   "privacy.changesD": "如果本政策有变更，新版本将与新的生效日期一起显示在这里。",
-  "privacy.dateD": "2026年11月7日",
+  "privacy.dateD": "2026年11月11日",
   "privacy.leadD": "NoteSpark 是一款离线笔记应用。没有账号、没有广告、没有分析，也没有跟踪。你写的一切都只保存在这台电脑上。本政策说明桌面应用存储什么内容以及存储在哪里。",
   "privacy.title": "隐私政策",
   "privacy.effective": "{date}生效",
@@ -1158,7 +1160,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "没有账户，也没有我们的服务器。你没有配对的设备得不到任何回应。",  // REVIEW (legal)
   "privacy.syncD3": "默认情况下，已配对的设备可以在这台电脑上添加档案，新档案一开始没有 PIN。若想让设备只能同步到你在这里已有的档案，请在同步设置中关闭“接受来自设备的新档案”。",  // REVIEW (legal)
   "privacy.syncD4": "你可以随时关闭同步，或移除某台设备。已在这台电脑上的笔记会留在这里。",  // REVIEW (legal)
-  "privacy.permD1": "通知（可选）：用于在任务到期日提醒你。通知在这台电脑上创建；NoteSpark 不使用推送通知。带 PIN 的档案的提醒不会显示任务文字。",  // REVIEW (legal)
+  "privacy.permD1": "通知（可选）：用于在任务到期日提醒你，并在自动备份完成时通知你。通知在这台电脑上创建；NoteSpark 不使用推送通知。带 PIN 的档案的提醒不会显示任务文字。",  // REVIEW (legal)
   "privacy.permD2": "文件和剪贴板（可选）：仅限你在导入时选择的文件、你为备份、Markdown 镜像和导出选择的文件夹，剪贴板仅在你从托盘图标选择“保存剪贴板”时使用。",  // REVIEW (legal)
   "privacy.permD3": "密钥环（可选）：你系统的密钥环（如 KWallet 或 GNOME Keyring）保管 NoteSpark 为受保护档案和同步所需的密钥。没有密钥环时，NoteSpark 不会创建受保护档案，也不会打开同步。",  // REVIEW (legal)
   "privacy.permD4": "网络访问：仅用于在你自己网络上的同步、你打开的网页视图，以及你打开“显示网络图片”时的网络图片。NoteSpark 从不在公共地址上监听。",  // REVIEW (legal)

@@ -724,6 +724,8 @@ const catalog: Record<string, string> = {
   "importExport.everyDay": "毎日",
   "importExport.everyWeek": "毎週",
   "importExport.pickDays": "曜日を選ぶ",
+  "importExport.backupDone": "バックアップを保存しました",
+  "importExport.backupDoneBody": "{folder} に保存しました。",
   "importExport.backupHelp": "バックアップは、予定の時刻を過ぎてNoteSparkを開いたときに実行されます。上の「復元」から復元できます。",
   "importExport.history": "履歴",
   "importExport.historyOptions": "履歴のオプション",
@@ -824,7 +826,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "PINのあるプロフィールは、このコンピューター上でのみ開いたりロックしたりします。ウェブビューは、ここで開いているプロフィールで動作します。",
   "privacy.controlD3": "NoteSparkのフォルダを削除すると、すべてが消去されます。開発者はコピーを持っていないため、エクスポートした場合を除き、削除したノートは復元できません。",
   "privacy.changesD": "このポリシーが変更された場合は、新しい版が、新しい施行日とともに、ここに掲載されます。",
-  "privacy.dateD": "2026年11月7日",
+  "privacy.dateD": "2026年11月11日",
   "privacy.leadD": "NoteSparkはオフラインのノートアプリです。アカウント、広告、分析、トラッキングはありません。書いたものはすべてこのコンピューターの中にとどまります。このポリシーでは、デスクトップアプリが何をどこに保存するかを説明します。",
   "privacy.title": "プライバシーポリシー",
   "privacy.effective": "施行日: {date}",
@@ -1158,7 +1160,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "アカウントも、こちらのサーバーもありません。ペアリングしていないデバイスには応答しません。",  // REVIEW (legal)
   "privacy.syncD3": "デフォルトでは、ペアリングしたデバイスがこのパソコンにプロフィールを追加でき、新しいプロフィールは PIN なしで始まります。デバイスが同期できるのをここにすでにあるプロフィールだけにするには、同期の設定で「デバイスからの新しいプロフィールを受け入れる」をオフにしてください。",  // REVIEW (legal)
   "privacy.syncD4": "同期はいつでもオフにでき、デバイスもいつでも削除できます。このパソコンにすでにあるノートはここに残ります。",  // REVIEW (legal)
-  "privacy.permD1": "通知（任意）：タスクの期限日にお知らせするためのものです。通知はこのパソコン上で作られ、NoteSpark はプッシュ通知を使いません。PIN 付きプロフィールのリマインダーにはタスクの文面は表示されません。",  // REVIEW (legal)
+  "privacy.permD1": "通知（任意）：タスクの期限日と、自動バックアップの完了をお知らせするためのものです。通知はこのパソコン上で作られ、NoteSpark はプッシュ通知を使いません。PIN 付きプロフィールのリマインダーにはタスクの文面は表示されません。",  // REVIEW (legal)
   "privacy.permD2": "ファイルとクリップボード（任意）：読み込み時に選ぶファイル、バックアップ・Markdown ミラー・書き出しのために選ぶフォルダーのみで、クリップボードはトレイアイコンから「クリップボードを保存」を選んだときだけ使います。",  // REVIEW (legal)
   "privacy.permD3": "キーリング（任意）：お使いのシステムのキーリング（KWallet や GNOME Keyring など）が、保護されたプロフィールと同期に NoteSpark が必要とする鍵を保管します。キーリングがない場合、NoteSpark は保護されたプロフィールを作成せず、同期もオンにしません。",  // REVIEW (legal)
   "privacy.permD4": "ネットワークアクセス：自分のネットワーク上での同期、オンにした場合のウェブビュー、「ウェブ画像を表示」をオンにした場合のウェブ画像のためだけです。NoteSpark が公開アドレスで待ち受けることはありません。",  // REVIEW (legal)

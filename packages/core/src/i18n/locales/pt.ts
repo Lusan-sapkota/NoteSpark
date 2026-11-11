@@ -836,6 +836,8 @@ const catalog: Record<string, string> = {
   "importExport.everyDay": "Todo dia",
   "importExport.everyWeek": "Toda semana",
   "importExport.pickDays": "Escolher dias",
+  "importExport.backupDone": "Backup concluído",
+  "importExport.backupDoneBody": "Salvo em {folder}.",
   "importExport.backupHelp": "Os backups rodam quando você abre o NoteSpark e há um pendente. Restaure um com Restaurar, acima.",
   "importExport.history": "Histórico",
   "importExport.historyOptions": "Opções do histórico",
@@ -940,7 +942,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Um perfil com PIN é aberto e bloqueado somente neste computador. A visualização web funciona com o perfil que está aberto aqui.",
   "privacy.controlD3": "Remover a pasta do NoteSpark apaga tudo. O desenvolvedor não tem cópia, então notas excluídas não podem ser recuperadas, a menos que você as tenha exportado.",
   "privacy.changesD": "Se esta política mudar, a nova versão aparecerá aqui, com uma nova data de vigência.",
-  "privacy.dateD": "7 de novembro de 2026",
+  "privacy.dateD": "11 de novembro de 2026",
   "privacy.leadD": "O NoteSpark é um app de notas offline. Não tem conta, anúncios, análise de uso nem rastreamento. Tudo o que você escreve fica neste computador. Esta política explica o que o app para computador armazena e onde.",
   "privacy.title": "Política de privacidade",
   "privacy.effective": "Em vigor desde {date}",
@@ -1239,7 +1241,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "Não há conta nem servidor nosso. Um dispositivo que você não emparelhou não recebe resposta.",  // REVIEW (legal)
   "privacy.syncD3": "Por padrão, um dispositivo pareado pode adicionar um perfil neste computador, e o novo perfil começa sem PIN. Para que os dispositivos sincronizem só com perfis que você já tem aqui, desative Aceitar novos perfis de dispositivos nas configurações de sincronização.",  // REVIEW (legal)
   "privacy.syncD4": "Desative a sincronização, ou remova um dispositivo, quando quiser. As notas que já estão neste computador ficam nele.",  // REVIEW (legal)
-  "privacy.permD1": "Notificações (opcional): para lembrar você das tarefas na data de vencimento. Elas são criadas neste computador; o NoteSpark não usa notificações push. Lembretes de perfis com PIN não mostram o texto da tarefa.",  // REVIEW (legal)
+  "privacy.permD1": "Notificações (opcional): para lembrar você das tarefas na data de vencimento e avisar quando um backup automático terminar. Elas são criadas neste computador; o NoteSpark não usa notificações push. Lembretes de perfis com PIN não mostram o texto da tarefa.",  // REVIEW (legal)
   "privacy.permD2": "Arquivos e área de transferência (opcional): apenas os arquivos que você escolhe ao importar, as pastas que você escolhe para backups, o espelho Markdown e exportações, e a área de transferência só quando você escolhe Salvar área de transferência no ícone da bandeja.",  // REVIEW (legal)
   "privacy.permD3": "Chaveiro (opcional): o chaveiro do seu sistema (como KWallet ou GNOME Keyring) guarda as chaves de que o NoteSpark precisa para perfis protegidos e sincronização. Sem um, o NoteSpark não cria um perfil protegido nem ativa a sincronização.",  // REVIEW (legal)
   "privacy.permD4": "Acesso à rede: só para sincronizar na sua própria rede, para a visualização web se você a ativar e para imagens da web se você ativar Mostrar imagens da web. O NoteSpark nunca escuta em um endereço público.",  // REVIEW (legal)

@@ -74,23 +74,36 @@ export const runBackup = async (settings: AutoBackupSettings): Promise<{ count: 
 
 let running = false;
 
+export interface AutoBackupResult { status: 'done' | 'partial' | 'failed'; folder: string }
+
+// The notification for a finished automatic run: shown by the phone's App and the desktop's main process.
+export const backupNotice = ({ status, folder }: AutoBackupResult) =>
+  status === 'done'
+    ? { title: t('importExport.backupDone'), body: t('importExport.backupDoneBody', { folder }) }
+    : status === 'partial'
+    ? { title: t('importExport.backupProfilesFailed'), body: t('importExport.backupProfilesFailedBody') }
+    : { title: t('importExport.backupFolderFailed'), body: t('importExport.backupFolderFailedBody') };
+
 // lastRun moves when at least one profile is backed up, so a single broken profile doesn't rotate out the others on every open.
-export const runAutoBackupIfDue = async (): Promise<void> => {
+// Returns null when nothing was due, else how the run went.
+export const runAutoBackupIfDue = async (): Promise<AutoBackupResult | null> => {
   const settings = await getAutoBackup();
-  if (!settings || running) return;
+  if (!settings || running) return null;
   if (settings.frequency === 'days') {
     const now = new Date();
-    if (!settings.days?.includes(now.getDay()) || (settings.lastRun && new Date(settings.lastRun).toDateString() === now.toDateString())) return;
+    if (!settings.days?.includes(now.getDay()) || (settings.lastRun && new Date(settings.lastRun).toDateString() === now.toDateString())) return null;
   } else {
     const days = settings.frequency === 'daily' ? 1 : 7;
-    if (settings.lastRun && Date.now() - Date.parse(settings.lastRun) < days * 86400000 - 3600000) return;
+    if (settings.lastRun && Date.now() - Date.parse(settings.lastRun) < days * 86400000 - 3600000) return null;
   }
   running = true;
   try {
     const { error } = await runBackup(settings);
     await setAutoBackup({ ...settings, lastRun: new Date().toISOString(), lastError: error });
+    return { status: error ? 'partial' : 'done', folder: folderName(settings.folderUri) };
   } catch (error) {
     await setAutoBackup({ ...settings, lastError: error instanceof Error ? error.message : String(error) });
+    return { status: 'failed', folder: folderName(settings.folderUri) };
   } finally {
     running = false;
   }

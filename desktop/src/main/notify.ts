@@ -5,7 +5,7 @@ import { buildReminders, getLanguage, REMINDER_ID_PREFIX, reminderMinutes, t, ty
 import AsyncStorage from '@notespark/node-shims/async-storage';
 import { syncLanguage } from './language';
 
-const say = (title: string, body: string, onClick?: () => void) => {
+export const say = (title: string, body: string, onClick?: () => void) => {
   if (!Notification.isSupported()) return;
   const n = new Notification({ title, body });
   if (onClick) n.on('click', onClick);

@@ -724,6 +724,8 @@ const catalog: Record<string, string> = {
   "importExport.everyDay": "매일",
   "importExport.everyWeek": "매주",
   "importExport.pickDays": "요일 선택",
+  "importExport.backupDone": "백업 완료",
+  "importExport.backupDoneBody": "{folder}에 저장했어요.",
   "importExport.backupHelp": "NoteSpark를 열었을 때 백업할 차례가 되면 백업이 실행돼요. 위의 복원으로 백업을 되돌릴 수 있어요.",
   "importExport.history": "기록",
   "importExport.historyOptions": "기록 옵션",
@@ -824,7 +826,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "PIN이 있는 프로필은 이 컴퓨터에서만 열고 잠글 수 있어요. 웹 보기는 이 컴퓨터에서 열려 있는 프로필로 작동해요.",
   "privacy.controlD3": "NoteSpark 폴더를 삭제하면 모든 데이터가 지워져요. 개발자에게는 사본이 없으므로, 삭제한 메모는 내보내 둔 경우가 아니면 복구할 수 없어요.",
   "privacy.changesD": "이 방침이 변경되면 새 버전이 새 시행일과 함께 여기에 게시돼요.",
-  "privacy.dateD": "2026년 11월 7일",
+  "privacy.dateD": "2026년 11월 11일",
   "privacy.leadD": "NoteSpark는 오프라인 메모 앱이에요. 계정, 광고, 분석, 추적이 없어요. 작성한 모든 내용은 이 컴퓨터에만 남아요. 이 방침은 데스크톱 앱이 무엇을 어디에 저장하는지 설명해요.",
   "privacy.title": "개인정보 처리방침",
   "privacy.effective": "시행일 {date}",
@@ -1158,7 +1160,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "계정도, 우리 서버도 없습니다. 페어링하지 않은 기기에는 응답하지 않습니다.",  // REVIEW (legal)
   "privacy.syncD3": "기본적으로 페어링한 기기가 이 컴퓨터에 프로필을 추가할 수 있으며, 새 프로필은 PIN 없이 시작합니다. 기기가 이 컴퓨터에 이미 있는 프로필에만 동기화하게 하려면 동기화 설정에서 ‘기기에서 온 새 프로필 받기’를 끄세요.",  // REVIEW (legal)
   "privacy.syncD4": "동기화는 언제든 끄거나 기기를 제거할 수 있습니다. 이 컴퓨터에 이미 있는 노트는 그대로 남습니다.",  // REVIEW (legal)
-  "privacy.permD1": "알림 (선택 사항): 작업 마감일에 알려 주기 위한 것입니다. 알림은 이 컴퓨터에서 만들어지며 NoteSpark는 푸시 알림을 사용하지 않습니다. PIN이 있는 프로필의 알림은 작업 텍스트를 보여 주지 않습니다.",  // REVIEW (legal)
+  "privacy.permD1": "알림 (선택 사항): 작업 마감일에 알려 주고 자동 백업이 끝났을 때 알려 주기 위한 것입니다. 알림은 이 컴퓨터에서 만들어지며 NoteSpark는 푸시 알림을 사용하지 않습니다. PIN이 있는 프로필의 알림은 작업 텍스트를 보여 주지 않습니다.",  // REVIEW (legal)
   "privacy.permD2": "파일과 클립보드 (선택 사항): 가져올 때 고르는 파일, 백업·Markdown 미러·내보내기를 위해 고르는 폴더만 사용하며, 클립보드는 트레이 아이콘에서 ‘클립보드 저장’을 선택할 때만 사용합니다.",  // REVIEW (legal)
   "privacy.permD3": "키링 (선택 사항): 시스템의 키링(KWallet이나 GNOME Keyring 등)이 보호된 프로필과 동기화에 NoteSpark가 필요한 키를 보관합니다. 키링이 없으면 NoteSpark는 보호된 프로필을 만들지 않고 동기화도 켜지 않습니다.",  // REVIEW (legal)
   "privacy.permD4": "네트워크 접근: 내 네트워크에서의 동기화, 켠 경우의 웹 보기, ‘웹 이미지 표시’를 켠 경우의 웹 이미지에만 사용합니다. NoteSpark는 공개 주소에서 대기하지 않습니다.",  // REVIEW (legal)

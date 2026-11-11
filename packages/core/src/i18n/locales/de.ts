@@ -756,6 +756,8 @@ const catalog: Record<string, string> = {
   "importExport.everyDay": "Jeden Tag",
   "importExport.everyWeek": "Jede Woche",
   "importExport.pickDays": "Tage wählen",
+  "importExport.backupDone": "Sicherung gespeichert",
+  "importExport.backupDoneBody": "Gespeichert in {folder}.",
   "importExport.backupHelp": "Sicherungen laufen, wenn du NoteSpark öffnest und eine fällig ist. Stelle eine mit „Wiederherstellen“ oben wieder her.",
   "importExport.history": "Verlauf",
   "importExport.historyOptions": "Verlaufsoptionen",
@@ -858,7 +860,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Ein Profil mit PIN wird nur auf diesem Computer geöffnet und gesperrt. Die Webansicht arbeitet mit dem Profil, das hier geöffnet ist.",
   "privacy.controlD3": "Wenn du den Ordner von NoteSpark entfernst, wird alles gelöscht. Der Entwickler hat keine Kopie, daher können gelöschte Notizen nicht wiederhergestellt werden, es sei denn, du hast sie exportiert.",
   "privacy.changesD": "Wenn sich diese Richtlinie ändert, erscheint die neue Fassung hier mit einem neuen Datum des Inkrafttretens.",
-  "privacy.dateD": "7. November 2026",
+  "privacy.dateD": "11. November 2026",
   "privacy.leadD": "NoteSpark ist eine Offline-Notiz-App. Sie hat kein Konto, keine Werbung, keine Analyse und kein Tracking. Alles, was du schreibst, bleibt auf diesem Computer. Diese Richtlinie erklärt, was die Desktop-App speichert und wo.",
   "privacy.title": "Datenschutzerklärung",
   "privacy.effective": "Gültig ab {date}",
@@ -1199,7 +1201,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "Es gibt kein Konto und keinen Server von uns. Ein Gerät, das du nicht gekoppelt hast, bekommt keine Antwort.",  // REVIEW (legal)
   "privacy.syncD3": "Standardmäßig kann ein gekoppeltes Gerät ein Profil auf diesem Computer anlegen, und das neue Profil beginnt ohne PIN. Damit Geräte nur in Profile synchronisieren, die du hier schon hast, schalte Neue Profile von Geräten annehmen in den Sync-Einstellungen aus.",  // REVIEW (legal)
   "privacy.syncD4": "Schalte die Synchronisierung jederzeit aus oder entferne ein Gerät. Notizen, die schon auf diesem Computer sind, bleiben dort.",  // REVIEW (legal)
-  "privacy.permD1": "Benachrichtigungen (optional): um dich an Aufgaben zum Fälligkeitsdatum zu erinnern. Sie werden auf diesem Computer erstellt; NoteSpark nutzt keine Push-Benachrichtigungen. Erinnerungen für Profile mit PIN zeigen den Aufgabentext nicht.",  // REVIEW (legal)
+  "privacy.permD1": "Benachrichtigungen (optional): um dich an Aufgaben zum Fälligkeitsdatum zu erinnern und dir mitzuteilen, wenn eine automatische Sicherung abgeschlossen ist. Sie werden auf diesem Computer erstellt; NoteSpark nutzt keine Push-Benachrichtigungen. Erinnerungen für Profile mit PIN zeigen den Aufgabentext nicht.",  // REVIEW (legal)
   "privacy.permD2": "Dateien und Zwischenablage (optional): nur die Dateien, die du beim Import auswählst, die Ordner, die du für Backups, den Markdown-Spiegel und Exporte wählst, und die Zwischenablage nur, wenn du im Tray-Symbol Zwischenablage speichern wählst.",  // REVIEW (legal)
   "privacy.permD3": "Schlüsselbund (optional): Der Schlüsselbund deines Systems (z. B. KWallet oder GNOME Keyring) bewahrt die Schlüssel auf, die NoteSpark für geschützte Profile und die Synchronisierung braucht. Ohne ihn legt NoteSpark kein geschütztes Profil an und schaltet die Synchronisierung nicht ein.",  // REVIEW (legal)
   "privacy.permD4": "Netzwerkzugriff: nur für die Synchronisierung in deinem eigenen Netzwerk, für die Webansicht, wenn du sie einschaltest, und für Webbilder, wenn du Webbilder anzeigen einschaltest. NoteSpark lauscht nie auf einer öffentlichen Adresse.",  // REVIEW (legal)

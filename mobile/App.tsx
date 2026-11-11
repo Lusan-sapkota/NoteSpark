@@ -23,7 +23,7 @@ import { DialogProvider, useAlert } from './src/components/DialogProvider';
 import { clearAttachmentTempDir, pruneAttachments } from './src/storage/attachments';
 import { pruneImageCache } from './src/utils/imageCache';
 import ProfileUnlockScreen from './src/screens/ProfileUnlockScreen';
-import { runAutoBackupIfDue } from './src/storage/autoBackup';
+import { backupNotice, runAutoBackupIfDue } from './src/storage/autoBackup';
 import { navigationRef as appNavigation } from './src/navigation/AppNavigator';
 import { Notifications } from './src/utils/notifications';
 import { getStartScreen, StartScreen } from './src/utils/startScreen';
@@ -236,7 +236,7 @@ const AppContent = () => {
           getAllProfilesNoteContents().then(pruneImageCache).catch(() => {});
           pruneAttachments().catch(() => {});
         }, 10000);
-        runAutoBackupIfDue().catch(() => {});
+        autoBackup();
       } catch (error) {
         console.error('Failed to initialize database:', error);
         const fallback = await getDefaultProfile().catch(() => ({ id: 'default', name: 'Personal' }));
@@ -251,7 +251,7 @@ const AppContent = () => {
     setupApp();
     // A due automatic backup also runs when the app comes back to the front.
     const sub = AppState.addEventListener('change', state => {
-      if (state === 'active') runAutoBackupIfDue().catch(() => {});
+      if (state === 'active') autoBackup();
     });
     return () => {
       sub.remove();
@@ -359,6 +359,12 @@ const AppContent = () => {
     </View>
   );
 };
+
+// A due automatic backup runs quietly; a notification says how it went.
+const autoBackup = () =>
+  runAutoBackupIfDue()
+    .then(result => { if (result) { const { title, body } = backupNotice(result); return sendAppNotification(title, body); } })
+    .catch(() => {});
 
 export default function App() {
   return (

@@ -725,6 +725,8 @@ const catalog: Record<string, string> = {
   "importExport.everyDay": "Setiap hari",
   "importExport.everyWeek": "Setiap minggu",
   "importExport.pickDays": "Pilih hari",
+  "importExport.backupDone": "Cadangan tersimpan",
+  "importExport.backupDoneBody": "Disimpan di {folder}.",
   "importExport.backupHelp": "Cadangan berjalan saat NoteSpark dibuka dan sudah waktunya. Pulihkan dengan Pulihkan di atas.",
   "importExport.history": "Riwayat",
   "importExport.historyOptions": "Opsi riwayat",
@@ -825,7 +827,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Profil ber-PIN dibuka dan dikunci hanya di komputer ini. Tampilan web bekerja dengan profil yang sedang dibuka di sini.",
   "privacy.controlD3": "Menghapus folder NoteSpark menghapus semuanya. Pengembang tidak memiliki salinan, sehingga catatan yang terhapus tidak dapat dipulihkan kecuali telah diekspor.",
   "privacy.changesD": "Jika kebijakan ini berubah, versi baru akan muncul di sini dengan tanggal berlaku baru.",
-  "privacy.dateD": "7 November 2026",
+  "privacy.dateD": "11 November 2026",
   "privacy.leadD": "NoteSpark adalah aplikasi catatan offline. Tanpa akun, tanpa iklan, tanpa analitik, dan tanpa pelacakan. Semua yang Anda tulis tetap di komputer ini. Kebijakan ini menjelaskan apa yang disimpan aplikasi desktop dan di mana.",
   "privacy.title": "Kebijakan privasi",
   "privacy.effective": "Berlaku {date}",
@@ -1159,7 +1161,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "Tidak ada akun dan tidak ada server kami. Perangkat yang tidak Anda pasangkan tidak mendapat jawaban.",  // REVIEW (legal)
   "privacy.syncD3": "Secara default, perangkat yang dipasangkan dapat menambah profil di komputer ini, dan profil baru itu dimulai tanpa PIN. Agar perangkat hanya menyinkronkan ke profil yang sudah Anda miliki di sini, matikan Terima profil baru dari perangkat di pengaturan sinkronisasi.",  // REVIEW (legal)
   "privacy.syncD4": "Matikan sinkronisasi, atau hapus perangkat, kapan saja. Catatan yang sudah ada di komputer ini tetap di sini.",  // REVIEW (legal)
-  "privacy.permD1": "Notifikasi (opsional): untuk mengingatkan tugas pada tanggal jatuh tempo. Notifikasi dibuat di komputer ini; NoteSpark tidak memakai notifikasi push. Pengingat untuk profil ber-PIN tidak menampilkan teks tugas.",  // REVIEW (legal)
+  "privacy.permD1": "Notifikasi (opsional): untuk mengingatkan tugas pada tanggal jatuh tempo dan memberi tahu saat pencadangan otomatis selesai. Notifikasi dibuat di komputer ini; NoteSpark tidak memakai notifikasi push. Pengingat untuk profil ber-PIN tidak menampilkan teks tugas.",  // REVIEW (legal)
   "privacy.permD2": "Berkas dan papan klip (opsional): hanya berkas yang Anda pilih saat mengimpor, folder yang Anda pilih untuk cadangan, cermin Markdown, dan ekspor, serta papan klip hanya saat Anda memilih Simpan papan klip dari ikon baki.",  // REVIEW (legal)
   "privacy.permD3": "Keyring (opsional): keyring sistem Anda (seperti KWallet atau GNOME Keyring) menyimpan kunci yang dibutuhkan NoteSpark untuk profil terlindungi dan sinkronisasi. Tanpanya, NoteSpark tidak membuat profil terlindungi atau menyalakan sinkronisasi.",  // REVIEW (legal)
   "privacy.permD4": "Akses jaringan: hanya untuk sinkronisasi di jaringan Anda sendiri, untuk tampilan web jika Anda menyalakannya, dan untuk gambar web jika Anda menyalakan Tampilkan gambar web. NoteSpark tidak pernah mendengarkan pada alamat publik.",  // REVIEW (legal)

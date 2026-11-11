@@ -107,6 +107,8 @@ export default {
   'importExport.everyDay': 'Every day',
   'importExport.everyWeek': 'Every week',
   'importExport.pickDays': 'Pick days',
+  'importExport.backupDone': 'Backup saved',
+  'importExport.backupDoneBody': 'Saved to {folder}.',
   'importExport.backupHelp': 'Backups run when you open NoteSpark and one is due. Restore one with Restore above.',
   'importExport.history': 'History',
   'importExport.historyOptions': 'History options',
