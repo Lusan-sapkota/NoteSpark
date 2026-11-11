@@ -849,17 +849,18 @@ const HomeScreen: React.FC = () => {
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips} style={styles.chipRow}>
           {chipFilters.map(f => (
             <View key={f.value}>
-              {/* Selected is filled with no outline and no check mark, so chips don't change width. */}
+              {/* Selected is filled, with no check mark; every chip keeps a 1dp border so all are the same size and shape. */}
               <Chip
-                mode={filter === f.value ? 'flat' : 'outlined'}
+                mode="outlined"
                 selected={filter === f.value}
                 showSelectedCheck={false}
                 showSelectedOverlay={false}
+                hitSlop={{ top: 4, bottom: 4 }}
                 onPress={() => setFilter(f.value)}
                 accessibilityState={{ selected: filter === f.value }}
-                style={[styles.chipShape, filter === f.value && { backgroundColor: theme.colors.secondaryContainer }]}
+                style={[styles.chipShape, filter === f.value && { backgroundColor: theme.colors.secondaryContainer, borderColor: theme.colors.secondaryContainer }]}
                 textStyle={[
-                  theme.fonts.labelMedium,
+                  theme.fonts.labelLarge,
                   styles.chipText,
                   { color: filter === f.value ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant },
                 ]}
@@ -1090,9 +1091,11 @@ const styles = StyleSheet.create({
   chipShape: {
     borderRadius: shape.small,
   },
+  // The label's vertical margin makes the chip 40dp tall with its border; hitSlop on the chip brings the tap area to 48dp.
   chipText: {
     marginLeft: space.md,
     marginRight: space.md,
+    marginVertical: 9,
   },
   skeletonCard: {
     marginHorizontal: space.lg,
