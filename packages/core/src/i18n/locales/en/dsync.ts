@@ -46,7 +46,7 @@ export default {
   'dsync.profilesHelp': 'Choose which profiles sync. None sync until you turn them on.',
   'dsync.profileLocked': 'Unlock {name} on your computer to sync it.',
   'dsync.settingsSync': 'Sync settings',
-  'dsync.settingsSyncHelp': 'Keep the theme, language, reminder time and a few other preferences the same on your devices. Lock, PIN and backup settings never sync.',
+  'dsync.settingsSyncHelp': 'Share theme, language and reminder time across your devices. Lock, PIN and backups never sync.',
   'dsync.acceptNew': 'Accept new profiles from devices',
   'dsync.acceptNewHelp': 'When a device syncs a profile this computer does not have, create it here.',
   'dsync.mirror': 'Markdown folder',

@@ -34,7 +34,7 @@ const GroupedRow: React.FC<GroupedRowProps> = ({ title, description, icon, left,
         title={title}
         description={description}
         titleNumberOfLines={2}
-        descriptionNumberOfLines={3}
+        descriptionNumberOfLines={0}
         titleStyle={danger && { color: theme.colors.error }}
         left={left ? props => <View style={[props.style, styles.left]}>{left}</View> : icon ? props => <List.Icon {...props} icon={icon} color={color} /> : undefined}
         right={right ? () => <View style={styles.right}>{right}</View> : undefined}
