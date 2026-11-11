@@ -7,7 +7,9 @@ import { notesToJson, t } from '@notespark/core';
 
 export interface AutoBackupSettings {
   folderUri: string;
-  frequency: 'daily' | 'weekly';
+  frequency: 'daily' | 'weekly' | 'days';
+  // For 'days': weekdays to back up on, 0 = Sunday … 6 = Saturday.
+  days?: number[];
   // Protected profiles are skipped unless the person agreed that their backups are readable files.
   includeProtected: boolean;
   lastRun?: string;
@@ -76,8 +78,13 @@ let running = false;
 export const runAutoBackupIfDue = async (): Promise<void> => {
   const settings = await getAutoBackup();
   if (!settings || running) return;
-  const days = settings.frequency === 'daily' ? 1 : 7;
-  if (settings.lastRun && Date.now() - Date.parse(settings.lastRun) < days * 86400000 - 3600000) return;
+  if (settings.frequency === 'days') {
+    const now = new Date();
+    if (!settings.days?.includes(now.getDay()) || (settings.lastRun && new Date(settings.lastRun).toDateString() === now.toDateString())) return;
+  } else {
+    const days = settings.frequency === 'daily' ? 1 : 7;
+    if (settings.lastRun && Date.now() - Date.parse(settings.lastRun) < days * 86400000 - 3600000) return;
+  }
   running = true;
   try {
     const { error } = await runBackup(settings);
