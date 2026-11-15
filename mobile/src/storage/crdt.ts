@@ -25,7 +25,7 @@ export const initCrdt = async (db: DB): Promise<void> => {
     CREATE TABLE IF NOT EXISTS crdt_adopted (docId TEXT PRIMARY KEY);`
   );
   const cols = await db.getAllAsync<{ name: string }>('PRAGMA table_info(sync_state)');
-  if (!cols.some(c => c.name === 'syncId')) await db.execAsync('ALTER TABLE sync_state ADD COLUMN syncId TEXT').catch(() => {});
+  if (!cols.some(c => c.name === 'syncId')) await db.execAsync('ALTER TABLE sync_state ADD COLUMN syncId TEXT');
 };
 
 // New random Yjs client id for every opened connection, never stored (F2).

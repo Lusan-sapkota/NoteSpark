@@ -3,7 +3,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { deleteAsync, StorageAccessFramework as SAF, writeAsStringAsync } from 'expo-file-system/legacy';
 import { getProfiles, hasProfilePin, readProfileNotes } from './profiles';
-import { notesToJson, t } from '@notespark/core';
+import { notesToJson, staleBackups, t } from '@notespark/core';
 
 export interface AutoBackupSettings {
   folderUri: string;
@@ -40,10 +40,6 @@ const stamp = (d: Date) =>
   `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}`;
 const safeName = (name: string) => name.replace(/[^\p{L}\p{N} _]/gu, '').trim().slice(0, 40) || 'profile';
 
-// notespark-<name>-<id>-<date>.json, maybe with Android's " (1)". Matching by id keeps pruning right after a rename.
-const backupPattern = (id: string) => new RegExp(`^notespark-.*-${id.replace(/[^a-z0-9]/gi, '')}-(\\d{4}-\\d{2}-\\d{2}-\\d{4})(?: \\(\\d+\\))?(?:\\.json)?$`);
-const fileNameOf = (uri: string) => decodeURIComponent(uri).split('/').pop() ?? '';
-
 // One file per profile, then deletes that profile's files beyond BACKUPS_KEPT. Returns how many it backed up and any profile error.
 export const runBackup = async (settings: AutoBackupSettings): Promise<{ count: number; error?: string }> => {
   const existing = await SAF.readDirectoryAsync(settings.folderUri);
@@ -57,13 +53,8 @@ export const runBackup = async (settings: AutoBackupSettings): Promise<{ count: 
       const uri = await SAF.createFileAsync(settings.folderUri, `notespark-${safeName(profile.name)}-${profile.id}-${now}`, 'application/json');
       await writeAsStringAsync(uri, notesToJson(notes));
       count++;
-      const pattern = backupPattern(profile.id);
-      const old = existing
-        .map(uri => ({ uri, date: pattern.exec(fileNameOf(uri))?.[1] }))
-        .filter((f): f is { uri: string; date: string } => !!f.date)
-        .sort((a, b) => b.date.localeCompare(a.date))
-        .slice(BACKUPS_KEPT - 1);
-      for (const f of old) await deleteAsync(f.uri, { idempotent: true });
+      const old = staleBackups(existing, profile.id, BACKUPS_KEPT - 1);
+      for (const f of old) await deleteAsync(f, { idempotent: true });
     } catch (error) {
       lastError = error instanceof Error ? error.message : String(error);
     }
@@ -99,10 +90,13 @@ export const runAutoBackupIfDue = async (): Promise<AutoBackupResult | null> => 
   running = true;
   try {
     const { error } = await runBackup(settings);
-    await setAutoBackup({ ...settings, lastRun: new Date().toISOString(), lastError: error });
+    // Re-read: the person may have changed or turned off backups while it ran.
+    const fresh = await getAutoBackup();
+    if (fresh) await setAutoBackup({ ...fresh, lastRun: new Date().toISOString(), lastError: error });
     return { status: error ? 'partial' : 'done', folder: folderName(settings.folderUri) };
   } catch (error) {
-    await setAutoBackup({ ...settings, lastError: error instanceof Error ? error.message : String(error) });
+    const fresh = await getAutoBackup();
+    if (fresh) await setAutoBackup({ ...fresh, lastError: error instanceof Error ? error.message : String(error) });
     return { status: 'failed', folder: folderName(settings.folderUri) };
   } finally {
     running = false;
