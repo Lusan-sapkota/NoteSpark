@@ -255,6 +255,8 @@ code {
 .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 48px; align-items: center; padding: 40px 0 72px; }
 .note-meta { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 20px; }
 .note-meta .chip { min-height: 32px; } /* static labels, not controls, so the app's 32 dp chip height */
+/* Small screens: the chips' icons are decoration, so drop them and tighten the padding to fit three chips on a row. */
+@media (max-width: 600px) { .note-meta .chip { padding-inline: 12px; } .note-meta .chip svg { display: none; } }
 .hero .reading { margin: 20px 0 0; max-width: 34em; color: var(--on-surface); }
 .promises { list-style: none; padding: 0; margin: 32px 0 0; display: grid; gap: 4px; }
 .promises li { display: flex; align-items: center; gap: 14px; min-height: 40px; font-family: var(--font-note); font-size: 1.125rem; line-height: 1.75rem; }
