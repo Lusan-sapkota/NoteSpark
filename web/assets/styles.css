@@ -394,6 +394,8 @@ code {
 .dl-panel .rows li { align-items: center; }
 .dl-panel .row-text { flex: 1; min-width: 0; }
 .dl-panel .row-end { flex: none; }
+/* A button and a status chip in a download row are the same size, so "Not available" lines up with "Download". */
+.dl-panel .row-end > :is(.btn, .status) { width: 10rem; min-height: 48px; justify-content: center; border-radius: var(--shape-control); font: 500 0.9375rem/1.25rem var(--font-ui); }
 .cmd { display: flex; align-items: center; gap: 8px; min-height: 48px; margin-top: 10px; padding: 6px 6px 6px 12px; background: var(--surface-container-highest); border-radius: var(--shape-control); max-width: 100%; }
 .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; background: transparent; padding: 0; font-size: 0.8125rem; }
 .copy:active { background: color-mix(in srgb, var(--on-primary-container) 12%, var(--primary-container)); }
@@ -408,7 +410,7 @@ code {
   .dl-panel .rows li:not(.has-cmd) { flex-wrap: wrap; }
   .dl-panel .rows li:not(.has-cmd) > .row-text { flex-basis: 100%; }
   .dl-panel .rows li:not(.has-cmd) > .row-end { flex-basis: 100%; margin: 0; padding: 0; }
-  .dl-panel .rows li:not(.has-cmd) > .row-end .btn { width: 100%; }
+  .dl-panel .rows li:not(.has-cmd) > .row-end :is(.btn, .status) { width: 100%; }
   .cmd-line { flex-wrap: wrap; }
   .cmd-line .cmd { flex-basis: 100%; }
 }
