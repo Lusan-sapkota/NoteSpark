@@ -1,7 +1,7 @@
 // Announcement bar shown above the header on every page; set `text` to '' to hide it.
 (function () {
   var announcement = {
-    text: 'NoteSpark 1.4.0 will be out shortly.',
+    text: 'NoteSpark 1.4.0 is released.',
     links: [
       { label: 'Go to Download', href: './index.html#get' },
       { label: 'See what is new', href: './changelog.html' }
