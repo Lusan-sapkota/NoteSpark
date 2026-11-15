@@ -149,6 +149,8 @@ const SyncScreen: React.FC = () => {
 
   const tips = (
     <View style={[styles.tips, { backgroundColor: theme.colors.surfaceContainerLow }]}>
+      {slow && <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>{t('sync.hintRepair')}</Text>}
+      {slow && <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />}
       <View style={styles.tipsHead}>
         <Icon source="wifi-off" size={24} color={theme.colors.onSurfaceVariant} />
         <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('sync.noWifiTitle')}</Text>
@@ -200,8 +202,6 @@ const SyncScreen: React.FC = () => {
                   <Icon source={statusIcon} size={20} color={card.fg} />
                   <Text variant="bodyMedium" style={[styles.statusText, { color: card.fg }]}>{on ? statusText() : t('sync.stateOff')}</Text>
                 </View>
-                {slow && <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{t('sync.hintRepair')}</Text>}
-                {on && Platform.OS === 'android' && <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{t('sync.backgroundNote')}</Text>}
               </View>
 
               {profile && (
@@ -222,7 +222,7 @@ const SyncScreen: React.FC = () => {
                       isFirst={false} isLast={false}
                     />
                   )}
-                  {on && <GroupedRow title={t('sync.syncNow')} icon="refresh" onPress={syncNow} isFirst={false} isLast={!canRelink} />}
+                  {on && <GroupedRow title={t('sync.syncNow')} description={Platform.OS === 'android' ? t('sync.backgroundNote') : undefined} icon="refresh" onPress={syncNow} isFirst={false} isLast={!canRelink} />}
                   {canRelink && <GroupedRow title={t('sync.relink')} icon="link-plus" onPress={() => void relinkOpenProfile()} isFirst={false} isLast />}
                 </View>
               )}
