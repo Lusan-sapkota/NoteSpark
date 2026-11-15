@@ -102,16 +102,16 @@
 
     // Point the main download button at the visitor's device and mark its card.
     var ua = navigator.userAgent;
-    var platform = /Android/i.test(ua) ? 'and' : /Windows/i.test(ua) ? 'win' : /Macintosh|Mac OS X/i.test(ua) ? 'mac' : /Linux|X11/i.test(ua) ? 'lin' : '';
+    var platform = /Android/i.test(ua) ? 'and' : /Windows/i.test(ua) ? 'win' : /iPhone|iPad|iPod/i.test(ua) ? 'ios' : /Macintosh|Mac OS X/i.test(ua) ? 'mac' : /Linux|X11/i.test(ua) ? 'lin' : '';
     var label = document.getElementById('dl-main-label');
     var dlMain = document.getElementById('dl-main');
     var direct = 'https://github.com/Lusan-sapkota/NoteSpark/releases/latest/download/';
     // Android and Windows have one file each; Mac (two architectures) and Linux (several packages)
-    // can't be picked automatically, so those open the download section with their tab.
+    // can't be picked automatically, so those open the download section with their tab (iPhone and iPad: the "?" tab).
     if (dlMain && platform === 'and') dlMain.href = direct + 'NoteSpark-android.apk';
     if (dlMain && platform === 'win') dlMain.href = direct + 'NoteSpark-windows-x64.exe';
-    if (dlMain && (platform === 'mac' || platform === 'lin')) { dlMain.href = '#get'; dlMain.removeAttribute('target'); dlMain.removeAttribute('rel'); }
-    var names = { and: 'Android', win: 'Windows', mac: 'Mac', lin: 'Linux' };
+    if (dlMain && (platform === 'mac' || platform === 'lin' || platform === 'ios')) { dlMain.href = '#get'; dlMain.removeAttribute('target'); dlMain.removeAttribute('rel'); }
+    var names = { and: 'Android', win: 'Windows', ios: '?', mac: 'Mac', lin: 'Linux' };
     if (label && names[platform]) label.textContent = 'Download for ' + names[platform];
 
     // Download tabs: one panel at a time, starting with the visitor's platform.
@@ -126,7 +126,7 @@
       });
     }
     if (tabs.length) {
-      var start = /Android/i.test(ua) ? 'android' : /Windows/i.test(ua) ? 'windows' : /Mac/i.test(ua) ? 'macos' : 'linux';
+      var start = /Android/i.test(ua) ? 'android' : /Windows/i.test(ua) ? 'windows' : /iPhone|iPad|iPod/i.test(ua) ? 'ios' : /Mac/i.test(ua) ? 'macos' : 'linux';
       showTab(start);
       tabs.forEach(function (t, i) {
         t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')); });
