@@ -592,7 +592,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "잠금 없음",
   "profiles.noLockDescription": "이 휴대전화를 쓰는 누구나 열 수 있어요",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "4자리 숫자이며 메모가 암호화돼요",
+  "profiles.pinDescription": "4자리 숫자, 메모 암호화. 백업은 비공개로 보관하세요.",
   "profiles.fingerprint": "지문",
   "profiles.fingerprintReady": "지문을 사용하고, PIN은 대체 수단으로 쓰여요", // REVIEW: short label or fragment, check wording
   "profiles.fingerprintSetUp": "먼저 휴대전화 설정에서 지문을 등록해 주세요",

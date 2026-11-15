@@ -592,7 +592,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "不锁定",
   "profiles.noLockDescription": "任何使用这部手机的人都可以打开",
   "profiles.pin": "PIN码",
-  "profiles.pinDescription": "四位数字，其笔记会被加密",
+  "profiles.pinDescription": "四位数字，笔记已加密。请妥善保管备份。",
   "profiles.fingerprint": "指纹",
   "profiles.fingerprintReady": "使用指纹，PIN码作为备用",
   "profiles.fingerprintSetUp": "请先在手机设置中添加指纹",

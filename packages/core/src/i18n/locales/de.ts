@@ -615,7 +615,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "Keine Sperre",
   "profiles.noLockDescription": "Jeder, der dieses Handy nutzt, kann es öffnen",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "Vier Ziffern, die Notizen werden verschlüsselt",
+  "profiles.pinDescription": "Vier Ziffern, Notizen verschlüsselt. Halte Backups privat.",
   "profiles.fingerprint": "Fingerabdruck",
   "profiles.fingerprintReady": "Dein Fingerabdruck, oder als Ersatz die PIN",
   "profiles.fingerprintSetUp": "Richte zuerst in den Handy-Einstellungen einen Fingerabdruck ein",

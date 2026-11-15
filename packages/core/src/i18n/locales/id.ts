@@ -593,7 +593,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "Tanpa kunci",
   "profiles.noLockDescription": "Siapa pun yang memakai ponsel ini dapat membukanya",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "Empat digit, dan catatannya dienkripsi",
+  "profiles.pinDescription": "Empat digit, catatan dienkripsi. Jaga cadangan tetap pribadi.",
   "profiles.fingerprint": "Sidik jari",
   "profiles.fingerprintReady": "Sidik jari, atau PIN sebagai cadangan",
   "profiles.fingerprintSetUp": "Tambahkan sidik jari di pengaturan ponsel terlebih dahulu",

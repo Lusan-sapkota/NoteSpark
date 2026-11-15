@@ -693,7 +693,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "Sem bloqueio",
   "profiles.noLockDescription": "Qualquer pessoa que use este celular pode abrir",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "Quatro dígitos, e as notas são criptografadas",
+  "profiles.pinDescription": "Quatro dígitos, notas criptografadas. Mantenha os backups privados.",
   "profiles.fingerprint": "Impressão digital",
   "profiles.fingerprintReady": "Sua impressão digital, ou o PIN como alternativa",
   "profiles.fingerprintSetUp": "Primeiro cadastre uma impressão digital nas configurações do celular",

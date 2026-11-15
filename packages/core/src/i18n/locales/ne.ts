@@ -614,7 +614,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "लक छैन",
   "profiles.noLockDescription": "यो फोन प्रयोग गर्ने जोसुकैले खोल्न सक्छ",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "चार अङ्क, र यसका नोट इन्क्रिप्ट गरिन्छन्",
+  "profiles.pinDescription": "चार अङ्क, नोट इन्क्रिप्ट गरिन्छ। ब्याकअप निजी राख्नुहोस्।",
   "profiles.fingerprint": "फिङ्गरप्रिन्ट",
   "profiles.fingerprintReady": "तपाईंको फिङ्गरप्रिन्ट, र ब्याकअपको रूपमा PIN",
   "profiles.fingerprintSetUp": "पहिले फोनको सेटिङमा फिङ्गरप्रिन्ट थप्नुहोस्",

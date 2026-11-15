@@ -703,7 +703,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "بلا قفل",
   "profiles.noLockDescription": "يمكن لأي شخص يستخدم هذا الهاتف فتحه",
   "profiles.pin": "رمز PIN",
-  "profiles.pinDescription": "أربعة أرقام، وتُشفَّر ملاحظاته",
+  "profiles.pinDescription": "أربعة أرقام، والملاحظات مشفّرة. أبقِ نسخك الاحتياطية خاصة.",
   "profiles.fingerprint": "بصمة الإصبع",
   "profiles.fingerprintReady": "بصمتك، أو رمز PIN كخيار احتياطي",
   "profiles.fingerprintSetUp": "أضف بصمة في إعدادات هاتفك أولًا",

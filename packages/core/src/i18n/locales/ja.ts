@@ -592,7 +592,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "ロックなし",
   "profiles.noLockDescription": "このスマートフォンを使う人なら誰でも開けます",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "4桁の数字で、ノートは暗号化されます",
+  "profiles.pinDescription": "4桁、ノートは暗号化。バックアップは非公開に。",
   "profiles.fingerprint": "指紋",
   "profiles.fingerprintReady": "指紋で開けます。バックアップとしてPINも使えます",
   "profiles.fingerprintSetUp": "先にスマートフォンの設定で指紋を登録してください",

@@ -37,7 +37,7 @@ export default {
   'profiles.noLock': 'No lock',
   'profiles.noLockDescription': 'Anyone using this phone can open it',
   'profiles.pin': 'PIN',
-  'profiles.pinDescription': 'Four digits, and its notes are encrypted',
+  'profiles.pinDescription': 'Four digits, notes encrypted. Keep backups private.',
   'profiles.fingerprint': 'Fingerprint',
   'profiles.fingerprintReady': 'Your fingerprint, or the PIN as a backup',
   'profiles.fingerprintSetUp': 'Add a fingerprint in your phone settings first',

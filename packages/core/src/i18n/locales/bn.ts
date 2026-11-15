@@ -614,7 +614,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "লক নেই",
   "profiles.noLockDescription": "এই ফোন যে ব্যবহার করে সে-ই খুলতে পারবে",
   "profiles.pin": "পিন",
-  "profiles.pinDescription": "চার সংখ্যা, আর এর নোট এনক্রিপ্ট করা থাকে",
+  "profiles.pinDescription": "চার সংখ্যা, নোট এনক্রিপ্ট করা। ব্যাকআপ ব্যক্তিগত রাখুন।",
   "profiles.fingerprint": "ফিঙ্গারপ্রিন্ট",
   "profiles.fingerprintReady": "আপনার ফিঙ্গারপ্রিন্ট, আর ব্যাকআপ হিসেবে পিন",
   "profiles.fingerprintSetUp": "আগে ফোনের সেটিংসে একটি ফিঙ্গারপ্রিন্ট যোগ করুন",

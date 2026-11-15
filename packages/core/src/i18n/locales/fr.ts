@@ -637,7 +637,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "Aucun verrouillage",
   "profiles.noLockDescription": "Toute personne utilisant ce téléphone peut l'ouvrir",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "Quatre chiffres, et ses notes sont chiffrées",
+  "profiles.pinDescription": "Quatre chiffres, notes chiffrées. Gardez vos sauvegardes privées.",
   "profiles.fingerprint": "Empreinte digitale",
   "profiles.fingerprintReady": "Votre empreinte digitale, ou le PIN en secours",
   "profiles.fingerprintSetUp": "Ajoutez d'abord une empreinte digitale dans les réglages du téléphone",
