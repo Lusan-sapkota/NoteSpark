@@ -387,6 +387,7 @@ code {
 @media (max-width: 900px) { .hero h1 { max-width: 20ch; } } /* one column: the title may use the width of the text below it */
 .dl-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
 .dl-tabs button {
+  min-width: 6.5rem; /* so the one-character "?" tab is as wide as the others */
   min-height: 48px; padding: 0 20px; border-radius: var(--shape-full); border: 1px solid var(--outline);
   background: transparent; color: var(--on-surface-variant); font: 500 0.875rem/1.25rem var(--font-ui); cursor: pointer;
 }
