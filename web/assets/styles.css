@@ -496,6 +496,12 @@ code {
 .help-toc ul { list-style: none; margin: 20px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
 .help-toc a { display: inline-flex; align-items: center; min-height: 48px; padding: 0 16px; border-radius: var(--shape-full); background: var(--surface-container-high); color: var(--on-surface); text-decoration: none; font: 500 0.875rem/1.25rem var(--font-ui); }
 .help-toc a:hover { background: var(--secondary-container); }
+/* Small screens: even 2-column grid instead of a ragged wrap; long labels wrap inside their chip, an odd last chip spans the row. */
+@media (max-width: 600px) {
+  .help-toc ul { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .help-toc li:last-child:nth-child(odd) { grid-column: 1 / -1; }
+  .help-toc a { height: 100%; justify-content: center; text-align: center; padding: 8px 12px; border-radius: var(--shape-control); }
+}
 .help-steps { margin: 8px 0; padding-left: 24px; display: grid; gap: 10px; }
 .help-steps li::marker { color: var(--primary); font-weight: 600; }
 .policy-section[id] { scroll-margin-top: calc(80px + var(--announce-h, 0px)); }
