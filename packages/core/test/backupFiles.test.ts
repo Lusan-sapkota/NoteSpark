@@ -17,3 +17,8 @@ test('keeps the newest files, handles Android " (1)", survives a rename, ignores
   assert.deepEqual(stale, [uris[1], uris[0]]);
   assert.deepEqual(staleBackups(uris, 'abc1', 4), []);
 });
+
+test('desktop paths: Windows backslashes and a literal % in the folder name', () => {
+  const uris = ['C:\\Backups 100%\\notespark-Work-abc1-2026-11-01-0900.json', 'C:\\Backups 100%\\notespark-Work-abc1-2026-11-02-0900.json'];
+  assert.deepEqual(staleBackups(uris, 'abc1', 1), [uris[0]]);
+});
