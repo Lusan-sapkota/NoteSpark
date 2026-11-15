@@ -398,6 +398,8 @@ export const importNotes = changesNotes(async (notes: any[], mode: ImportMode): 
       await db.runAsync('DELETE FROM notes');
     }
     const seen = new Set<string>();
+    const now = new Date().toISOString();
+    const dateOr = (d: unknown) => (typeof d === 'string' && !Number.isNaN(Date.parse(d)) ? d : now); // a backup can hold anything
     if (mode === 'merge') {
       const existing = await db.getAllAsync<{ title: string; content: string }>('SELECT title, content FROM notes WHERE deletedAt IS NULL');
       existing.forEach(note => seen.add(noteKey(note)));
@@ -414,8 +416,8 @@ export const importNotes = changesNotes(async (notes: any[], mode: ImportMode): 
           note.title,
           note.content,
           note.isMarkdown ? 1 : 0,
-          note.createdAt || new Date().toISOString(),
-          note.updatedAt || new Date().toISOString(),
+          dateOr(note.createdAt),
+          dateOr(note.updatedAt),
           note.isPinned ? 1 : 0, // older backups have no isPinned: unpinned
           note.isArchived ? 1 : 0,
         ]
