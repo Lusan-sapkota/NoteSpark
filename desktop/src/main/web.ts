@@ -27,7 +27,8 @@ const MAX_BODY = 25_000_000; // room for one picture as base64 (15 MB limit in a
 let servers: Server[] = [];
 let token = '';
 let hosts: string[] = []; // host:port values we answer to (Host header check against DNS rebinding)
-const sessions = new Set<string>();
+const SESSION_MS = 12 * 3600_000;
+const sessions = new Map<string, number>(); // session id -> expiry time
 const failures = new Map<string, { count: number; resetAt: number }>();
 
 const equal = (a: string, b: string) => a.length === b.length && timingSafeEqual(Buffer.from(a), Buffer.from(b));
@@ -95,12 +96,14 @@ const handle = (invoke: Invoke) => async (req: IncomingMessage, res: ServerRespo
   if (req.method === 'GET' && url.pathname === '/' && url.searchParams.has('t')) {
     if (!equal(url.searchParams.get('t') ?? '', token)) { recordFailure(ip); return send(res, 401, t('desktop.wrongLink')); }
     const session = random();
-    sessions.add(session);
+    const now = Date.now();
+    for (const [id, exp] of sessions) if (exp <= now) sessions.delete(id);
+    sessions.set(session, now + SESSION_MS);
     return send(res, 303, '', { Location: '/', 'Set-Cookie': `ns_session=${session}; HttpOnly; SameSite=Strict; Path=/` });
   }
 
   const session = cookieOf(req);
-  if (!session || !sessions.has(session)) { recordFailure(ip); return send(res, 401, t('desktop.openLinkFromApp')); }
+  if (!session || (sessions.get(session) ?? 0) <= Date.now()) { recordFailure(ip); return send(res, 401, t('desktop.openLinkFromApp')); }
 
   if (req.method === 'POST' && url.pathname === '/api/invoke') {
     const origin = req.headers.origin;

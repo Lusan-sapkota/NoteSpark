@@ -35,6 +35,7 @@ const ProfileLockScreen = React.lazy(() => import('../../../../mobile/src/screen
 const ProfileUnlockScreen = React.lazy(() => import('../../../../mobile/src/screens/ProfileUnlockScreen'));
 const AboutScreen = React.lazy(() => import('../../../../mobile/src/screens/AboutScreen'));
 const PrivacyScreen = React.lazy(() => import('../../../../mobile/src/screens/PrivacyScreen'));
+const LanguageScreen = React.lazy(() => import('../../../../mobile/src/screens/LanguageScreen'));
 const SyncScreen = React.lazy(() => import('./SyncScreen'));
 const OnboardingScreen = React.lazy(() => import('../../../../mobile/src/screens/OnboardingScreen'));
 
@@ -57,6 +58,7 @@ const screens = {
   ProfileLock: ProfileLockScreen,
   About: AboutScreen,
   Privacy: PrivacyScreen,
+  Language: LanguageScreen,
   Sync: SyncScreen,
 };
 

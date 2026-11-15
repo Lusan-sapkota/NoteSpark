@@ -615,7 +615,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "कोई लॉक नहीं",
   "profiles.noLockDescription": "इस फ़ोन का कोई भी इस्तेमाल करने वाला इसे खोल सकता है",
   "profiles.pin": "पिन",
-  "profiles.pinDescription": "चार अंक, और इसके नोट एन्क्रिप्ट हो जाते हैं",
+  "profiles.pinDescription": "चार अंक, नोट एन्क्रिप्ट। बैकअप निजी रखें।",
   "profiles.fingerprint": "फ़िंगरप्रिंट",
   "profiles.fingerprintReady": "आपका फ़िंगरप्रिंट, या बैकअप के तौर पर पिन",
   "profiles.fingerprintSetUp": "पहले अपने फ़ोन की सेटिंग में फ़िंगरप्रिंट जोड़ें",
@@ -747,7 +747,7 @@ const catalog: Record<string, string> = {
   "importExport.automaticBackups": "अपने-आप होने वाले बैकअप",
   "importExport.backUpAutomatically": "अपने-आप बैकअप लें",
   "importExport.autoBackupTo": "{folder} में। हर प्रोफ़ाइल के आख़िरी {count} रखे जाते हैं।",
-  "importExport.autoBackupOff": "अपने चुने फ़ोल्डर में हर दिन या हर हफ़्ते बैकअप सेव करें। आख़िरी {count} रखे जाते हैं।",
+  "importExport.autoBackupOff": "अपने चुने फ़ोल्डर में बैकअप सेव करें।",
   "importExport.backUpNow": "अभी बैकअप लें",
   "importExport.backingUp": "बैकअप हो रहा है",
   "importExport.backupFolder": "बैकअप फ़ोल्डर",
@@ -755,6 +755,9 @@ const catalog: Record<string, string> = {
   "importExport.includeProtectedOff": "बंद: पिन वाली प्रोफ़ाइल का बैकअप अपने-आप नहीं होता",
   "importExport.everyDay": "हर दिन",
   "importExport.everyWeek": "हर हफ़्ते",
+  "importExport.pickDays": "दिन चुनें",
+  "importExport.backupDone": "बैकअप सेव हो गया",
+  "importExport.backupDoneBody": "{folder} में सेव किया गया।",
   "importExport.backupHelp": "बैकअप तब होता है जब आप NoteSpark खोलते हैं और बैकअप का समय हो चुका होता है। ऊपर के रीस्टोर से किसी बैकअप को वापस लाएँ।",
   "importExport.history": "इतिहास",
   "importExport.historyOptions": "इतिहास के विकल्प",
@@ -857,7 +860,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "पिन वाली प्रोफ़ाइल सिर्फ़ इस कंप्यूटर पर खोली और लॉक की जाती है। वेब व्यू उसी प्रोफ़ाइल के साथ काम करता है जो यहाँ खुली है।",
   "privacy.controlD3": "NoteSpark का फ़ोल्डर हटाने से सब कुछ मिट जाता है। डेवलपर के पास कोई कॉपी नहीं है, इसलिए हटाए गए नोट वापस नहीं पाए जा सकते, जब तक आपने उन्हें एक्सपोर्ट न किया हो।",
   "privacy.changesD": "अगर यह नीति बदलती है, तो नया वर्शन नई प्रभावी तारीख़ के साथ यहाँ दिखेगा।",
-  "privacy.dateD": "7 नवंबर 2026",
+  "privacy.dateD": "11 नवंबर 2026",
   "privacy.leadD": "NoteSpark एक ऑफ़लाइन नोट ऐप है। इसमें न अकाउंट है, न विज्ञापन, न एनालिटिक्स और न ट्रैकिंग। आप जो कुछ लिखते हैं वह इसी कंप्यूटर पर रहता है। यह नीति बताती है कि डेस्कटॉप ऐप क्या सेव करता है और कहाँ।",
   "privacy.title": "गोपनीयता नीति",
   "privacy.effective": "प्रभावी तारीख़ {date}",
@@ -990,6 +993,13 @@ const catalog: Record<string, string> = {
   "landscape.fadingHelp": "पिछले 3 महीनों में उससे पहले के 3 महीनों से कम नोट।",
   "landscape.overTime": "समय के साथ",
   "landscape.overTimeHelp": "विषय के अनुसार, हर महीने लिखे गए नोट।",
+  "landscape.activity": "लिखने के दिन",
+  "landscape.activityHelp": "पिछले 12 हफ़्तों में वे दिन जब आपने कोई नोट लिखा या बदला। गहरे रंग का मतलब ज़्यादा नोट।",
+  "landscape.activitySummary": "पिछले {total} दिनों में से {days} दिन आपने लिखा।",
+  "landscape.tags": "सबसे ज़्यादा इस्तेमाल हुए टैग",
+  "landscape.tagsHelp": "सबसे ज़्यादा नोट में लगे टैग। किसी टैग पर टैप करके उसके नोट देखें।",
+  "landscape.noTags": "अभी कोई टैग नहीं है। किसी नोट में #टैग जोड़ें, वह यहाँ दिखेगा।",
+  "landscape.openTag": "{tag} टैग वाले नोट दिखाएँ",
   "landscape.closestNotes": "सबसे करीबी नोट",
   "landscape.openTopic": "{name} के नोट दिखाएँ",
   "landscape.tooFewTitle": "अभी काफ़ी नोट नहीं हैं",
@@ -1026,7 +1036,7 @@ const catalog: Record<string, string> = {
   "sync.title": "सिंक",
   "sync.settingsRow": "आपके डिवाइसों के बीच सिंक",
   "sync.settingsSync": "सेटिंग्स सिंक करें",
-  "sync.settingsSyncHelp": "थीम, भाषा, रिमाइंडर का समय और कुछ अन्य पसंद आपके उपकरणों पर एक जैसी रखता है। लॉक, PIN और बैकअप सेटिंग्स कभी सिंक नहीं होतीं।",
+  "sync.settingsSyncHelp": "थीम, भाषा और रिमाइंडर का समय अपने उपकरणों में साझा करें। लॉक, PIN और बैकअप कभी सिंक नहीं होते।",
   "sync.settingsRowHelp": "आपके अपने नेटवर्क से बाहर कुछ नहीं जाता।",
   "sync.intro": "डिज़ाइन से ही ऑफ़लाइन। सिंक तब तक बंद रहता है जब तक आप उसे NoteSpark डेस्कटॉप में चालू न करें, और आपके अपने नेटवर्क से बाहर कुछ नहीं जाता।", // REVIEW
   "sync.computerHeading": "अपने कंप्यूटर से पेयर करें",
@@ -1156,7 +1166,7 @@ const catalog: Record<string, string> = {
   "dsync.profilesHelp": "चुनें कि कौन से प्रोफ़ाइल सिंक हों। आप चालू न करें तब तक कोई सिंक नहीं होता।",
   "dsync.profileLocked": "{name} को सिंक करने के लिए अपने कंप्यूटर पर अनलॉक करें।",
   "dsync.settingsSync": "सेटिंग्स सिंक करें",
-  "dsync.settingsSyncHelp": "थीम, भाषा, रिमाइंडर का समय और कुछ अन्य पसंद आपके उपकरणों पर एक जैसी रखता है। लॉक, PIN और बैकअप सेटिंग्स कभी सिंक नहीं होतीं।",
+  "dsync.settingsSyncHelp": "थीम, भाषा और रिमाइंडर का समय अपने उपकरणों में साझा करें। लॉक, PIN और बैकअप कभी सिंक नहीं होते।",
   "dsync.acceptNew": "डिवाइसों से नए प्रोफ़ाइल स्वीकार करें",
   "dsync.acceptNewHelp": "जब कोई डिवाइस ऐसा प्रोफ़ाइल सिंक करे जो इस कंप्यूटर में नहीं है, तो उसे यहाँ बना दें।",
   "dsync.mirror": "Markdown फ़ोल्डर",
@@ -1198,7 +1208,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "कोई खाता नहीं है और हमारा कोई सर्वर नहीं है। जो डिवाइस आपने नहीं जोड़ा उसे कोई जवाब नहीं मिलता।",  // REVIEW (legal)
   "privacy.syncD3": "डिफ़ॉल्ट रूप से, जोड़ा गया कोई डिवाइस इस कंप्यूटर पर प्रोफ़ाइल जोड़ सकता है, और नया प्रोफ़ाइल बिना PIN के शुरू होता है। डिवाइस केवल उन प्रोफ़ाइलों में सिंक करें जो आपके पास यहाँ पहले से हैं, इसके लिए सिंक सेटिंग्स में “डिवाइसों से नए प्रोफ़ाइल स्वीकार करें” बंद करें।",  // REVIEW (legal)
   "privacy.syncD4": "सिंक कभी भी बंद करें, या कोई डिवाइस हटाएँ। इस कंप्यूटर पर पहले से मौजूद नोट इसी पर रहते हैं।",  // REVIEW (legal)
-  "privacy.permD1": "सूचनाएँ (वैकल्पिक): कार्यों की नियत तिथि पर याद दिलाने के लिए। ये इसी कंप्यूटर पर बनती हैं; NoteSpark पुश सूचनाओं का उपयोग नहीं करता। PIN वाले प्रोफ़ाइल के रिमाइंडर कार्य का टेक्स्ट नहीं दिखाते।",  // REVIEW (legal)
+  "privacy.permD1": "सूचनाएँ (वैकल्पिक): कार्यों की नियत तिथि पर याद दिलाने और स्वचालित बैकअप पूरा होने पर बताने के लिए। ये इसी कंप्यूटर पर बनती हैं; NoteSpark पुश सूचनाओं का उपयोग नहीं करता। PIN वाले प्रोफ़ाइल के रिमाइंडर कार्य का टेक्स्ट नहीं दिखाते।",  // REVIEW (legal)
   "privacy.permD2": "फ़ाइलें और क्लिपबोर्ड (वैकल्पिक): केवल वे फ़ाइलें जो आप इम्पोर्ट करते समय चुनते हैं, बैकअप, Markdown मिरर और एक्सपोर्ट के लिए चुने गए फ़ोल्डर, और क्लिपबोर्ड केवल तब जब आप ट्रे आइकन से क्लिपबोर्ड सहेजें चुनते हैं।",  // REVIEW (legal)
   "privacy.permD3": "कीरिंग (वैकल्पिक): आपके सिस्टम की कीरिंग (जैसे KWallet या GNOME Keyring) सुरक्षित प्रोफ़ाइल और सिंक के लिए NoteSpark की ज़रूरी कुंजियाँ रखती है। इसके बिना NoteSpark सुरक्षित प्रोफ़ाइल नहीं बनाता और सिंक चालू नहीं करता।",  // REVIEW (legal)
   "privacy.permD4": "नेटवर्क एक्सेस: केवल आपके अपने नेटवर्क पर सिंक के लिए, वेब व्यू के लिए यदि आप उसे चालू करें, और वेब इमेज के लिए यदि आप “वेब इमेज दिखाएँ” चालू करें। NoteSpark कभी किसी सार्वजनिक पते पर नहीं सुनता।",  // REVIEW (legal)

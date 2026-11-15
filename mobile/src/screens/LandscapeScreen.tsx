@@ -1,13 +1,14 @@
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { ActivityIndicator, Icon, Text, TouchableRipple } from 'react-native-paper';
-import { getLanguage, Landscape, MIN_LANDSCAPE_NOTES, Topic } from '@notespark/core';
+import { getLanguage, Landscape, MIN_LANDSCAPE_NOTES, Note, Topic, topTags, writingDays } from '@notespark/core';
 import Header from '../components/Header';
 import { RootStackParamList } from '../types';
 import { isMeaningSearchAvailable, notebookLandscape } from '../storage/semanticSearch';
+import { getNotes } from '../storage/notes';
 import { useI18n } from '../i18n/I18nContext';
 import { useTheme } from '../theme/ThemeContext';
 import { readingWidth, shape, space } from '../theme/theme';
@@ -38,10 +39,12 @@ const LandscapeScreen: React.FC = () => {
   const [data, setData] = useState<Landscape | null | undefined>(undefined); // undefined: reading; null: failed
   const [open, setOpen] = useState<number | null>(null);
   const [mapSize, setMapSize] = useState({ width: 0, height: 0 });
+  const [notes, setNotes] = useState<Note[] | null>(null); // for the writing days and tags; they need no search model
   const available = isMeaningSearchAvailable();
 
   useFocusEffect(
     useCallback(() => {
+      getNotes().then(setNotes, () => setNotes(null));
       if (!available) return;
       setData(undefined);
       notebookLandscape().then(setData, () => setData(null));
@@ -52,17 +55,17 @@ const LandscapeScreen: React.FC = () => {
   const biggest = data?.topics[0]?.size ?? 1;
   const bubble = (size: number) => 64 + 72 * Math.sqrt(size / biggest);
 
-  let body: React.ReactNode;
-  if (!available) body = <Message title={t('landscape.unavailableTitle')} body={t('landscape.unavailableBody')} />;
-  else if (data === undefined) body = <ActivityIndicator style={styles.busy} accessibilityLabel={t('landscape.loading')} />;
-  else if (data === null) body = <Message title={t('landscape.failedTitle')} body={t('common.tryAgainRestart')} />;
-  else if (!data.topics.length) body = <Message title={t('landscape.tooFewTitle')} body={t('landscape.tooFewBody', { count: MIN_LANDSCAPE_NOTES })} />;
+  let top: React.ReactNode;
+  if (!available) top = <Message title={t('landscape.unavailableTitle')} body={t('landscape.unavailableBody')} />;
+  else if (data === undefined) top = <ActivityIndicator style={styles.busy} accessibilityLabel={t('landscape.loading')} />;
+  else if (data === null) top = <Message title={t('landscape.failedTitle')} body={t('common.tryAgainRestart')} />;
+  else if (!data.topics.length) top = <Message title={t('landscape.tooFewTitle')} body={t('landscape.tooFewBody', { count: MIN_LANDSCAPE_NOTES })} />;
   else {
     const topics = data.topics;
     const rows = data.months.map((month, m) => ({ month, counts: topics.map(tp => tp.monthly[m]), total: topics.reduce((a, tp) => a + tp.monthly[m], 0) }));
     const most = Math.max(1, ...rows.map(r => r.total));
-    body = (
-      <ScrollView contentContainerStyle={styles.content}>
+    top = (
+      <>
         <Text variant="bodyMedium" style={{ color: theme.colors.onSurfaceVariant }}>{t('landscape.intro')}</Text>
 
         <View
@@ -155,15 +158,108 @@ const LandscapeScreen: React.FC = () => {
             </View>
           ))}
         </View>
-      </ScrollView>
+      </>
     );
   }
+  const body = (
+    <ScrollView contentContainerStyle={styles.content}>
+      {top}
+      {notes && <WritingDaysCard notes={notes} />}
+      {notes && <TopTagsCard notes={notes} onOpen={tag => navigation.popTo('Home', { tag })} />}
+    </ScrollView>
+  );
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background }]} edges={['left', 'right', 'bottom']}>
       <Header title={t('landscape.title')} showBackButton onBackPress={() => navigation.goBack()} />
       <View style={styles.column}>{body}</View>
     </SafeAreaView>
+  );
+};
+
+// Intensity steps along the secondary tones, so the grid stays quiet and strong green stays for actions.
+// The colour is only a hint: the summary line says the numbers, and a screen reader hears that instead of 84 cells.
+const WritingDaysCard: React.FC<{ notes: Note[] }> = ({ notes }) => {
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const [width, setWidth] = useState(0);
+  const days = useMemo(() => writingDays(notes, new Date()), [notes]);
+  const c = theme.colors;
+  const levels = [c.surfaceContainerHigh, c.secondaryContainer, c.secondary, c.onSecondaryContainer];
+  const gap = 4;
+  const label = 40; // room for the weekday names
+  const cell = Math.max(12, Math.min(28, Math.floor((width - label - gap * days.weeks.length) / days.weeks.length))); // the gap also sits between the labels and the first week
+  const weekday = (d: number) => new Date(2026, 0, 4 + d).toLocaleDateString(getLanguage(), { weekday: 'short' }); // 4 Jan 2026 was a Sunday
+  const summary = t('landscape.activitySummary', { days: days.activeDays, total: days.totalDays });
+  return (
+    <View style={[styles.card, { backgroundColor: c.surfaceContainerLow }]}>
+      <Text variant="titleSmall" accessibilityRole="header" style={{ color: c.primary }}>{t('landscape.activity')}</Text>
+      <Text variant="bodySmall" style={{ color: c.onSurfaceVariant }}>{t('landscape.activityHelp')}</Text>
+      <Text variant="bodyLarge" style={{ color: c.onSurface }}>{summary}</Text>
+      <View
+        onLayout={e => setWidth(e.nativeEvent.layout.width)}
+        accessibilityElementsHidden
+        importantForAccessibility="no-hide-descendants"
+        style={[styles.grid, { gap }]}
+      >
+        <View style={{ width: label, gap }}>
+          {Array.from({ length: 7 }, (_, d) => (
+            <View key={d} style={{ height: cell, justifyContent: 'center' }}>
+              {d % 2 === 1 && <Text variant="labelSmall" numberOfLines={1} maxFontSizeMultiplier={1.2} style={{ color: c.onSurfaceVariant }}>{weekday(d)}</Text>}
+            </View>
+          ))}
+        </View>
+        {days.weeks.map((week, w) => (
+          <View key={w} style={{ gap }}>
+            {week.map((day, d) => (
+              <View
+                key={d}
+                style={{
+                  width: cell,
+                  height: cell,
+                  borderRadius: shape.extraSmall,
+                  backgroundColor: day ? levels[day.count === 0 ? 0 : day.count === 1 ? 1 : day.count < 4 ? 2 : 3] : 'transparent',
+                }}
+              />
+            ))}
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+};
+
+const TopTagsCard: React.FC<{ notes: Note[]; onOpen: (tag: string) => void }> = ({ notes, onOpen }) => {
+  const { theme } = useTheme();
+  const { t } = useI18n();
+  const c = theme.colors;
+  const tags = useMemo(() => topTags(notes), [notes]);
+  const most = Math.max(1, ...tags.map(x => x.count));
+  return (
+    <View style={[styles.card, { backgroundColor: c.surfaceContainerLow }]}>
+      <Text variant="titleSmall" accessibilityRole="header" style={{ color: c.primary }}>{t('landscape.tags')}</Text>
+      <Text variant="bodySmall" style={{ color: c.onSurfaceVariant }}>{tags.length ? t('landscape.tagsHelp') : t('landscape.noTags')}</Text>
+      {tags.map(({ tag, count }) => (
+        <TouchableRipple
+          key={tag}
+          onPress={() => onOpen(tag)}
+          accessibilityRole="button"
+          accessibilityLabel={`${t('landscape.openTag', { tag })}, ${t('landscape.notesCount', { count })}`}
+          style={styles.tagRow}
+        >
+          <View style={styles.tagRowInner}>
+            <View style={styles.tagText}>
+              <Text variant="bodyLarge" numberOfLines={1} style={{ color: c.onSurface, flexShrink: 1 }}>{`#${tag}`}</Text>
+              <Text variant="bodySmall" maxFontSizeMultiplier={1.3} style={{ color: c.onSurfaceVariant }}>{count}</Text>
+            </View>
+            {/* The bar is a share of the track, so a long name or a big font never pushes it out. */}
+            <View style={[styles.tagTrack, { backgroundColor: c.surfaceContainerHigh }]}>
+              <View style={[styles.tagBar, { width: `${(count / most) * 100}%`, backgroundColor: c.secondaryContainer }]} />
+            </View>
+          </View>
+        </TouchableRipple>
+      ))}
+    </View>
   );
 };
 
@@ -211,6 +307,13 @@ const styles = StyleSheet.create({
   month: { width: 68 },
   track: { flex: 1, minWidth: 0 },
   bar: { flexDirection: 'row', height: 14, borderRadius: shape.extraSmall, overflow: 'hidden', minWidth: 0 },
+  card: { borderRadius: shape.group, padding: space.lg, gap: space.sm, marginTop: space.lg },
+  grid: { flexDirection: 'row', marginTop: space.xs },
+  tagRow: { minHeight: 48, justifyContent: 'center', borderRadius: shape.small },
+  tagRowInner: { paddingVertical: space.xs, gap: space.xs },
+  tagText: { flexDirection: 'row', alignItems: 'baseline', justifyContent: 'space-between', gap: space.sm },
+  tagTrack: { height: 8, borderRadius: 4, overflow: 'hidden' },
+  tagBar: { height: 8, borderRadius: 4 },
   message: { padding: space.xl },
   messageBody: { marginTop: space.xs },
 });

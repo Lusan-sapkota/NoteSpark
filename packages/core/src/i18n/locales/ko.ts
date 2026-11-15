@@ -592,7 +592,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "잠금 없음",
   "profiles.noLockDescription": "이 휴대전화를 쓰는 누구나 열 수 있어요",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "4자리 숫자이며 메모가 암호화돼요",
+  "profiles.pinDescription": "4자리 숫자, 메모 암호화. 백업은 비공개로 보관하세요.",
   "profiles.fingerprint": "지문",
   "profiles.fingerprintReady": "지문을 사용하고, PIN은 대체 수단으로 쓰여요", // REVIEW: short label or fragment, check wording
   "profiles.fingerprintSetUp": "먼저 휴대전화 설정에서 지문을 등록해 주세요",
@@ -715,7 +715,7 @@ const catalog: Record<string, string> = {
   "importExport.automaticBackups": "자동 백업",
   "importExport.backUpAutomatically": "자동으로 백업",
   "importExport.autoBackupTo": "{folder}에 저장해요. 프로필마다 최근 {count}개를 보관해요.",
-  "importExport.autoBackupOff": "선택한 폴더에 매일 또는 매주 백업을 저장해요. 최근 {count}개를 보관해요.",
+  "importExport.autoBackupOff": "선택한 폴더에 백업을 저장해요.",
   "importExport.backUpNow": "지금 백업",
   "importExport.backingUp": "백업 중",
   "importExport.backupFolder": "백업 폴더",
@@ -723,6 +723,9 @@ const catalog: Record<string, string> = {
   "importExport.includeProtectedOff": "꺼짐: PIN이 있는 프로필은 자동으로 백업되지 않아요",
   "importExport.everyDay": "매일",
   "importExport.everyWeek": "매주",
+  "importExport.pickDays": "요일 선택",
+  "importExport.backupDone": "백업 완료",
+  "importExport.backupDoneBody": "{folder}에 저장했어요.",
   "importExport.backupHelp": "NoteSpark를 열었을 때 백업할 차례가 되면 백업이 실행돼요. 위의 복원으로 백업을 되돌릴 수 있어요.",
   "importExport.history": "기록",
   "importExport.historyOptions": "기록 옵션",
@@ -823,7 +826,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "PIN이 있는 프로필은 이 컴퓨터에서만 열고 잠글 수 있어요. 웹 보기는 이 컴퓨터에서 열려 있는 프로필로 작동해요.",
   "privacy.controlD3": "NoteSpark 폴더를 삭제하면 모든 데이터가 지워져요. 개발자에게는 사본이 없으므로, 삭제한 메모는 내보내 둔 경우가 아니면 복구할 수 없어요.",
   "privacy.changesD": "이 방침이 변경되면 새 버전이 새 시행일과 함께 여기에 게시돼요.",
-  "privacy.dateD": "2026년 11월 7일",
+  "privacy.dateD": "2026년 11월 11일",
   "privacy.leadD": "NoteSpark는 오프라인 메모 앱이에요. 계정, 광고, 분석, 추적이 없어요. 작성한 모든 내용은 이 컴퓨터에만 남아요. 이 방침은 데스크톱 앱이 무엇을 어디에 저장하는지 설명해요.",
   "privacy.title": "개인정보 처리방침",
   "privacy.effective": "시행일 {date}",
@@ -885,6 +888,13 @@ const catalog: Record<string, string> = {
   "landscape.fadingHelp": "최근 3개월에 그 이전 3개월보다 메모가 더 적어요.",
   "landscape.overTime": "시간에 따른 변화",
   "landscape.overTimeHelp": "주제별로 매달 작성한 메모예요.",
+  "landscape.activity": "작성한 날",
+  "landscape.activityHelp": "최근 12주 동안 메모를 쓰거나 고친 날입니다. 색이 진할수록 메모가 많습니다.",
+  "landscape.activitySummary": "최근 {total}일 중 {days}일에 작성했습니다.",
+  "landscape.tags": "자주 쓰는 태그",
+  "landscape.tagsHelp": "가장 많은 메모에 붙은 태그입니다. 태그를 누르면 해당 메모를 볼 수 있습니다.",
+  "landscape.noTags": "아직 태그가 없습니다. 메모에 #태그를 추가하면 여기에 표시됩니다.",
+  "landscape.openTag": "{tag} 태그가 붙은 메모 보기",
   "landscape.closestNotes": "가장 가까운 메모",
   "landscape.openTopic": "{name}의 메모 보기",
   "landscape.tooFewTitle": "아직 메모가 부족해요",
@@ -985,7 +995,7 @@ const catalog: Record<string, string> = {
   "sync.title": "동기화",
   "sync.settingsRow": "내 기기 간 동기화",
   "sync.settingsSync": "설정 동기화",
-  "sync.settingsSyncHelp": "테마, 언어, 알림 시간 등 몇 가지 설정을 기기 간에 똑같이 유지합니다. 잠금, PIN, 백업 설정은 동기화되지 않습니다.",
+  "sync.settingsSyncHelp": "테마, 언어, 알림 시간을 기기 간에 공유합니다. 잠금, PIN, 백업은 동기화되지 않습니다.",
   "sync.settingsRowHelp": "내 네트워크 밖으로는 아무것도 나가지 않아요.",
   "sync.intro": "처음부터 오프라인으로 설계됐어요. 동기화는 데스크톱용 NoteSpark에서 켜기 전까지 꺼져 있고, 내 네트워크 밖으로는 아무것도 나가지 않아요.",
   "sync.computerHeading": "컴퓨터와 페어링",
@@ -1115,7 +1125,7 @@ const catalog: Record<string, string> = {
   "dsync.profilesHelp": "동기화할 프로필을 고르세요. 켜기 전까지는 어떤 프로필도 동기화되지 않아요.",
   "dsync.profileLocked": "동기화하려면 컴퓨터에서 {name}의 잠금을 해제하세요.",
   "dsync.settingsSync": "설정 동기화",
-  "dsync.settingsSyncHelp": "테마, 언어, 알림 시간 등 몇 가지 설정을 기기 간에 똑같이 유지합니다. 잠금, PIN, 백업 설정은 동기화되지 않습니다.",
+  "dsync.settingsSyncHelp": "테마, 언어, 알림 시간을 기기 간에 공유합니다. 잠금, PIN, 백업은 동기화되지 않습니다.",
   "dsync.acceptNew": "기기에서 온 새 프로필 받기",
   "dsync.acceptNewHelp": "이 컴퓨터에 없는 프로필을 기기가 동기화하면 여기에 만들어요.",
   "dsync.mirror": "Markdown 폴더",
@@ -1157,7 +1167,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "계정도, 우리 서버도 없습니다. 페어링하지 않은 기기에는 응답하지 않습니다.",  // REVIEW (legal)
   "privacy.syncD3": "기본적으로 페어링한 기기가 이 컴퓨터에 프로필을 추가할 수 있으며, 새 프로필은 PIN 없이 시작합니다. 기기가 이 컴퓨터에 이미 있는 프로필에만 동기화하게 하려면 동기화 설정에서 ‘기기에서 온 새 프로필 받기’를 끄세요.",  // REVIEW (legal)
   "privacy.syncD4": "동기화는 언제든 끄거나 기기를 제거할 수 있습니다. 이 컴퓨터에 이미 있는 노트는 그대로 남습니다.",  // REVIEW (legal)
-  "privacy.permD1": "알림 (선택 사항): 작업 마감일에 알려 주기 위한 것입니다. 알림은 이 컴퓨터에서 만들어지며 NoteSpark는 푸시 알림을 사용하지 않습니다. PIN이 있는 프로필의 알림은 작업 텍스트를 보여 주지 않습니다.",  // REVIEW (legal)
+  "privacy.permD1": "알림 (선택 사항): 작업 마감일에 알려 주고 자동 백업이 끝났을 때 알려 주기 위한 것입니다. 알림은 이 컴퓨터에서 만들어지며 NoteSpark는 푸시 알림을 사용하지 않습니다. PIN이 있는 프로필의 알림은 작업 텍스트를 보여 주지 않습니다.",  // REVIEW (legal)
   "privacy.permD2": "파일과 클립보드 (선택 사항): 가져올 때 고르는 파일, 백업·Markdown 미러·내보내기를 위해 고르는 폴더만 사용하며, 클립보드는 트레이 아이콘에서 ‘클립보드 저장’을 선택할 때만 사용합니다.",  // REVIEW (legal)
   "privacy.permD3": "키링 (선택 사항): 시스템의 키링(KWallet이나 GNOME Keyring 등)이 보호된 프로필과 동기화에 NoteSpark가 필요한 키를 보관합니다. 키링이 없으면 NoteSpark는 보호된 프로필을 만들지 않고 동기화도 켜지 않습니다.",  // REVIEW (legal)
   "privacy.permD4": "네트워크 접근: 내 네트워크에서의 동기화, 켠 경우의 웹 보기, ‘웹 이미지 표시’를 켠 경우의 웹 이미지에만 사용합니다. NoteSpark는 공개 주소에서 대기하지 않습니다.",  // REVIEW (legal)

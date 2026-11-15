@@ -615,7 +615,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "Keine Sperre",
   "profiles.noLockDescription": "Jeder, der dieses Handy nutzt, kann es öffnen",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "Vier Ziffern, die Notizen werden verschlüsselt",
+  "profiles.pinDescription": "Vier Ziffern, Notizen verschlüsselt. Halte Backups privat.",
   "profiles.fingerprint": "Fingerabdruck",
   "profiles.fingerprintReady": "Dein Fingerabdruck, oder als Ersatz die PIN",
   "profiles.fingerprintSetUp": "Richte zuerst in den Handy-Einstellungen einen Fingerabdruck ein",
@@ -747,7 +747,7 @@ const catalog: Record<string, string> = {
   "importExport.automaticBackups": "Automatische Sicherungen",
   "importExport.backUpAutomatically": "Automatisch sichern",
   "importExport.autoBackupTo": "Nach {folder}. Die letzten {count} jedes Profils bleiben erhalten.",
-  "importExport.autoBackupOff": "Speichere täglich oder wöchentlich eine Sicherung in einem Ordner deiner Wahl. Die letzten {count} bleiben erhalten.",
+  "importExport.autoBackupOff": "Speichere Sicherungen in einem Ordner deiner Wahl.",
   "importExport.backUpNow": "Jetzt sichern",
   "importExport.backingUp": "Wird gesichert",
   "importExport.backupFolder": "Sicherungsordner",
@@ -755,6 +755,9 @@ const catalog: Record<string, string> = {
   "importExport.includeProtectedOff": "Aus: Profile mit PIN werden nicht automatisch gesichert",
   "importExport.everyDay": "Jeden Tag",
   "importExport.everyWeek": "Jede Woche",
+  "importExport.pickDays": "Tage wählen",
+  "importExport.backupDone": "Sicherung gespeichert",
+  "importExport.backupDoneBody": "Gespeichert in {folder}.",
   "importExport.backupHelp": "Sicherungen laufen, wenn du NoteSpark öffnest und eine fällig ist. Stelle eine mit „Wiederherstellen“ oben wieder her.",
   "importExport.history": "Verlauf",
   "importExport.historyOptions": "Verlaufsoptionen",
@@ -857,7 +860,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Ein Profil mit PIN wird nur auf diesem Computer geöffnet und gesperrt. Die Webansicht arbeitet mit dem Profil, das hier geöffnet ist.",
   "privacy.controlD3": "Wenn du den Ordner von NoteSpark entfernst, wird alles gelöscht. Der Entwickler hat keine Kopie, daher können gelöschte Notizen nicht wiederhergestellt werden, es sei denn, du hast sie exportiert.",
   "privacy.changesD": "Wenn sich diese Richtlinie ändert, erscheint die neue Fassung hier mit einem neuen Datum des Inkrafttretens.",
-  "privacy.dateD": "7. November 2026",
+  "privacy.dateD": "11. November 2026",
   "privacy.leadD": "NoteSpark ist eine Offline-Notiz-App. Sie hat kein Konto, keine Werbung, keine Analyse und kein Tracking. Alles, was du schreibst, bleibt auf diesem Computer. Diese Richtlinie erklärt, was die Desktop-App speichert und wo.",
   "privacy.title": "Datenschutzerklärung",
   "privacy.effective": "Gültig ab {date}",
@@ -990,6 +993,13 @@ const catalog: Record<string, string> = {
   "landscape.fadingHelp": "Weniger Notizen in den letzten 3 Monaten als in den 3 davor.",
   "landscape.overTime": "Im Zeitverlauf",
   "landscape.overTimeHelp": "Pro Monat geschriebene Notizen, nach Thema.",
+  "landscape.activity": "Schreibtage",
+  "landscape.activityHelp": "Tage, an denen du eine Notiz geschrieben oder bearbeitet hast, in den letzten 12 Wochen. Dunkler bedeutet mehr Notizen.",
+  "landscape.activitySummary": "Du hast an {days} der letzten {total} Tage geschrieben.",
+  "landscape.tags": "Häufigste Schlagwörter",
+  "landscape.tagsHelp": "Die Schlagwörter auf den meisten Notizen. Tippe auf eines, um seine Notizen zu sehen.",
+  "landscape.noTags": "Noch keine Schlagwörter. Füge einer Notiz ein #Schlagwort hinzu, dann erscheint es hier.",
+  "landscape.openTag": "Notizen mit {tag} anzeigen",
   "landscape.closestNotes": "Nächstgelegene Notizen",
   "landscape.openTopic": "Notizen zu {name} anzeigen",
   "landscape.tooFewTitle": "Noch nicht genug Notizen",
@@ -1026,7 +1036,7 @@ const catalog: Record<string, string> = {
   "sync.title": "Synchronisierung",
   "sync.settingsRow": "Synchronisierung zwischen deinen Geräten",
   "sync.settingsSync": "Einstellungen synchronisieren",
-  "sync.settingsSyncHelp": "Hält Design, Sprache, Erinnerungszeit und einige weitere Einstellungen auf deinen Geräten gleich. Sperre, PIN und Backup-Einstellungen werden nie synchronisiert.",
+  "sync.settingsSyncHelp": "Teile Design, Sprache und Erinnerungszeit zwischen deinen Geräten. Sperre, PIN und Backups werden nie synchronisiert.",
   "sync.settingsRowHelp": "Nichts verlässt dein eigenes Netzwerk.",
   "sync.intro": "Offline von Grund auf. Die Synchronisierung bleibt aus, bis du sie in NoteSpark für den Desktop einschaltest, und nichts verlässt dein eigenes Netzwerk.",
   "sync.computerHeading": "Mit deinem Computer koppeln",
@@ -1156,7 +1166,7 @@ const catalog: Record<string, string> = {
   "dsync.profilesHelp": "Wähle, welche Profile synchronisiert werden. Keines wird synchronisiert, bis du es einschaltest.",
   "dsync.profileLocked": "Entsperre {name} auf deinem Computer, um es zu synchronisieren.",
   "dsync.settingsSync": "Einstellungen synchronisieren",
-  "dsync.settingsSyncHelp": "Hält Design, Sprache, Erinnerungszeit und einige weitere Einstellungen auf deinen Geräten gleich. Sperre, PIN und Backup-Einstellungen werden nie synchronisiert.",
+  "dsync.settingsSyncHelp": "Teile Design, Sprache und Erinnerungszeit zwischen deinen Geräten. Sperre, PIN und Backups werden nie synchronisiert.",
   "dsync.acceptNew": "Neue Profile von Geräten annehmen",
   "dsync.acceptNewHelp": "Wenn ein Gerät ein Profil synchronisiert, das dieser Computer nicht hat, lege es hier an.",
   "dsync.mirror": "Markdown-Ordner",
@@ -1198,7 +1208,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "Es gibt kein Konto und keinen Server von uns. Ein Gerät, das du nicht gekoppelt hast, bekommt keine Antwort.",  // REVIEW (legal)
   "privacy.syncD3": "Standardmäßig kann ein gekoppeltes Gerät ein Profil auf diesem Computer anlegen, und das neue Profil beginnt ohne PIN. Damit Geräte nur in Profile synchronisieren, die du hier schon hast, schalte Neue Profile von Geräten annehmen in den Sync-Einstellungen aus.",  // REVIEW (legal)
   "privacy.syncD4": "Schalte die Synchronisierung jederzeit aus oder entferne ein Gerät. Notizen, die schon auf diesem Computer sind, bleiben dort.",  // REVIEW (legal)
-  "privacy.permD1": "Benachrichtigungen (optional): um dich an Aufgaben zum Fälligkeitsdatum zu erinnern. Sie werden auf diesem Computer erstellt; NoteSpark nutzt keine Push-Benachrichtigungen. Erinnerungen für Profile mit PIN zeigen den Aufgabentext nicht.",  // REVIEW (legal)
+  "privacy.permD1": "Benachrichtigungen (optional): um dich an Aufgaben zum Fälligkeitsdatum zu erinnern und dir mitzuteilen, wenn eine automatische Sicherung abgeschlossen ist. Sie werden auf diesem Computer erstellt; NoteSpark nutzt keine Push-Benachrichtigungen. Erinnerungen für Profile mit PIN zeigen den Aufgabentext nicht.",  // REVIEW (legal)
   "privacy.permD2": "Dateien und Zwischenablage (optional): nur die Dateien, die du beim Import auswählst, die Ordner, die du für Backups, den Markdown-Spiegel und Exporte wählst, und die Zwischenablage nur, wenn du im Tray-Symbol Zwischenablage speichern wählst.",  // REVIEW (legal)
   "privacy.permD3": "Schlüsselbund (optional): Der Schlüsselbund deines Systems (z. B. KWallet oder GNOME Keyring) bewahrt die Schlüssel auf, die NoteSpark für geschützte Profile und die Synchronisierung braucht. Ohne ihn legt NoteSpark kein geschütztes Profil an und schaltet die Synchronisierung nicht ein.",  // REVIEW (legal)
   "privacy.permD4": "Netzwerkzugriff: nur für die Synchronisierung in deinem eigenen Netzwerk, für die Webansicht, wenn du sie einschaltest, und für Webbilder, wenn du Webbilder anzeigen einschaltest. NoteSpark lauscht nie auf einer öffentlichen Adresse.",  // REVIEW (legal)

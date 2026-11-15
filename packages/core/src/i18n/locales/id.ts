@@ -593,7 +593,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "Tanpa kunci",
   "profiles.noLockDescription": "Siapa pun yang memakai ponsel ini dapat membukanya",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "Empat digit, dan catatannya dienkripsi",
+  "profiles.pinDescription": "Empat digit, catatan dienkripsi. Jaga cadangan tetap pribadi.",
   "profiles.fingerprint": "Sidik jari",
   "profiles.fingerprintReady": "Sidik jari, atau PIN sebagai cadangan",
   "profiles.fingerprintSetUp": "Tambahkan sidik jari di pengaturan ponsel terlebih dahulu",
@@ -716,7 +716,7 @@ const catalog: Record<string, string> = {
   "importExport.automaticBackups": "Cadangan otomatis",
   "importExport.backUpAutomatically": "Cadangkan otomatis",
   "importExport.autoBackupTo": "Ke {folder}. Menyimpan {count} terakhir untuk tiap profil.",
-  "importExport.autoBackupOff": "Simpan cadangan ke folder pilihan, setiap hari atau minggu. Menyimpan {count} terakhir.",
+  "importExport.autoBackupOff": "Simpan cadangan ke folder pilihan Anda.",
   "importExport.backUpNow": "Cadangkan sekarang",
   "importExport.backingUp": "Mencadangkan",
   "importExport.backupFolder": "Folder cadangan",
@@ -724,6 +724,9 @@ const catalog: Record<string, string> = {
   "importExport.includeProtectedOff": "Mati: profil ber-PIN tidak dicadangkan otomatis",
   "importExport.everyDay": "Setiap hari",
   "importExport.everyWeek": "Setiap minggu",
+  "importExport.pickDays": "Pilih hari",
+  "importExport.backupDone": "Cadangan tersimpan",
+  "importExport.backupDoneBody": "Disimpan di {folder}.",
   "importExport.backupHelp": "Cadangan berjalan saat NoteSpark dibuka dan sudah waktunya. Pulihkan dengan Pulihkan di atas.",
   "importExport.history": "Riwayat",
   "importExport.historyOptions": "Opsi riwayat",
@@ -824,7 +827,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Profil ber-PIN dibuka dan dikunci hanya di komputer ini. Tampilan web bekerja dengan profil yang sedang dibuka di sini.",
   "privacy.controlD3": "Menghapus folder NoteSpark menghapus semuanya. Pengembang tidak memiliki salinan, sehingga catatan yang terhapus tidak dapat dipulihkan kecuali telah diekspor.",
   "privacy.changesD": "Jika kebijakan ini berubah, versi baru akan muncul di sini dengan tanggal berlaku baru.",
-  "privacy.dateD": "7 November 2026",
+  "privacy.dateD": "11 November 2026",
   "privacy.leadD": "NoteSpark adalah aplikasi catatan offline. Tanpa akun, tanpa iklan, tanpa analitik, dan tanpa pelacakan. Semua yang Anda tulis tetap di komputer ini. Kebijakan ini menjelaskan apa yang disimpan aplikasi desktop dan di mana.",
   "privacy.title": "Kebijakan privasi",
   "privacy.effective": "Berlaku {date}",
@@ -953,6 +956,13 @@ const catalog: Record<string, string> = {
   "landscape.fadingHelp": "Catatan 3 bulan terakhir lebih sedikit daripada 3 bulan sebelumnya.",
   "landscape.overTime": "Dari waktu ke waktu",
   "landscape.overTimeHelp": "Catatan yang ditulis setiap bulan, menurut topik.",
+  "landscape.activity": "Hari menulis",
+  "landscape.activityHelp": "Hari saat Anda menulis atau mengedit catatan, dalam 12 minggu terakhir. Warna lebih gelap berarti lebih banyak catatan.",
+  "landscape.activitySummary": "Anda menulis pada {days} dari {total} hari terakhir.",
+  "landscape.tags": "Tag teratas",
+  "landscape.tagsHelp": "Tag yang ada di paling banyak catatan. Ketuk satu tag untuk melihat catatannya.",
+  "landscape.noTags": "Belum ada tag. Tambahkan #tag ke sebuah catatan dan tag itu akan muncul di sini.",
+  "landscape.openTag": "Tampilkan catatan dengan tag {tag}",
   "landscape.closestNotes": "Catatan terdekat",
   "landscape.openTopic": "Tampilkan catatan {name}",
   "landscape.tooFewTitle": "Catatan belum cukup",
@@ -986,7 +996,7 @@ const catalog: Record<string, string> = {
   "sync.title": "Sinkronisasi",
   "sync.settingsRow": "Sinkronisasi antar perangkat Anda",
   "sync.settingsSync": "Sinkronkan pengaturan",
-  "sync.settingsSyncHelp": "Menjaga tema, bahasa, waktu pengingat, dan beberapa preferensi lain tetap sama di perangkat Anda. Pengaturan kunci, PIN, dan cadangan tidak pernah disinkronkan.",
+  "sync.settingsSyncHelp": "Bagikan tema, bahasa, dan waktu pengingat di semua perangkat Anda. Kunci, PIN, dan cadangan tidak pernah disinkronkan.",
   "sync.settingsRowHelp": "Tidak ada yang keluar dari jaringan Anda sendiri.",
   "sync.intro": "Offline sejak awal. Sinkronisasi tetap nonaktif sampai Anda mengaktifkannya di NoteSpark untuk desktop, dan tidak ada yang keluar dari jaringan Anda sendiri.",
   "sync.computerHeading": "Pasangkan dengan komputer Anda",
@@ -1116,7 +1126,7 @@ const catalog: Record<string, string> = {
   "dsync.profilesHelp": "Pilih profil yang disinkronkan. Tidak ada yang disinkronkan sampai Anda mengaktifkannya.",
   "dsync.profileLocked": "Buka kunci {name} di komputer Anda untuk menyinkronkannya.",
   "dsync.settingsSync": "Sinkronkan pengaturan",
-  "dsync.settingsSyncHelp": "Menjaga tema, bahasa, waktu pengingat, dan beberapa preferensi lain tetap sama di perangkat Anda. Pengaturan kunci, PIN, dan cadangan tidak pernah disinkronkan.",
+  "dsync.settingsSyncHelp": "Bagikan tema, bahasa, dan waktu pengingat di semua perangkat Anda. Kunci, PIN, dan cadangan tidak pernah disinkronkan.",
   "dsync.acceptNew": "Terima profil baru dari perangkat",
   "dsync.acceptNewHelp": "Saat perangkat menyinkronkan profil yang tidak dimiliki komputer ini, buat di sini.",
   "dsync.mirror": "Folder Markdown",
@@ -1158,7 +1168,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "Tidak ada akun dan tidak ada server kami. Perangkat yang tidak Anda pasangkan tidak mendapat jawaban.",  // REVIEW (legal)
   "privacy.syncD3": "Secara default, perangkat yang dipasangkan dapat menambah profil di komputer ini, dan profil baru itu dimulai tanpa PIN. Agar perangkat hanya menyinkronkan ke profil yang sudah Anda miliki di sini, matikan Terima profil baru dari perangkat di pengaturan sinkronisasi.",  // REVIEW (legal)
   "privacy.syncD4": "Matikan sinkronisasi, atau hapus perangkat, kapan saja. Catatan yang sudah ada di komputer ini tetap di sini.",  // REVIEW (legal)
-  "privacy.permD1": "Notifikasi (opsional): untuk mengingatkan tugas pada tanggal jatuh tempo. Notifikasi dibuat di komputer ini; NoteSpark tidak memakai notifikasi push. Pengingat untuk profil ber-PIN tidak menampilkan teks tugas.",  // REVIEW (legal)
+  "privacy.permD1": "Notifikasi (opsional): untuk mengingatkan tugas pada tanggal jatuh tempo dan memberi tahu saat pencadangan otomatis selesai. Notifikasi dibuat di komputer ini; NoteSpark tidak memakai notifikasi push. Pengingat untuk profil ber-PIN tidak menampilkan teks tugas.",  // REVIEW (legal)
   "privacy.permD2": "Berkas dan papan klip (opsional): hanya berkas yang Anda pilih saat mengimpor, folder yang Anda pilih untuk cadangan, cermin Markdown, dan ekspor, serta papan klip hanya saat Anda memilih Simpan papan klip dari ikon baki.",  // REVIEW (legal)
   "privacy.permD3": "Keyring (opsional): keyring sistem Anda (seperti KWallet atau GNOME Keyring) menyimpan kunci yang dibutuhkan NoteSpark untuk profil terlindungi dan sinkronisasi. Tanpanya, NoteSpark tidak membuat profil terlindungi atau menyalakan sinkronisasi.",  // REVIEW (legal)
   "privacy.permD4": "Akses jaringan: hanya untuk sinkronisasi di jaringan Anda sendiri, untuk tampilan web jika Anda menyalakannya, dan untuk gambar web jika Anda menyalakan Tampilkan gambar web. NoteSpark tidak pernah mendengarkan pada alamat publik.",  // REVIEW (legal)

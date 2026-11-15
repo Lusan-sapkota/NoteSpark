@@ -637,7 +637,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "Aucun verrouillage",
   "profiles.noLockDescription": "Toute personne utilisant ce téléphone peut l'ouvrir",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "Quatre chiffres, et ses notes sont chiffrées",
+  "profiles.pinDescription": "Quatre chiffres, notes chiffrées. Gardez vos sauvegardes privées.",
   "profiles.fingerprint": "Empreinte digitale",
   "profiles.fingerprintReady": "Votre empreinte digitale, ou le PIN en secours",
   "profiles.fingerprintSetUp": "Ajoutez d'abord une empreinte digitale dans les réglages du téléphone",
@@ -778,7 +778,7 @@ const catalog: Record<string, string> = {
   "importExport.automaticBackups": "Sauvegardes automatiques",
   "importExport.backUpAutomatically": "Sauvegarder automatiquement",
   "importExport.autoBackupTo": "Vers {folder}. Garde les {count} dernières de chaque profil.",
-  "importExport.autoBackupOff": "Enregistre une sauvegarde dans un dossier de votre choix, chaque jour ou chaque semaine. Garde les {count} dernières.",
+  "importExport.autoBackupOff": "Enregistre des sauvegardes dans un dossier de votre choix.",
   "importExport.backUpNow": "Sauvegarder maintenant",
   "importExport.backingUp": "Sauvegarde en cours",
   "importExport.backupFolder": "Dossier de sauvegarde",
@@ -786,6 +786,9 @@ const catalog: Record<string, string> = {
   "importExport.includeProtectedOff": "Désactivé : les profils avec PIN ne sont pas sauvegardés automatiquement",
   "importExport.everyDay": "Chaque jour",
   "importExport.everyWeek": "Chaque semaine",
+  "importExport.pickDays": "Jours au choix",
+  "importExport.backupDone": "Sauvegarde terminée",
+  "importExport.backupDoneBody": "Enregistrée dans {folder}.",
   "importExport.backupHelp": "Les sauvegardes s'exécutent à l'ouverture de NoteSpark quand l'une est due. Restaurez-en une avec Restaurer ci-dessus.",
   "importExport.history": "Historique",
   "importExport.historyOptions": "Options de l'historique",
@@ -890,7 +893,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Un profil avec PIN est ouvert et verrouillé uniquement sur cet ordinateur. La vue web fonctionne avec le profil qui est ouvert ici.",
   "privacy.controlD3": "Supprimer le dossier de NoteSpark efface tout. Le développeur n'en a aucune copie ; les notes supprimées ne peuvent donc pas être récupérées, sauf si vous les avez exportées.",
   "privacy.changesD": "Si cette politique change, la nouvelle version apparaîtra ici avec une nouvelle date d'entrée en vigueur.",
-  "privacy.dateD": "7 novembre 2026",
+  "privacy.dateD": "11 novembre 2026",
   "privacy.leadD": "NoteSpark est une application de notes hors ligne. Elle n'a ni compte, ni publicités, ni analyse d'utilisation, ni suivi. Tout ce que vous écrivez reste sur cet ordinateur. Cette politique explique ce que l'application de bureau stocke et où.",
   "privacy.title": "Politique de confidentialité",
   "privacy.effective": "En vigueur le {date}",
@@ -1027,6 +1030,13 @@ const catalog: Record<string, string> = {
   "landscape.fadingHelp": "Moins de notes ces 3 derniers mois que les 3 mois précédents.",
   "landscape.overTime": "Au fil du temps",
   "landscape.overTimeHelp": "Notes écrites chaque mois, par sujet.",
+  "landscape.activity": "Jours d’écriture",
+  "landscape.activityHelp": "Les jours où vous avez écrit ou modifié une note, sur les 12 dernières semaines. Plus foncé veut dire plus de notes.",
+  "landscape.activitySummary": "Vous avez écrit {days} jours sur les {total} derniers.",
+  "landscape.tags": "Étiquettes principales",
+  "landscape.tagsHelp": "Les étiquettes présentes sur le plus de notes. Touchez-en une pour voir ses notes.",
+  "landscape.noTags": "Aucune étiquette pour l’instant. Ajoutez une #étiquette à une note et elle apparaîtra ici.",
+  "landscape.openTag": "Afficher les notes avec l’étiquette {tag}",
   "landscape.closestNotes": "Notes les plus proches",
   "landscape.openTopic": "Afficher les notes de {name}",
   "landscape.tooFewTitle": "Pas encore assez de notes",
@@ -1066,7 +1076,7 @@ const catalog: Record<string, string> = {
   "sync.title": "Synchronisation",
   "sync.settingsRow": "Synchronisation entre vos appareils",
   "sync.settingsSync": "Synchroniser les réglages",
-  "sync.settingsSyncHelp": "Garde le thème, la langue, l'heure du rappel et quelques autres préférences identiques sur vos appareils. Le verrouillage, le code PIN et les sauvegardes ne sont jamais synchronisés.",
+  "sync.settingsSyncHelp": "Partagez le thème, la langue et l'heure du rappel entre vos appareils. Verrouillage, code PIN et sauvegardes ne sont jamais synchronisés.",
   "sync.settingsRowHelp": "Rien ne quitte votre propre réseau.",
   "sync.intro": "Hors ligne par conception. La synchronisation reste désactivée tant que vous ne l'activez pas dans NoteSpark pour ordinateur, et rien ne quitte votre propre réseau.",
   "sync.computerHeading": "Associer à votre ordinateur",
@@ -1196,7 +1206,7 @@ const catalog: Record<string, string> = {
   "dsync.profilesHelp": "Choisissez les profils à synchroniser. Aucun n'est synchronisé tant que vous ne l'activez pas.",
   "dsync.profileLocked": "Déverrouillez {name} sur votre ordinateur pour le synchroniser.",
   "dsync.settingsSync": "Synchroniser les réglages",
-  "dsync.settingsSyncHelp": "Garde le thème, la langue, l'heure du rappel et quelques autres préférences identiques sur vos appareils. Le verrouillage, le code PIN et les sauvegardes ne sont jamais synchronisés.",
+  "dsync.settingsSyncHelp": "Partagez le thème, la langue et l'heure du rappel entre vos appareils. Verrouillage, code PIN et sauvegardes ne sont jamais synchronisés.",
   "dsync.acceptNew": "Accepter les nouveaux profils des appareils",
   "dsync.acceptNewHelp": "Quand un appareil synchronise un profil que cet ordinateur n'a pas, le créer ici.",
   "dsync.mirror": "Dossier Markdown",
@@ -1238,7 +1248,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "Il n'y a ni compte ni serveur de notre part. Un appareil que vous n'avez pas associé ne reçoit aucune réponse.",  // REVIEW (legal)
   "privacy.syncD3": "Par défaut, un appareil associé peut ajouter un profil sur cet ordinateur, et le nouveau profil commence sans PIN. Pour que les appareils ne se synchronisent que vers des profils que vous avez déjà ici, désactivez Accepter les nouveaux profils des appareils dans les réglages de synchronisation.",  // REVIEW (legal)
   "privacy.syncD4": "Désactivez la synchronisation, ou retirez un appareil, à tout moment. Les notes déjà présentes sur cet ordinateur y restent.",  // REVIEW (legal)
-  "privacy.permD1": "Notifications (facultatif) : pour vous rappeler les tâches à leur échéance. Elles sont créées sur cet ordinateur ; NoteSpark n'utilise pas de notifications push. Les rappels des profils avec PIN n'affichent pas le texte de la tâche.",  // REVIEW (legal)
+  "privacy.permD1": "Notifications (facultatif) : pour vous rappeler les tâches à leur échéance et vous dire quand une sauvegarde automatique est terminée. Elles sont créées sur cet ordinateur ; NoteSpark n'utilise pas de notifications push. Les rappels des profils avec PIN n'affichent pas le texte de la tâche.",  // REVIEW (legal)
   "privacy.permD2": "Fichiers et presse-papiers (facultatif) : seulement les fichiers que vous choisissez à l'import, les dossiers que vous choisissez pour les sauvegardes, le miroir Markdown et les exports, et le presse-papiers seulement quand vous choisissez Enregistrer le presse-papiers dans l'icône de la barre d'état.",  // REVIEW (legal)
   "privacy.permD3": "Trousseau (facultatif) : le trousseau de votre système (comme KWallet ou GNOME Keyring) conserve les clés dont NoteSpark a besoin pour les profils protégés et la synchronisation. Sans trousseau, NoteSpark ne crée pas de profil protégé et n'active pas la synchronisation.",  // REVIEW (legal)
   "privacy.permD4": "Accès au réseau : seulement pour la synchronisation sur votre propre réseau, pour la vue web si vous l'activez et pour les images web si vous activez Afficher les images web. NoteSpark n'écoute jamais sur une adresse publique.",  // REVIEW (legal)

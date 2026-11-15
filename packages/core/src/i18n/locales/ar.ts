@@ -703,7 +703,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "بلا قفل",
   "profiles.noLockDescription": "يمكن لأي شخص يستخدم هذا الهاتف فتحه",
   "profiles.pin": "رمز PIN",
-  "profiles.pinDescription": "أربعة أرقام، وتُشفَّر ملاحظاته",
+  "profiles.pinDescription": "أربعة أرقام، والملاحظات مشفّرة. أبقِ نسخك الاحتياطية خاصة.",
   "profiles.fingerprint": "بصمة الإصبع",
   "profiles.fingerprintReady": "بصمتك، أو رمز PIN كخيار احتياطي",
   "profiles.fingerprintSetUp": "أضف بصمة في إعدادات هاتفك أولًا",
@@ -871,7 +871,7 @@ const catalog: Record<string, string> = {
   "importExport.automaticBackups": "النسخ الاحتياطي التلقائي",
   "importExport.backUpAutomatically": "نسخ احتياطي تلقائي",
   "importExport.autoBackupTo": "إلى {folder}. يحتفظ بآخر {count} لكل ملف شخصي.",
-  "importExport.autoBackupOff": "احفظ نسخة احتياطية في مجلد تختاره، كل يوم أو أسبوع. يحتفظ بآخر {count}.",
+  "importExport.autoBackupOff": "احفظ نسخًا احتياطية في مجلد تختاره.",
   "importExport.backUpNow": "نسخ احتياطي الآن",
   "importExport.backingUp": "جارٍ النسخ الاحتياطي",
   "importExport.backupFolder": "مجلد النسخ الاحتياطي",
@@ -879,6 +879,9 @@ const catalog: Record<string, string> = {
   "importExport.includeProtectedOff": "متوقف: لا تُنسخ الملفات الشخصية ذات رمز PIN احتياطيًا تلقائيًا",
   "importExport.everyDay": "كل يوم",
   "importExport.everyWeek": "كل أسبوع",
+  "importExport.pickDays": "اختيار الأيام",
+  "importExport.backupDone": "تم حفظ النسخة الاحتياطية",
+  "importExport.backupDoneBody": "تم الحفظ في {folder}.",
   "importExport.backupHelp": "تُنفَّذ النسخ الاحتياطية عند فتح NoteSpark إذا حان موعد نسخة. استعد نسخة باستخدام «استعادة» أعلاه.",
   "importExport.history": "السجل",
   "importExport.historyOptions": "خيارات السجل",
@@ -989,7 +992,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "يُفتح الملف الشخصي ذو رمز PIN ويُقفل على هذا الحاسوب فقط. يعمل عرض الويب مع الملف الشخصي المفتوح هنا.",
   "privacy.controlD3": "إزالة مجلد NoteSpark تمسح كل شيء. ليس لدى المطوّر أي نسخة، لذلك لا يمكن استرداد الملاحظات المحذوفة ما لم تكن قد صدّرتها.",
   "privacy.changesD": "إذا تغيّرت هذه السياسة، فستظهر النسخة الجديدة هنا مع تاريخ سريان جديد.",
-  "privacy.dateD": "7 نوفمبر 2026",
+  "privacy.dateD": "11 نوفمبر 2026",
   "privacy.leadD": "NoteSpark تطبيق ملاحظات يعمل دون اتصال. لا حساب فيه ولا إعلانات ولا تحليلات ولا تتبّع. كل ما تكتبه يبقى على هذا الحاسوب. توضح هذه السياسة ما يخزّنه تطبيق سطح المكتب وأين.",
   "privacy.title": "سياسة الخصوصية",
   "privacy.effective": "سارية اعتبارًا من {date}",
@@ -1138,6 +1141,13 @@ const catalog: Record<string, string> = {
   "landscape.fadingHelp": "ملاحظات أقل في آخر 3 أشهر مما كانت في الأشهر الثلاثة السابقة لها.",
   "landscape.overTime": "عبر الزمن",
   "landscape.overTimeHelp": "الملاحظات المكتوبة كل شهر، حسب الموضوع.",
+  "landscape.activity": "أيام الكتابة",
+  "landscape.activityHelp": "الأيام التي كتبت فيها ملاحظة أو عدّلتها خلال آخر 12 أسبوعًا. اللون الأغمق يعني ملاحظات أكثر.",
+  "landscape.activitySummary": "كتبت في {days} من آخر {total} يومًا.",
+  "landscape.tags": "أكثر الوسوم",
+  "landscape.tagsHelp": "الوسوم الموجودة في أكبر عدد من الملاحظات. اضغط على وسم لعرض ملاحظاته.",
+  "landscape.noTags": "لا توجد وسوم بعد. أضف #وسمًا إلى ملاحظة وسيظهر هنا.",
+  "landscape.openTag": "عرض الملاحظات ذات الوسم {tag}",
   "landscape.closestNotes": "أقرب الملاحظات",
   "landscape.openTopic": "إظهار ملاحظات {name}",
   "landscape.tooFewTitle": "لا توجد ملاحظات كافية بعد",
@@ -1186,7 +1196,7 @@ const catalog: Record<string, string> = {
   "sync.title": "المزامنة",
   "sync.settingsRow": "المزامنة بين أجهزتك",
   "sync.settingsSync": "مزامنة الإعدادات",
-  "sync.settingsSyncHelp": "يُبقي السمة واللغة ووقت التذكير وبعض التفضيلات الأخرى متطابقة على أجهزتك. لا تتم مزامنة إعدادات القفل ورمز PIN والنسخ الاحتياطي أبدًا.",
+  "sync.settingsSyncHelp": "شارك السمة واللغة ووقت التذكير بين أجهزتك. لا تتم مزامنة القفل ورمز PIN والنسخ الاحتياطي أبدًا.",
   "sync.settingsRowHelp": "لا شيء يغادر شبكتك الخاصة.",
   "sync.intro": "يعمل دون اتصال بحكم التصميم. تبقى المزامنة متوقفة حتى تشغّلها في NoteSpark لسطح المكتب، ولا شيء يغادر شبكتك الخاصة.", // REVIEW
   "sync.computerHeading": "إقران مع حاسوبك",
@@ -1316,7 +1326,7 @@ const catalog: Record<string, string> = {
   "dsync.profilesHelp": "اختر الملفات الشخصية التي تُزامَن. لا يُزامَن أي ملف حتى تشغّله.",
   "dsync.profileLocked": "افتح قفل {name} على حاسوبك لمزامنته.",
   "dsync.settingsSync": "مزامنة الإعدادات",
-  "dsync.settingsSyncHelp": "يُبقي السمة واللغة ووقت التذكير وبعض التفضيلات الأخرى متطابقة على أجهزتك. لا تتم مزامنة إعدادات القفل ورمز PIN والنسخ الاحتياطي أبدًا.",
+  "dsync.settingsSyncHelp": "شارك السمة واللغة ووقت التذكير بين أجهزتك. لا تتم مزامنة القفل ورمز PIN والنسخ الاحتياطي أبدًا.",
   "dsync.acceptNew": "قبول ملفات شخصية جديدة من الأجهزة",
   "dsync.acceptNewHelp": "عندما يزامن جهاز ملفًا شخصيًا ليس لدى هذا الحاسوب، أنشئه هنا.",
   "dsync.mirror": "مجلد Markdown",
@@ -1358,7 +1368,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "لا حساب ولا خادم لنا. الجهاز الذي لم تقترن به لا يتلقى أي رد.",  // REVIEW (legal)
   "privacy.syncD3": "افتراضيًا، يمكن لجهاز تم إقرانه إضافة ملف شخصي على هذا الحاسوب، ويبدأ الملف الجديد دون PIN. لكي تزامن الأجهزة فقط مع الملفات الشخصية الموجودة لديك هنا، أوقف «قبول ملفات شخصية جديدة من الأجهزة» في إعدادات المزامنة.",  // REVIEW (legal)
   "privacy.syncD4": "أوقف المزامنة أو أزل جهازًا في أي وقت. تبقى الملاحظات الموجودة على هذا الحاسوب عليه.",  // REVIEW (legal)
-  "privacy.permD1": "الإشعارات (اختياري): لتذكيرك بالمهام في تاريخ استحقاقها. تُنشأ على هذا الحاسوب؛ لا يستخدم NoteSpark الإشعارات الفورية. لا تعرض تذكيرات الملفات الشخصية ذات PIN نص المهمة.",  // REVIEW (legal)
+  "privacy.permD1": "الإشعارات (اختياري): لتذكيرك بالمهام في تاريخ استحقاقها وإبلاغك عند اكتمال النسخ الاحتياطي التلقائي. تُنشأ على هذا الحاسوب؛ لا يستخدم NoteSpark الإشعارات الفورية. لا تعرض تذكيرات الملفات الشخصية ذات PIN نص المهمة.",  // REVIEW (legal)
   "privacy.permD2": "الملفات والحافظة (اختياري): فقط الملفات التي تختارها عند الاستيراد، والمجلدات التي تختارها للنسخ الاحتياطي ومرآة Markdown والتصدير، والحافظة فقط عندما تختار حفظ الحافظة من أيقونة الدرج.",  // REVIEW (legal)
   "privacy.permD3": "سلسلة المفاتيح (اختياري): تحتفظ سلسلة مفاتيح نظامك (مثل KWallet أو GNOME Keyring) بالمفاتيح التي يحتاجها NoteSpark للملفات الشخصية المحمية والمزامنة. بدونها لا ينشئ NoteSpark ملفًا شخصيًا محميًا ولا يفعّل المزامنة.",  // REVIEW (legal)
   "privacy.permD4": "الوصول إلى الشبكة: فقط للمزامنة على شبكتك الخاصة، ولعرض الويب إذا فعّلته، ولصور الويب إذا فعّلت «عرض صور الويب». لا يستمع NoteSpark أبدًا على عنوان عام.",  // REVIEW (legal)

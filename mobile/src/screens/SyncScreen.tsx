@@ -149,6 +149,8 @@ const SyncScreen: React.FC = () => {
 
   const tips = (
     <View style={[styles.tips, { backgroundColor: theme.colors.surfaceContainerLow }]}>
+      {slow && <Text variant="bodyMedium" style={{ color: theme.colors.onSurface }}>{t('sync.hintRepair')}</Text>}
+      {slow && <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />}
       <View style={styles.tipsHead}>
         <Icon source="wifi-off" size={24} color={theme.colors.onSurfaceVariant} />
         <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('sync.noWifiTitle')}</Text>
@@ -157,7 +159,7 @@ const SyncScreen: React.FC = () => {
       <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />
       <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('sync.noNetworkTitle')}</Text>
       <Text variant="bodyMedium" style={muted}>{t('sync.noNetworkBody')}</Text>
-      <Button mode="text" icon="swap-vertical" onPress={() => navigation.navigate('ImportExport' as never)} style={styles.tipAction} contentStyle={styles.buttonContent}>{t('sync.noNetworkAction')}</Button>
+      <Button mode="outlined" theme={controlTheme} icon="swap-vertical" onPress={() => navigation.navigate('ImportExport' as never)} style={styles.button} contentStyle={styles.buttonContent}>{t('sync.noNetworkAction')}</Button>
     </View>
   );
 
@@ -200,8 +202,6 @@ const SyncScreen: React.FC = () => {
                   <Icon source={statusIcon} size={20} color={card.fg} />
                   <Text variant="bodyMedium" style={[styles.statusText, { color: card.fg }]}>{on ? statusText() : t('sync.stateOff')}</Text>
                 </View>
-                {slow && <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{t('sync.hintRepair')}</Text>}
-                {on && Platform.OS === 'android' && <Text variant="bodySmall" style={{ color: theme.colors.onSurfaceVariant }}>{t('sync.backgroundNote')}</Text>}
               </View>
 
               {profile && (
@@ -222,7 +222,7 @@ const SyncScreen: React.FC = () => {
                       isFirst={false} isLast={false}
                     />
                   )}
-                  {on && <GroupedRow title={t('sync.syncNow')} icon="refresh" onPress={syncNow} isFirst={false} isLast={!canRelink} />}
+                  {on && <GroupedRow title={t('sync.syncNow')} description={Platform.OS === 'android' ? t('sync.backgroundNote') : undefined} icon="refresh" onPress={syncNow} isFirst={false} isLast={!canRelink} />}
                   {canRelink && <GroupedRow title={t('sync.relink')} icon="link-plus" onPress={() => void relinkOpenProfile()} isFirst={false} isLast />}
                 </View>
               )}
@@ -233,7 +233,8 @@ const SyncScreen: React.FC = () => {
                 <GroupedRow title={t('sync.forget')} icon="link-off" danger onPress={forget} isFirst={false} isLast />
               </View>
 
-              {tips}
+              {/* Once paired the help is only for trouble: a working sync needs no tips. */}
+              {(problem || slow) && tips}
             </>
           )}
         </View>
@@ -293,7 +294,6 @@ const styles = StyleSheet.create({
   statusText: { flex: 1 },
   tips: { gap: space.sm, padding: space.lg, borderRadius: shape.group },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: space.sm },
-  tipAction: { alignSelf: 'flex-start' },
   tipsHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
 });
 

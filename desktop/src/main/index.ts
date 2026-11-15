@@ -99,8 +99,14 @@ const createWindow = () => {
 };
 
 const showWindow = () => {
-  if (!window) createWindow();
-  else { if (window.isMinimized()) window.restore(); window.show(); window.focus(); }
+  void app.whenReady().then(() => {
+    if (!window || window.isDestroyed()) createWindow();
+    else {
+      if (window.isMinimized()) window.restore();
+      window.show();
+      window.focus();
+    }
+  }).catch(error => console.error('Could not show the main window', error));
 };
 
 app.disableHardwareAcceleration();

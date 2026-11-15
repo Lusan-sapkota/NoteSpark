@@ -4,7 +4,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import Animated, { cancelAnimation, Easing, SharedValue, useAnimatedStyle, useReducedMotion, useSharedValue, withRepeat, withTiming } from 'react-native-reanimated';
-import { Button, Icon, IconButton, RadioButton, SegmentedButtons, Text, TextInput, TouchableRipple } from 'react-native-paper';
+import { Button, Chip, Icon, IconButton, RadioButton, SegmentedButtons, Text, TextInput, TouchableRipple } from 'react-native-paper';
 import Dialog from '../components/Dialog';
 import Menu from '../components/Menu';
 import { RootStackParamList } from '../types';
@@ -678,13 +678,44 @@ const ImportExportScreen: React.FC = () => {
               <SegmentedButtons
                 theme={controlTheme}
                 value={autoBackup.frequency}
-                onValueChange={value => saveAutoBackup({ ...autoBackup, frequency: value as 'daily' | 'weekly' })}
+                onValueChange={value => saveAutoBackup({ ...autoBackup, frequency: value as AutoBackupSettings['frequency'], days: autoBackup.days ?? [1, 3, 5] })}
                 style={styles.frequency}
                 buttons={[
-                  { value: 'daily', label: t('importExport.everyDay'), icon: 'calendar-today' },
-                  { value: 'weekly', label: t('importExport.everyWeek'), icon: 'calendar-week' },
+                  { value: 'daily', label: t('importExport.everyDay') },
+                  { value: 'weekly', label: t('importExport.everyWeek') },
+                  { value: 'days', label: t('importExport.pickDays') },
                 ]}
               />
+              {autoBackup.frequency === 'days' && (
+                <View style={styles.dayChips}>
+                  {[0, 1, 2, 3, 4, 5, 6].map(day => {
+                    const on = !!autoBackup.days?.includes(day);
+                    const date = new Date(2024, 0, 7 + day); // 7 Jan 2024 was a Sunday
+                    return (
+                      <Chip
+                        key={day}
+                        mode="outlined"
+                        selected={on}
+                        showSelectedCheck={false}
+                        showSelectedOverlay={false}
+                        // Keep at least one day, or nothing would ever back up.
+                        onPress={() => {
+                          const days = on ? (autoBackup.days ?? []).filter(d => d !== day) : [...(autoBackup.days ?? []), day];
+                          if (days.length) saveAutoBackup({ ...autoBackup, days });
+                        }}
+                        accessibilityLabel={date.toLocaleDateString(getLanguage(), { weekday: 'long' })}
+                        accessibilityState={{ selected: on }}
+                        hitSlop={{ top: 4, bottom: 4 }}
+                        style={[styles.dayChip, on && { backgroundColor: theme.colors.secondaryContainer, borderColor: theme.colors.secondaryContainer }]}
+                        textStyle={[theme.fonts.labelLarge, styles.dayChipText, { color: on ? theme.colors.onSecondaryContainer : theme.colors.onSurfaceVariant }]}
+                        maxFontSizeMultiplier={1.5}
+                      >
+                        {date.toLocaleDateString(getLanguage(), { weekday: 'narrow' })}
+                      </Chip>
+                    );
+                  })}
+                </View>
+              )}
               <Text variant="bodySmall" style={[styles.backupHelp, { color: theme.colors.onSurfaceVariant }]}>
                 {t('importExport.backupHelp')}
               </Text>
@@ -883,6 +914,20 @@ const styles = StyleSheet.create({
   },
   frequency: {
     marginTop: space.md,
+  },
+  dayChips: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: space.sm,
+    marginTop: space.md,
+  },
+  dayChip: {
+    borderRadius: shape.small,
+  },
+  // Same 40dp chip as the Home filters.
+  dayChipText: {
+    marginHorizontal: space.sm,
+    marginVertical: 9,
   },
   backupHelp: {
     marginTop: space.sm,

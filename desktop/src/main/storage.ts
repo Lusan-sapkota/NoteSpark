@@ -7,6 +7,7 @@ import * as notes from '../../../mobile/src/storage/notes';
 import * as profiles from '../../../mobile/src/storage/profiles';
 import * as semanticSearch from '../../../mobile/src/storage/semanticSearch';
 import { idleMs, watchAway } from './activity';
+import { say } from './notify';
 import AsyncStorage from '@notespark/node-shims/async-storage';
 
 const modules = { notes, profiles, database, autoBackup, semanticSearch, attachments } as Record<string, Record<string, unknown>>;
@@ -70,8 +71,9 @@ const start = () =>
       phaseProfile = await profiles.getDefaultProfile().catch(() => ({ id: 'default', name: 'Personal' }));
     }
     // A due backup runs once the notes open, and again every hour while the app sits in the tray.
-    autoBackup.runAutoBackupIfDue().catch(() => {});
-    setInterval(() => autoBackup.runAutoBackupIfDue().catch(() => {}), 3_600_000).unref();
+    const backUp = () => autoBackup.runAutoBackupIfDue().then(result => { if (result) { const { title, body } = autoBackup.backupNotice(result); say(title, body); } }).catch(() => {});
+    backUp();
+    setInterval(backUp, 3_600_000).unref();
     // A protected profile asks for its PIN again after the app has been unused for the chosen time.
     watchAway(async () => {
       if (phase !== 'ready') return;

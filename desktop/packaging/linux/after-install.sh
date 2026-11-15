@@ -18,6 +18,14 @@ else
     chmod 0755 '/opt/${sanitizedProductName}/chrome-sandbox' || true
 fi
 
+# electron-builder writes linux.description into Comment (it applies desktop.entry.Comment first, then overwrites it),
+# so the menu and its tooltip showed the long .deb text. Keep the short line in the menu; the package Description keeps
+# the full text. The path uses executableName, which is notespark.
+DESKTOP_FILE='/usr/share/applications/${executable}.desktop'
+if [ -f "$DESKTOP_FILE" ]; then
+    sed -i 's|^Comment=.*|Comment=Fast, offline-first notes|' "$DESKTOP_FILE" || true
+fi
+
 if hash update-mime-database 2>/dev/null; then
     update-mime-database /usr/share/mime || true
 fi

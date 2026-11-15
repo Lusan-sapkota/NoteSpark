@@ -592,7 +592,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "不锁定",
   "profiles.noLockDescription": "任何使用这部手机的人都可以打开",
   "profiles.pin": "PIN码",
-  "profiles.pinDescription": "四位数字，其笔记会被加密",
+  "profiles.pinDescription": "四位数字，笔记已加密。请妥善保管备份。",
   "profiles.fingerprint": "指纹",
   "profiles.fingerprintReady": "使用指纹，PIN码作为备用",
   "profiles.fingerprintSetUp": "请先在手机设置中添加指纹",
@@ -715,7 +715,7 @@ const catalog: Record<string, string> = {
   "importExport.automaticBackups": "自动备份",
   "importExport.backUpAutomatically": "自动备份",
   "importExport.autoBackupTo": "备份到 {folder}。每个档案保留最近 {count} 份。",
-  "importExport.autoBackupOff": "每天或每周将备份保存到你选择的文件夹。保留最近 {count} 份。",
+  "importExport.autoBackupOff": "将备份保存到你选择的文件夹。",
   "importExport.backUpNow": "立即备份",
   "importExport.backingUp": "正在备份",
   "importExport.backupFolder": "备份文件夹",
@@ -723,6 +723,9 @@ const catalog: Record<string, string> = {
   "importExport.includeProtectedOff": "关闭：带PIN码的档案不会自动备份",
   "importExport.everyDay": "每天",
   "importExport.everyWeek": "每周",
+  "importExport.pickDays": "选择日期",
+  "importExport.backupDone": "备份已保存",
+  "importExport.backupDoneBody": "已保存到 {folder}。",
   "importExport.backupHelp": "打开 NoteSpark 且备份到期时会自动备份。可用上方的“恢复”来恢复备份。",
   "importExport.history": "历史记录",
   "importExport.historyOptions": "历史记录选项",
@@ -823,7 +826,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "带PIN码的档案只能在这台电脑上打开和锁定。网页视图使用此处当前打开的档案。",
   "privacy.controlD3": "删除 NoteSpark 的文件夹会清除所有内容。开发者没有任何副本，因此已删除的笔记无法找回，除非你已导出。",
   "privacy.changesD": "如果本政策有变更，新版本将与新的生效日期一起显示在这里。",
-  "privacy.dateD": "2026年11月7日",
+  "privacy.dateD": "2026年11月11日",
   "privacy.leadD": "NoteSpark 是一款离线笔记应用。没有账号、没有广告、没有分析，也没有跟踪。你写的一切都只保存在这台电脑上。本政策说明桌面应用存储什么内容以及存储在哪里。",
   "privacy.title": "隐私政策",
   "privacy.effective": "{date}生效",
@@ -952,6 +955,13 @@ const catalog: Record<string, string> = {
   "landscape.fadingHelp": "最近3个月的笔记比之前3个月更少。",
   "landscape.overTime": "随时间变化",
   "landscape.overTimeHelp": "按主题统计每月写下的笔记。",
+  "landscape.activity": "写作天数",
+  "landscape.activityHelp": "最近 12 周里你写过或编辑过笔记的日子。颜色越深，笔记越多。",
+  "landscape.activitySummary": "最近 {total} 天中，你有 {days} 天写了笔记。",
+  "landscape.tags": "常用标签",
+  "landscape.tagsHelp": "出现在最多笔记中的标签。点按标签即可查看相关笔记。",
+  "landscape.noTags": "还没有标签。给笔记添加 #标签 后，就会显示在这里。",
+  "landscape.openTag": "显示带有标签 {tag} 的笔记",
   "landscape.closestNotes": "最相近的笔记",
   "landscape.openTopic": "显示“{name}”的笔记",
   "landscape.tooFewTitle": "笔记还不够多",
@@ -985,7 +995,7 @@ const catalog: Record<string, string> = {
   "sync.title": "同步",
   "sync.settingsRow": "在你的设备之间同步",
   "sync.settingsSync": "同步设置",
-  "sync.settingsSyncHelp": "让主题、语言、提醒时间和其他几项偏好在你的设备上保持一致。锁定、PIN 和备份设置永远不会同步。",
+  "sync.settingsSyncHelp": "在你的设备间共享主题、语言和提醒时间。锁定、PIN 和备份永远不会同步。",
   "sync.settingsRowHelp": "任何内容都不会离开你自己的网络。",
   "sync.intro": "设计上完全离线。同步在你于 NoteSpark 桌面版中开启前一直关闭，任何内容都不会离开你自己的网络。",
   "sync.computerHeading": "与电脑配对",
@@ -1115,7 +1125,7 @@ const catalog: Record<string, string> = {
   "dsync.profilesHelp": "选择要同步的档案。在你开启之前，所有档案都不会同步。",
   "dsync.profileLocked": "请在电脑上解锁 {name} 以进行同步。",
   "dsync.settingsSync": "同步设置",
-  "dsync.settingsSyncHelp": "让主题、语言、提醒时间和其他几项偏好在你的设备上保持一致。锁定、PIN 和备份设置永远不会同步。",
+  "dsync.settingsSyncHelp": "在你的设备间共享主题、语言和提醒时间。锁定、PIN 和备份永远不会同步。",
   "dsync.acceptNew": "接受来自设备的新档案",
   "dsync.acceptNewHelp": "当设备同步了这台电脑上没有的档案时，在这里创建它。",
   "dsync.mirror": "Markdown 文件夹",
@@ -1157,7 +1167,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "没有账户，也没有我们的服务器。你没有配对的设备得不到任何回应。",  // REVIEW (legal)
   "privacy.syncD3": "默认情况下，已配对的设备可以在这台电脑上添加档案，新档案一开始没有 PIN。若想让设备只能同步到你在这里已有的档案，请在同步设置中关闭“接受来自设备的新档案”。",  // REVIEW (legal)
   "privacy.syncD4": "你可以随时关闭同步，或移除某台设备。已在这台电脑上的笔记会留在这里。",  // REVIEW (legal)
-  "privacy.permD1": "通知（可选）：用于在任务到期日提醒你。通知在这台电脑上创建；NoteSpark 不使用推送通知。带 PIN 的档案的提醒不会显示任务文字。",  // REVIEW (legal)
+  "privacy.permD1": "通知（可选）：用于在任务到期日提醒你，并在自动备份完成时通知你。通知在这台电脑上创建；NoteSpark 不使用推送通知。带 PIN 的档案的提醒不会显示任务文字。",  // REVIEW (legal)
   "privacy.permD2": "文件和剪贴板（可选）：仅限你在导入时选择的文件、你为备份、Markdown 镜像和导出选择的文件夹，剪贴板仅在你从托盘图标选择“保存剪贴板”时使用。",  // REVIEW (legal)
   "privacy.permD3": "密钥环（可选）：你系统的密钥环（如 KWallet 或 GNOME Keyring）保管 NoteSpark 为受保护档案和同步所需的密钥。没有密钥环时，NoteSpark 不会创建受保护档案，也不会打开同步。",  // REVIEW (legal)
   "privacy.permD4": "网络访问：仅用于在你自己网络上的同步、你打开的网页视图，以及你打开“显示网络图片”时的网络图片。NoteSpark 从不在公共地址上监听。",  // REVIEW (legal)

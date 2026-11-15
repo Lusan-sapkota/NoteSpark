@@ -637,7 +637,7 @@ const catalog: Record<string, string> = {
   "profiles.noLock": "Sin bloqueo",
   "profiles.noLockDescription": "Cualquiera que use este teléfono puede abrirlo",
   "profiles.pin": "PIN",
-  "profiles.pinDescription": "Cuatro dígitos, y sus notas se cifran",
+  "profiles.pinDescription": "Cuatro dígitos, notas cifradas. Mantén privadas tus copias.",
   "profiles.fingerprint": "Huella",
   "profiles.fingerprintReady": "Tu huella, o el PIN como respaldo",
   "profiles.fingerprintSetUp": "Primero añade una huella en los ajustes del teléfono",
@@ -778,7 +778,7 @@ const catalog: Record<string, string> = {
   "importExport.automaticBackups": "Copias automáticas",
   "importExport.backUpAutomatically": "Hacer copias automáticamente",
   "importExport.autoBackupTo": "En {folder}. Conserva las últimas {count} de cada perfil.",
-  "importExport.autoBackupOff": "Guarda una copia en una carpeta que elijas, cada día o cada semana. Conserva las últimas {count}.",
+  "importExport.autoBackupOff": "Guarda copias en una carpeta que elijas.",
   "importExport.backUpNow": "Hacer copia ahora",
   "importExport.backingUp": "Haciendo copia",
   "importExport.backupFolder": "Carpeta de copias",
@@ -786,6 +786,9 @@ const catalog: Record<string, string> = {
   "importExport.includeProtectedOff": "Desactivado: los perfiles con PIN no se copian automáticamente",
   "importExport.everyDay": "Cada día",
   "importExport.everyWeek": "Cada semana",
+  "importExport.pickDays": "Elegir días",
+  "importExport.backupDone": "Copia guardada",
+  "importExport.backupDoneBody": "Guardada en {folder}.",
   "importExport.backupHelp": "Las copias se hacen cuando abres NoteSpark y toca una. Restaura una con Restaurar, arriba.",
   "importExport.history": "Historial",
   "importExport.historyOptions": "Opciones del historial",
@@ -890,7 +893,7 @@ const catalog: Record<string, string> = {
   "privacy.web4": "Un perfil con PIN se abre y se bloquea solo en este ordenador. La vista web funciona con el perfil que está abierto aquí.",
   "privacy.controlD3": "Al eliminar la carpeta de NoteSpark se borra todo. El desarrollador no tiene ninguna copia, así que las notas eliminadas no se pueden recuperar a menos que las hayas exportado.",
   "privacy.changesD": "Si esta política cambia, la nueva versión aparecerá aquí con una nueva fecha de entrada en vigor.",
-  "privacy.dateD": "7 de noviembre de 2026",
+  "privacy.dateD": "11 de noviembre de 2026",
   "privacy.leadD": "NoteSpark es una app de notas sin conexión. No tiene cuenta, ni anuncios, ni analíticas, ni seguimiento. Todo lo que escribes se queda en este ordenador. Esta política explica qué almacena la app de escritorio y dónde.",
   "privacy.title": "Política de privacidad",
   "privacy.effective": "En vigor desde el {date}",
@@ -1027,6 +1030,13 @@ const catalog: Record<string, string> = {
   "landscape.fadingHelp": "Menos notas en los últimos 3 meses que en los 3 anteriores.",
   "landscape.overTime": "A lo largo del tiempo",
   "landscape.overTimeHelp": "Notas escritas cada mes, por tema.",
+  "landscape.activity": "Días de escritura",
+  "landscape.activityHelp": "Días en que escribiste o editaste una nota, en las últimas 12 semanas. Más oscuro significa más notas.",
+  "landscape.activitySummary": "Escribiste en {days} de los últimos {total} días.",
+  "landscape.tags": "Etiquetas principales",
+  "landscape.tagsHelp": "Las etiquetas que están en más notas. Toca una para ver sus notas.",
+  "landscape.noTags": "Aún no hay etiquetas. Añade una #etiqueta a una nota y aparecerá aquí.",
+  "landscape.openTag": "Mostrar las notas con la etiqueta {tag}",
   "landscape.closestNotes": "Notas más cercanas",
   "landscape.openTopic": "Mostrar las notas de {name}",
   "landscape.tooFewTitle": "Aún no hay suficientes notas",
@@ -1066,7 +1076,7 @@ const catalog: Record<string, string> = {
   "sync.title": "Sincronización",
   "sync.settingsRow": "Sincronización entre tus dispositivos",
   "sync.settingsSync": "Sincronizar ajustes",
-  "sync.settingsSyncHelp": "Mantiene igual en tus dispositivos el tema, el idioma, la hora del recordatorio y otras preferencias. El bloqueo, el PIN y los ajustes de copia nunca se sincronizan.",
+  "sync.settingsSyncHelp": "Comparte el tema, el idioma y la hora del recordatorio entre tus dispositivos. El bloqueo, el PIN y las copias nunca se sincronizan.",
   "sync.settingsRowHelp": "Nada sale de tu propia red.",
   "sync.intro": "Funciona sin conexión por diseño. La sincronización sigue desactivada hasta que la actives en NoteSpark para escritorio, y nada sale de tu propia red.",
   "sync.computerHeading": "Vincular con tu computadora",
@@ -1196,7 +1206,7 @@ const catalog: Record<string, string> = {
   "dsync.profilesHelp": "Elige qué perfiles se sincronizan. Ninguno se sincroniza hasta que lo actives.",
   "dsync.profileLocked": "Desbloquea {name} en tu computadora para sincronizarlo.",
   "dsync.settingsSync": "Sincronizar ajustes",
-  "dsync.settingsSyncHelp": "Mantiene igual en tus dispositivos el tema, el idioma, la hora del recordatorio y otras preferencias. El bloqueo, el PIN y los ajustes de copia nunca se sincronizan.",
+  "dsync.settingsSyncHelp": "Comparte el tema, el idioma y la hora del recordatorio entre tus dispositivos. El bloqueo, el PIN y las copias nunca se sincronizan.",
   "dsync.acceptNew": "Aceptar perfiles nuevos de los dispositivos",
   "dsync.acceptNewHelp": "Cuando un dispositivo sincroniza un perfil que esta computadora no tiene, créalo aquí.",
   "dsync.mirror": "Carpeta de Markdown",
@@ -1238,7 +1248,7 @@ const catalog: Record<string, string> = {
   "privacy.syncD2": "No hay cuenta ni servidor nuestro. Un dispositivo que no emparejaste no recibe respuesta.",  // REVIEW (legal)
   "privacy.syncD3": "De forma predeterminada, un dispositivo vinculado puede añadir un perfil en esta computadora, y el perfil nuevo empieza sin PIN. Para que los dispositivos sincronicen solo con perfiles que ya tienes aquí, desactiva Aceptar perfiles nuevos de los dispositivos en los ajustes de sincronización.",  // REVIEW (legal)
   "privacy.syncD4": "Desactiva la sincronización, o quita un dispositivo, cuando quieras. Las notas que ya están en esta computadora se quedan en ella.",  // REVIEW (legal)
-  "privacy.permD1": "Notificaciones (opcional): para recordarte las tareas en su fecha de vencimiento. Se crean en esta computadora; NoteSpark no usa notificaciones push. Los recordatorios de perfiles con PIN no muestran el texto de la tarea.",  // REVIEW (legal)
+  "privacy.permD1": "Notificaciones (opcional): para recordarte las tareas en su fecha de vencimiento y avisarte cuando termine una copia automática. Se crean en esta computadora; NoteSpark no usa notificaciones push. Los recordatorios de perfiles con PIN no muestran el texto de la tarea.",  // REVIEW (legal)
   "privacy.permD2": "Archivos y portapapeles (opcional): solo los archivos que eliges al importar, las carpetas que eliges para copias de seguridad, el espejo de Markdown y las exportaciones, y el portapapeles solo cuando eliges Guardar portapapeles en el icono de la bandeja.",  // REVIEW (legal)
   "privacy.permD3": "Llavero (opcional): el llavero de tu sistema (como KWallet o GNOME Keyring) guarda las claves que NoteSpark necesita para los perfiles protegidos y la sincronización. Sin uno, NoteSpark no crea un perfil protegido ni activa la sincronización.",  // REVIEW (legal)
   "privacy.permD4": "Acceso a la red: solo para sincronizar en tu propia red, para la vista web si la activas y para imágenes web si activas Mostrar imágenes web. NoteSpark nunca escucha en una dirección pública.",  // REVIEW (legal)
