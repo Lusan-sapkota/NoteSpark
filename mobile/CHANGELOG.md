@@ -2,6 +2,28 @@
 
 All notable changes to NoteSpark will be documented in this file.
 
+## [1.4.0] - 2026-11-15
+
+### Added
+
+- Automatic backups can run on days you choose, and a notification says when a backup finished or what went wrong
+- Notebook landscape shows a Writing days grid (the last 12 weeks) and your Top tags; tap a tag to see its notes
+
+### Changed
+
+- Language is its own page with a search field, so the keyboard no longer covers it
+- The Sync page is calmer: a full-width Import and export button, and the Wi-Fi tips show only when something is wrong
+- The PIN row says to keep your backups private
+- Chips and rows are tidier and easier to read
+
+### Fixed
+
+- Old automatic backups are now removed on Windows and Linux desktops as well as on the phone
+- A backup with a broken date no longer leaves an odd date on the imported note
+- A failed database upgrade now stops with an error instead of breaking later
+- The desktop web view signs out its browsers after 12 hours
+- A second launch of the desktop app waits until it is ready and brings back a closed window
+
 ## [1.3.0] - 2026-11-10
 
 ### Added
