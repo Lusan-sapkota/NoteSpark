@@ -157,7 +157,7 @@ const SyncScreen: React.FC = () => {
       <View style={[styles.divider, { backgroundColor: theme.colors.outlineVariant }]} />
       <Text variant="titleMedium" style={{ color: theme.colors.onSurface }}>{t('sync.noNetworkTitle')}</Text>
       <Text variant="bodyMedium" style={muted}>{t('sync.noNetworkBody')}</Text>
-      <Button mode="text" icon="swap-vertical" onPress={() => navigation.navigate('ImportExport' as never)} style={styles.tipAction} contentStyle={styles.buttonContent}>{t('sync.noNetworkAction')}</Button>
+      <Button mode="outlined" theme={controlTheme} icon="swap-vertical" onPress={() => navigation.navigate('ImportExport' as never)} style={styles.button} contentStyle={styles.buttonContent}>{t('sync.noNetworkAction')}</Button>
     </View>
   );
 
@@ -233,7 +233,8 @@ const SyncScreen: React.FC = () => {
                 <GroupedRow title={t('sync.forget')} icon="link-off" danger onPress={forget} isFirst={false} isLast />
               </View>
 
-              {tips}
+              {/* Once paired the help is only for trouble: a working sync needs no tips. */}
+              {(problem || slow) && tips}
             </>
           )}
         </View>
@@ -293,7 +294,6 @@ const styles = StyleSheet.create({
   statusText: { flex: 1 },
   tips: { gap: space.sm, padding: space.lg, borderRadius: shape.group },
   divider: { height: StyleSheet.hairlineWidth, marginVertical: space.sm },
-  tipAction: { alignSelf: 'flex-start' },
   tipsHead: { flexDirection: 'row', alignItems: 'center', gap: space.md },
 });
 
