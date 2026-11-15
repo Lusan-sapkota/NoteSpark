@@ -3,15 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-fl/el6LqC8NlvePC2xEKb0y+mUiE5c+8MoMsz0yCqUI='; style-src 'self' 'unsafe-inline'; img-src 'self'; media-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'" />
   <title>NoteSpark: private notes that stay on your devices</title>
-  <meta name="description" content="A calm, offline notes app for Android, with a Linux desktop app on the way. Plain text or Markdown, tasks inside your notes, search by meaning on your device, and locked profiles. No account, no cloud, no ads." />
-  <meta name="theme-color" content="#fbfaee" />
+  <meta name="description" content="A calm, offline notes app for Android, Windows, macOS and Linux. Plain text or Markdown, tasks inside your notes, search by meaning on your device, and locked profiles. No account, no cloud, no ads." />
+  <meta name="theme-color" content="#fbfaee" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#12140d" media="(prefers-color-scheme: dark)" />
   <link rel="canonical" href="https://notespark.lusansapkota.com.np/" />
   <meta property="og:title" content="NoteSpark: notes that stay on your devices" />
-  <meta property="og:description" content="Offline notes for Android and the desktop, with tasks, search by meaning on your device, and locked profiles. No account, no cloud, no ads." />
+  <meta property="og:description" content="Offline notes for Android, Windows, macOS and Linux, with tasks, search by meaning on your device, and locked profiles. No account, no cloud, no ads." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://notespark.lusansapkota.com.np/" />
-  <meta property="og:image" content="https://notespark.lusansapkota.com.np/assets/store-icon-512.png" />
+  <meta property="og:site_name" content="NoteSpark" />
+  <meta property="og:locale" content="en" />
+  <meta property="og:image" content="https://notespark.lusansapkota.com.np/assets/og-card.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="NoteSpark open on a laptop, a tablet and a phone" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": "NoteSpark",
+  "applicationCategory": "ProductivityApplication",
+  "operatingSystem": "Android, Windows, macOS, Linux",
+  "description": "A calm, offline notes app. Plain text or Markdown, tasks inside your notes, search by meaning on your device, and locked profiles. No account, no cloud, no ads.",
+  "url": "https://notespark.lusansapkota.com.np/",
+  "image": "https://notespark.lusansapkota.com.np/assets/og-card.jpg",
+  "license": "https://www.gnu.org/licenses/gpl-3.0.html",
+  "downloadUrl": "https://github.com/Lusan-sapkota/NoteSpark/releases/latest",
+  "offers": {
+    "@type": "Offer",
+    "price": "0",
+    "priceCurrency": "USD"
+  },
+  "author": {
+    "@type": "Person",
+    "name": "Lusan Sapkota",
+    "url": "https://lusansapkota.com.np"
+  }
+}
+  </script>
   <link rel="icon" type="image/svg+xml" href="./assets/round.svg" />
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/favicon.png" />
   <link rel="apple-touch-icon" href="./assets/favicon.png" />
@@ -25,7 +57,8 @@
       } catch (e) {}
     })();
   </script>
-  <link rel="preload" href="./assets/fonts/Literata-SemiBold.ttf" as="font" type="font/ttf" crossorigin />
+  <link rel="preload" href="./assets/fonts/Literata-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="./assets/fonts/Figtree-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="./assets/styles.css" />
 </head>
 <body>
@@ -104,33 +137,33 @@
         <div class="hero-devices" id="devices" role="group" aria-label="NoteSpark on a laptop, a tablet and a phone">
           <div class="laptop">
             <div class="laptop-screen">
-              <img class="shot-light" src="./assets/screens/desktop-home-light.webp" alt="The desktop app's Home: search, tag filters and pinned notes" width="1440" height="960" />
-              <img class="shot-dark" src="./assets/screens/desktop-home-dark.webp" alt="The desktop app's Home: search, tag filters and pinned notes" width="1440" height="960" />
-              <div class="ovl o-tick o-tick-L" aria-hidden="true"><img class="shot-light" src="./assets/screens/desktop-home-ticked-light.webp" alt="" width="1440" height="960" /><img class="shot-dark" src="./assets/screens/desktop-home-ticked-dark.webp" alt="" width="1440" height="960" /></div>
-              <div class="ovl o-tasks o-tasks-L" aria-hidden="true"><img class="shot-light" src="./assets/screens/desktop-tasks-light.webp" alt="" width="1440" height="960" /><img class="shot-dark" src="./assets/screens/desktop-tasks-dark.webp" alt="" width="1440" height="960" /></div>
+              <img class="shot-light" src="./assets/screens/desktop-home-light.webp" srcset="./assets/screens/desktop-home-light-720.webp 720w, ./assets/screens/desktop-home-light.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop app's Home: search, tag filters and pinned notes" width="1440" height="960" />
+              <img class="shot-dark" src="./assets/screens/desktop-home-dark.webp" srcset="./assets/screens/desktop-home-dark-720.webp 720w, ./assets/screens/desktop-home-dark.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop app's Home: search, tag filters and pinned notes" width="1440" height="960" />
+              <div class="ovl o-tick o-tick-L" aria-hidden="true"><img class="shot-light" src="./assets/screens/desktop-home-ticked-light.webp" srcset="./assets/screens/desktop-home-ticked-light-720.webp 720w, ./assets/screens/desktop-home-ticked-light.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1440" height="960" /><img class="shot-dark" src="./assets/screens/desktop-home-ticked-dark.webp" srcset="./assets/screens/desktop-home-ticked-dark-720.webp 720w, ./assets/screens/desktop-home-ticked-dark.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1440" height="960" /></div>
+              <div class="ovl o-tasks o-tasks-L" aria-hidden="true"><img class="shot-light" src="./assets/screens/desktop-tasks-light.webp" srcset="./assets/screens/desktop-tasks-light-720.webp 720w, ./assets/screens/desktop-tasks-light.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1440" height="960" /><img class="shot-dark" src="./assets/screens/desktop-tasks-dark.webp" srcset="./assets/screens/desktop-tasks-dark-720.webp 720w, ./assets/screens/desktop-tasks-dark.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1440" height="960" /></div>
               <div class="find" aria-hidden="true">
                 <div class="find-bar"><svg class="i" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg><span class="find-typed">making bread at home</span></div>
                 <div class="find-card"><strong>Sourdough starter</strong><span>Feed every 12 hours: 50 g rye flour, 50 g water at 26 °C. It's ready when it doubles and smells like green apples.</span></div>
               </div>
-              <div class="ovl o-flip o-flip-L" aria-hidden="true"><img class="fl-dark" src="./assets/screens/desktop-home-ticked-dark.webp" alt="" width="1440" height="960" /><img class="fl-light" src="./assets/screens/desktop-home-ticked-light.webp" alt="" width="1440" height="960" /></div>
+              <div class="ovl o-flip o-flip-L" aria-hidden="true"><img class="fl-dark" src="./assets/screens/desktop-home-ticked-dark.webp" srcset="./assets/screens/desktop-home-ticked-dark-720.webp 720w, ./assets/screens/desktop-home-ticked-dark.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1440" height="960" /><img class="fl-light" src="./assets/screens/desktop-home-ticked-light.webp" srcset="./assets/screens/desktop-home-ticked-light-720.webp 720w, ./assets/screens/desktop-home-ticked-light.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1440" height="960" /></div>
             </div>
             <div class="laptop-base" aria-hidden="true"></div>
           </div>
           <div class="tablet">
-            <img class="shot-light" src="./assets/screens/tablet-note-light.webp" alt="The tablet shows the note list and the open note side by side" width="1280" height="800" />
-            <img class="shot-dark" src="./assets/screens/tablet-note-dark.webp" alt="The tablet shows the note list and the open note side by side" width="1280" height="800" />
-            <div class="ovl o-tick o-tick-T" aria-hidden="true"><img class="shot-light" src="./assets/screens/tablet-note-ticked-light.webp" alt="" width="1280" height="800" /><img class="shot-dark" src="./assets/screens/tablet-note-ticked-dark.webp" alt="" width="1280" height="800" /></div>
-            <div class="ovl o-tasks o-tasks-T" aria-hidden="true"><img class="shot-light" src="./assets/screens/tablet-tasks-light.webp" alt="" width="1280" height="800" /><img class="shot-dark" src="./assets/screens/tablet-tasks-dark.webp" alt="" width="1280" height="800" /></div>
-            <div class="ovl o-find o-find-T" aria-hidden="true"><img class="shot-light" src="./assets/screens/tablet-find-light.webp" alt="" width="1280" height="800" /><img class="shot-dark" src="./assets/screens/tablet-find-dark.webp" alt="" width="1280" height="800" /></div>
-            <div class="ovl o-flip o-flip-T" aria-hidden="true"><img class="fl-dark" src="./assets/screens/tablet-note-ticked-dark.webp" alt="" width="1280" height="800" /><img class="fl-light" src="./assets/screens/tablet-note-ticked-light.webp" alt="" width="1280" height="800" /></div>
+            <img class="shot-light" src="./assets/screens/tablet-note-light.webp" srcset="./assets/screens/tablet-note-light-640.webp 640w, ./assets/screens/tablet-note-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet shows the note list and the open note side by side" width="1280" height="800" />
+            <img class="shot-dark" src="./assets/screens/tablet-note-dark.webp" srcset="./assets/screens/tablet-note-dark-640.webp 640w, ./assets/screens/tablet-note-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet shows the note list and the open note side by side" width="1280" height="800" />
+            <div class="ovl o-tick o-tick-T" aria-hidden="true"><img class="shot-light" src="./assets/screens/tablet-note-ticked-light.webp" srcset="./assets/screens/tablet-note-ticked-light-640.webp 640w, ./assets/screens/tablet-note-ticked-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1280" height="800" /><img class="shot-dark" src="./assets/screens/tablet-note-ticked-dark.webp" srcset="./assets/screens/tablet-note-ticked-dark-640.webp 640w, ./assets/screens/tablet-note-ticked-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1280" height="800" /></div>
+            <div class="ovl o-tasks o-tasks-T" aria-hidden="true"><img class="shot-light" src="./assets/screens/tablet-tasks-light.webp" srcset="./assets/screens/tablet-tasks-light-640.webp 640w, ./assets/screens/tablet-tasks-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1280" height="800" /><img class="shot-dark" src="./assets/screens/tablet-tasks-dark.webp" srcset="./assets/screens/tablet-tasks-dark-640.webp 640w, ./assets/screens/tablet-tasks-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1280" height="800" /></div>
+            <div class="ovl o-find o-find-T" aria-hidden="true"><img class="shot-light" src="./assets/screens/tablet-find-light.webp" srcset="./assets/screens/tablet-find-light-640.webp 640w, ./assets/screens/tablet-find-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1280" height="800" /><img class="shot-dark" src="./assets/screens/tablet-find-dark.webp" srcset="./assets/screens/tablet-find-dark-640.webp 640w, ./assets/screens/tablet-find-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1280" height="800" /></div>
+            <div class="ovl o-flip o-flip-T" aria-hidden="true"><img class="fl-dark" src="./assets/screens/tablet-note-ticked-dark.webp" srcset="./assets/screens/tablet-note-ticked-dark-640.webp 640w, ./assets/screens/tablet-note-ticked-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1280" height="800" /><img class="fl-light" src="./assets/screens/tablet-note-ticked-light.webp" srcset="./assets/screens/tablet-note-ticked-light-640.webp 640w, ./assets/screens/tablet-note-ticked-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="" width="1280" height="800" /></div>
           </div>
           <div class="phone">
-            <img class="shot-light" src="./assets/screens/note-light.webp" alt="A note on the phone, with a checklist and due dates" width="540" height="1200" />
-            <img class="shot-dark" src="./assets/screens/note-dark.webp" alt="A note on the phone, with a checklist and due dates" width="540" height="1200" />
-            <div class="ovl o-tick o-tick-P" aria-hidden="true"><img class="shot-light" src="./assets/screens/note-ticked-light.webp" alt="" width="540" height="1200" /><img class="shot-dark" src="./assets/screens/note-ticked-dark.webp" alt="" width="540" height="1200" /></div>
-            <div class="ovl o-tasks o-tasks-P" aria-hidden="true"><img class="shot-light" src="./assets/screens/tasks-light.webp" alt="" width="540" height="1200" /><img class="shot-dark" src="./assets/screens/tasks-dark.webp" alt="" width="540" height="1200" /></div>
-            <div class="ovl o-find o-find-P" aria-hidden="true"><img class="shot-light" src="./assets/screens/home-light.webp" alt="" width="540" height="1200" /><img class="shot-dark" src="./assets/screens/home-dark.webp" alt="" width="540" height="1200" /></div>
-            <div class="ovl o-flip o-flip-P" aria-hidden="true"><img class="fl-dark" src="./assets/screens/note-ticked-dark.webp" alt="" width="540" height="1200" /><img class="fl-light" src="./assets/screens/note-ticked-light.webp" alt="" width="540" height="1200" /></div>
+            <img class="shot-light" src="./assets/screens/note-light.webp" srcset="./assets/screens/note-light-360.webp 360w, ./assets/screens/note-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="A note on the phone, with a checklist and due dates" width="540" height="1200" />
+            <img class="shot-dark" src="./assets/screens/note-dark.webp" srcset="./assets/screens/note-dark-360.webp 360w, ./assets/screens/note-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="A note on the phone, with a checklist and due dates" width="540" height="1200" />
+            <div class="ovl o-tick o-tick-P" aria-hidden="true"><img class="shot-light" src="./assets/screens/note-ticked-light.webp" srcset="./assets/screens/note-ticked-light-360.webp 360w, ./assets/screens/note-ticked-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="" width="540" height="1200" /><img class="shot-dark" src="./assets/screens/note-ticked-dark.webp" srcset="./assets/screens/note-ticked-dark-360.webp 360w, ./assets/screens/note-ticked-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="" width="540" height="1200" /></div>
+            <div class="ovl o-tasks o-tasks-P" aria-hidden="true"><img class="shot-light" src="./assets/screens/tasks-light.webp" srcset="./assets/screens/tasks-light-360.webp 360w, ./assets/screens/tasks-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="" width="540" height="1200" /><img class="shot-dark" src="./assets/screens/tasks-dark.webp" srcset="./assets/screens/tasks-dark-360.webp 360w, ./assets/screens/tasks-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="" width="540" height="1200" /></div>
+            <div class="ovl o-find o-find-P" aria-hidden="true"><img class="shot-light" src="./assets/screens/home-light.webp" srcset="./assets/screens/home-light-360.webp 360w, ./assets/screens/home-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="" width="540" height="1200" /><img class="shot-dark" src="./assets/screens/home-dark.webp" srcset="./assets/screens/home-dark-360.webp 360w, ./assets/screens/home-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="" width="540" height="1200" /></div>
+            <div class="ovl o-flip o-flip-P" aria-hidden="true"><img class="fl-dark" src="./assets/screens/note-ticked-dark.webp" srcset="./assets/screens/note-ticked-dark-360.webp 360w, ./assets/screens/note-ticked-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="" width="540" height="1200" /><img class="fl-light" src="./assets/screens/note-ticked-light.webp" srcset="./assets/screens/note-ticked-light-360.webp 360w, ./assets/screens/note-ticked-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="" width="540" height="1200" /></div>
           </div>
         </div>
           <div class="stage-caption" aria-hidden="true"><span>Tick a task and your other devices follow</span><span>Every task, in one list</span><span>Find it by meaning, not just words</span><span>Light, dark, or your system</span></div>
@@ -166,70 +199,70 @@
               <div class="laptop">
                 <div class="laptop-screen layers">
                 <span class="layer is-on">
-                  <img class="shot-light" src="./assets/screens/desktop-note-light.webp" alt="The desktop app showing a note titled Launch checklist, with ticked and open tasks, due dates and a progress bar" width="1440" height="960" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/desktop-note-dark.webp" alt="The desktop app showing a note titled Launch checklist, with ticked and open tasks, due dates and a progress bar" width="1440" height="960" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/desktop-note-light.webp" srcset="./assets/screens/desktop-note-light-720.webp 720w, ./assets/screens/desktop-note-light.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop app showing a note titled Launch checklist, with ticked and open tasks, due dates and a progress bar" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-note-dark.webp" srcset="./assets/screens/desktop-note-dark-720.webp 720w, ./assets/screens/desktop-note-dark.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop app showing a note titled Launch checklist, with ticked and open tasks, due dates and a progress bar" width="1440" height="960" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/desktop-tasks-light.webp" alt="The desktop Tasks screen, grouped as overdue, today and upcoming" width="1440" height="960" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/desktop-tasks-dark.webp" alt="The desktop Tasks screen, grouped as overdue, today and upcoming" width="1440" height="960" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/desktop-tasks-light.webp" srcset="./assets/screens/desktop-tasks-light-720.webp 720w, ./assets/screens/desktop-tasks-light.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop Tasks screen, grouped as overdue, today and upcoming" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-tasks-dark.webp" srcset="./assets/screens/desktop-tasks-dark-720.webp 720w, ./assets/screens/desktop-tasks-dark.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop Tasks screen, grouped as overdue, today and upcoming" width="1440" height="960" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/desktop-home-light.webp" alt="The desktop app's Home: a search bar, tag filters, an older note to rediscover, and pinned notes in green" width="1440" height="960" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/desktop-home-dark.webp" alt="The desktop app's Home: a search bar, tag filters, an older note to rediscover, and pinned notes in green" width="1440" height="960" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/desktop-home-light.webp" srcset="./assets/screens/desktop-home-light-720.webp 720w, ./assets/screens/desktop-home-light.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop app's Home: a search bar, tag filters, an older note to rediscover, and pinned notes in green" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-home-dark.webp" srcset="./assets/screens/desktop-home-dark-720.webp 720w, ./assets/screens/desktop-home-dark.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop app's Home: a search bar, tag filters, an older note to rediscover, and pinned notes in green" width="1440" height="960" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/desktop-settings-light.webp" alt="The desktop Settings screen with appearance, language and notes-and-tasks options" width="1440" height="960" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/desktop-settings-dark.webp" alt="The desktop Settings screen with appearance, language and notes-and-tasks options" width="1440" height="960" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/desktop-settings-light.webp" srcset="./assets/screens/desktop-settings-light-720.webp 720w, ./assets/screens/desktop-settings-light.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop Settings screen with appearance, language and notes-and-tasks options" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-settings-dark.webp" srcset="./assets/screens/desktop-settings-dark-720.webp 720w, ./assets/screens/desktop-settings-dark.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop Settings screen with appearance, language and notes-and-tasks options" width="1440" height="960" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/desktop-scratchpad-light.webp" alt="The desktop Scratchpad with a few quick lines of text" width="1440" height="960" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/desktop-scratchpad-dark.webp" alt="The desktop Scratchpad with a few quick lines of text" width="1440" height="960" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/desktop-scratchpad-light.webp" srcset="./assets/screens/desktop-scratchpad-light-720.webp 720w, ./assets/screens/desktop-scratchpad-light.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop Scratchpad with a few quick lines of text" width="1440" height="960" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/desktop-scratchpad-dark.webp" srcset="./assets/screens/desktop-scratchpad-dark-720.webp 720w, ./assets/screens/desktop-scratchpad-dark.webp 1440w" sizes="(max-width: 900px) 92vw, 640px" alt="The desktop Scratchpad with a few quick lines of text" width="1440" height="960" loading="lazy" />
                 </span>
                 </div>
                 <div class="laptop-base" aria-hidden="true"></div>
               </div>
               <div class="tablet layers">
                 <span class="layer is-on">
-                  <img class="shot-light" src="./assets/screens/tablet-note-light.webp" alt="The tablet showing the note list on the left and the open note, Launch checklist, on the right" width="1280" height="800" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/tablet-note-dark.webp" alt="The tablet showing the note list on the left and the open note, Launch checklist, on the right" width="1280" height="800" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/tablet-note-light.webp" srcset="./assets/screens/tablet-note-light-640.webp 640w, ./assets/screens/tablet-note-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet showing the note list on the left and the open note, Launch checklist, on the right" width="1280" height="800" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/tablet-note-dark.webp" srcset="./assets/screens/tablet-note-dark-640.webp 640w, ./assets/screens/tablet-note-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet showing the note list on the left and the open note, Launch checklist, on the right" width="1280" height="800" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/tablet-tasks-light.webp" alt="The tablet Tasks screen, grouped as overdue, today and upcoming" width="1280" height="800" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/tablet-tasks-dark.webp" alt="The tablet Tasks screen, grouped as overdue, today and upcoming" width="1280" height="800" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/tablet-tasks-light.webp" srcset="./assets/screens/tablet-tasks-light-640.webp 640w, ./assets/screens/tablet-tasks-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet Tasks screen, grouped as overdue, today and upcoming" width="1280" height="800" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/tablet-tasks-dark.webp" srcset="./assets/screens/tablet-tasks-dark-640.webp 640w, ./assets/screens/tablet-tasks-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet Tasks screen, grouped as overdue, today and upcoming" width="1280" height="800" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/tablet-find-light.webp" alt="The tablet Ask your notes screen with a result found by meaning" width="1280" height="800" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/tablet-find-dark.webp" alt="The tablet Ask your notes screen with a result found by meaning" width="1280" height="800" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/tablet-find-light.webp" srcset="./assets/screens/tablet-find-light-640.webp 640w, ./assets/screens/tablet-find-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet Ask your notes screen with a result found by meaning" width="1280" height="800" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/tablet-find-dark.webp" srcset="./assets/screens/tablet-find-dark-640.webp 640w, ./assets/screens/tablet-find-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet Ask your notes screen with a result found by meaning" width="1280" height="800" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/tablet-settings-light.webp" alt="The tablet Settings screen with appearance and notes-and-tasks options" width="1280" height="800" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/tablet-settings-dark.webp" alt="The tablet Settings screen with appearance and notes-and-tasks options" width="1280" height="800" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/tablet-settings-light.webp" srcset="./assets/screens/tablet-settings-light-640.webp 640w, ./assets/screens/tablet-settings-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet Settings screen with appearance and notes-and-tasks options" width="1280" height="800" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/tablet-settings-dark.webp" srcset="./assets/screens/tablet-settings-dark-640.webp 640w, ./assets/screens/tablet-settings-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet Settings screen with appearance and notes-and-tasks options" width="1280" height="800" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/tablet-scratchpad-light.webp" alt="The tablet Scratchpad with a few quick lines of text" width="1280" height="800" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/tablet-scratchpad-dark.webp" alt="The tablet Scratchpad with a few quick lines of text" width="1280" height="800" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/tablet-scratchpad-light.webp" srcset="./assets/screens/tablet-scratchpad-light-640.webp 640w, ./assets/screens/tablet-scratchpad-light.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet Scratchpad with a few quick lines of text" width="1280" height="800" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/tablet-scratchpad-dark.webp" srcset="./assets/screens/tablet-scratchpad-dark-640.webp 640w, ./assets/screens/tablet-scratchpad-dark.webp 1280w" sizes="(max-width: 900px) 92vw, 640px" alt="The tablet Scratchpad with a few quick lines of text" width="1280" height="800" loading="lazy" />
                 </span>
               </div>
               <div class="phone layers">
                 <span class="layer is-on">
-                  <img class="shot-light" src="./assets/screens/note-light.webp" alt="A note with tasks and due dates" width="540" height="1200" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/note-dark.webp" alt="A note with tasks and due dates" width="540" height="1200" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/note-light.webp" srcset="./assets/screens/note-light-360.webp 360w, ./assets/screens/note-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="A note with tasks and due dates" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/note-dark.webp" srcset="./assets/screens/note-dark-360.webp 360w, ./assets/screens/note-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="A note with tasks and due dates" width="540" height="1200" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/tasks-light.webp" alt="Tasks from every note, by due date" width="540" height="1200" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/tasks-dark.webp" alt="Tasks from every note, by due date" width="540" height="1200" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/tasks-light.webp" srcset="./assets/screens/tasks-light-360.webp 360w, ./assets/screens/tasks-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="Tasks from every note, by due date" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/tasks-dark.webp" srcset="./assets/screens/tasks-dark-360.webp 360w, ./assets/screens/tasks-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="Tasks from every note, by due date" width="540" height="1200" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/home-light.webp" alt="Home: notes, pins and tag filters" width="540" height="1200" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/home-dark.webp" alt="Home: notes, pins and tag filters" width="540" height="1200" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/home-light.webp" srcset="./assets/screens/home-light-360.webp 360w, ./assets/screens/home-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="Home: notes, pins and tag filters" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/home-dark.webp" srcset="./assets/screens/home-dark-360.webp 360w, ./assets/screens/home-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="Home: notes, pins and tag filters" width="540" height="1200" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/settings-light.webp" alt="Settings: profiles, optional sync on your own network, backup and storage, privacy policy" width="540" height="1200" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/settings-dark.webp" alt="Settings: profiles, optional sync on your own network, backup and storage, privacy policy" width="540" height="1200" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/settings-light.webp" srcset="./assets/screens/settings-light-360.webp 360w, ./assets/screens/settings-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="Settings: profiles, optional sync on your own network, backup and storage, privacy policy" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/settings-dark.webp" srcset="./assets/screens/settings-dark-360.webp 360w, ./assets/screens/settings-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="Settings: profiles, optional sync on your own network, backup and storage, privacy policy" width="540" height="1200" loading="lazy" />
                 </span>
                 <span class="layer" aria-hidden="true">
-                  <img class="shot-light" src="./assets/screens/scratchpad-light.webp" alt="The scratchpad with a few quick lines" width="540" height="1200" loading="lazy" />
-                  <img class="shot-dark" src="./assets/screens/scratchpad-dark.webp" alt="The scratchpad with a few quick lines" width="540" height="1200" loading="lazy" />
+                  <img class="shot-light" src="./assets/screens/scratchpad-light.webp" srcset="./assets/screens/scratchpad-light-360.webp 360w, ./assets/screens/scratchpad-light.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="The scratchpad with a few quick lines" width="540" height="1200" loading="lazy" />
+                  <img class="shot-dark" src="./assets/screens/scratchpad-dark.webp" srcset="./assets/screens/scratchpad-dark-360.webp 360w, ./assets/screens/scratchpad-dark.webp 540w" sizes="(max-width: 600px) 40vw, 280px" alt="The scratchpad with a few quick lines" width="540" height="1200" loading="lazy" />
                 </span>
               </div>
             </div>

@@ -3,14 +3,23 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' 'sha256-fl/el6LqC8NlvePC2xEKb0y+mUiE5c+8MoMsz0yCqUI='; style-src 'self' 'unsafe-inline'; img-src 'self'; media-src 'self'; font-src 'self'; base-uri 'none'; form-action 'none'" />
   <title>Help — NoteSpark</title>
   <meta name="description" content="How to use NoteSpark: writing, tasks, search by meaning, backups, and optional sync between your own devices." />
-  <meta name="theme-color" content="#fbfaee" />
+  <meta name="theme-color" content="#fbfaee" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#12140d" media="(prefers-color-scheme: dark)" />
   <link rel="canonical" href="https://notespark.lusansapkota.com.np/help.html" />
   <meta property="og:title" content="Help — NoteSpark" />
   <meta property="og:description" content="How to use NoteSpark: notes, tasks, search by meaning, backups and sync." />
   <meta property="og:type" content="website" />
   <meta property="og:url" content="https://notespark.lusansapkota.com.np/help.html" />
+  <meta property="og:site_name" content="NoteSpark" />
+  <meta property="og:locale" content="en" />
+  <meta property="og:image" content="https://notespark.lusansapkota.com.np/assets/og-card.jpg" />
+  <meta property="og:image:width" content="1200" />
+  <meta property="og:image:height" content="630" />
+  <meta property="og:image:alt" content="NoteSpark open on a laptop, a tablet and a phone" />
+  <meta name="twitter:card" content="summary_large_image" />
   <link rel="icon" type="image/svg+xml" href="./assets/round.svg" />
   <link rel="icon" type="image/png" sizes="192x192" href="./assets/favicon.png" />
   <link rel="apple-touch-icon" href="./assets/favicon.png" />
@@ -24,6 +33,8 @@
       } catch (e) {}
     })();
   </script>
+  <link rel="preload" href="./assets/fonts/Literata-SemiBold.woff2" as="font" type="font/woff2" crossorigin />
+  <link rel="preload" href="./assets/fonts/Figtree-Regular.woff2" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="./assets/styles.css" />
 </head>
 <body>

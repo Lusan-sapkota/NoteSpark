@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://notespark.lusansapkota.com.np/sitemap.xml
