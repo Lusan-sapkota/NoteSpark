@@ -315,10 +315,6 @@ code {
 /* Get NoteSpark */
 .platforms .rows li { align-items: center; padding: 16px 20px; }
 .platforms .row-end { display: flex; align-items: center; gap: 12px; }
-@media (max-width: 600px) {
-  .platforms .rows li { flex-wrap: wrap; }
-  .platforms .row-end { margin-left: 40px; padding-left: 0; }
-}
 
 /* Privacy band */
 .band { background: var(--surface-container); border-radius: var(--shape-xl); padding: 40px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 48px; align-items: end; }
@@ -397,12 +393,20 @@ code {
 .cmd code { flex: 1; min-width: 0; overflow-x: auto; white-space: nowrap; background: transparent; padding: 0; font-size: 0.8125rem; }
 .copy:active { background: color-mix(in srgb, var(--on-primary-container) 12%, var(--primary-container)); }
 .copy { min-height: 36px; padding: 0 14px; border: 0; border-radius: var(--shape-full); background: var(--primary-container); color: var(--on-primary-container); font: 500 0.8125rem/1rem var(--font-ui); cursor: pointer; }
-@media (max-width: 600px) { .dl-panel .rows li { flex-wrap: wrap; } }
 .dl-panel .rows li.has-cmd { display: block; }
 .cmd-line { display: flex; align-items: center; gap: 12px; margin-top: 12px; }
 .cmd-line .cmd { flex: 1; margin-top: 0; }
 .cmd-line .row-end { margin-left: 0; padding-left: 0; align-self: center; }
-@media (max-width: 600px) { .cmd-line { flex-wrap: wrap; } .cmd-line .cmd { flex-basis: 100%; } }
+/* Narrow panel (not narrow viewport): the button drops to its own full-width row under the text. */
+.dl-panel { container-type: inline-size; }
+@container (max-width: 600px) {
+  .dl-panel .rows li:not(.has-cmd) { flex-wrap: wrap; }
+  .dl-panel .rows li:not(.has-cmd) > .row-text { flex-basis: 100%; }
+  .dl-panel .rows li:not(.has-cmd) > .row-end { flex-basis: 100%; margin: 0; padding: 0; }
+  .dl-panel .rows li:not(.has-cmd) > .row-end .btn { width: 100%; }
+  .cmd-line { flex-wrap: wrap; }
+  .cmd-line .cmd { flex-basis: 100%; }
+}
 .dl-panel .rows { grid-template-columns: minmax(0, 1fr); } .dl-panel .rows li, .cmd-line, .cmd { min-width: 0; }
 
 /* ---------- Hero motion: write, find, sync, 15 s loop ---------- */
