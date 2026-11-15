@@ -28,7 +28,9 @@ const freePort = () => new Promise<number>(r => { const s = net.createServer().l
 const fast: Clock = { now: () => Date.now() * 10, after: (ms, fn) => { const t = setTimeout(fn, ms / 10); return () => clearTimeout(t); } };
 const seeded = (seed: number) => () => { seed = (seed + 0x6d2b79f5) | 0; let t = Math.imul(seed ^ (seed >>> 15), 1 | seed); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
 const hex = (b: Uint8Array) => Buffer.from(b).toString('hex');
-const same = (a: MemoryStore, b: MemoryStore) => JSON.stringify(Object.entries(a.notes('s1')).sort()) === JSON.stringify(Object.entries(b.notes('s1')).sort());
+// The phone has no profile 's1' until the first sync arrives; until then the stores differ (the store throws for an unknown profile).
+const entries = (s: MemoryStore) => { try { return JSON.stringify(Object.entries(s.notes('s1')).sort()); } catch { return ''; } };
+const same = (a: MemoryStore, b: MemoryStore) => entries(a) === entries(b);
 
 const make = async (store: MemoryStore, dir = mkdtempSync(join(tmpdir(), 'ns-hub-')), over = {}) => {
   const port = await freePort();
