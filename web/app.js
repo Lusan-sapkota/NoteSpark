@@ -126,7 +126,7 @@
       });
     }
     if (tabs.length) {
-      var start = /Android/i.test(ua) ? 'android' : /Windows/i.test(ua) ? 'windows' : /Mac/i.test(ua) ? 'macos' : 'linux';
+      var start = /Android/i.test(ua) ? 'android' : /Windows/i.test(ua) ? 'windows' : /iPhone|iPad|iPod/i.test(ua) ? 'ios' : /Mac/i.test(ua) ? 'macos' : 'linux';
       showTab(start);
       tabs.forEach(function (t, i) {
         t.addEventListener('click', function () { showTab(t.getAttribute('data-tab')); });
