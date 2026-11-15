@@ -36,7 +36,7 @@ const SettingsScreen: React.FC = () => {
   const navigation = useNavigation<SettingsScreenNavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'Settings'>>();
   const { theme, themeType, setThemeType } = useTheme();
-  const { t, language, preference, setPreference } = useI18n();
+  const { t, language, preference } = useI18n();
   const profileTimeLeft = (deletedAt: string) => {
     const days = BIN_DAYS - Math.floor((Date.now() - Date.parse(deletedAt)) / 86400000);
     if (days <= 0) return t('settings.erasedNextOpen');
@@ -65,8 +65,7 @@ const SettingsScreen: React.FC = () => {
   const [liveRelated, setLiveRelated] = useState(false);
   const [startScreen, setStartScreenState] = useState<StartScreen>('Home');
   // A pick-one dialog (reminder time, auto-lock); kept after closing so it doesn't change while fading.
-  const [choice, setChoice] = useState<{ title: string; options: { label: string; value: string | number }[]; value: string | number; onPick: (value: any) => void; open: boolean; searchable?: boolean } | null>(null);
-  const [choiceQuery, setChoiceQuery] = useState('');
+  const [choice, setChoice] = useState<{ title: string; options: { label: string; value: string | number }[]; value: string | number; onPick: (value: any) => void; open: boolean} | null>(null);
   const insets = useSafeAreaInsets();
   const { height: windowHeight } = useWindowDimensions();
   // Kept after closing so the text doesn't change while the dialog fades out.
@@ -121,21 +120,6 @@ const SettingsScreen: React.FC = () => {
       open: true,
     });
   const languageName = LANGUAGES.find(l => l.code === language)?.name ?? '';
-  const pickLanguage = () => {
-    setChoiceQuery('');
-    setChoice({
-      title: t('settings.language'),
-      options: [{ label: t('settings.languageSystem'), value: 'system' }, ...LANGUAGES.map(l => ({ label: l.name, value: l.code }))],
-      value: preference,
-      searchable: true,
-      onPick: value => {
-        setPreference(value as typeof preference)
-          .then(restart => { if (restart) alert(t('settings.languageRestartTitle'), t('settings.languageRestartBody')); })
-          .catch(() => {});
-      },
-      open: true,
-    });
-  };
   const pickAutoLock = () => setPickingLock(true);
 
   useFocusEffect(useCallback(() => { loadProfiles().catch(() => {}); }, [loadProfiles]));
@@ -396,7 +380,7 @@ const SettingsScreen: React.FC = () => {
             description={preference === 'system' ? t('settings.languageSystemNamed', { system: t('settings.languageSystem'), name: languageName }) : languageName}
             icon="translate"
             right={chevron}
-            onPress={pickLanguage}
+            onPress={() => navigation.navigate('Language')}
             isFirst
             isLast
           />
@@ -720,23 +704,9 @@ const SettingsScreen: React.FC = () => {
           onDismiss={() => setChoice(c => c && { ...c, open: false })}
           style={{ maxHeight: windowHeight - insets.top - insets.bottom - 48 }}
         >
-          <View style={styles.choiceHeader}>
-            <Dialog.Title style={styles.choiceTitle}>{choice?.title}</Dialog.Title>
-            {choice?.searchable && (
-              <TextInput
-                mode="outlined"
-                dense
-                value={choiceQuery}
-                onChangeText={setChoiceQuery}
-                placeholder={t('common.search')}
-                accessibilityLabel={t('common.search')}
-                left={<TextInput.Icon icon="magnify" />}
-                style={styles.choiceSearch}
-              />
-            )}
-          </View>
+          <Dialog.Title>{choice?.title}</Dialog.Title>
           <Dialog.ScrollArea style={styles.choiceList}>
-            {/* The area only caps the height; the list has to scroll inside it (the language list is 14 rows). */}
+            {/* The area only caps the height; the list has to scroll inside it (long lists). */}
             <ScrollView>
               <RadioButton.Group
                 value={String(choice?.value)}
@@ -746,9 +716,7 @@ const SettingsScreen: React.FC = () => {
                   setChoice(c => c && { ...c, value: picked, open: false });
                 }}
               >
-                {choice?.options
-                  .filter(o => !choiceQuery.trim() || o.label.toLowerCase().includes(choiceQuery.trim().toLowerCase()))
-                  .map(o => <RadioButton.Item key={o.value} label={o.label} value={String(o.value)} />)}
+                {choice?.options.map(o => <RadioButton.Item key={o.value} label={o.label} value={String(o.value)} />)}
               </RadioButton.Group>
             </ScrollView>
           </Dialog.ScrollArea>
@@ -777,16 +745,6 @@ const styles = StyleSheet.create({
   },
   choiceList: {
     paddingHorizontal: 0,
-  },
-  choiceHeader: {
-    paddingHorizontal: space.xl,
-    paddingBottom: space.sm,
-  },
-  choiceTitle: {
-    marginHorizontal: 0,
-  },
-  choiceSearch: {
-    width: '100%',
   },
   rowActions: {
     flexDirection: 'row',

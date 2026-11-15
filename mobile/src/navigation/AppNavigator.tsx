@@ -92,6 +92,11 @@ const AppNavigator: React.FC<{ onReady?: () => void; start?: StartScreen; reopen
           }}
         />
         <Stack.Screen
+          name="Language"
+          getComponent={() => require('../screens/LanguageScreen').default}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
           name="Privacy"
           getComponent={() => require('../screens/PrivacyScreen').default}
           options={{
