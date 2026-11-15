@@ -779,16 +779,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 0,
   },
   choiceHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingRight: space.lg,
+    paddingHorizontal: space.xl,
+    paddingBottom: space.sm,
   },
   choiceTitle: {
-    flexShrink: 0,
+    marginHorizontal: 0,
   },
   choiceSearch: {
-    flex: 1,
-    marginLeft: space.sm,
+    width: '100%',
   },
   rowActions: {
     flexDirection: 'row',
