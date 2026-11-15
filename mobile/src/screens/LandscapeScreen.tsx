@@ -188,7 +188,7 @@ const WritingDaysCard: React.FC<{ notes: Note[] }> = ({ notes }) => {
   const levels = [c.surfaceContainerHigh, c.secondaryContainer, c.secondary, c.onSecondaryContainer];
   const gap = 4;
   const label = 40; // room for the weekday names
-  const cell = Math.max(12, Math.min(28, Math.floor((width - label - gap * (days.weeks.length - 1)) / days.weeks.length)));
+  const cell = Math.max(12, Math.min(28, Math.floor((width - label - gap * days.weeks.length) / days.weeks.length))); // the gap also sits between the labels and the first week
   const weekday = (d: number) => new Date(2026, 0, 4 + d).toLocaleDateString(getLanguage(), { weekday: 'short' }); // 4 Jan 2026 was a Sunday
   const summary = t('landscape.activitySummary', { days: days.activeDays, total: days.totalDays });
   return (
