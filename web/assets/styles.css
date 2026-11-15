@@ -253,7 +253,8 @@ code {
 
 /* ---------- Hero: set like a note in the app ---------- */
 .hero { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr); gap: 48px; align-items: center; padding: 40px 0 72px; }
-.note-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 20px; }
+.note-meta { display: flex; flex-wrap: wrap; gap: 6px 8px; margin-bottom: 20px; }
+.note-meta .chip { min-height: 32px; } /* static labels, not controls, so the app's 32 dp chip height */
 .hero .reading { margin: 20px 0 0; max-width: 34em; color: var(--on-surface); }
 .promises { list-style: none; padding: 0; margin: 32px 0 0; display: grid; gap: 4px; }
 .promises li { display: flex; align-items: center; gap: 14px; min-height: 40px; font-family: var(--font-note); font-size: 1.125rem; line-height: 1.75rem; }
@@ -262,7 +263,6 @@ code {
 .progress span { display: block; width: 96px; height: 4px; border-radius: var(--shape-full); background: var(--secondary); }
 .hero-actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
 @media (max-width: 600px) {
-  .note-meta { gap: 6px; }
   .chip { max-width: 100%; }
   .hero-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
   .hero-actions .btn { width: 100%; padding-inline: 14px; }
@@ -383,6 +383,11 @@ code {
 .dl-tabs button {
   min-height: 48px; padding: 0 20px; border-radius: var(--shape-full); border: 1px solid var(--outline);
   background: transparent; color: var(--on-surface-variant); font: 500 0.875rem/1.25rem var(--font-ui); cursor: pointer;
+}
+/* Small screens: an even 3-column grid (3 + 2), not a 4 + 1 wrap with one pill alone. */
+@media (max-width: 640px) {
+  .dl-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dl-tabs button { padding-inline: 8px; }
 }
 .dl-tabs button:hover { background: var(--surface-container-high); }
 .dl-tabs button[aria-selected="true"] { background: var(--secondary-container); color: var(--on-secondary-container); border-color: transparent; }
