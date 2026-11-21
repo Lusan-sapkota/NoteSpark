@@ -81,6 +81,7 @@
       ],
       "./plugins/withWidgetPlaceholder",
       "./plugins/withNoMlKitDownload",
+      "./plugins/withOptionalPortrait",
       "./plugins/withFlexiblePageSizes",
       "./plugins/withVec16kb",
       "./plugins/withNoOrtTelemetry",
