@@ -319,9 +319,13 @@ code {
 .platforms .row-end { display: flex; align-items: center; gap: 12px; }
 
 /* Privacy band */
-.band { background: var(--surface-container); border-radius: var(--shape-xl); padding: 40px; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 24px 48px; align-items: end; }
-.band p { margin: 12px 0 0; max-width: 40em; }
-@media (max-width: 760px) { .band { grid-template-columns: 1fr; padding: 28px 20px; } }
+.band { background: var(--surface-container); border-radius: var(--shape-xl); padding: 40px; display: grid; gap: 28px; }
+.band-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; }
+.band-points { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+.band-points li { background: var(--surface-container-high); border-radius: var(--shape-lg, 20px); padding: 20px; }
+.band-points h3 { margin: 0 0 8px; }
+.band-points p { margin: 0; color: var(--on-surface-variant); }
+@media (max-width: 760px) { .band { padding: 24px 16px; } }
 
 /* ---------- Reading pages (privacy policy, changelog) ---------- */
 .page-main { padding: 32px 0 64px; }
