@@ -593,3 +593,10 @@ code {
 .nav-menu nav a[aria-current="page"] { background: var(--secondary-container); color: var(--on-secondary-container); }
 @media (max-width: 820px) { .nav-menu { display: block; } .header-inner { gap: 8px; } }
 @media (max-width: 400px) { .brand span { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; } }
+
+/* Download dialog: the #get content is moved in while it is open. */
+#dl-dialog { width: min(760px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); padding: 8px 0 16px; border: 0; border-radius: var(--shape-xl); background: var(--surface-container-high); color: var(--on-surface); overflow-y: auto; }
+#dl-dialog::backdrop { background: color-mix(in srgb, var(--scrim) 40%, transparent); }
+#dl-dialog .container { padding: 0 20px; }
+#dl-dialog .section-head { margin-bottom: 16px; }
+#dl-close { display: block; margin: 0 8px 0 auto; min-height: 48px; }
