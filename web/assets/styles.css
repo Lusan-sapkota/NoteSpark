@@ -601,5 +601,6 @@ code {
 #dl-dialog .section-head { margin-bottom: 16px; }
 #dl-close { display: block; margin: 0 8px 0 auto; min-height: 48px; }
 #dl-dialog .dl-tabs, #dl-dialog .section-head p { display: none; }
-.dl-more { margin: 8px 28px 0; }
-.dl-more .btn { width: 100%; justify-content: center; border: 1px solid var(--outline); }
+.dl-more { margin: 12px 20px 0; }
+.dl-more .btn { width: 100%; min-height: 44px; padding: 0 12px; font-size: 0.9375rem; white-space: nowrap; justify-content: center; border: 1px solid var(--outline); }
+#dl-dialog .section-head h2 { font-size: clamp(1.25rem, 6vw, 1.75rem); line-height: 1.2; white-space: nowrap; }
