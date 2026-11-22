@@ -320,7 +320,8 @@ code {
 
 /* Privacy band */
 .band { background: var(--surface-container); border-radius: var(--shape-xl); padding: 40px; display: grid; gap: 28px; }
-.band-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; max-width: 52rem; }
+.band-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; }
+.band-points { list-style: none; margin: 0; padding: 0; display: grid; gap: 16px; }
 .band-points li { display: flex; gap: 14px; align-items: flex-start; }
 .band-points .i { flex: none; width: 24px; height: 24px; margin-top: 2px; color: var(--primary); stroke-width: 2.2; }
 .band-points p { margin: 0; color: var(--on-surface-variant); }
