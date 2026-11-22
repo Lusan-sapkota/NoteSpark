@@ -606,3 +606,4 @@ code {
 #dl-dialog .section-head h2 { font-size: clamp(1.25rem, 6vw, 1.75rem); line-height: 1.2; white-space: nowrap; }
 html:has(#dl-dialog[open]) { overflow: hidden; }
 #dl-dialog { overscroll-behavior: contain; }
+.hero-actions .btn { white-space: nowrap; }
