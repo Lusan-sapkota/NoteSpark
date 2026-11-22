@@ -611,3 +611,4 @@ code {
 html:has(#dl-dialog[open]) { overflow: hidden; }
 #dl-dialog { overscroll-behavior: contain; }
 .hero-actions .btn { white-space: nowrap; }
+@media (max-width: 600px) { .band .btn { width: 100%; justify-content: center; } }
