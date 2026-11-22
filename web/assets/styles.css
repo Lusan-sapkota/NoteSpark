@@ -600,3 +600,5 @@ code {
 #dl-dialog .container { padding: 0 20px; }
 #dl-dialog .section-head { margin-bottom: 16px; }
 #dl-close { display: block; margin: 0 8px 0 auto; min-height: 48px; }
+#dl-dialog .dl-tabs, #dl-dialog .section-head p { display: none; }
+.dl-more { margin: 4px 28px 0; }

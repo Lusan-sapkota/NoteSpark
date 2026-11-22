@@ -113,9 +113,10 @@
     var getBox = document.querySelector('#get .container');
     if (dlMain && dlg && dlg.showModal && getBox) {
       var getSection = getBox.parentNode;
-      dlMain.addEventListener('click', function (e) { e.preventDefault(); dlg.appendChild(getBox); dlg.showModal(); });
+      dlMain.addEventListener('click', function (e) { e.preventDefault(); dlg.insertBefore(getBox, document.getElementById('dl-more-p')); dlg.showModal(); });
       dlg.addEventListener('close', function () { getSection.appendChild(getBox); });
       document.getElementById('dl-close').addEventListener('click', function () { dlg.close(); });
+      document.getElementById('dl-more').addEventListener('click', function (e) { e.preventDefault(); dlg.close(); setTimeout(function () { location.hash = '#get'; }, 0); });
       dlg.addEventListener('click', function (e) { if (e.target === dlg) dlg.close(); });
     }
 
